@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package market.v1;
+
+import "common/v1/common.proto";
+import "common/v1/domain.proto";
+
+service MarketService {
+  rpc CreateSellOrder(CreateSellOrderRequest) returns (CreateSellOrderResponse);
+  rpc CreateBuyOrder(CreateBuyOrderRequest) returns (CreateBuyOrderResponse);
+
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+  rpc ListOutstandingOrders(ListOutstandingOrdersRequest) returns (ListOutstandingOrdersResponse);
+
+  rpc AcceptFillOrder(AcceptFillOrderRequest) returns (AcceptFillOrderResponse);
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse);
+
+  // Internal/system-facing. Used by an expiration worker, not by players directly.
+  rpc ExpireOrder(ExpireOrderRequest) returns (ExpireOrderResponse);
+}
+
+message CreateSellOrderRequest {
+  common.v1.RequestContext context = 1;
+
+  common.v1.CapsuleerId seller_capsuleer_id = 2;
+  common.v1.WalletId seller_wallet_id = 3;
+
+  common.v1.ItemStackId item_stack_id = 4;
+  common.v1.ItemTypeId item_type_id = 5;
+
+  common.v1.StationId station_id = 6;
+  common.v1.RegionId region_id = 7;
+
+  common.v1.Quantity quantity = 8;
+  common.v1.IskAmount unit_price = 9;
+
+  uint32 duration_days = 10;
+}
+
+message CreateSellOrderResponse {
+  common.v1.MarketOrder order = 1;
+}
+
+message CreateBuyOrderRequest {
+  common.v1.RequestContext context = 1;
+
+  common.v1.CapsuleerId buyer_capsuleer_id = 2;
+  common.v1.WalletId buyer_wallet_id = 3;
+
+  common.v1.ItemTypeId item_type_id = 4;
+
+  common.v1.StationId station_id = 5;
+  common.v1.RegionId region_id = 6;
+
+  common.v1.Quantity quantity = 7;
+  common.v1.IskAmount unit_price = 8;
+
+  uint32 duration_days = 9;
+}
+
+message CreateBuyOrderResponse {
+  common.v1.MarketOrder order = 1;
+}
+
+message GetOrderRequest {
+  common.v1.RequestContext context = 1;
+  common.v1.MarketOrderId order_id = 2;
+}
+
+message GetOrderResponse {
+  common.v1.MarketOrder order = 1;
+}
+
+message ListOutstandingOrdersRequest {
+  common.v1.RequestContext context = 1;
+
+  common.v1.RegionId region_id = 2;
+  common.v1.StationId station_id = 3;
+  common.v1.ItemTypeId item_type_id = 4;
+
+  common.v1.MarketOrderSide side = 5;
+
+  uint32 page_size = 6;
+  string page_token = 7;
+}
+
+message ListOutstandingOrdersResponse {
+  repeated common.v1.MarketOrder orders = 1;
+  string next_page_token = 2;
+}
+
+message AcceptFillOrderRequest {
+  common.v1.RequestContext context = 1;
+
+  common.v1.MarketOrderId order_id = 2;
+  common.v1.Quantity quantity = 3;
+
+  common.v1.CapsuleerId accepting_capsuleer_id = 4;
+
+  // Needed when accepting a sell order.
+  common.v1.WalletId buyer_wallet_id = 5;
+
+  // Needed when filling a buy order.
+  common.v1.ItemStackId seller_item_stack_id = 6;
+  common.v1.WalletId seller_wallet_id = 7;
+}
+
+message AcceptFillOrderResponse {
+  common.v1.MarketOrder order = 1;
+  common.v1.TradeTransaction transaction = 2;
+  common.v1.SettlementResult settlement = 3;
+}
+
+message CancelOrderRequest {
+  common.v1.RequestContext context = 1;
+
+  common.v1.MarketOrderId order_id = 2;
+  common.v1.CapsuleerId requesting_capsuleer_id = 3;
+}
+
+message CancelOrderResponse {
+  common.v1.MarketOrder order = 1;
+}
+
+message ExpireOrderRequest {
+  common.v1.RequestContext context = 1;
+  common.v1.MarketOrderId order_id = 2;
+}
+
+message ExpireOrderResponse {
+  common.v1.MarketOrder order = 1;
+}

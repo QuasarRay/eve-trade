@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package common.v1.common.proto;
+package common.v1;
 
 // Replace the module path above with your real repository path.
 

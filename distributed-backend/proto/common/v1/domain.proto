@@ -1,8 +1,10 @@
 syntax = "proto3";
 
+package common.v1;
+
 import "google/protobuf/timestamp.proto";
-import "trade/v1/common.proto";
-import "trade/v1/errors.proto";
+import "common/v1/common.proto";
+import "common/v1/errors.proto";
 
 // These are the canonical serialized/domain values.
 // Do not rename them in docs, APIs, or code-facing schema.

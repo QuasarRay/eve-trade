@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package trade.v1;
+package common.v1;
 
-import "common/v1/error.proto";
+import "common/v1/common.proto";
 
 // Lowercase values are deliberate.
 // They preserve canonical domain/API names over generated-code style preferences.
