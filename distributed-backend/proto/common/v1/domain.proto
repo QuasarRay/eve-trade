@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "trade/v1/common.proto";
+import "trade/v1/errors.proto";
+
+// These are the canonical serialized/domain values.
+// Do not rename them in docs, APIs, or code-facing schema.
+enum TransactionState {
+  transaction_state_unspecified = 0;
+
+  being_created = 1;
+  outstanding = 2;
+  accepted = 3;
+  in_progress = 4;
+  completed = 5;
+  claimable = 6;
+  claimed = 7;
+  expired = 8;
+  failed = 9;
+  cancelled = 10;
+}
+
+enum MarketOrderSide {
+  market_order_side_unspecified = 0;
+  buy_order = 1;
+  sell_order = 2;
+}
+
+message MarketOrder {
+  MarketOrderId order_id = 1;
+  MarketOrderSide side = 2;
+
+  CapsuleerId owner_capsuleer_id = 3;
+  WalletId owner_wallet_id = 4;
+
+  ItemTypeId item_type_id = 5;
+
+  // Required for sell orders.
+  // Omitted for buy orders.
+  ItemStackId offered_item_stack_id = 6;
+
+  StationId station_id = 7;
+  RegionId region_id = 8;
+
+  Quantity total_quantity = 9;
+  Quantity remaining_quantity = 10;
+
+  IskAmount unit_price = 11;
+
+  // For orders, valid MVP states are:
+  // being_created, outstanding, completed, expired, cancelled, failed.
+  TransactionState state = 12;
+
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp expires_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
+}
+
+message TradeTransaction {
+  TradeTransactionId transaction_id = 1;
+  MarketOrderId order_id = 2;
+  SettlementId settlement_id = 3;
+
+  MarketOrderSide order_side = 4;
+
+  CapsuleerId buyer_capsuleer_id = 5;
+  WalletId buyer_wallet_id = 6;
+
+  CapsuleerId seller_capsuleer_id = 7;
+  WalletId seller_wallet_id = 8;
+
+  ItemTypeId item_type_id = 9;
+  StationId station_id = 10;
+  RegionId region_id = 11;
+
+  Quantity quantity = 12;
+  IskAmount unit_price = 13;
+  IskAmount total_price = 14;
+
+  TransactionState state = 15;
+
+  google.protobuf.Timestamp created_at = 16;
+  google.protobuf.Timestamp updated_at = 17;
+}
+
+message SettlementRequest {
+  RequestContext context = 1;
+
+  // Stable transaction identity chosen before settlement.
+  TradeTransactionId transaction_id = 2;
+
+  // May be supplied by market for deterministic retries.
+  // If absent, settlement service assigns it.
+  SettlementId settlement_id = 3;
+
+  MarketOrderId order_id = 4;
+  MarketOrderSide order_side = 5;
+
+  CapsuleerId buyer_capsuleer_id = 6;
+  WalletId buyer_wallet_id = 7;
+
+  CapsuleerId seller_capsuleer_id = 8;
+  WalletId seller_wallet_id = 9;
+
+  // Source stack for items being moved.
+  ItemStackId seller_item_stack_id = 10;
+
+  ItemTypeId item_type_id = 11;
+  StationId station_id = 12;
+  RegionId region_id = 13;
+
+  Quantity quantity = 14;
+  IskAmount unit_price = 15;
+  IskAmount total_price = 16;
+}
+
+message SettlementResult {
+  SettlementId settlement_id = 1;
+  TradeTransactionId transaction_id = 2;
+  MarketOrderId order_id = 3;
+
+  TransactionState state = 4;
+
+  // True when this response is returned from a previous successful
+  // request with the same idempotency key.
+  bool idempotent_replay = 5;
+
+  // Present only when the persisted transaction reached failed.
+  TradeError failure = 6;
+
+  google.protobuf.Timestamp decided_at = 7;
+}
