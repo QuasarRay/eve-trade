@@ -7,8 +7,99 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
 jobs:
+  proto:
+    name: proto / buf
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Buf
+        uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+          version: "1.70.0"
+
+      - name: Install local protobuf plugins
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
+          go install connectrpc.com/connect/cmd/protoc-gen-connect-go@v1.18.1
+
+      - name: Check protobuf module builds
+        working-directory: distributed-backend
+        run: buf build --error-format github-actions
+
+      - name: Lint protobuf contracts
+        working-directory: distributed-backend
+        run: buf lint --error-format github-actions
+
+      - name: Check protobuf formatting
+        working-directory: distributed-backend
+        run: buf format --diff --exit-code
+
+      - name: Regenerate protobuf output
+        working-directory: distributed-backend
+        run: buf generate
+
+      - name: Fail if generated protobuf code is stale
+        run: git diff --exit-code -- distributed-backend/proto/gen
+
+  go-market:
+    name: go / market
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check Go module metadata
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+
+      - name: Check Go formatting
+        shell: bash
+        run: |
+          files="$(gofmt -l distributed-backend/src/market distributed-backend/proto/gen)"
+          if [ -n "$files" ]; then
+            echo "Go files are not formatted:"
+            echo "$files"
+            exit 1
+          fi
+
+      - name: Test Go packages
+        run: go test ./...
+
+      - name: Build market service
+        run: go build ./distributed-backend/src/market/cmd/market
+
   rust-trade-settlement:
+    name: rust / trade-settlement
     runs-on: ubuntu-latest
 
     defaults:
@@ -21,12 +112,20 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
       - name: Install protoc
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
-      - name: Check formatting
-        run: cargo fmt --check
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
 
-      - name: Check build
-        run: cargo check
+      - name: Check Rust build
+        run: cargo check --locked
+
+      - name: Test Rust crate
+        run: cargo test --locked
+
+      - name: Lint Rust crate
+        run: cargo clippy --locked --all-targets -- -D warnings
