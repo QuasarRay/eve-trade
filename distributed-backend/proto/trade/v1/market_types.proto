@@ -1,0 +1,147 @@
+syntax = "proto3";
+
+package trade.v1;
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/trade/v1;tradev1";
+
+import "google/protobuf/timestamp.proto";
+import "trade/v1/common.proto";
+
+// market_types.proto contains shared market/order/transaction views. These
+// types are game-shaped, but they do not encode market rules. Market decides
+// valid intent; settlement writes durable state.
+
+message TradeOrderView {
+  TradeOrderId trade_order_id = 1;
+  OperationId operation_id = 2;
+  TradeOrderSide order_side = 3;
+  TransactionState state = 4;
+
+  CapsuleerId owner_capsuleer_id = 5;
+  WalletId owner_wallet_id = 6;
+  ItemTypeId item_type_id = 7;
+
+  // Present for stackable sell orders.
+  ItemStackId offered_item_stack_id = 8;
+
+  // Present for singleton sell orders.
+  ItemInstanceId offered_item_instance_id = 9;
+
+  StationId station_id = 10;
+  RegionId region_id = 11;
+
+  Quantity total_quantity = 12;
+  Quantity remaining_quantity = 13;
+  IskAmount unit_price_isk = 14;
+
+  google.protobuf.Timestamp expires_at = 15;
+  google.protobuf.Timestamp created_at = 16;
+  google.protobuf.Timestamp updated_at = 17;
+}
+
+message WalletReservationView {
+  string wallet_reservation_id = 1;
+  TradeOrderId trade_order_id = 2;
+  WalletId wallet_id = 3;
+  WalletOperationId created_wallet_operation_id = 4;
+  WalletOperationId released_wallet_operation_id = 5;
+  IskAmount original_reserved_isk = 6;
+  IskAmount remaining_reserved_isk = 7;
+  IskAmount used_reserved_isk = 8;
+  IskAmount released_reserved_isk = 9;
+  ReservationState reservation_state = 10;
+  string release_reason = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+  google.protobuf.Timestamp released_at = 14;
+}
+
+message ItemStackReservationView {
+  string item_stack_reservation_id = 1;
+  TradeOrderId trade_order_id = 2;
+  ItemStackId item_stack_id = 3;
+  ItemStackOperationId created_item_stack_operation_id = 4;
+  ItemStackOperationId released_item_stack_operation_id = 5;
+  Quantity original_reserved_quantity = 6;
+  Quantity remaining_reserved_quantity = 7;
+  Quantity used_reserved_quantity = 8;
+  Quantity released_reserved_quantity = 9;
+  ReservationState reservation_state = 10;
+  string release_reason = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+  google.protobuf.Timestamp released_at = 14;
+}
+
+message ItemInstanceReservationView {
+  string item_instance_reservation_id = 1;
+  TradeOrderId trade_order_id = 2;
+  ItemInstanceId item_instance_id = 3;
+  ItemInstanceOperationId created_item_instance_operation_id = 4;
+  ItemInstanceOperationId released_item_instance_operation_id = 5;
+  ReservationState reservation_state = 6;
+  string release_reason = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  google.protobuf.Timestamp released_at = 10;
+}
+
+message TradeTransactionView {
+  TradeTransactionId trade_transaction_id = 1;
+  OperationId operation_id = 2;
+  TradeOrderId trade_order_id = 3;
+  TransactionState state = 4;
+
+  CapsuleerId buyer_capsuleer_id = 5;
+  WalletId buyer_wallet_id = 6;
+  CapsuleerId seller_capsuleer_id = 7;
+  WalletId seller_wallet_id = 8;
+  ItemTypeId item_type_id = 9;
+
+  ItemStackId source_item_stack_id = 10;
+  ItemStackId destination_item_stack_id = 11;
+  ItemInstanceId source_item_instance_id = 12;
+  ItemInstanceId destination_item_instance_id = 13;
+
+  Quantity quantity = 14;
+  IskAmount unit_price_isk = 15;
+  IskAmount total_price_isk = 16;
+
+  google.protobuf.Timestamp created_at = 17;
+  google.protobuf.Timestamp updated_at = 18;
+  google.protobuf.Timestamp completed_at = 19;
+}
+
+message SettlementView {
+  SettlementId settlement_id = 1;
+  OperationId operation_id = 2;
+  TradeTransactionId trade_transaction_id = 3;
+  IdempotencyKey idempotency_key = 4;
+  OperationState state = 5;
+  SettlementPhase settlement_phase = 6;
+  uint32 retry_count = 7;
+  google.protobuf.Timestamp started_at = 8;
+  google.protobuf.Timestamp decided_at = 9;
+  TradeError failure = 10;
+}
+
+message SettlementStepView {
+  string settlement_step_id = 1;
+  SettlementId settlement_id = 2;
+  string step_name = 3;
+  OperationState step_state = 4;
+  google.protobuf.Timestamp started_at = 5;
+  google.protobuf.Timestamp completed_at = 6;
+  TradeError failure = 7;
+}
+
+message TradeClaimView {
+  TradeClaimId trade_claim_id = 1;
+  OperationId operation_id = 2;
+  TradeTransactionId trade_transaction_id = 3;
+  SettlementId settlement_id = 4;
+  CapsuleerId claiming_capsuleer_id = 5;
+  TransactionState state = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp claimed_at = 8;
+}

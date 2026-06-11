@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package gateway.v1;
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/gateway/v1;gatewayv1";
+
+import "market/v1/market.proto";
+
+// ApiGatewayTradeService is the external adapter boundary. It exposes the same
+// trade intent surface as MarketService for the MVP and delegates rule handling
+// to market. It does not own market rules and does not perform settlement.
+service ApiGatewayTradeService {
+  rpc CreateSellOrder(market.v1.CreateSellOrderRequest) returns (market.v1.CreateOrderResponse);
+  rpc CreateBuyOrder(market.v1.CreateBuyOrderRequest) returns (market.v1.CreateOrderResponse);
+
+  rpc GetOrder(market.v1.GetOrderRequest) returns (market.v1.GetOrderResponse);
+  rpc ListOutstandingOrders(market.v1.ListOutstandingOrdersRequest) returns (market.v1.ListOutstandingOrdersResponse);
+
+  rpc AcceptFillOrder(market.v1.AcceptFillOrderRequest) returns (market.v1.AcceptFillOrderResponse);
+  rpc CancelOrder(market.v1.CancelOrderRequest) returns (market.v1.CancelOrderResponse);
+  rpc ExpireOrder(market.v1.ExpireOrderRequest) returns (market.v1.ExpireOrderResponse);
+
+  rpc GetTransactionState(market.v1.GetTransactionStateRequest) returns (market.v1.GetTransactionStateResponse);
+  rpc ClaimResult(market.v1.ClaimResultRequest) returns (market.v1.ClaimResultResponse);
+}

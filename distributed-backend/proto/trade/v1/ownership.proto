@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package trade.v1;
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/trade/v1;tradev1";
+
+import "google/protobuf/timestamp.proto";
+import "trade/v1/common.proto";
+
+// ownership.proto contains shared wallet/item views used by market and
+// trade-settlement. It mirrors the shared persistence model without exposing
+// SQL-specific details.
+
+message WalletView {
+  WalletId wallet_id = 1;
+  CapsuleerId capsuleer_id = 2;
+  string wallet_kind = 3;
+  IskAmount available_isk = 4;
+  IskAmount reserved_isk = 5;
+  WalletState wallet_state = 6;
+  uint64 wallet_version = 7;
+  string wallet_checksum = 8;
+  string checksum_algorithm = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message ItemStackView {
+  ItemStackId item_stack_id = 1;
+  CapsuleerId capsuleer_id = 2;
+  ItemTypeId item_type_id = 3;
+  StationId station_id = 4;
+  Quantity available_quantity = 5;
+  Quantity reserved_quantity = 6;
+  ItemStackState stack_state = 7;
+  uint64 stack_version = 8;
+  string stack_checksum = 9;
+  string checksum_algorithm = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+message ItemInstanceView {
+  ItemInstanceId item_instance_id = 1;
+  ItemTypeId item_type_id = 2;
+  CapsuleerId capsuleer_id = 3;
+  StationId station_id = 4;
+  ItemInstanceState instance_state = 5;
+  uint64 instance_version = 6;
+  string instance_checksum = 7;
+  string checksum_algorithm = 8;
+  string source_system = 9;
+  string source_version = 10;
+  google.protobuf.Timestamp last_synced_at = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+}
+
+message WalletLedgerEntryView {
+  string wallet_ledger_id = 1;
+  WalletOperationId wallet_operation_id = 2;
+  WalletId wallet_id = 3;
+  CapsuleerId capsuleer_id = 4;
+  string entry_kind = 5;
+  IskAmount available_isk_delta = 6;
+  IskAmount reserved_isk_delta = 7;
+  IskAmount available_isk_before = 8;
+  IskAmount reserved_isk_before = 9;
+  IskAmount available_isk_after = 10;
+  IskAmount reserved_isk_after = 11;
+  uint64 wallet_version_before = 12;
+  uint64 wallet_version_after = 13;
+  string wallet_checksum_before = 14;
+  string wallet_checksum_after = 15;
+  google.protobuf.Timestamp created_at = 16;
+}
+
+message ItemStackLedgerEntryView {
+  string item_stack_ledger_id = 1;
+  ItemStackOperationId item_stack_operation_id = 2;
+  ItemStackId item_stack_id = 3;
+  ItemTypeId item_type_id = 4;
+  CapsuleerId capsuleer_id = 5;
+  StationId station_id = 6;
+  string entry_kind = 7;
+  int64 available_quantity_delta = 8;
+  int64 reserved_quantity_delta = 9;
+  Quantity available_quantity_before = 10;
+  Quantity reserved_quantity_before = 11;
+  Quantity available_quantity_after = 12;
+  Quantity reserved_quantity_after = 13;
+  uint64 stack_version_before = 14;
+  uint64 stack_version_after = 15;
+  string stack_checksum_before = 16;
+  string stack_checksum_after = 17;
+  google.protobuf.Timestamp created_at = 18;
+}
+
+message ItemInstanceLedgerEntryView {
+  string item_instance_ledger_id = 1;
+  ItemInstanceOperationId item_instance_operation_id = 2;
+  ItemInstanceId item_instance_id = 3;
+  ItemTypeId item_type_id = 4;
+  CapsuleerId capsuleer_id_before = 5;
+  CapsuleerId capsuleer_id_after = 6;
+  StationId station_id_before = 7;
+  StationId station_id_after = 8;
+  ItemInstanceState instance_state_before = 9;
+  ItemInstanceState instance_state_after = 10;
+  uint64 instance_version_before = 11;
+  uint64 instance_version_after = 12;
+  string instance_checksum_before = 13;
+  string instance_checksum_after = 14;
+  string entry_kind = 15;
+  google.protobuf.Timestamp created_at = 16;
+}

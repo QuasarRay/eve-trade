@@ -1,0 +1,292 @@
+syntax = "proto3";
+
+package trade.v1;
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/trade/v1;tradev1";
+
+// common.proto contains shared primitive contract types used by api-gateway,
+// market, and trade-settlement. These are transport contracts, not game-rule
+// implementations.
+
+// ---------- Shared identifiers ----------
+
+message RequestId {
+  string value = 1;
+}
+
+message IdempotencyKey {
+  string value = 1;
+}
+
+message OperationId {
+  string value = 1;
+}
+
+message CapsuleerId {
+  string value = 1;
+}
+
+message WalletId {
+  string value = 1;
+}
+
+message ItemTypeId {
+  string value = 1;
+}
+
+message ItemStackId {
+  string value = 1;
+}
+
+message ItemInstanceId {
+  string value = 1;
+}
+
+message StationId {
+  string value = 1;
+}
+
+message RegionId {
+  string value = 1;
+}
+
+message TradeOrderId {
+  string value = 1;
+}
+
+message TradeTransactionId {
+  string value = 1;
+}
+
+message SettlementId {
+  string value = 1;
+}
+
+message TradeClaimId {
+  string value = 1;
+}
+
+message WalletOperationId {
+  string value = 1;
+}
+
+message ItemStackOperationId {
+  string value = 1;
+}
+
+message ItemInstanceOperationId {
+  string value = 1;
+}
+
+// ---------- Request metadata ----------
+
+message RequestContext {
+  // Unique per RPC attempt.
+  RequestId request_id = 1;
+
+  // Stable across retries of the same logical command.
+  IdempotencyKey idempotency_key = 2;
+
+  // Optional compatibility date for future behavior compatibility.
+  // Format: YYYY-MM-DD.
+  string compatibility_date = 3;
+
+  // Service that originated the request, e.g. api-gateway, market, game-server.
+  string source_system = 4;
+
+  // Service currently creating the database operation.
+  string created_by_service = 5;
+
+  // Present when the request was initiated by a player/capsuleer action.
+  CapsuleerId acting_capsuleer_id = 6;
+}
+
+// ---------- Amounts ----------
+
+message IskAmount {
+  // Fixed-scale integer. No float/double.
+  // Recommended MVP scale: 1 minor_unit = 0.01 ISK.
+  int64 minor_units = 1;
+}
+
+message Quantity {
+  uint64 units = 1;
+}
+
+// ---------- Canonical trade lifecycle ----------
+
+// Lowercase values are deliberate. These are the canonical serialized/domain
+// names requested for trade lifecycle state. Do not rename them in docs, APIs,
+// or persisted state.
+enum TransactionState {
+  transaction_state_unspecified = 0;
+
+  being_created = 1;
+  outstanding = 2;
+  accepted = 3;
+  in_progress = 4;
+  completed = 5;
+  claimable = 6;
+  claimed = 7;
+  expired = 8;
+  failed = 9;
+  cancelled = 10;
+}
+
+// State-change commands used when market asks settlement to attempt a durable
+// transition. This enum is intentionally separate from TransactionState so a
+// caller cannot pretend state assignment and legal transition are the same.
+enum TradeStateChange {
+  TRADE_STATE_CHANGE_UNSPECIFIED = 0;
+  SET_TO_BEING_CREATED = 1;
+  SET_TO_OUTSTANDING = 2;
+  SET_TO_ACCEPTED = 3;
+  SET_TO_IN_PROGRESS = 4;
+  SET_TO_CLAIMABLE = 5;
+  SET_TO_CLAIMED = 6;
+  SET_TO_EXPIRED = 7;
+  SET_TO_FAILED = 8;
+  SET_TO_CANCELLED = 9;
+}
+
+// ---------- Other state families ----------
+
+enum OperationState {
+  OPERATION_STATE_UNSPECIFIED = 0;
+  OPERATION_STATE_PENDING = 1;
+  OPERATION_STATE_IN_PROGRESS = 2;
+  OPERATION_STATE_COMPLETED = 3;
+  OPERATION_STATE_FAILED = 4;
+}
+
+enum ReservationState {
+  RESERVATION_STATE_UNSPECIFIED = 0;
+  RESERVATION_STATE_ACTIVE = 1;
+  RESERVATION_STATE_PARTIALLY_USED = 2;
+  RESERVATION_STATE_USED = 3;
+  RESERVATION_STATE_RELEASED = 4;
+}
+
+enum WalletState {
+  WALLET_STATE_UNSPECIFIED = 0;
+  WALLET_STATE_ACTIVE = 1;
+  WALLET_STATE_FROZEN = 2;
+  WALLET_STATE_CLOSED = 3;
+}
+
+enum ItemStackState {
+  ITEM_STACK_STATE_UNSPECIFIED = 0;
+  ITEM_STACK_STATE_ACTIVE = 1;
+  ITEM_STACK_STATE_DEPLETED = 2;
+  ITEM_STACK_STATE_MERGED = 3;
+  ITEM_STACK_STATE_DESTROYED = 4;
+}
+
+enum ItemInstanceState {
+  ITEM_INSTANCE_STATE_UNSPECIFIED = 0;
+  ITEM_INSTANCE_STATE_ACTIVE = 1;
+  ITEM_INSTANCE_STATE_RESERVED = 2;
+  ITEM_INSTANCE_STATE_TRANSFERRED = 3;
+  ITEM_INSTANCE_STATE_DESTROYED = 4;
+}
+
+enum ProjectionState {
+  PROJECTION_STATE_UNSPECIFIED = 0;
+  PROJECTION_STATE_ACTIVE = 1;
+  PROJECTION_STATE_STALE = 2;
+  PROJECTION_STATE_DELETED_UPSTREAM = 3;
+}
+
+enum SettlementPhase {
+  SETTLEMENT_PHASE_UNSPECIFIED = 0;
+  SETTLEMENT_PHASE_CREATED = 1;
+  SETTLEMENT_PHASE_LOCKED_TRADE = 2;
+  SETTLEMENT_PHASE_LOCKED_WALLETS = 3;
+  SETTLEMENT_PHASE_LOCKED_ITEMS = 4;
+  SETTLEMENT_PHASE_WALLET_MOVED = 5;
+  SETTLEMENT_PHASE_ITEMS_MOVED = 6;
+  SETTLEMENT_PHASE_STATE_RECORDED = 7;
+  SETTLEMENT_PHASE_COMPLETED = 8;
+  SETTLEMENT_PHASE_FAILED = 9;
+}
+
+// ---------- Operation kinds ----------
+
+// OperationKind records why a structurally valid database mutation exists. It
+// does not decide whether the operation is allowed; services/game server do.
+enum OperationKind {
+  OPERATION_KIND_UNSPECIFIED = 0;
+
+  // Inventory / stackable item operations.
+  OPERATION_KIND_CREATE_STACK = 1;
+  OPERATION_KIND_SPLIT_STACK = 2;
+  OPERATION_KIND_MERGE_STACKS = 3;
+  OPERATION_KIND_MOVE_STACK = 4;
+  OPERATION_KIND_CONSUME_ITEMS = 5;
+  OPERATION_KIND_PRODUCE_ITEMS = 6;
+  OPERATION_KIND_DESTROY_STACK = 7;
+
+  // Wallet operations.
+  OPERATION_KIND_RESERVE_ISK = 20;
+  OPERATION_KIND_RELEASE_RESERVED_ISK = 21;
+  OPERATION_KIND_DEBIT_ISK = 22;
+  OPERATION_KIND_CREDIT_ISK = 23;
+
+  // Singleton item operations.
+  OPERATION_KIND_CREATE_INSTANCE = 40;
+  OPERATION_KIND_RESERVE_INSTANCE_FOR_TRADE = 41;
+  OPERATION_KIND_RELEASE_INSTANCE_RESERVATION = 42;
+  OPERATION_KIND_TRANSFER_INSTANCE_FOR_TRADE = 43;
+  OPERATION_KIND_MOVE_INSTANCE = 44;
+  OPERATION_KIND_DESTROY_INSTANCE = 45;
+
+  // Trade plugin operations.
+  OPERATION_KIND_CREATE_TRADE_ORDER = 60;
+  OPERATION_KIND_CANCEL_TRADE_ORDER = 61;
+  OPERATION_KIND_EXPIRE_TRADE_ORDER = 62;
+  OPERATION_KIND_ACCEPT_TRADE_ORDER = 63;
+  OPERATION_KIND_SETTLE_TRADE = 64;
+  OPERATION_KIND_CLAIM_TRADE_RESULT = 65;
+}
+
+// ---------- Market/trade classification ----------
+
+enum TradeOrderSide {
+  TRADE_ORDER_SIDE_UNSPECIFIED = 0;
+  TRADE_ORDER_SIDE_BUY_ORDER = 1;
+  TRADE_ORDER_SIDE_SELL_ORDER = 2;
+}
+
+enum TradeItemKind {
+  TRADE_ITEM_KIND_UNSPECIFIED = 0;
+  TRADE_ITEM_KIND_STACKABLE = 1;
+  TRADE_ITEM_KIND_SINGLETON = 2;
+}
+
+// ---------- Error model ----------
+
+enum TradeErrorCode {
+  trade_error_code_unspecified = 0;
+
+  insufficient_isk = 1;
+  insufficient_items = 2;
+  invalid_state_transition = 3;
+  order_expired = 4;
+  order_cancelled = 5;
+  item_not_market_eligible = 6;
+  duplicate_request = 7;
+  settlement_conflict = 8;
+  stale_version_conflict = 9;
+  integrity_conflict = 10;
+  reservation_conflict = 11;
+}
+
+message TradeError {
+  TradeErrorCode code = 1;
+  string message = 2;
+  RequestId request_id = 3;
+  IdempotencyKey idempotency_key = 4;
+  TradeOrderId trade_order_id = 5;
+  TradeTransactionId trade_transaction_id = 6;
+  SettlementId settlement_id = 7;
+}
