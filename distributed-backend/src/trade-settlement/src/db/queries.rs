@@ -25,7 +25,10 @@ use crate::error::SettlementError;
 // What: implements `lock_order`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn lock_order(tx: &mut Transaction<'_, Postgres>, id: &str) -> Result<TradeOrderRow, SettlementError> {
+pub async fn lock_order(
+    tx: &mut Transaction<'_, Postgres>,
+    id: &str,
+) -> Result<TradeOrderRow, SettlementError> {
     order_query("FOR UPDATE", tx, id).await
 }
 
@@ -33,7 +36,10 @@ pub async fn lock_order(tx: &mut Transaction<'_, Postgres>, id: &str) -> Result<
 // What: implements `load_order`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn load_order(tx: &mut Transaction<'_, Postgres>, id: &str) -> Result<TradeOrderRow, SettlementError> {
+pub async fn load_order(
+    tx: &mut Transaction<'_, Postgres>,
+    id: &str,
+) -> Result<TradeOrderRow, SettlementError> {
     order_query("", tx, id).await
 }
 
@@ -41,12 +47,17 @@ pub async fn load_order(tx: &mut Transaction<'_, Postgres>, id: &str) -> Result<
 // What: implements `order_query`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-async fn order_query(lock: &str, tx: &mut Transaction<'_, Postgres>, id: &str) -> Result<TradeOrderRow, SettlementError> {
+async fn order_query(
+    lock: &str,
+    tx: &mut Transaction<'_, Postgres>,
+    id: &str,
+) -> Result<TradeOrderRow, SettlementError> {
     // DB-BLOCK src_db_queries_005
     // What: binds `sql` as a named intermediate.
     // How: computes/extracts `sql` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let sql = format!(r#"
+    let sql = format!(
+        r#"
         SELECT trade_order_id::text AS trade_order_id, operation_id::text AS operation_id,
                order_side::text AS order_side, state::text AS state,
                owner_capsuleer_id::text AS owner_capsuleer_id, owner_wallet_id::text AS owner_wallet_id,
@@ -57,19 +68,27 @@ async fn order_query(lock: &str, tx: &mut Transaction<'_, Postgres>, id: &str) -
         FROM trade.trade_order
         WHERE trade_order_id = $1::uuid
         {lock}
-    "#);
+    "#
+    );
     // DB-BLOCK src_db_queries_006
     // What: performs a parameterized SQL operation against `settlement`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
     // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
-    sqlx::query_as::<_, TradeOrderRow>(&sql).bind(id).fetch_one(&mut **tx).await.map_err(SettlementError::from)
+    sqlx::query_as::<_, TradeOrderRow>(&sql)
+        .bind(id)
+        .fetch_one(&mut **tx)
+        .await
+        .map_err(SettlementError::from)
 }
 
 // DB-BLOCK src_db_queries_007
 // What: implements `lock_wallet_reservation`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn lock_wallet_reservation(tx: &mut Transaction<'_, Postgres>, order_id: &str) -> Result<Option<WalletReservationRow>, SettlementError> {
+pub async fn lock_wallet_reservation(
+    tx: &mut Transaction<'_, Postgres>,
+    order_id: &str,
+) -> Result<Option<WalletReservationRow>, SettlementError> {
     // DB-BLOCK src_db_queries_008
     // What: performs a parameterized SQL operation against `wallet`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -96,7 +115,10 @@ pub async fn lock_wallet_reservation(tx: &mut Transaction<'_, Postgres>, order_i
 // What: implements `lock_stack_reservation`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn lock_stack_reservation(tx: &mut Transaction<'_, Postgres>, order_id: &str) -> Result<Option<ItemStackReservationRow>, SettlementError> {
+pub async fn lock_stack_reservation(
+    tx: &mut Transaction<'_, Postgres>,
+    order_id: &str,
+) -> Result<Option<ItemStackReservationRow>, SettlementError> {
     // DB-BLOCK src_db_queries_010
     // What: performs a parameterized SQL operation against `the relevant trade schema table`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -123,7 +145,10 @@ pub async fn lock_stack_reservation(tx: &mut Transaction<'_, Postgres>, order_id
 // What: implements `lock_transaction`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn lock_transaction(tx: &mut Transaction<'_, Postgres>, id: &str) -> Result<Option<TradeTransactionRow>, SettlementError> {
+pub async fn lock_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    id: &str,
+) -> Result<Option<TradeTransactionRow>, SettlementError> {
     // DB-BLOCK src_db_queries_012
     // What: performs a parameterized SQL operation against `the relevant trade schema table`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -154,7 +179,10 @@ pub async fn lock_transaction(tx: &mut Transaction<'_, Postgres>, id: &str) -> R
 // What: implements `load_transaction`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn load_transaction(tx: &mut Transaction<'_, Postgres>, id: &str) -> Result<TradeTransactionRow, SettlementError> {
+pub async fn load_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    id: &str,
+) -> Result<TradeTransactionRow, SettlementError> {
     // DB-BLOCK src_db_queries_014
     // What: performs a parameterized SQL operation against `the relevant trade schema table`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -184,7 +212,10 @@ pub async fn load_transaction(tx: &mut Transaction<'_, Postgres>, id: &str) -> R
 // What: implements `load_settlement`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn load_settlement(tx: &mut Transaction<'_, Postgres>, settlement_id: &str) -> Result<SettlementRow, SettlementError> {
+pub async fn load_settlement(
+    tx: &mut Transaction<'_, Postgres>,
+    settlement_id: &str,
+) -> Result<SettlementRow, SettlementError> {
     // DB-BLOCK src_db_queries_016
     // What: performs a parameterized SQL operation against `settlement`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -209,7 +240,10 @@ pub async fn load_settlement(tx: &mut Transaction<'_, Postgres>, settlement_id: 
 // What: implements `settlement_steps`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn settlement_steps(tx: &mut Transaction<'_, Postgres>, settlement_id: &str) -> Result<Vec<SettlementStepRow>, SettlementError> {
+pub async fn settlement_steps(
+    tx: &mut Transaction<'_, Postgres>,
+    settlement_id: &str,
+) -> Result<Vec<SettlementStepRow>, SettlementError> {
     // DB-BLOCK src_db_queries_018
     // What: performs a parameterized SQL operation against `settlement`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.

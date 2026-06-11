@@ -42,7 +42,10 @@ pub fn to_proto_opt(value: Option<DateTime<Utc>>) -> Option<Timestamp> {
 // What: implements `from_proto_required`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub fn from_proto_required(field: &str, value: &Option<Timestamp>) -> Result<DateTime<Utc>, SettlementError> {
+pub fn from_proto_required(
+    field: &str,
+    value: &Option<Timestamp>,
+) -> Result<DateTime<Utc>, SettlementError> {
     // DB-BLOCK src_db_time_005
     // What: binds `value` as a named intermediate.
     // How: computes/extracts `value` once before SQL or response construction.

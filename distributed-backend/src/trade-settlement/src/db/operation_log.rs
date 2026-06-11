@@ -90,7 +90,10 @@ pub async fn create(
 // What: implements `load`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn load(tx: &mut Transaction<'_, Postgres>, operation_id: &str) -> Result<OperationRow, SettlementError> {
+pub async fn load(
+    tx: &mut Transaction<'_, Postgres>,
+    operation_id: &str,
+) -> Result<OperationRow, SettlementError> {
     // DB-BLOCK src_db_operation_log_011
     // What: performs a parameterized SQL operation against `operation`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -116,7 +119,10 @@ pub async fn load(tx: &mut Transaction<'_, Postgres>, operation_id: &str) -> Res
 // What: marks an operation as completed.
 // How: updates operation_state and completed_at.
 // Why: operation status must reflect successful completion of all child writes.
-pub async fn complete(tx: &mut Transaction<'_, Postgres>, operation_id: &str) -> Result<(), SettlementError> {
+pub async fn complete(
+    tx: &mut Transaction<'_, Postgres>,
+    operation_id: &str,
+) -> Result<(), SettlementError> {
     // DB-BLOCK src_db_operation_log_013
     // What: performs a parameterized SQL operation against `the relevant trade schema table`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.

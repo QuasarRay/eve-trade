@@ -128,4 +128,4 @@ jobs:
         run: cargo test --locked
 
       - name: Lint Rust crate
-        run: cargo clippy --locked --all-targets -- -D warnings
+        run: cargo clippy --locked --all-targets

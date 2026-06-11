@@ -26,7 +26,10 @@ use crate::generated::settlement::v1::{ClaimResultRequest, ClaimResultResponse};
 // What: handles claim-result requests at the DB boundary.
 // How: rejects unsupported claimable-delivery flow for MVP with a typed error.
 // Why: unsafe partial implementation is worse than explicit unsupported behavior.
-pub async fn claim_result(_pool: &PgPool, _req: &ClaimResultRequest) -> Result<ClaimResultResponse, SettlementError> {
+pub async fn claim_result(
+    _pool: &PgPool,
+    _req: &ClaimResultRequest,
+) -> Result<ClaimResultResponse, SettlementError> {
     // DB-BLOCK src_db_claims_003
     // What: returns the branch result.
     // How: wraps the computed response/error with `Err(SettlementError::Unsupported(`.

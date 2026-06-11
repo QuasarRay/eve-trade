@@ -77,8 +77,12 @@ impl From<SettlementError> for Status {
             | SettlementError::ReservationConflict(_)
             | SettlementError::InsufficientIsk { .. }
             | SettlementError::InsufficientItems { .. }
-            | SettlementError::StaleVersionConflict(_) => Status::failed_precondition(value.to_string()),
-            SettlementError::Database(sqlx::Error::RowNotFound) => Status::not_found("requested row was not found"),
+            | SettlementError::StaleVersionConflict(_) => {
+                Status::failed_precondition(value.to_string())
+            }
+            SettlementError::Database(sqlx::Error::RowNotFound) => {
+                Status::not_found("requested row was not found")
+            }
             SettlementError::Database(err) => Status::internal(err.to_string()),
             other => Status::internal(other.to_string()),
         }

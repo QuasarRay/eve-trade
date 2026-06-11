@@ -21,8 +21,8 @@
 // Why: explicit imports make coupling visible during review.
 use sqlx::{PgPool, Postgres, Transaction};
 
-use crate::db::{extract, idempotency, operation_log, ownership, proto_builders, queries};
 use crate::db::types::{ItemKind, OrderSide, TradeState};
+use crate::db::{extract, idempotency, operation_log, ownership, proto_builders, queries};
 use crate::error::SettlementError;
 use crate::generated::settlement::v1::*;
 use crate::generated::trade::v1::{ItemStackOperationId, WalletOperationId};
@@ -31,7 +31,11 @@ use crate::generated::trade::v1::{ItemStackOperationId, WalletOperationId};
 // What: records one completed settlement step.
 // How: inserts a settlement_step row with the given step name and completed state.
 // Why: step-level history allows crash/retry diagnosis without guessing from side effects.
-async fn record_step(tx: &mut Transaction<'_, Postgres>, settlement_id: &str, step: &str) -> Result<(), SettlementError> {
+async fn record_step(
+    tx: &mut Transaction<'_, Postgres>,
+    settlement_id: &str,
+    step: &str,
+) -> Result<(), SettlementError> {
     // DB-BLOCK src_db_settlements_003
     // What: performs a parameterized SQL operation against `settlement_step`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -52,7 +56,11 @@ async fn record_step(tx: &mut Transaction<'_, Postgres>, settlement_id: &str, st
 // What: updates the settlement phase and mirrors it into step history.
 // How: updates settlement.settlement_phase then records the phase through `record_step` in the same transaction.
 // Why: phase and step history must not diverge.
-async fn set_phase(tx: &mut Transaction<'_, Postgres>, settlement_id: &str, phase: &str) -> Result<(), SettlementError> {
+async fn set_phase(
+    tx: &mut Transaction<'_, Postgres>,
+    settlement_id: &str,
+    phase: &str,
+) -> Result<(), SettlementError> {
     // DB-BLOCK src_db_settlements_006
     // What: performs a parameterized SQL operation against `settlement`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -72,7 +80,7 @@ async fn set_phase(tx: &mut Transaction<'_, Postgres>, settlement_id: &str, phas
 async fn create_transaction_if_needed(
     tx: &mut Transaction<'_, Postgres>,
     operation_id: &str,
-    req: &SettlementRequest,
+    req: &RequestSettlementRequest,
     order: &crate::db::rows::TradeOrderRow,
 ) -> Result<crate::db::rows::TradeTransactionRow, SettlementError> {
     // DB-BLOCK src_db_settlements_008
@@ -105,7 +113,8 @@ async fn create_transaction_if_needed(
     // What: binds `seller_capsuleer_id` as a named intermediate.
     // How: computes/extracts `seller_capsuleer_id` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let seller_capsuleer_id = extract::capsuleer_id("seller_capsuleer_id", &req.seller_capsuleer_id)?;
+    let seller_capsuleer_id =
+        extract::capsuleer_id("seller_capsuleer_id", &req.seller_capsuleer_id)?;
     // DB-BLOCK src_db_settlements_014
     // What: binds `seller_wallet_id` as a named intermediate.
     // How: computes/extracts `seller_wallet_id` once before SQL or response construction.
@@ -125,7 +134,10 @@ async fn create_transaction_if_needed(
     // What: binds `destination_stack` as a named intermediate.
     // How: computes/extracts `destination_stack` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let destination_stack = extract::item_stack_id_optional("destination_item_stack_id", &req.destination_item_stack_id)?;
+    let destination_stack = extract::item_stack_id_optional(
+        "destination_item_stack_id",
+        &req.destination_item_stack_id,
+    )?;
     // DB-BLOCK src_db_settlements_018
     // What: binds `quantity` as a named intermediate.
     // How: computes/extracts `quantity` once before SQL or response construction.
@@ -145,23 +157,34 @@ async fn create_transaction_if_needed(
     // What: guards a correctness-sensitive branch.
     // How: evaluates `if total != quantity.checked_mul(unit).ok_or_else(|| SettlementError::InvalidRequest("sett` before continuing.
     // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
-    if total != quantity.checked_mul(unit).ok_or_else(|| SettlementError::InvalidRequest("settlement total ISK overflow".to_string()))? {
+    if total
+        != quantity.checked_mul(unit).ok_or_else(|| {
+            SettlementError::InvalidRequest("settlement total ISK overflow".to_string())
+        })?
+    {
         // DB-BLOCK src_db_settlements_022
         // What: exits the current workflow early.
         // How: returns from `return Err(SettlementError::InvalidRequest("total_price_isk must equal quantity ` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-        return Err(SettlementError::InvalidRequest("total_price_isk must equal quantity * unit_price_isk".to_string()));
+        return Err(SettlementError::InvalidRequest(
+            "total_price_isk must equal quantity * unit_price_isk".to_string(),
+        ));
     }
     // DB-BLOCK src_db_settlements_023
     // What: guards a correctness-sensitive branch.
     // How: evaluates `if order.item_type_id != item_type_id || order.unit_price_isk != unit || quantity > order.` before continuing.
     // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
-    if order.item_type_id != item_type_id || order.unit_price_isk != unit || quantity > order.remaining_quantity {
+    if order.item_type_id != item_type_id
+        || order.unit_price_isk != unit
+        || quantity > order.remaining_quantity
+    {
         // DB-BLOCK src_db_settlements_024
         // What: exits the current workflow early.
         // How: returns from `return Err(SettlementError::TradeMismatch { trade_order_id: order.trade_order_id` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-        return Err(SettlementError::TradeMismatch { trade_order_id: order.trade_order_id.clone() });
+        return Err(SettlementError::TradeMismatch {
+            trade_order_id: order.trade_order_id.clone(),
+        });
     }
     // DB-BLOCK src_db_settlements_025
     // What: performs a parameterized SQL operation against `the relevant trade schema table`.
@@ -188,14 +211,19 @@ async fn create_transaction_if_needed(
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(queries::lock_transaction(tx, &tx_id).await?.expect("transaction was just ins`.
     // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(queries::lock_transaction(tx, &tx_id).await?.expect("transaction was just inserted"))
+    Ok(queries::lock_transaction(tx, &tx_id)
+        .await?
+        .expect("transaction was just inserted"))
 }
 
 // DB-BLOCK src_db_settlements_027
 // What: checks buyer/seller roles against the locked order side.
 // How: compares request buyer/seller identities and wallets with the order owner depending on buy/sell side.
 // Why: settlement must not let a request redirect the order to different actors.
-fn verify_roles(order: &crate::db::rows::TradeOrderRow, req: &SettlementRequest) -> Result<OrderSide, SettlementError> {
+fn verify_roles(
+    order: &crate::db::rows::TradeOrderRow,
+    req: &RequestSettlementRequest,
+) -> Result<OrderSide, SettlementError> {
     // DB-BLOCK src_db_settlements_028
     // What: binds `side` as a named intermediate.
     // How: computes/extracts `side` once before SQL or response construction.
@@ -231,14 +259,22 @@ fn verify_roles(order: &crate::db::rows::TradeOrderRow, req: &SettlementRequest)
             // What: guards a correctness-sensitive branch.
             // How: evaluates `if buyer != order.owner_capsuleer_id || buyer_wallet != order.owner_wallet_id { return Err` before continuing.
             // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
-            if buyer != order.owner_capsuleer_id || buyer_wallet != order.owner_wallet_id { return Err(SettlementError::TradeMismatch { trade_order_id: order.trade_order_id.clone() }); }
+            if buyer != order.owner_capsuleer_id || buyer_wallet != order.owner_wallet_id {
+                return Err(SettlementError::TradeMismatch {
+                    trade_order_id: order.trade_order_id.clone(),
+                });
+            }
         }
         OrderSide::Sell => {
             // DB-BLOCK src_db_settlements_035
             // What: guards a correctness-sensitive branch.
             // How: evaluates `if seller != order.owner_capsuleer_id || seller_wallet != order.owner_wallet_id { return E` before continuing.
             // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
-            if seller != order.owner_capsuleer_id || seller_wallet != order.owner_wallet_id { return Err(SettlementError::TradeMismatch { trade_order_id: order.trade_order_id.clone() }); }
+            if seller != order.owner_capsuleer_id || seller_wallet != order.owner_wallet_id {
+                return Err(SettlementError::TradeMismatch {
+                    trade_order_id: order.trade_order_id.clone(),
+                });
+            }
         }
     }
     // DB-BLOCK src_db_settlements_036
@@ -252,7 +288,10 @@ fn verify_roles(order: &crate::db::rows::TradeOrderRow, req: &SettlementRequest)
 // What: performs the market-to-settlement DB transaction.
 // How: validates request fields, claims idempotency, locks order/transaction/ownership rows, moves ISK/items, writes ledgers, records settlement state, and commits once.
 // Why: this is the correctness-critical path; duplicate or partial ownership movement would corrupt the world state.
-pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Result<SettlementResult, SettlementError> {
+pub async fn request_settlement(
+    pool: &PgPool,
+    req: &RequestSettlementRequest,
+) -> Result<RequestSettlementResponse, SettlementError> {
     extract::validate_settlement_request(req)?;
     // DB-BLOCK src_db_settlements_038
     // What: guards a correctness-sensitive branch.
@@ -263,7 +302,9 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
         // What: exits the current workflow early.
         // How: returns from `return Err(SettlementError::Unsupported("only stackable item settlement is imple` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-        return Err(SettlementError::Unsupported("only stackable item settlement is implemented".to_string()));
+        return Err(SettlementError::Unsupported(
+            "only stackable item settlement is implemented".to_string(),
+        ));
     }
     // DB-BLOCK src_db_settlements_040
     // What: opens a SQL transaction.
@@ -284,17 +325,27 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
         // What: binds `trade_transaction_id` as a named intermediate.
         // How: computes/extracts `trade_transaction_id` once before SQL or response construction.
         // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-        let trade_transaction_id = replay.trade_transaction_id.ok_or_else(|| SettlementError::IntegrityConflict("settlement replay missing transaction id".to_string()))?;
+        let trade_transaction_id = replay.trade_transaction_id.ok_or_else(|| {
+            SettlementError::IntegrityConflict(
+                "settlement replay missing transaction id".to_string(),
+            )
+        })?;
         // DB-BLOCK src_db_settlements_044
         // What: binds `settlement_id` as a named intermediate.
         // How: computes/extracts `settlement_id` once before SQL or response construction.
         // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-        let settlement_id = replay.settlement_id.ok_or_else(|| SettlementError::IntegrityConflict("settlement replay missing settlement id".to_string()))?;
+        let settlement_id = replay.settlement_id.ok_or_else(|| {
+            SettlementError::IntegrityConflict(
+                "settlement replay missing settlement id".to_string(),
+            )
+        })?;
         // DB-BLOCK src_db_settlements_045
         // What: binds `order_id` as a named intermediate.
         // How: computes/extracts `order_id` once before SQL or response construction.
         // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-        let order_id = replay.trade_order_id.ok_or_else(|| SettlementError::IntegrityConflict("settlement replay missing order id".to_string()))?;
+        let order_id = replay.trade_order_id.ok_or_else(|| {
+            SettlementError::IntegrityConflict("settlement replay missing order id".to_string())
+        })?;
         // DB-BLOCK src_db_settlements_046
         // What: binds `order` as a named intermediate.
         // How: computes/extracts `order` once before SQL or response construction.
@@ -318,9 +369,27 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
         tx.commit().await?;
         // DB-BLOCK src_db_settlements_050
         // What: exits the current workflow early.
-        // How: returns from `return Ok(SettlementResult { operation: None, trade_order: Some(proto_builders::` before later mutation blocks execute.
+        // How: returns from `return Ok(RequestSettlementResponse { operation: None, trade_order: Some(proto_builders::` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-        return Ok(SettlementResult { operation: None, trade_order: Some(proto_builders::trade_order_view(order)?), trade_transaction: Some(proto_builders::trade_transaction_view(trade_tx)?), settlement: Some(proto_builders::settlement_view(settlement)), settlement_steps: steps.into_iter().map(proto_builders::settlement_step_view).collect(), wallet_operation_id: replay.wallet_operation_id.map(|value| WalletOperationId { value }), item_stack_operation_id: replay.item_stack_operation_id.map(|value| ItemStackOperationId { value }), item_instance_operation_id: None, idempotent_replay: true, failure: None });
+        return Ok(RequestSettlementResponse {
+            operation: None,
+            trade_order: Some(proto_builders::trade_order_view(order)?),
+            trade_transaction: Some(proto_builders::trade_transaction_view(trade_tx)?),
+            settlement: Some(proto_builders::settlement_view(settlement)),
+            settlement_steps: steps
+                .into_iter()
+                .map(proto_builders::settlement_step_view)
+                .collect(),
+            wallet_operation_id: replay
+                .wallet_operation_id
+                .map(|value| WalletOperationId { value }),
+            item_stack_operation_id: replay
+                .item_stack_operation_id
+                .map(|value| ItemStackOperationId { value }),
+            item_instance_operation_id: None,
+            idempotent_replay: true,
+            failure: None,
+        });
     }
 
     // DB-BLOCK src_db_settlements_051
@@ -352,7 +421,10 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
         // What: exits the current workflow early.
         // How: returns from `return Err(SettlementError::InvalidTransition { from: order.state.clone(), actio` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-        return Err(SettlementError::InvalidTransition { from: order.state.clone(), action: "request_settlement" });
+        return Err(SettlementError::InvalidTransition {
+            from: order.state.clone(),
+            action: "request_settlement",
+        });
     }
     // DB-BLOCK src_db_settlements_057
     // What: binds `side` as a named intermediate.
@@ -368,7 +440,8 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
     // What: binds `settlement_id` as a named intermediate.
     // How: computes/extracts `settlement_id` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let settlement_id = extract::settlement_id_optional("settlement_id", &req.settlement_id)?.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+    let settlement_id = extract::settlement_id_optional("settlement_id", &req.settlement_id)?
+        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
     // DB-BLOCK src_db_settlements_060
     // What: performs a parameterized SQL operation against `trade_transaction`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -382,12 +455,14 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
     // What: binds `wallet_op` as a named intermediate.
     // How: computes/extracts `wallet_op` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let wallet_op = ownership::create_wallet_operation(&mut tx, &operation_id, "settle_trade_wallets").await?;
+    let wallet_op =
+        ownership::create_wallet_operation(&mut tx, &operation_id, "settle_trade_wallets").await?;
     // DB-BLOCK src_db_settlements_062
     // What: binds `stack_op` as a named intermediate.
     // How: computes/extracts `stack_op` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let stack_op = ownership::create_stack_operation(&mut tx, &operation_id, "settle_trade_items").await?;
+    let stack_op =
+        ownership::create_stack_operation(&mut tx, &operation_id, "settle_trade_items").await?;
 
     // DB-BLOCK src_db_settlements_063
     // What: branches across known alternatives.
@@ -399,14 +474,40 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
             // What: binds `wallet_res` as a named intermediate.
             // How: computes/extracts `wallet_res` once before SQL or response construction.
             // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-            let wallet_res = queries::lock_wallet_reservation(&mut tx, &order_id).await?.ok_or_else(|| SettlementError::ReservationConflict("buy order missing wallet reservation".to_string()))?;
+            let wallet_res = queries::lock_wallet_reservation(&mut tx, &order_id)
+                .await?
+                .ok_or_else(|| {
+                    SettlementError::ReservationConflict(
+                        "buy order missing wallet reservation".to_string(),
+                    )
+                })?;
             // DB-BLOCK src_db_settlements_065
             // What: guards a correctness-sensitive branch.
             // How: evaluates `if wallet_res.remaining_reserved_isk < trade_tx.total_price_isk { return Err(SettlementErr` before continuing.
             // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
-            if wallet_res.remaining_reserved_isk < trade_tx.total_price_isk { return Err(SettlementError::InsufficientIsk { wallet_id: wallet_res.wallet_id }); }
-            ownership::move_wallet(&mut tx, &wallet_op, &trade_tx.buyer_wallet_id, 0, -trade_tx.total_price_isk, "debit_reserved_for_trade").await?;
-            ownership::move_wallet(&mut tx, &wallet_op, &trade_tx.seller_wallet_id, trade_tx.total_price_isk, 0, "credit_from_trade").await?;
+            if wallet_res.remaining_reserved_isk < trade_tx.total_price_isk {
+                return Err(SettlementError::InsufficientIsk {
+                    wallet_id: wallet_res.wallet_id,
+                });
+            }
+            ownership::move_wallet(
+                &mut tx,
+                &wallet_op,
+                &trade_tx.buyer_wallet_id,
+                0,
+                -trade_tx.total_price_isk,
+                "debit_reserved_for_trade",
+            )
+            .await?;
+            ownership::move_wallet(
+                &mut tx,
+                &wallet_op,
+                &trade_tx.seller_wallet_id,
+                trade_tx.total_price_isk,
+                0,
+                "credit_from_trade",
+            )
+            .await?;
             // DB-BLOCK src_db_settlements_066
             // What: performs a parameterized SQL operation against `wallet_reservation`.
             // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -415,8 +516,24 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
                 .bind(&wallet_res.wallet_reservation_id).bind(trade_tx.total_price_isk).execute(&mut *tx).await?;
         }
         OrderSide::Sell => {
-            ownership::move_wallet(&mut tx, &wallet_op, &trade_tx.buyer_wallet_id, -trade_tx.total_price_isk, 0, "debit_available_for_trade").await?;
-            ownership::move_wallet(&mut tx, &wallet_op, &trade_tx.seller_wallet_id, trade_tx.total_price_isk, 0, "credit_from_trade").await?;
+            ownership::move_wallet(
+                &mut tx,
+                &wallet_op,
+                &trade_tx.buyer_wallet_id,
+                -trade_tx.total_price_isk,
+                0,
+                "debit_available_for_trade",
+            )
+            .await?;
+            ownership::move_wallet(
+                &mut tx,
+                &wallet_op,
+                &trade_tx.seller_wallet_id,
+                trade_tx.total_price_isk,
+                0,
+                "credit_from_trade",
+            )
+            .await?;
         }
     }
     set_phase(&mut tx, &settlement_id, "wallet_moved").await?;
@@ -425,7 +542,9 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
     // What: binds `source_stack_id` as a named intermediate.
     // How: computes/extracts `source_stack_id` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let source_stack_id = trade_tx.source_item_stack_id.clone().ok_or_else(|| SettlementError::InvalidRequest("source_item_stack_id required".to_string()))?;
+    let source_stack_id = trade_tx.source_item_stack_id.clone().ok_or_else(|| {
+        SettlementError::InvalidRequest("source_item_stack_id required".to_string())
+    })?;
     // DB-BLOCK src_db_settlements_068
     // What: branches across known alternatives.
     // How: uses Rust `match` on `match side {`.
@@ -436,13 +555,31 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
             // What: binds `stack_res` as a named intermediate.
             // How: computes/extracts `stack_res` once before SQL or response construction.
             // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-            let stack_res = queries::lock_stack_reservation(&mut tx, &order_id).await?.ok_or_else(|| SettlementError::ReservationConflict("sell order missing stack reservation".to_string()))?;
+            let stack_res = queries::lock_stack_reservation(&mut tx, &order_id)
+                .await?
+                .ok_or_else(|| {
+                    SettlementError::ReservationConflict(
+                        "sell order missing stack reservation".to_string(),
+                    )
+                })?;
             // DB-BLOCK src_db_settlements_070
             // What: guards a correctness-sensitive branch.
             // How: evaluates `if stack_res.item_stack_id != source_stack_id { return Err(SettlementError::TradeMismatch ` before continuing.
             // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
-            if stack_res.item_stack_id != source_stack_id { return Err(SettlementError::TradeMismatch { trade_order_id: order_id.clone() }); }
-            ownership::move_stack(&mut tx, &stack_op, &source_stack_id, 0, -trade_tx.quantity, "debit_reserved_for_trade").await?;
+            if stack_res.item_stack_id != source_stack_id {
+                return Err(SettlementError::TradeMismatch {
+                    trade_order_id: order_id.clone(),
+                });
+            }
+            ownership::move_stack(
+                &mut tx,
+                &stack_op,
+                &source_stack_id,
+                0,
+                -trade_tx.quantity,
+                "debit_reserved_for_trade",
+            )
+            .await?;
             // DB-BLOCK src_db_settlements_071
             // What: performs a parameterized SQL operation against `item_stack_reservation`.
             // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -451,7 +588,15 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
                 .bind(&stack_res.item_stack_reservation_id).bind(trade_tx.quantity).execute(&mut *tx).await?;
         }
         OrderSide::Buy => {
-            ownership::move_stack(&mut tx, &stack_op, &source_stack_id, -trade_tx.quantity, 0, "debit_available_for_trade").await?;
+            ownership::move_stack(
+                &mut tx,
+                &stack_op,
+                &source_stack_id,
+                -trade_tx.quantity,
+                0,
+                "debit_available_for_trade",
+            )
+            .await?;
         }
     }
     // DB-BLOCK src_db_settlements_072
@@ -461,9 +606,24 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
     let destination_stack_id = if let Some(id) = trade_tx.destination_item_stack_id.clone() {
         id
     } else {
-        ownership::create_empty_stack(&mut tx, &trade_tx.buyer_capsuleer_id, &trade_tx.item_type_id, &order.station_id).await?.item_stack_id
+        ownership::create_empty_stack(
+            &mut tx,
+            &trade_tx.buyer_capsuleer_id,
+            &trade_tx.item_type_id,
+            &order.station_id,
+        )
+        .await?
+        .item_stack_id
     };
-    ownership::move_stack(&mut tx, &stack_op, &destination_stack_id, trade_tx.quantity, 0, "credit_from_trade").await?;
+    ownership::move_stack(
+        &mut tx,
+        &stack_op,
+        &destination_stack_id,
+        trade_tx.quantity,
+        0,
+        "credit_from_trade",
+    )
+    .await?;
     set_phase(&mut tx, &settlement_id, "items_moved").await?;
 
     // DB-BLOCK src_db_settlements_073
@@ -488,7 +648,19 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
     ownership::complete_wallet_operation(&mut tx, &wallet_op).await?;
     ownership::complete_stack_operation(&mut tx, &stack_op).await?;
     operation_log::complete(&mut tx, &operation_id).await?;
-    idempotency::record_success(&mut tx, &guard, "request_settlement", Some(&operation_id), Some(&order_id), Some(&trade_tx.trade_transaction_id), Some(&settlement_id), Some(&wallet_op), Some(&stack_op), TradeState::Completed.as_db()).await?;
+    idempotency::record_success(
+        &mut tx,
+        &guard,
+        "request_settlement",
+        Some(&operation_id),
+        Some(&order_id),
+        Some(&trade_tx.trade_transaction_id),
+        Some(&settlement_id),
+        Some(&wallet_op),
+        Some(&stack_op),
+        TradeState::Completed.as_db(),
+    )
+    .await?;
 
     // DB-BLOCK src_db_settlements_076
     // What: binds `operation` as a named intermediate.
@@ -519,16 +691,33 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
 
     // DB-BLOCK src_db_settlements_081
     // What: returns the branch result.
-    // How: wraps the computed response/error with `Ok(SettlementResult { operation: Some(proto_builders::operation_view(operation)?`.
+    // How: wraps the computed response/error with `Ok(RequestSettlementResponse { operation: Some(proto_builders::operation_view(operation)?`.
     // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(SettlementResult { operation: Some(proto_builders::operation_view(operation)?), trade_order: Some(proto_builders::trade_order_view(order)?), trade_transaction: Some(proto_builders::trade_transaction_view(trade_tx)?), settlement: Some(proto_builders::settlement_view(settlement)), settlement_steps: steps.into_iter().map(proto_builders::settlement_step_view).collect(), wallet_operation_id: Some(WalletOperationId { value: wallet_op }), item_stack_operation_id: Some(ItemStackOperationId { value: stack_op }), item_instance_operation_id: None, idempotent_replay: false, failure: None })
+    Ok(RequestSettlementResponse {
+        operation: Some(proto_builders::operation_view(operation)?),
+        trade_order: Some(proto_builders::trade_order_view(order)?),
+        trade_transaction: Some(proto_builders::trade_transaction_view(trade_tx)?),
+        settlement: Some(proto_builders::settlement_view(settlement)),
+        settlement_steps: steps
+            .into_iter()
+            .map(proto_builders::settlement_step_view)
+            .collect(),
+        wallet_operation_id: Some(WalletOperationId { value: wallet_op }),
+        item_stack_operation_id: Some(ItemStackOperationId { value: stack_op }),
+        item_instance_operation_id: None,
+        idempotent_replay: false,
+        failure: None,
+    })
 }
 
 // DB-BLOCK src_db_settlements_082
 // What: returns transaction state and related settlement if present.
 // How: loads trade_transaction and optional settlement rows in one read transaction.
 // Why: callers need state visibility after asynchronous/retried settlement attempts.
-pub async fn get_transaction_state(pool: &PgPool, req: &GetTransactionStateRequest) -> Result<GetTransactionStateResponse, SettlementError> {
+pub async fn get_transaction_state(
+    pool: &PgPool,
+    req: &GetTransactionStateRequest,
+) -> Result<GetTransactionStateResponse, SettlementError> {
     // DB-BLOCK src_db_settlements_083
     // What: binds `id` as a named intermediate.
     // How: computes/extracts `id` once before SQL or response construction.
@@ -556,19 +745,26 @@ pub async fn get_transaction_state(pool: &PgPool, req: &GetTransactionStateReque
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(GetTransactionStateResponse { trade_transaction: Some(proto_builders::trade_t`.
     // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(GetTransactionStateResponse { trade_transaction: Some(proto_builders::trade_transaction_view(trade_tx)?), settlement: settlement.map(proto_builders::settlement_view) })
+    Ok(GetTransactionStateResponse {
+        trade_transaction: Some(proto_builders::trade_transaction_view(trade_tx)?),
+        settlement: settlement.map(proto_builders::settlement_view),
+    })
 }
 
 // DB-BLOCK src_db_settlements_088
 // What: returns settlement details and step history.
 // How: loads settlement by ID and maps settlement_step rows to protobuf.
 // Why: phase/step history is needed for crash diagnosis and operator confidence.
-pub async fn get_settlement(pool: &PgPool, req: &GetSettlementRequest) -> Result<GetSettlementResponse, SettlementError> {
+pub async fn get_settlement(
+    pool: &PgPool,
+    req: &GetSettlementRequest,
+) -> Result<GetSettlementResponse, SettlementError> {
     // DB-BLOCK src_db_settlements_089
     // What: binds `id` as a named intermediate.
     // How: computes/extracts `id` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let id = extract::settlement_id_optional("settlement_id", &req.settlement_id)?.ok_or_else(|| SettlementError::InvalidRequest("settlement_id is required".to_string()))?;
+    let id = extract::settlement_id_optional("settlement_id", &req.settlement_id)?
+        .ok_or_else(|| SettlementError::InvalidRequest("settlement_id is required".to_string()))?;
     // DB-BLOCK src_db_settlements_090
     // What: opens a SQL transaction.
     // How: calls `pool.begin()` and passes the transaction through subsequent DB work.
@@ -589,5 +785,11 @@ pub async fn get_settlement(pool: &PgPool, req: &GetSettlementRequest) -> Result
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(GetSettlementResponse { settlement: Some(proto_builders::settlement_view(sett`.
     // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(GetSettlementResponse { settlement: Some(proto_builders::settlement_view(settlement)), settlement_steps: steps.into_iter().map(proto_builders::settlement_step_view).collect() })
+    Ok(GetSettlementResponse {
+        settlement: Some(proto_builders::settlement_view(settlement)),
+        settlement_steps: steps
+            .into_iter()
+            .map(proto_builders::settlement_step_view)
+            .collect(),
+    })
 }

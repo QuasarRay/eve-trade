@@ -15,9 +15,9 @@ import (
 // settlement implementation. It exists to prevent market logic from importing
 // stale RPC names such as OpenMarketOrder, CancelMarketOrder, or SettleFill.
 type Settlement interface {
-	OpenTradeOrder(context.Context, *settlementv1.OpenTradeOrderRequest) (*settlementv1.OpenTradeOrderResult, error)
-	CloseTradeOrder(context.Context, *settlementv1.CloseTradeOrderRequest) (*settlementv1.CloseTradeOrderResult, error)
-	RequestSettlement(context.Context, *settlementv1.SettlementRequest) (*settlementv1.SettlementResult, error)
+	OpenTradeOrder(context.Context, *settlementv1.OpenTradeOrderRequest) (*settlementv1.OpenTradeOrderResponse, error)
+	CloseTradeOrder(context.Context, *settlementv1.CloseTradeOrderRequest) (*settlementv1.CloseTradeOrderResponse, error)
+	RequestSettlement(context.Context, *settlementv1.RequestSettlementRequest) (*settlementv1.RequestSettlementResponse, error)
 	ClaimResult(context.Context, *settlementv1.ClaimResultRequest) (*settlementv1.ClaimResultResponse, error)
 	GetTradeOrder(context.Context, *settlementv1.GetTradeOrderRequest) (*settlementv1.GetTradeOrderResponse, error)
 	ListOutstandingTradeOrders(context.Context, *settlementv1.ListOutstandingTradeOrdersRequest) (*settlementv1.ListOutstandingTradeOrdersResponse, error)
@@ -51,7 +51,7 @@ func NewSettlementClient(url string) SettlementClient {
 // settlement. It wraps the protobuf request in a connect request, waits for the
 // generated client response, and returns the settlement proto result. It exists
 // because settlement, not market, owns durable order creation and reservations.
-func (s SettlementClient) OpenTradeOrder(ctx context.Context, request *settlementv1.OpenTradeOrderRequest) (*settlementv1.OpenTradeOrderResult, error) {
+func (s SettlementClient) OpenTradeOrder(ctx context.Context, request *settlementv1.OpenTradeOrderRequest) (*settlementv1.OpenTradeOrderResponse, error) {
 	response, err := s.client.OpenTradeOrder(ctx, connect.NewRequest(request))
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (s SettlementClient) OpenTradeOrder(ctx context.Context, request *settlemen
 // It sends the requested state change and returns settlement's durable result.
 // It exists because market decides that cancellation or expiration is allowed,
 // while settlement performs the safe state/reservation update.
-func (s SettlementClient) CloseTradeOrder(ctx context.Context, request *settlementv1.CloseTradeOrderRequest) (*settlementv1.CloseTradeOrderResult, error) {
+func (s SettlementClient) CloseTradeOrder(ctx context.Context, request *settlementv1.CloseTradeOrderRequest) (*settlementv1.CloseTradeOrderResponse, error) {
 	response, err := s.client.CloseTradeOrder(ctx, connect.NewRequest(request))
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func (s SettlementClient) CloseTradeOrder(ctx context.Context, request *settleme
 // It sends the full buyer/seller/item/money terms and returns the durable
 // settlement result. It exists because wallet and item ownership must move in one
 // correctness-critical operation outside the market service.
-func (s SettlementClient) RequestSettlement(ctx context.Context, request *settlementv1.SettlementRequest) (*settlementv1.SettlementResult, error) {
+func (s SettlementClient) RequestSettlement(ctx context.Context, request *settlementv1.RequestSettlementRequest) (*settlementv1.RequestSettlementResponse, error) {
 	response, err := s.client.RequestSettlement(ctx, connect.NewRequest(request))
 	if err != nil {
 		return nil, err

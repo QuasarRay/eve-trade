@@ -25,17 +25,25 @@ use crate::generated::trade::v1::*;
 // What: implements `id`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-fn id<T>(value: String, make: impl FnOnce(String) -> T) -> Option<T> { Some(make(value)) }
+fn id<T>(value: String, make: impl FnOnce(String) -> T) -> Option<T> {
+    Some(make(value))
+}
 // DB-BLOCK src_db_proto_builders_003
 // What: implements `isk`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-fn isk(value: i64) -> Option<IskAmount> { Some(IskAmount { minor_units: value }) }
+fn isk(value: i64) -> Option<IskAmount> {
+    Some(IskAmount { minor_units: value })
+}
 // DB-BLOCK src_db_proto_builders_004
 // What: implements `qty`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-fn qty(value: i64) -> Option<Quantity> { Some(Quantity { units: value as u64 }) }
+fn qty(value: i64) -> Option<Quantity> {
+    Some(Quantity {
+        units: value as u64,
+    })
+}
 
 // DB-BLOCK src_db_proto_builders_005
 // What: implements `trade_error`.
@@ -67,7 +75,11 @@ pub fn operation_view(row: OperationRow) -> Result<OperationView, SettlementErro
         "in_progress" => proto_i32::OPERATION_IN_PROGRESS,
         "completed" => proto_i32::OPERATION_COMPLETED,
         "failed" => proto_i32::OPERATION_FAILED,
-        other => return Err(SettlementError::IntegrityConflict(format!("unknown operation state {other}"))),
+        other => {
+            return Err(SettlementError::IntegrityConflict(format!(
+                "unknown operation state {other}"
+            )))
+        }
     };
     // DB-BLOCK src_db_proto_builders_008
     // What: returns the branch result.
@@ -80,12 +92,16 @@ pub fn operation_view(row: OperationRow) -> Result<OperationView, SettlementErro
         external_operation_id: row.external_operation_id.unwrap_or_default(),
         request_id: row.request_id.map(|value| RequestId { value }),
         idempotency_key: row.idempotency_key.map(|value| IdempotencyKey { value }),
-        caused_by_capsuleer_id: row.caused_by_capsuleer_id.map(|value| CapsuleerId { value }),
+        caused_by_capsuleer_id: row
+            .caused_by_capsuleer_id
+            .map(|value| CapsuleerId { value }),
         operation_state,
         created_by_service: row.created_by_service,
         started_at: Some(time::to_proto(row.started_at)),
         completed_at: time::to_proto_opt(row.completed_at),
-        failure: row.failure_message.map(|m| trade_error(proto_i32::ERROR_SETTLEMENT_CONFLICT, m)),
+        failure: row
+            .failure_message
+            .map(|m| trade_error(proto_i32::ERROR_SETTLEMENT_CONFLICT, m)),
     })
 }
 
@@ -127,7 +143,9 @@ pub fn trade_order_view(row: TradeOrderRow) -> Result<TradeOrderView, Settlement
         owner_wallet_id: id(row.owner_wallet_id, |value| WalletId { value }),
         item_type_id: id(row.item_type_id, |value| ItemTypeId { value }),
         offered_item_stack_id: row.offered_item_stack_id.map(|value| ItemStackId { value }),
-        offered_item_instance_id: row.offered_item_instance_id.map(|value| ItemInstanceId { value }),
+        offered_item_instance_id: row
+            .offered_item_instance_id
+            .map(|value| ItemInstanceId { value }),
         station_id: id(row.station_id, |value| StationId { value }),
         region_id: id(row.region_id, |value| RegionId { value }),
         total_quantity: qty(row.total_quantity),
@@ -148,8 +166,12 @@ pub fn wallet_reservation_view(row: WalletReservationRow) -> WalletReservationVi
         wallet_reservation_id: row.wallet_reservation_id,
         trade_order_id: id(row.trade_order_id, |value| TradeOrderId { value }),
         wallet_id: id(row.wallet_id, |value| WalletId { value }),
-        created_wallet_operation_id: id(row.created_wallet_operation_id, |value| WalletOperationId { value }),
-        released_wallet_operation_id: row.released_wallet_operation_id.map(|value| WalletOperationId { value }),
+        created_wallet_operation_id: id(row.created_wallet_operation_id, |value| {
+            WalletOperationId { value }
+        }),
+        released_wallet_operation_id: row
+            .released_wallet_operation_id
+            .map(|value| WalletOperationId { value }),
         original_reserved_isk: isk(row.original_reserved_isk),
         remaining_reserved_isk: isk(row.remaining_reserved_isk),
         used_reserved_isk: isk(row.used_reserved_isk),
@@ -171,8 +193,12 @@ pub fn item_stack_reservation_view(row: ItemStackReservationRow) -> ItemStackRes
         item_stack_reservation_id: row.item_stack_reservation_id,
         trade_order_id: id(row.trade_order_id, |value| TradeOrderId { value }),
         item_stack_id: id(row.item_stack_id, |value| ItemStackId { value }),
-        created_item_stack_operation_id: id(row.created_item_stack_operation_id, |value| ItemStackOperationId { value }),
-        released_item_stack_operation_id: row.released_item_stack_operation_id.map(|value| ItemStackOperationId { value }),
+        created_item_stack_operation_id: id(row.created_item_stack_operation_id, |value| {
+            ItemStackOperationId { value }
+        }),
+        released_item_stack_operation_id: row
+            .released_item_stack_operation_id
+            .map(|value| ItemStackOperationId { value }),
         original_reserved_quantity: qty(row.original_reserved_quantity),
         remaining_reserved_quantity: qty(row.remaining_reserved_quantity),
         used_reserved_quantity: qty(row.used_reserved_quantity),
@@ -207,13 +233,17 @@ fn reservation_state_proto_i32(value: &str) -> i32 {
 // What: implements `trade_transaction_view`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub fn trade_transaction_view(row: TradeTransactionRow) -> Result<TradeTransactionView, SettlementError> {
+pub fn trade_transaction_view(
+    row: TradeTransactionRow,
+) -> Result<TradeTransactionView, SettlementError> {
     // DB-BLOCK src_db_proto_builders_018
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(TradeTransactionView {`.
     // Why: DB boundaries must propagate success/failure explicitly.
     Ok(TradeTransactionView {
-        trade_transaction_id: id(row.trade_transaction_id, |value| TradeTransactionId { value }),
+        trade_transaction_id: id(row.trade_transaction_id, |value| TradeTransactionId {
+            value,
+        }),
         operation_id: id(row.operation_id, |value| OperationId { value }),
         trade_order_id: id(row.trade_order_id, |value| TradeOrderId { value }),
         state: TradeState::from_db(&row.state)?.as_proto_i32(),
@@ -223,9 +253,15 @@ pub fn trade_transaction_view(row: TradeTransactionRow) -> Result<TradeTransacti
         seller_wallet_id: id(row.seller_wallet_id, |value| WalletId { value }),
         item_type_id: id(row.item_type_id, |value| ItemTypeId { value }),
         source_item_stack_id: row.source_item_stack_id.map(|value| ItemStackId { value }),
-        destination_item_stack_id: row.destination_item_stack_id.map(|value| ItemStackId { value }),
-        source_item_instance_id: row.source_item_instance_id.map(|value| ItemInstanceId { value }),
-        destination_item_instance_id: row.destination_item_instance_id.map(|value| ItemInstanceId { value }),
+        destination_item_stack_id: row
+            .destination_item_stack_id
+            .map(|value| ItemStackId { value }),
+        source_item_instance_id: row
+            .source_item_instance_id
+            .map(|value| ItemInstanceId { value }),
+        destination_item_instance_id: row
+            .destination_item_instance_id
+            .map(|value| ItemInstanceId { value }),
         quantity: qty(row.quantity),
         unit_price_isk: isk(row.unit_price_isk),
         total_price_isk: isk(row.total_price_isk),
@@ -243,14 +279,22 @@ pub fn settlement_view(row: SettlementRow) -> SettlementView {
     SettlementView {
         settlement_id: id(row.settlement_id, |value| SettlementId { value }),
         operation_id: id(row.operation_id, |value| OperationId { value }),
-        trade_transaction_id: id(row.trade_transaction_id, |value| TradeTransactionId { value }),
+        trade_transaction_id: id(row.trade_transaction_id, |value| TradeTransactionId {
+            value,
+        }),
         idempotency_key: id(row.idempotency_key, |value| IdempotencyKey { value }),
-        state: match row.state.as_str() { "completed" => proto_i32::OPERATION_COMPLETED, "failed" => proto_i32::OPERATION_FAILED, _ => proto_i32::OPERATION_IN_PROGRESS },
+        state: match row.state.as_str() {
+            "completed" => proto_i32::OPERATION_COMPLETED,
+            "failed" => proto_i32::OPERATION_FAILED,
+            _ => proto_i32::OPERATION_IN_PROGRESS,
+        },
         settlement_phase: settlement_phase_proto_i32(&row.settlement_phase),
         retry_count: row.retry_count as u32,
         started_at: Some(time::to_proto(row.started_at)),
         decided_at: time::to_proto_opt(row.decided_at),
-        failure: row.failure_message.map(|m| trade_error(proto_i32::ERROR_SETTLEMENT_CONFLICT, m)),
+        failure: row
+            .failure_message
+            .map(|m| trade_error(proto_i32::ERROR_SETTLEMENT_CONFLICT, m)),
     }
 }
 
@@ -286,9 +330,16 @@ pub fn settlement_step_view(row: SettlementStepRow) -> SettlementStepView {
         settlement_step_id: row.settlement_step_id,
         settlement_id: id(row.settlement_id, |value| SettlementId { value }),
         step_name: row.step_name,
-        step_state: match row.step_state.as_str() { "completed" => proto_i32::OPERATION_COMPLETED, "failed" => proto_i32::OPERATION_FAILED, "pending" => proto_i32::OPERATION_PENDING, _ => proto_i32::OPERATION_IN_PROGRESS },
+        step_state: match row.step_state.as_str() {
+            "completed" => proto_i32::OPERATION_COMPLETED,
+            "failed" => proto_i32::OPERATION_FAILED,
+            "pending" => proto_i32::OPERATION_PENDING,
+            _ => proto_i32::OPERATION_IN_PROGRESS,
+        },
         started_at: Some(time::to_proto(row.started_at)),
         completed_at: time::to_proto_opt(row.completed_at),
-        failure: row.failure_message.map(|m| trade_error(proto_i32::ERROR_SETTLEMENT_CONFLICT, m)),
+        failure: row
+            .failure_message
+            .map(|m| trade_error(proto_i32::ERROR_SETTLEMENT_CONFLICT, m)),
     }
 }

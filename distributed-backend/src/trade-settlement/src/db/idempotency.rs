@@ -53,7 +53,8 @@ pub fn fingerprint<M: Message>(operation_name: &str, msg: &M) -> String {
     // How: computes/extracts `bytes` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
     let mut bytes = Vec::new();
-    msg.encode(&mut bytes).expect("encoding protobuf message into Vec cannot fail");
+    msg.encode(&mut bytes)
+        .expect("encoding protobuf message into Vec cannot fail");
     // DB-BLOCK src_db_idempotency_006
     // What: binds `h` as a named intermediate.
     // How: computes/extracts `h` once before SQL or response construction.
@@ -194,7 +195,12 @@ pub async fn begin<M: Message>(
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(Guard { request_id, idempotency_key, fingerprint, replay })`.
     // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(Guard { request_id, idempotency_key, fingerprint, replay })
+    Ok(Guard {
+        request_id,
+        idempotency_key,
+        fingerprint,
+        replay,
+    })
 }
 
 // DB-BLOCK src_db_idempotency_019

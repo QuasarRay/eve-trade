@@ -19,8 +19,8 @@
 // Why: explicit imports make coupling visible during review.
 use sqlx::{PgPool, Postgres, Transaction};
 
-use crate::db::{extract, idempotency, operation_log, ownership, proto_builders, queries, time};
 use crate::db::types::{CloseTarget, ItemKind, OrderSide, TradeState};
+use crate::db::{extract, idempotency, operation_log, ownership, proto_builders, queries, time};
 use crate::error::SettlementError;
 use crate::generated::settlement::v1::*;
 
@@ -49,8 +49,17 @@ async fn release_wallet_reservation(
     // What: binds `wallet_op` as a named intermediate.
     // How: computes/extracts `wallet_op` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let wallet_op = ownership::create_wallet_operation(tx, operation_id, "release_reserved_isk").await?;
-    ownership::move_wallet(tx, &wallet_op, &reservation.wallet_id, reservation.remaining_reserved_isk, -reservation.remaining_reserved_isk, "release_trade_reservation").await?;
+    let wallet_op =
+        ownership::create_wallet_operation(tx, operation_id, "release_reserved_isk").await?;
+    ownership::move_wallet(
+        tx,
+        &wallet_op,
+        &reservation.wallet_id,
+        reservation.remaining_reserved_isk,
+        -reservation.remaining_reserved_isk,
+        "release_trade_reservation",
+    )
+    .await?;
     // DB-BLOCK src_db_orders_006
     // What: performs a parameterized SQL operation against `the relevant trade schema table`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -107,8 +116,17 @@ async fn release_stack_reservation(
     // What: binds `stack_op` as a named intermediate.
     // How: computes/extracts `stack_op` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let stack_op = ownership::create_stack_operation(tx, operation_id, "release_trade_reservation").await?;
-    ownership::move_stack(tx, &stack_op, &reservation.item_stack_id, reservation.remaining_reserved_quantity, -reservation.remaining_reserved_quantity, "release_trade_reservation").await?;
+    let stack_op =
+        ownership::create_stack_operation(tx, operation_id, "release_trade_reservation").await?;
+    ownership::move_stack(
+        tx,
+        &stack_op,
+        &reservation.item_stack_id,
+        reservation.remaining_reserved_quantity,
+        -reservation.remaining_reserved_quantity,
+        "release_trade_reservation",
+    )
+    .await?;
     // DB-BLOCK src_db_orders_012
     // What: performs a parameterized SQL operation against `the relevant trade schema table`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -144,7 +162,10 @@ async fn release_stack_reservation(
 // What: opens or replays a durable trade order request.
 // How: delegates to the order workflow that validates, idempotency-checks, reserves assets if needed, and commits.
 // Why: order creation is a write boundary and must be centralized.
-pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Result<OpenTradeOrderResult, SettlementError> {
+pub async fn open_trade_order(
+    pool: &PgPool,
+    req: &OpenTradeOrderRequest,
+) -> Result<OpenTradeOrderResponse, SettlementError> {
     extract::validate_open_trade_order(req)?;
     // DB-BLOCK src_db_orders_015
     // What: opens a SQL transaction.
@@ -166,7 +187,11 @@ pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Res
         // What: binds `order_id` as a named intermediate.
         // How: computes/extracts `order_id` once before SQL or response construction.
         // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-        let order_id = replay.trade_order_id.ok_or_else(|| SettlementError::IntegrityConflict("open_trade_order replay missing trade_order_id".to_string()))?;
+        let order_id = replay.trade_order_id.ok_or_else(|| {
+            SettlementError::IntegrityConflict(
+                "open_trade_order replay missing trade_order_id".to_string(),
+            )
+        })?;
         // DB-BLOCK src_db_orders_019
         // What: binds `order` as a named intermediate.
         // How: computes/extracts `order` once before SQL or response construction.
@@ -176,13 +201,17 @@ pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Res
         // What: binds `operation` as a named intermediate.
         // How: computes/extracts `operation` once before SQL or response construction.
         // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-        let operation = if let Some(id) = replay.operation_id { Some(operation_log::load(&mut tx, &id).await?) } else { None };
+        let operation = if let Some(id) = replay.operation_id {
+            Some(operation_log::load(&mut tx, &id).await?)
+        } else {
+            None
+        };
         tx.commit().await?;
         // DB-BLOCK src_db_orders_021
         // What: exits the current workflow early.
-        // How: returns from `return Ok(OpenTradeOrderResult {` before later mutation blocks execute.
+        // How: returns from `return Ok(OpenTradeOrderResponse {` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-        return Ok(OpenTradeOrderResult {
+        return Ok(OpenTradeOrderResponse {
             operation: operation.map(proto_builders::operation_view).transpose()?,
             trade_order: Some(proto_builders::trade_order_view(order)?),
             wallet_reservation: None,
@@ -212,7 +241,8 @@ pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Res
     // What: binds `owner_capsuleer_id` as a named intermediate.
     // How: computes/extracts `owner_capsuleer_id` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let owner_capsuleer_id = extract::capsuleer_id("terms.owner_capsuleer_id", &terms.owner_capsuleer_id)?;
+    let owner_capsuleer_id =
+        extract::capsuleer_id("terms.owner_capsuleer_id", &terms.owner_capsuleer_id)?;
     // DB-BLOCK src_db_orders_026
     // What: binds `owner_wallet_id` as a named intermediate.
     // How: computes/extracts `owner_wallet_id` once before SQL or response construction.
@@ -247,7 +277,9 @@ pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Res
     // What: binds `total_price_isk` as a named intermediate.
     // How: computes/extracts `total_price_isk` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let total_price_isk = quantity.checked_mul(unit_price_isk).ok_or_else(|| SettlementError::InvalidRequest("order total ISK overflow".to_string()))?;
+    let total_price_isk = quantity
+        .checked_mul(unit_price_isk)
+        .ok_or_else(|| SettlementError::InvalidRequest("order total ISK overflow".to_string()))?;
     // DB-BLOCK src_db_orders_033
     // What: binds `expires_at` as a named intermediate.
     // How: computes/extracts `expires_at` once before SQL or response construction.
@@ -263,7 +295,10 @@ pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Res
     // What: binds `offered_stack` as a named intermediate.
     // How: computes/extracts `offered_stack` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let offered_stack = extract::item_stack_id_optional("terms.offered_item_stack_id", &terms.offered_item_stack_id)?;
+    let offered_stack = extract::item_stack_id_optional(
+        "terms.offered_item_stack_id",
+        &terms.offered_item_stack_id,
+    )?;
 
     // DB-BLOCK src_db_orders_036
     // What: binds `order_id` as a named intermediate.
@@ -325,8 +360,17 @@ pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Res
             // What: binds `wallet_op` as a named intermediate.
             // How: computes/extracts `wallet_op` once before SQL or response construction.
             // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-            let wallet_op = ownership::create_wallet_operation(&mut tx, &operation_id, "reserve_isk").await?;
-            ownership::move_wallet(&mut tx, &wallet_op, &owner_wallet_id, -total_price_isk, total_price_isk, "reserve_for_buy_order").await?;
+            let wallet_op =
+                ownership::create_wallet_operation(&mut tx, &operation_id, "reserve_isk").await?;
+            ownership::move_wallet(
+                &mut tx,
+                &wallet_op,
+                &owner_wallet_id,
+                -total_price_isk,
+                total_price_isk,
+                "reserve_for_buy_order",
+            )
+            .await?;
             // DB-BLOCK src_db_orders_043
             // What: binds `row` as a named intermediate.
             // How: computes/extracts `row` once before SQL or response construction.
@@ -369,19 +413,34 @@ pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Res
             // What: guards a correctness-sensitive branch.
             // How: evaluates `if stack.capsuleer_id != owner_capsuleer_id || stack.item_type_id != item_type_id || stack` before continuing.
             // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
-            if stack.capsuleer_id != owner_capsuleer_id || stack.item_type_id != item_type_id || stack.station_id != station_id {
+            if stack.capsuleer_id != owner_capsuleer_id
+                || stack.item_type_id != item_type_id
+                || stack.station_id != station_id
+            {
                 // DB-BLOCK src_db_orders_047
                 // What: exits the current workflow early.
                 // How: returns from `return Err(SettlementError::TradeMismatch { trade_order_id: order_id.0 });` before later mutation blocks execute.
                 // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-                return Err(SettlementError::TradeMismatch { trade_order_id: order_id.0 });
+                return Err(SettlementError::TradeMismatch {
+                    trade_order_id: order_id.0,
+                });
             }
             // DB-BLOCK src_db_orders_048
             // What: binds `stack_op` as a named intermediate.
             // How: computes/extracts `stack_op` once before SQL or response construction.
             // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-            let stack_op = ownership::create_stack_operation(&mut tx, &operation_id, "reserve_for_trade").await?;
-            ownership::move_stack(&mut tx, &stack_op, &stack_id, -quantity, quantity, "reserve_for_sell_order").await?;
+            let stack_op =
+                ownership::create_stack_operation(&mut tx, &operation_id, "reserve_for_trade")
+                    .await?;
+            ownership::move_stack(
+                &mut tx,
+                &stack_op,
+                &stack_id,
+                -quantity,
+                quantity,
+                "reserve_for_sell_order",
+            )
+            .await?;
             // DB-BLOCK src_db_orders_049
             // What: binds `row` as a named intermediate.
             // How: computes/extracts `row` once before SQL or response construction.
@@ -409,11 +468,27 @@ pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Res
             stack_operation_id = Some(stack_op);
             stack_reservation = Some(row);
         }
-        (_, ItemKind::Singleton) => return Err(SettlementError::Unsupported("singleton order path is not implemented".to_string())),
+        (_, ItemKind::Singleton) => {
+            return Err(SettlementError::Unsupported(
+                "singleton order path is not implemented".to_string(),
+            ))
+        }
     }
 
     operation_log::complete(&mut tx, &operation_id).await?;
-    idempotency::record_success(&mut tx, &guard, "open_trade_order", Some(&operation_id), Some(&order_id.0), None, None, wallet_operation_id.as_deref(), stack_operation_id.as_deref(), TradeState::Outstanding.as_db()).await?;
+    idempotency::record_success(
+        &mut tx,
+        &guard,
+        "open_trade_order",
+        Some(&operation_id),
+        Some(&order_id.0),
+        None,
+        None,
+        wallet_operation_id.as_deref(),
+        stack_operation_id.as_deref(),
+        TradeState::Outstanding.as_db(),
+    )
+    .await?;
     // DB-BLOCK src_db_orders_050
     // What: binds `order` as a named intermediate.
     // How: computes/extracts `order` once before SQL or response construction.
@@ -428,9 +503,9 @@ pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Res
 
     // DB-BLOCK src_db_orders_052
     // What: returns the branch result.
-    // How: wraps the computed response/error with `Ok(OpenTradeOrderResult {`.
+    // How: wraps the computed response/error with `Ok(OpenTradeOrderResponse {`.
     // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(OpenTradeOrderResult {
+    Ok(OpenTradeOrderResponse {
         operation: Some(proto_builders::operation_view(operation)?),
         trade_order: Some(proto_builders::trade_order_view(order)?),
         wallet_reservation: wallet_reservation.map(proto_builders::wallet_reservation_view),
@@ -445,7 +520,10 @@ pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Res
 // What: closes a trade order with a requested terminal state.
 // How: delegates to the order workflow that locks the order and writes a valid close result.
 // Why: cancel/expire/fail transitions must be durable and replay-safe.
-pub async fn close_trade_order(pool: &PgPool, req: &CloseTradeOrderRequest) -> Result<CloseTradeOrderResult, SettlementError> {
+pub async fn close_trade_order(
+    pool: &PgPool,
+    req: &CloseTradeOrderRequest,
+) -> Result<CloseTradeOrderResponse, SettlementError> {
     extract::validate_close_trade_order(req)?;
     // DB-BLOCK src_db_orders_054
     // What: binds `target` as a named intermediate.
@@ -480,9 +558,17 @@ pub async fn close_trade_order(pool: &PgPool, req: &CloseTradeOrderRequest) -> R
         tx.commit().await?;
         // DB-BLOCK src_db_orders_060
         // What: exits the current workflow early.
-        // How: returns from `return Ok(CloseTradeOrderResult { operation: None, trade_order: Some(proto_build` before later mutation blocks execute.
+        // How: returns from `return Ok(CloseTradeOrderResponse { operation: None, trade_order: Some(proto_build` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-        return Ok(CloseTradeOrderResult { operation: None, trade_order: Some(proto_builders::trade_order_view(order)?), wallet_reservation: None, item_stack_reservation: None, item_instance_reservation: None, idempotent_replay: true, failure: None });
+        return Ok(CloseTradeOrderResponse {
+            operation: None,
+            trade_order: Some(proto_builders::trade_order_view(order)?),
+            wallet_reservation: None,
+            item_stack_reservation: None,
+            item_instance_reservation: None,
+            idempotent_replay: true,
+            failure: None,
+        });
     }
     // DB-BLOCK src_db_orders_061
     // What: binds `order` as a named intermediate.
@@ -503,13 +589,17 @@ pub async fn close_trade_order(pool: &PgPool, req: &CloseTradeOrderRequest) -> R
         // What: exits the current workflow early.
         // How: returns from `return Err(SettlementError::InvalidTransition { from: order.state, action: "clos` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-        return Err(SettlementError::InvalidTransition { from: order.state, action: "close_trade_order" });
+        return Err(SettlementError::InvalidTransition {
+            from: order.state,
+            action: "close_trade_order",
+        });
     }
     // DB-BLOCK src_db_orders_065
     // What: binds `operation_id` as a named intermediate.
     // How: computes/extracts `operation_id` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let operation_id = operation_log::create(&mut tx, &req.context, target.operation_kind_db()).await?;
+    let operation_id =
+        operation_log::create(&mut tx, &req.context, target.operation_kind_db()).await?;
     // DB-BLOCK src_db_orders_066
     // What: binds `wallet_res` as a named intermediate.
     // How: computes/extracts `wallet_res` once before SQL or response construction.
@@ -534,12 +624,17 @@ pub async fn close_trade_order(pool: &PgPool, req: &CloseTradeOrderRequest) -> R
     // What: guards a correctness-sensitive branch.
     // How: evaluates `if let Some(res) = wallet_res.as_ref() { wallet_op = Some(release_wallet_reservation(&mut ` before continuing.
     // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
-    if let Some(res) = wallet_res.as_ref() { wallet_op = Some(release_wallet_reservation(&mut tx, &operation_id, res, &req.reason).await?); }
+    if let Some(res) = wallet_res.as_ref() {
+        wallet_op =
+            Some(release_wallet_reservation(&mut tx, &operation_id, res, &req.reason).await?);
+    }
     // DB-BLOCK src_db_orders_071
     // What: guards a correctness-sensitive branch.
     // How: evaluates `if let Some(res) = stack_res.as_ref() { stack_op = Some(release_stack_reservation(&mut tx,` before continuing.
     // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
-    if let Some(res) = stack_res.as_ref() { stack_op = Some(release_stack_reservation(&mut tx, &operation_id, res, &req.reason).await?); }
+    if let Some(res) = stack_res.as_ref() {
+        stack_op = Some(release_stack_reservation(&mut tx, &operation_id, res, &req.reason).await?);
+    }
     // DB-BLOCK src_db_orders_072
     // What: performs a parameterized SQL operation against `trade_order`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -550,7 +645,19 @@ pub async fn close_trade_order(pool: &PgPool, req: &CloseTradeOrderRequest) -> R
         .execute(&mut *tx)
         .await?;
     operation_log::complete(&mut tx, &operation_id).await?;
-    idempotency::record_success(&mut tx, &guard, "close_trade_order", Some(&operation_id), Some(&order_id), None, None, wallet_op.as_deref(), stack_op.as_deref(), target.as_trade_state().as_db()).await?;
+    idempotency::record_success(
+        &mut tx,
+        &guard,
+        "close_trade_order",
+        Some(&operation_id),
+        Some(&order_id),
+        None,
+        None,
+        wallet_op.as_deref(),
+        stack_op.as_deref(),
+        target.as_trade_state().as_db(),
+    )
+    .await?;
     // DB-BLOCK src_db_orders_073
     // What: binds `order` as a named intermediate.
     // How: computes/extracts `order` once before SQL or response construction.
@@ -564,16 +671,27 @@ pub async fn close_trade_order(pool: &PgPool, req: &CloseTradeOrderRequest) -> R
     tx.commit().await?;
     // DB-BLOCK src_db_orders_075
     // What: returns the branch result.
-    // How: wraps the computed response/error with `Ok(CloseTradeOrderResult { operation: Some(proto_builders::operation_view(operat`.
+    // How: wraps the computed response/error with `Ok(CloseTradeOrderResponse { operation: Some(proto_builders::operation_view(operat`.
     // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(CloseTradeOrderResult { operation: Some(proto_builders::operation_view(operation)?), trade_order: Some(proto_builders::trade_order_view(order)?), wallet_reservation: wallet_res.map(proto_builders::wallet_reservation_view), item_stack_reservation: stack_res.map(proto_builders::item_stack_reservation_view), item_instance_reservation: None, idempotent_replay: false, failure: None })
+    Ok(CloseTradeOrderResponse {
+        operation: Some(proto_builders::operation_view(operation)?),
+        trade_order: Some(proto_builders::trade_order_view(order)?),
+        wallet_reservation: wallet_res.map(proto_builders::wallet_reservation_view),
+        item_stack_reservation: stack_res.map(proto_builders::item_stack_reservation_view),
+        item_instance_reservation: None,
+        idempotent_replay: false,
+        failure: None,
+    })
 }
 
 // DB-BLOCK src_db_orders_076
 // What: loads one durable trade order.
 // How: extracts the request ID and maps the row into a protobuf response.
 // Why: read APIs should not duplicate SQL or bypass the DB boundary.
-pub async fn get_trade_order(pool: &PgPool, req: &GetTradeOrderRequest) -> Result<GetTradeOrderResponse, SettlementError> {
+pub async fn get_trade_order(
+    pool: &PgPool,
+    req: &GetTradeOrderRequest,
+) -> Result<GetTradeOrderResponse, SettlementError> {
     // DB-BLOCK src_db_orders_077
     // What: binds `id` as a named intermediate.
     // How: computes/extracts `id` once before SQL or response construction.
@@ -594,14 +712,19 @@ pub async fn get_trade_order(pool: &PgPool, req: &GetTradeOrderRequest) -> Resul
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(GetTradeOrderResponse { trade_order: Some(proto_builders::trade_order_view(ro`.
     // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(GetTradeOrderResponse { trade_order: Some(proto_builders::trade_order_view(row)?) })
+    Ok(GetTradeOrderResponse {
+        trade_order: Some(proto_builders::trade_order_view(row)?),
+    })
 }
 
 // DB-BLOCK src_db_orders_081
 // What: lists outstanding orders with optional filters.
 // How: extracts filter fields, runs a paginated query, and builds protobuf views.
 // Why: market/gateway need controlled read access to order state.
-pub async fn list_outstanding_trade_orders(pool: &PgPool, req: &ListOutstandingTradeOrdersRequest) -> Result<ListOutstandingTradeOrdersResponse, SettlementError> {
+pub async fn list_outstanding_trade_orders(
+    pool: &PgPool,
+    req: &ListOutstandingTradeOrdersRequest,
+) -> Result<ListOutstandingTradeOrdersResponse, SettlementError> {
     // DB-BLOCK src_db_orders_082
     // What: binds `region` as a named intermediate.
     // How: computes/extracts `region` once before SQL or response construction.
@@ -659,7 +782,11 @@ pub async fn list_outstanding_trade_orders(pool: &PgPool, req: &ListOutstandingT
     // What: binds `next` as a named intermediate.
     // How: computes/extracts `next` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let next = if rows.len() as i64 == limit { (offset + limit).to_string() } else { String::new() };
+    let next = if rows.len() as i64 == limit {
+        (offset + limit).to_string()
+    } else {
+        String::new()
+    };
     // DB-BLOCK src_db_orders_090
     // What: binds `views` as a named intermediate.
     // How: computes/extracts `views` once before SQL or response construction.
@@ -669,10 +796,15 @@ pub async fn list_outstanding_trade_orders(pool: &PgPool, req: &ListOutstandingT
     // What: iterates over a bounded collection.
     // How: applies the same operation described by `for row in rows { views.push(proto_builders::trade_order_view(row)?); }` to each element.
     // Why: repeated row/view transformations should be explicit and auditable.
-    for row in rows { views.push(proto_builders::trade_order_view(row)?); }
+    for row in rows {
+        views.push(proto_builders::trade_order_view(row)?);
+    }
     // DB-BLOCK src_db_orders_092
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(ListOutstandingTradeOrdersResponse { trade_orders: views, next_page_token: ne`.
     // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(ListOutstandingTradeOrdersResponse { trade_orders: views, next_page_token: next })
+    Ok(ListOutstandingTradeOrdersResponse {
+        trade_orders: views,
+        next_page_token: next,
+    })
 }

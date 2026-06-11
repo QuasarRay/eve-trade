@@ -20,7 +20,7 @@
 // Why: explicit imports make coupling visible during review.
 use std::sync::OnceLock;
 
-use sqlx::{PgPool, postgres::PgPoolOptions};
+use sqlx::{postgres::PgPoolOptions, PgPool};
 
 use crate::error::SettlementError;
 use crate::generated::settlement::v1::*;
@@ -112,7 +112,9 @@ pub async fn initialize_pool(database_url: &str) -> Result<(), SettlementError> 
         .acquire_timeout(std::time::Duration::from_secs(5))
         .connect(database_url)
         .await?;
-    DB_POOL.set(pool).map_err(|_| SettlementError::PoolAlreadyInitialized)?;
+    DB_POOL
+        .set(pool)
+        .map_err(|_| SettlementError::PoolAlreadyInitialized)?;
     // DB-BLOCK src_db_mod_018
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(())`.
@@ -132,7 +134,10 @@ pub fn pool() -> Result<&'static PgPool, SettlementError> {
 // What: opens or replays a durable trade order request.
 // How: delegates to the order workflow that validates, idempotency-checks, reserves assets if needed, and commits.
 // Why: order creation is a write boundary and must be centralized.
-pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Result<OpenTradeOrderResult, SettlementError> {
+pub async fn open_trade_order(
+    pool: &PgPool,
+    req: &OpenTradeOrderRequest,
+) -> Result<OpenTradeOrderResponse, SettlementError> {
     orders::open_trade_order(pool, req).await
 }
 
@@ -140,7 +145,10 @@ pub async fn open_trade_order(pool: &PgPool, req: &OpenTradeOrderRequest) -> Res
 // What: closes a trade order with a requested terminal state.
 // How: delegates to the order workflow that locks the order and writes a valid close result.
 // Why: cancel/expire/fail transitions must be durable and replay-safe.
-pub async fn close_trade_order(pool: &PgPool, req: &CloseTradeOrderRequest) -> Result<CloseTradeOrderResult, SettlementError> {
+pub async fn close_trade_order(
+    pool: &PgPool,
+    req: &CloseTradeOrderRequest,
+) -> Result<CloseTradeOrderResponse, SettlementError> {
     orders::close_trade_order(pool, req).await
 }
 
@@ -148,7 +156,10 @@ pub async fn close_trade_order(pool: &PgPool, req: &CloseTradeOrderRequest) -> R
 // What: performs the market-to-settlement DB transaction.
 // How: validates request fields, claims idempotency, locks order/transaction/ownership rows, moves ISK/items, writes ledgers, records settlement state, and commits once.
 // Why: this is the correctness-critical path; duplicate or partial ownership movement would corrupt the world state.
-pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Result<SettlementResult, SettlementError> {
+pub async fn request_settlement(
+    pool: &PgPool,
+    req: &RequestSettlementRequest,
+) -> Result<RequestSettlementResponse, SettlementError> {
     settlements::request_settlement(pool, req).await
 }
 
@@ -156,7 +167,10 @@ pub async fn request_settlement(pool: &PgPool, req: &SettlementRequest) -> Resul
 // What: handles claim-result requests at the DB boundary.
 // How: rejects unsupported claimable-delivery flow for MVP with a typed error.
 // Why: unsafe partial implementation is worse than explicit unsupported behavior.
-pub async fn claim_result(pool: &PgPool, req: &ClaimResultRequest) -> Result<ClaimResultResponse, SettlementError> {
+pub async fn claim_result(
+    pool: &PgPool,
+    req: &ClaimResultRequest,
+) -> Result<ClaimResultResponse, SettlementError> {
     claims::claim_result(pool, req).await
 }
 
@@ -164,7 +178,10 @@ pub async fn claim_result(pool: &PgPool, req: &ClaimResultRequest) -> Result<Cla
 // What: loads one durable trade order.
 // How: extracts the request ID and maps the row into a protobuf response.
 // Why: read APIs should not duplicate SQL or bypass the DB boundary.
-pub async fn get_trade_order(pool: &PgPool, req: &GetTradeOrderRequest) -> Result<GetTradeOrderResponse, SettlementError> {
+pub async fn get_trade_order(
+    pool: &PgPool,
+    req: &GetTradeOrderRequest,
+) -> Result<GetTradeOrderResponse, SettlementError> {
     orders::get_trade_order(pool, req).await
 }
 
@@ -172,7 +189,10 @@ pub async fn get_trade_order(pool: &PgPool, req: &GetTradeOrderRequest) -> Resul
 // What: lists outstanding orders with optional filters.
 // How: extracts filter fields, runs a paginated query, and builds protobuf views.
 // Why: market/gateway need controlled read access to order state.
-pub async fn list_outstanding_trade_orders(pool: &PgPool, req: &ListOutstandingTradeOrdersRequest) -> Result<ListOutstandingTradeOrdersResponse, SettlementError> {
+pub async fn list_outstanding_trade_orders(
+    pool: &PgPool,
+    req: &ListOutstandingTradeOrdersRequest,
+) -> Result<ListOutstandingTradeOrdersResponse, SettlementError> {
     orders::list_outstanding_trade_orders(pool, req).await
 }
 
@@ -180,7 +200,10 @@ pub async fn list_outstanding_trade_orders(pool: &PgPool, req: &ListOutstandingT
 // What: returns transaction state and related settlement if present.
 // How: loads trade_transaction and optional settlement rows in one read transaction.
 // Why: callers need state visibility after asynchronous/retried settlement attempts.
-pub async fn get_transaction_state(pool: &PgPool, req: &GetTransactionStateRequest) -> Result<GetTransactionStateResponse, SettlementError> {
+pub async fn get_transaction_state(
+    pool: &PgPool,
+    req: &GetTransactionStateRequest,
+) -> Result<GetTransactionStateResponse, SettlementError> {
     settlements::get_transaction_state(pool, req).await
 }
 
@@ -188,7 +211,10 @@ pub async fn get_transaction_state(pool: &PgPool, req: &GetTransactionStateReque
 // What: returns settlement details and step history.
 // How: loads settlement by ID and maps settlement_step rows to protobuf.
 // Why: phase/step history is needed for crash diagnosis and operator confidence.
-pub async fn get_settlement(pool: &PgPool, req: &GetSettlementRequest) -> Result<GetSettlementResponse, SettlementError> {
+pub async fn get_settlement(
+    pool: &PgPool,
+    req: &GetSettlementRequest,
+) -> Result<GetSettlementResponse, SettlementError> {
     settlements::get_settlement(pool, req).await
 }
 
@@ -196,12 +222,20 @@ pub async fn get_settlement(pool: &PgPool, req: &GetSettlementRequest) -> Result
 // What: returns the operation audit root.
 // How: extracts operation_id, loads operation row, and maps it to OperationView.
 // Why: multi-table mutations need a single traceable parent record.
-pub async fn get_operation(pool: &PgPool, req: &GetOperationRequest) -> Result<GetOperationResponse, SettlementError> {
+pub async fn get_operation(
+    pool: &PgPool,
+    req: &GetOperationRequest,
+) -> Result<GetOperationResponse, SettlementError> {
     // DB-BLOCK src_db_mod_029
     // What: binds `operation_id` as a named intermediate.
     // How: computes/extracts `operation_id` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let operation_id = req.operation_id.as_ref().map(|x| x.value.clone()).filter(|x| !x.is_empty()).ok_or_else(|| SettlementError::InvalidRequest("operation_id is required".to_string()))?;
+    let operation_id = req
+        .operation_id
+        .as_ref()
+        .map(|x| x.value.clone())
+        .filter(|x| !x.is_empty())
+        .ok_or_else(|| SettlementError::InvalidRequest("operation_id is required".to_string()))?;
     // DB-BLOCK src_db_mod_030
     // What: opens a SQL transaction.
     // How: calls `pool.begin()` and passes the transaction through subsequent DB work.
@@ -217,5 +251,7 @@ pub async fn get_operation(pool: &PgPool, req: &GetOperationRequest) -> Result<G
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(GetOperationResponse { operation: Some(proto_builders::operation_view(operati`.
     // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(GetOperationResponse { operation: Some(proto_builders::operation_view(operation)?) })
+    Ok(GetOperationResponse {
+        operation: Some(proto_builders::operation_view(operation)?),
+    })
 }

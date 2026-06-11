@@ -189,7 +189,7 @@ func validateTradeItemKind(itemKind tradev1.TradeItemKind) error {
 // settlement to fill, cancel, or expire an order that is already completed,
 // failed, cancelled, or expired.
 func validateOutstanding(order *tradev1.TradeOrderView) error {
-	if order == nil || order.GetState() != tradev1.TransactionState_outstanding {
+	if order == nil || order.GetState() != tradev1.TransactionState_TRANSACTION_STATE_OUTSTANDING {
 		return ErrInvalidOrderState
 	}
 

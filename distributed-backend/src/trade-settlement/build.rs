@@ -7,10 +7,7 @@ use std::{env, path::PathBuf};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
 
-    let proto_root = manifest_dir
-        .join("..")
-        .join("..")
-        .join("proto");
+    let proto_root = manifest_dir.join("..").join("..").join("proto");
 
     let protos = [
         proto_root.join("trade/v1/common.proto"),
@@ -28,10 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    tonic_prost_build::configure().compile_protos(
-        &protos,
-        &[proto_root],
-    )?;
+    tonic_prost_build::configure().compile_protos(&protos, &[proto_root])?;
 
     Ok(())
 }

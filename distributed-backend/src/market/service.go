@@ -38,7 +38,7 @@ func NewService(settlement Settlement) *Service {
 // forwards OpenTradeOrder to settlement. It exists because market should decide
 // whether the requested sell order is meaningful before settlement reserves the
 // seller's item.
-func (s *Service) CreateSellOrder(ctx context.Context, req *connect.Request[marketv1.CreateSellOrderRequest]) (*connect.Response[marketv1.CreateOrderResponse], error) {
+func (s *Service) CreateSellOrder(ctx context.Context, req *connect.Request[marketv1.CreateSellOrderRequest]) (*connect.Response[marketv1.CreateSellOrderResponse], error) {
 	message := req.Msg
 	requestContext := normalizeContext(message.GetContext())
 
@@ -70,7 +70,7 @@ func (s *Service) CreateSellOrder(ctx context.Context, req *connect.Request[mark
 		return nil, err
 	}
 
-	return connect.NewResponse(&marketv1.CreateOrderResponse{
+	return connect.NewResponse(&marketv1.CreateSellOrderResponse{
 		TradeOrder:       result.GetTradeOrder(),
 		IdempotentReplay: result.GetIdempotentReplay(),
 		Failure:          result.GetFailure(),
@@ -83,7 +83,7 @@ func (s *Service) CreateSellOrder(ctx context.Context, req *connect.Request[mark
 // forwards OpenTradeOrder to settlement. It exists because market should decide
 // whether the requested buy order is meaningful before settlement reserves the
 // buyer's ISK.
-func (s *Service) CreateBuyOrder(ctx context.Context, req *connect.Request[marketv1.CreateBuyOrderRequest]) (*connect.Response[marketv1.CreateOrderResponse], error) {
+func (s *Service) CreateBuyOrder(ctx context.Context, req *connect.Request[marketv1.CreateBuyOrderRequest]) (*connect.Response[marketv1.CreateBuyOrderResponse], error) {
 	message := req.Msg
 	requestContext := normalizeContext(message.GetContext())
 
@@ -113,7 +113,7 @@ func (s *Service) CreateBuyOrder(ctx context.Context, req *connect.Request[marke
 		return nil, err
 	}
 
-	return connect.NewResponse(&marketv1.CreateOrderResponse{
+	return connect.NewResponse(&marketv1.CreateBuyOrderResponse{
 		TradeOrder:       result.GetTradeOrder(),
 		IdempotentReplay: result.GetIdempotentReplay(),
 		Failure:          result.GetFailure(),
@@ -266,8 +266,8 @@ func (s *Service) CancelOrder(ctx context.Context, req *connect.Request[marketv1
 	closeResult, err := s.settlement.CloseTradeOrder(ctx, &settlementv1.CloseTradeOrderRequest{
 		Context:              requestContext,
 		TradeOrderId:         message.GetTradeOrderId(),
-		RequestedChange:      tradev1.TradeStateChange_SET_TO_CANCELLED,
-		ExpectedCurrentState: tradev1.TransactionState_outstanding,
+		RequestedChange:      tradev1.TradeStateChange_TRADE_STATE_CHANGE_SET_TO_CANCELLED,
+		ExpectedCurrentState: tradev1.TransactionState_TRANSACTION_STATE_OUTSTANDING,
 		Reason:               message.GetReason(),
 	})
 	if err != nil {
@@ -316,8 +316,8 @@ func (s *Service) ExpireOrder(ctx context.Context, req *connect.Request[marketv1
 	closeResult, err := s.settlement.CloseTradeOrder(ctx, &settlementv1.CloseTradeOrderRequest{
 		Context:              requestContext,
 		TradeOrderId:         message.GetTradeOrderId(),
-		RequestedChange:      tradev1.TradeStateChange_SET_TO_EXPIRED,
-		ExpectedCurrentState: tradev1.TransactionState_outstanding,
+		RequestedChange:      tradev1.TradeStateChange_TRADE_STATE_CHANGE_SET_TO_EXPIRED,
+		ExpectedCurrentState: tradev1.TransactionState_TRANSACTION_STATE_OUTSTANDING,
 		Reason:               "order expiry time reached",
 	})
 	if err != nil {
@@ -526,7 +526,7 @@ func validateFillAgainstOrder(message *marketv1.AcceptFillOrderRequest, order *t
 // computes total ISK price, generates transaction/settlement IDs, and sets the
 // expected order state to outstanding. It exists as the single place where market
 // translates fill intent into the correctness-critical settlement command.
-func (s *Service) buildSettlementRequest(context *tradev1.RequestContext, message *marketv1.AcceptFillOrderRequest, order *tradev1.TradeOrderView) (*settlementv1.SettlementRequest, error) {
+func (s *Service) buildSettlementRequest(context *tradev1.RequestContext, message *marketv1.AcceptFillOrderRequest, order *tradev1.TradeOrderView) (*settlementv1.RequestSettlementRequest, error) {
 	buyerCapsuleerID, buyerWalletID, sellerCapsuleerID, sellerWalletID, err := partiesForFill(message, order)
 	if err != nil {
 		return nil, err
@@ -542,7 +542,7 @@ func (s *Service) buildSettlementRequest(context *tradev1.RequestContext, messag
 		return nil, err
 	}
 
-	return &settlementv1.SettlementRequest{
+	return &settlementv1.RequestSettlementRequest{
 		Context:                   context,
 		TradeOrderId:              message.GetTradeOrderId(),
 		TradeTransactionId:        newTradeTransactionID(),
@@ -560,7 +560,7 @@ func (s *Service) buildSettlementRequest(context *tradev1.RequestContext, messag
 		Quantity:                  message.GetQuantity(),
 		UnitPriceIsk:              order.GetUnitPriceIsk(),
 		TotalPriceIsk:             price,
-		ExpectedTradeOrderState:   tradev1.TransactionState_outstanding,
+		ExpectedTradeOrderState:   tradev1.TransactionState_TRANSACTION_STATE_OUTSTANDING,
 	}, nil
 }
 

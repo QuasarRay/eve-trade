@@ -11,9 +11,8 @@ use summer_grpc::GrpcPlugin;
 // return COMPLETED without an available authoritative database.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
-        "postgres://postgres:postgres@localhost:5432/eve_trade".to_string()
-    });
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5432/eve_trade".to_string());
 
     db::initialize_pool(&database_url).await?;
 

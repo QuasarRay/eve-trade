@@ -94,7 +94,10 @@ pub async fn create_stack_operation(
 // What: implements `complete_wallet_operation`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn complete_wallet_operation(tx: &mut Transaction<'_, Postgres>, id: &str) -> Result<(), SettlementError> {
+pub async fn complete_wallet_operation(
+    tx: &mut Transaction<'_, Postgres>,
+    id: &str,
+) -> Result<(), SettlementError> {
     // DB-BLOCK src_db_ownership_009
     // What: performs a parameterized SQL operation against `wallet_operation`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -114,7 +117,10 @@ pub async fn complete_wallet_operation(tx: &mut Transaction<'_, Postgres>, id: &
 // What: implements `complete_stack_operation`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn complete_stack_operation(tx: &mut Transaction<'_, Postgres>, id: &str) -> Result<(), SettlementError> {
+pub async fn complete_stack_operation(
+    tx: &mut Transaction<'_, Postgres>,
+    id: &str,
+) -> Result<(), SettlementError> {
     // DB-BLOCK src_db_ownership_012
     // What: performs a parameterized SQL operation against `item_stack_operation`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -134,7 +140,10 @@ pub async fn complete_stack_operation(tx: &mut Transaction<'_, Postgres>, id: &s
 // What: implements `lock_wallet`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn lock_wallet(tx: &mut Transaction<'_, Postgres>, wallet_id: &str) -> Result<WalletRow, SettlementError> {
+pub async fn lock_wallet(
+    tx: &mut Transaction<'_, Postgres>,
+    wallet_id: &str,
+) -> Result<WalletRow, SettlementError> {
     // DB-BLOCK src_db_ownership_015
     // What: performs a parameterized SQL operation against `wallet`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -159,7 +168,10 @@ pub async fn lock_wallet(tx: &mut Transaction<'_, Postgres>, wallet_id: &str) ->
 // What: implements `lock_stack`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub async fn lock_stack(tx: &mut Transaction<'_, Postgres>, stack_id: &str) -> Result<ItemStackRow, SettlementError> {
+pub async fn lock_stack(
+    tx: &mut Transaction<'_, Postgres>,
+    stack_id: &str,
+) -> Result<ItemStackRow, SettlementError> {
     // DB-BLOCK src_db_ownership_017
     // What: performs a parameterized SQL operation against `the relevant trade schema table`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -215,7 +227,16 @@ pub async fn create_empty_stack(
     // What: binds `checksum` as a named intermediate.
     // How: computes/extracts `checksum` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let checksum = item_stack_checksum(&id.0, capsuleer_id, item_type_id, station_id, 0, 0, "active", 1);
+    let checksum = item_stack_checksum(
+        &id.0,
+        capsuleer_id,
+        item_type_id,
+        station_id,
+        0,
+        0,
+        "active",
+        1,
+    );
     // DB-BLOCK src_db_ownership_021
     // What: performs a parameterized SQL operation against `item_stack`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -250,14 +271,22 @@ pub async fn move_wallet(
     // What: binds `after_available` as a named intermediate.
     // How: computes/extracts `after_available` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let after_available = before.available_isk.checked_add(available_delta)
-        .ok_or_else(|| SettlementError::IntegrityConflict("wallet available_isk overflow".to_string()))?;
+    let after_available = before
+        .available_isk
+        .checked_add(available_delta)
+        .ok_or_else(|| {
+            SettlementError::IntegrityConflict("wallet available_isk overflow".to_string())
+        })?;
     // DB-BLOCK src_db_ownership_025
     // What: binds `after_reserved` as a named intermediate.
     // How: computes/extracts `after_reserved` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let after_reserved = before.reserved_isk.checked_add(reserved_delta)
-        .ok_or_else(|| SettlementError::IntegrityConflict("wallet reserved_isk overflow".to_string()))?;
+    let after_reserved = before
+        .reserved_isk
+        .checked_add(reserved_delta)
+        .ok_or_else(|| {
+            SettlementError::IntegrityConflict("wallet reserved_isk overflow".to_string())
+        })?;
     // DB-BLOCK src_db_ownership_026
     // What: guards a correctness-sensitive branch.
     // How: evaluates `if after_available < 0 || after_reserved < 0 {` before continuing.
@@ -267,7 +296,9 @@ pub async fn move_wallet(
         // What: exits the current workflow early.
         // How: returns from `return Err(SettlementError::InsufficientIsk { wallet_id: wallet_id.to_string() }` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-        return Err(SettlementError::InsufficientIsk { wallet_id: wallet_id.to_string() });
+        return Err(SettlementError::InsufficientIsk {
+            wallet_id: wallet_id.to_string(),
+        });
     }
     // DB-BLOCK src_db_ownership_028
     // What: binds `after_version` as a named intermediate.
@@ -317,7 +348,10 @@ pub async fn move_wallet(
         // What: exits the current workflow early.
         // How: returns from `return Err(SettlementError::StaleVersionConflict(format!("wallet {} version chan` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-        return Err(SettlementError::StaleVersionConflict(format!("wallet {} version changed unexpectedly", before.wallet_id)));
+        return Err(SettlementError::StaleVersionConflict(format!(
+            "wallet {} version changed unexpectedly",
+            before.wallet_id
+        )));
     }
 
     // DB-BLOCK src_db_ownership_033
@@ -357,7 +391,13 @@ pub async fn move_wallet(
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(WalletRow { available_isk: after_available, reserved_isk: after_reserved, wal`.
     // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(WalletRow { available_isk: after_available, reserved_isk: after_reserved, wallet_version: after_version, wallet_checksum: after_checksum, ..before })
+    Ok(WalletRow {
+        available_isk: after_available,
+        reserved_isk: after_reserved,
+        wallet_version: after_version,
+        wallet_checksum: after_checksum,
+        ..before
+    })
 }
 
 // DB-BLOCK src_db_ownership_035
@@ -381,14 +421,22 @@ pub async fn move_stack(
     // What: binds `after_available` as a named intermediate.
     // How: computes/extracts `after_available` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let after_available = before.available_quantity.checked_add(available_delta)
-        .ok_or_else(|| SettlementError::IntegrityConflict("stack available_quantity overflow".to_string()))?;
+    let after_available = before
+        .available_quantity
+        .checked_add(available_delta)
+        .ok_or_else(|| {
+            SettlementError::IntegrityConflict("stack available_quantity overflow".to_string())
+        })?;
     // DB-BLOCK src_db_ownership_038
     // What: binds `after_reserved` as a named intermediate.
     // How: computes/extracts `after_reserved` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let after_reserved = before.reserved_quantity.checked_add(reserved_delta)
-        .ok_or_else(|| SettlementError::IntegrityConflict("stack reserved_quantity overflow".to_string()))?;
+    let after_reserved = before
+        .reserved_quantity
+        .checked_add(reserved_delta)
+        .ok_or_else(|| {
+            SettlementError::IntegrityConflict("stack reserved_quantity overflow".to_string())
+        })?;
     // DB-BLOCK src_db_ownership_039
     // What: guards a correctness-sensitive branch.
     // How: evaluates `if after_available < 0 || after_reserved < 0 {` before continuing.
@@ -398,7 +446,9 @@ pub async fn move_stack(
         // What: exits the current workflow early.
         // How: returns from `return Err(SettlementError::InsufficientItems { item_stack_id: stack_id.to_strin` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-        return Err(SettlementError::InsufficientItems { item_stack_id: stack_id.to_string() });
+        return Err(SettlementError::InsufficientItems {
+            item_stack_id: stack_id.to_string(),
+        });
     }
     // DB-BLOCK src_db_ownership_041
     // What: binds `after_version` as a named intermediate.
@@ -409,7 +459,11 @@ pub async fn move_stack(
     // What: binds `after_state` as a named intermediate.
     // How: computes/extracts `after_state` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let after_state = if after_available == 0 && after_reserved == 0 { "depleted" } else { before.stack_state.as_str() };
+    let after_state = if after_available == 0 && after_reserved == 0 {
+        "depleted"
+    } else {
+        before.stack_state.as_str()
+    };
     // DB-BLOCK src_db_ownership_043
     // What: binds `after_checksum` as a named intermediate.
     // How: computes/extracts `after_checksum` once before SQL or response construction.
@@ -455,7 +509,10 @@ pub async fn move_stack(
         // What: exits the current workflow early.
         // How: returns from `return Err(SettlementError::StaleVersionConflict(format!("item stack {} version ` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
-        return Err(SettlementError::StaleVersionConflict(format!("item stack {} version changed unexpectedly", before.item_stack_id)));
+        return Err(SettlementError::StaleVersionConflict(format!(
+            "item stack {} version changed unexpectedly",
+            before.item_stack_id
+        )));
     }
 
     // DB-BLOCK src_db_ownership_047
@@ -497,5 +554,12 @@ pub async fn move_stack(
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(ItemStackRow { available_quantity: after_available, reserved_quantity: after_`.
     // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(ItemStackRow { available_quantity: after_available, reserved_quantity: after_reserved, stack_state: after_state.to_string(), stack_version: after_version, stack_checksum: after_checksum, ..before })
+    Ok(ItemStackRow {
+        available_quantity: after_available,
+        reserved_quantity: after_reserved,
+        stack_state: after_state.to_string(),
+        stack_version: after_version,
+        stack_checksum: after_checksum,
+        ..before
+    })
 }
