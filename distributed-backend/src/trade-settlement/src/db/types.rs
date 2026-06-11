@@ -394,5 +394,4 @@ impl CloseTarget {
             Self::Failed => "fail_trade_order",
         }
     }
-
 }

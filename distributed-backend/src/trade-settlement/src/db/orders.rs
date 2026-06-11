@@ -478,17 +478,20 @@ pub async fn open_trade_order(
     operation_log::complete(&mut tx, &operation_id).await?;
     idempotency::record_success(
         &mut tx,
-        &guard,
-        "open_trade_order",
-        Some(&operation_id),
-        Some(&order_id.0),
-        None,
-        None,
-        wallet_operation_id.as_deref(),
-        stack_operation_id.as_deref(),
-        TradeState::Outstanding.as_db(),
+        idempotency::RecordSuccessInput {
+            guard: &guard,
+            result_kind: "open_trade_order",
+            operation_id: Some(&operation_id),
+            trade_order_id: Some(&order_id.0),
+            trade_transaction_id: None,
+            settlement_id: None,
+            wallet_operation_id: wallet_operation_id.as_deref(),
+            item_stack_operation_id: stack_operation_id.as_deref(),
+            result_state: TradeState::Outstanding.as_db(),
+        },
     )
     .await?;
+
     // DB-BLOCK src_db_orders_050
     // What: binds `order` as a named intermediate.
     // How: computes/extracts `order` once before SQL or response construction.
@@ -647,17 +650,20 @@ pub async fn close_trade_order(
     operation_log::complete(&mut tx, &operation_id).await?;
     idempotency::record_success(
         &mut tx,
-        &guard,
-        "close_trade_order",
-        Some(&operation_id),
-        Some(&order_id),
-        None,
-        None,
-        wallet_op.as_deref(),
-        stack_op.as_deref(),
-        target.as_trade_state().as_db(),
+        idempotency::RecordSuccessInput {
+            guard: &guard,
+            result_kind: "close_trade_order",
+            operation_id: Some(&operation_id),
+            trade_order_id: Some(&order_id),
+            trade_transaction_id: None,
+            settlement_id: None,
+            wallet_operation_id: wallet_op.as_deref(),
+            item_stack_operation_id: stack_op.as_deref(),
+            result_state: target.as_trade_state().as_db(),
+        },
     )
     .await?;
+
     // DB-BLOCK src_db_orders_073
     // What: binds `order` as a named intermediate.
     // How: computes/extracts `order` once before SQL or response construction.
