@@ -18,4 +18,4 @@ tonic = "0.14"
 tracing = "0.1"
 
 [build-dependencies]
-tonic-build = "0.14"
+tonic-prost-build = "0.14.6"
