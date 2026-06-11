@@ -1,0 +1,6 @@
+# This configuration block is read by summer-grpc. The service is kept small,
+# but it still needs a stable network binding so market can call it.
+[grpc]
+binding = "0.0.0.0"
+port = 9092
+graceful = true
