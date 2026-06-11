@@ -27,46 +27,46 @@ const (
 type TransactionState int32
 
 const (
-	TransactionState_transaction_state_unspecified TransactionState = 0
-	TransactionState_being_created                 TransactionState = 1
-	TransactionState_outstanding                   TransactionState = 2
-	TransactionState_accepted                      TransactionState = 3
-	TransactionState_in_progress                   TransactionState = 4
-	TransactionState_completed                     TransactionState = 5
-	TransactionState_claimable                     TransactionState = 6
-	TransactionState_claimed                       TransactionState = 7
-	TransactionState_expired                       TransactionState = 8
-	TransactionState_failed                        TransactionState = 9
-	TransactionState_cancelled                     TransactionState = 10
+	TransactionState_TRANSACTION_STATE_UNSPECIFIED   TransactionState = 0
+	TransactionState_TRANSACTION_STATE_BEING_CREATED TransactionState = 1
+	TransactionState_TRANSACTION_STATE_OUTSTANDING   TransactionState = 2
+	TransactionState_TRANSACTION_STATE_ACCEPTED      TransactionState = 3
+	TransactionState_TRANSACTION_STATE_IN_PROGRESS   TransactionState = 4
+	TransactionState_TRANSACTION_STATE_COMPLETED     TransactionState = 5
+	TransactionState_TRANSACTION_STATE_CLAIMABLE     TransactionState = 6
+	TransactionState_TRANSACTION_STATE_CLAIMED       TransactionState = 7
+	TransactionState_TRANSACTION_STATE_EXPIRED       TransactionState = 8
+	TransactionState_TRANSACTION_STATE_FAILED        TransactionState = 9
+	TransactionState_TRANSACTION_STATE_CANCELLED     TransactionState = 10
 )
 
 // Enum value maps for TransactionState.
 var (
 	TransactionState_name = map[int32]string{
-		0:  "transaction_state_unspecified",
-		1:  "being_created",
-		2:  "outstanding",
-		3:  "accepted",
-		4:  "in_progress",
-		5:  "completed",
-		6:  "claimable",
-		7:  "claimed",
-		8:  "expired",
-		9:  "failed",
-		10: "cancelled",
+		0:  "TRANSACTION_STATE_UNSPECIFIED",
+		1:  "TRANSACTION_STATE_BEING_CREATED",
+		2:  "TRANSACTION_STATE_OUTSTANDING",
+		3:  "TRANSACTION_STATE_ACCEPTED",
+		4:  "TRANSACTION_STATE_IN_PROGRESS",
+		5:  "TRANSACTION_STATE_COMPLETED",
+		6:  "TRANSACTION_STATE_CLAIMABLE",
+		7:  "TRANSACTION_STATE_CLAIMED",
+		8:  "TRANSACTION_STATE_EXPIRED",
+		9:  "TRANSACTION_STATE_FAILED",
+		10: "TRANSACTION_STATE_CANCELLED",
 	}
 	TransactionState_value = map[string]int32{
-		"transaction_state_unspecified": 0,
-		"being_created":                 1,
-		"outstanding":                   2,
-		"accepted":                      3,
-		"in_progress":                   4,
-		"completed":                     5,
-		"claimable":                     6,
-		"claimed":                       7,
-		"expired":                       8,
-		"failed":                        9,
-		"cancelled":                     10,
+		"TRANSACTION_STATE_UNSPECIFIED":   0,
+		"TRANSACTION_STATE_BEING_CREATED": 1,
+		"TRANSACTION_STATE_OUTSTANDING":   2,
+		"TRANSACTION_STATE_ACCEPTED":      3,
+		"TRANSACTION_STATE_IN_PROGRESS":   4,
+		"TRANSACTION_STATE_COMPLETED":     5,
+		"TRANSACTION_STATE_CLAIMABLE":     6,
+		"TRANSACTION_STATE_CLAIMED":       7,
+		"TRANSACTION_STATE_EXPIRED":       8,
+		"TRANSACTION_STATE_FAILED":        9,
+		"TRANSACTION_STATE_CANCELLED":     10,
 	}
 )
 
@@ -103,43 +103,43 @@ func (TransactionState) EnumDescriptor() ([]byte, []int) {
 type TradeStateChange int32
 
 const (
-	TradeStateChange_TRADE_STATE_CHANGE_UNSPECIFIED TradeStateChange = 0
-	TradeStateChange_SET_TO_BEING_CREATED           TradeStateChange = 1
-	TradeStateChange_SET_TO_OUTSTANDING             TradeStateChange = 2
-	TradeStateChange_SET_TO_ACCEPTED                TradeStateChange = 3
-	TradeStateChange_SET_TO_IN_PROGRESS             TradeStateChange = 4
-	TradeStateChange_SET_TO_CLAIMABLE               TradeStateChange = 5
-	TradeStateChange_SET_TO_CLAIMED                 TradeStateChange = 6
-	TradeStateChange_SET_TO_EXPIRED                 TradeStateChange = 7
-	TradeStateChange_SET_TO_FAILED                  TradeStateChange = 8
-	TradeStateChange_SET_TO_CANCELLED               TradeStateChange = 9
+	TradeStateChange_TRADE_STATE_CHANGE_UNSPECIFIED          TradeStateChange = 0
+	TradeStateChange_TRADE_STATE_CHANGE_SET_TO_BEING_CREATED TradeStateChange = 1
+	TradeStateChange_TRADE_STATE_CHANGE_SET_TO_OUTSTANDING   TradeStateChange = 2
+	TradeStateChange_TRADE_STATE_CHANGE_SET_TO_ACCEPTED      TradeStateChange = 3
+	TradeStateChange_TRADE_STATE_CHANGE_SET_TO_IN_PROGRESS   TradeStateChange = 4
+	TradeStateChange_TRADE_STATE_CHANGE_SET_TO_CLAIMABLE     TradeStateChange = 5
+	TradeStateChange_TRADE_STATE_CHANGE_SET_TO_CLAIMED       TradeStateChange = 6
+	TradeStateChange_TRADE_STATE_CHANGE_SET_TO_EXPIRED       TradeStateChange = 7
+	TradeStateChange_TRADE_STATE_CHANGE_SET_TO_FAILED        TradeStateChange = 8
+	TradeStateChange_TRADE_STATE_CHANGE_SET_TO_CANCELLED     TradeStateChange = 9
 )
 
 // Enum value maps for TradeStateChange.
 var (
 	TradeStateChange_name = map[int32]string{
 		0: "TRADE_STATE_CHANGE_UNSPECIFIED",
-		1: "SET_TO_BEING_CREATED",
-		2: "SET_TO_OUTSTANDING",
-		3: "SET_TO_ACCEPTED",
-		4: "SET_TO_IN_PROGRESS",
-		5: "SET_TO_CLAIMABLE",
-		6: "SET_TO_CLAIMED",
-		7: "SET_TO_EXPIRED",
-		8: "SET_TO_FAILED",
-		9: "SET_TO_CANCELLED",
+		1: "TRADE_STATE_CHANGE_SET_TO_BEING_CREATED",
+		2: "TRADE_STATE_CHANGE_SET_TO_OUTSTANDING",
+		3: "TRADE_STATE_CHANGE_SET_TO_ACCEPTED",
+		4: "TRADE_STATE_CHANGE_SET_TO_IN_PROGRESS",
+		5: "TRADE_STATE_CHANGE_SET_TO_CLAIMABLE",
+		6: "TRADE_STATE_CHANGE_SET_TO_CLAIMED",
+		7: "TRADE_STATE_CHANGE_SET_TO_EXPIRED",
+		8: "TRADE_STATE_CHANGE_SET_TO_FAILED",
+		9: "TRADE_STATE_CHANGE_SET_TO_CANCELLED",
 	}
 	TradeStateChange_value = map[string]int32{
-		"TRADE_STATE_CHANGE_UNSPECIFIED": 0,
-		"SET_TO_BEING_CREATED":           1,
-		"SET_TO_OUTSTANDING":             2,
-		"SET_TO_ACCEPTED":                3,
-		"SET_TO_IN_PROGRESS":             4,
-		"SET_TO_CLAIMABLE":               5,
-		"SET_TO_CLAIMED":                 6,
-		"SET_TO_EXPIRED":                 7,
-		"SET_TO_FAILED":                  8,
-		"SET_TO_CANCELLED":               9,
+		"TRADE_STATE_CHANGE_UNSPECIFIED":          0,
+		"TRADE_STATE_CHANGE_SET_TO_BEING_CREATED": 1,
+		"TRADE_STATE_CHANGE_SET_TO_OUTSTANDING":   2,
+		"TRADE_STATE_CHANGE_SET_TO_ACCEPTED":      3,
+		"TRADE_STATE_CHANGE_SET_TO_IN_PROGRESS":   4,
+		"TRADE_STATE_CHANGE_SET_TO_CLAIMABLE":     5,
+		"TRADE_STATE_CHANGE_SET_TO_CLAIMED":       6,
+		"TRADE_STATE_CHANGE_SET_TO_EXPIRED":       7,
+		"TRADE_STATE_CHANGE_SET_TO_FAILED":        8,
+		"TRADE_STATE_CHANGE_SET_TO_CANCELLED":     9,
 	}
 )
 
@@ -783,49 +783,49 @@ func (TradeItemKind) EnumDescriptor() ([]byte, []int) {
 type TradeErrorCode int32
 
 const (
-	TradeErrorCode_trade_error_code_unspecified TradeErrorCode = 0
-	TradeErrorCode_insufficient_isk             TradeErrorCode = 1
-	TradeErrorCode_insufficient_items           TradeErrorCode = 2
-	TradeErrorCode_invalid_state_transition     TradeErrorCode = 3
-	TradeErrorCode_order_expired                TradeErrorCode = 4
-	TradeErrorCode_order_cancelled              TradeErrorCode = 5
-	TradeErrorCode_item_not_market_eligible     TradeErrorCode = 6
-	TradeErrorCode_duplicate_request            TradeErrorCode = 7
-	TradeErrorCode_settlement_conflict          TradeErrorCode = 8
-	TradeErrorCode_stale_version_conflict       TradeErrorCode = 9
-	TradeErrorCode_integrity_conflict           TradeErrorCode = 10
-	TradeErrorCode_reservation_conflict         TradeErrorCode = 11
+	TradeErrorCode_TRADE_ERROR_CODE_UNSPECIFIED              TradeErrorCode = 0
+	TradeErrorCode_TRADE_ERROR_CODE_INSUFFICIENT_ISK         TradeErrorCode = 1
+	TradeErrorCode_TRADE_ERROR_CODE_INSUFFICIENT_ITEMS       TradeErrorCode = 2
+	TradeErrorCode_TRADE_ERROR_CODE_INVALID_STATE_TRANSITION TradeErrorCode = 3
+	TradeErrorCode_TRADE_ERROR_CODE_ORDER_EXPIRED            TradeErrorCode = 4
+	TradeErrorCode_TRADE_ERROR_CODE_ORDER_CANCELLED          TradeErrorCode = 5
+	TradeErrorCode_TRADE_ERROR_CODE_ITEM_NOT_MARKET_ELIGIBLE TradeErrorCode = 6
+	TradeErrorCode_TRADE_ERROR_CODE_DUPLICATE_REQUEST        TradeErrorCode = 7
+	TradeErrorCode_TRADE_ERROR_CODE_SETTLEMENT_CONFLICT      TradeErrorCode = 8
+	TradeErrorCode_TRADE_ERROR_CODE_STALE_VERSION_CONFLICT   TradeErrorCode = 9
+	TradeErrorCode_TRADE_ERROR_CODE_INTEGRITY_CONFLICT       TradeErrorCode = 10
+	TradeErrorCode_TRADE_ERROR_CODE_RESERVATION_CONFLICT     TradeErrorCode = 11
 )
 
 // Enum value maps for TradeErrorCode.
 var (
 	TradeErrorCode_name = map[int32]string{
-		0:  "trade_error_code_unspecified",
-		1:  "insufficient_isk",
-		2:  "insufficient_items",
-		3:  "invalid_state_transition",
-		4:  "order_expired",
-		5:  "order_cancelled",
-		6:  "item_not_market_eligible",
-		7:  "duplicate_request",
-		8:  "settlement_conflict",
-		9:  "stale_version_conflict",
-		10: "integrity_conflict",
-		11: "reservation_conflict",
+		0:  "TRADE_ERROR_CODE_UNSPECIFIED",
+		1:  "TRADE_ERROR_CODE_INSUFFICIENT_ISK",
+		2:  "TRADE_ERROR_CODE_INSUFFICIENT_ITEMS",
+		3:  "TRADE_ERROR_CODE_INVALID_STATE_TRANSITION",
+		4:  "TRADE_ERROR_CODE_ORDER_EXPIRED",
+		5:  "TRADE_ERROR_CODE_ORDER_CANCELLED",
+		6:  "TRADE_ERROR_CODE_ITEM_NOT_MARKET_ELIGIBLE",
+		7:  "TRADE_ERROR_CODE_DUPLICATE_REQUEST",
+		8:  "TRADE_ERROR_CODE_SETTLEMENT_CONFLICT",
+		9:  "TRADE_ERROR_CODE_STALE_VERSION_CONFLICT",
+		10: "TRADE_ERROR_CODE_INTEGRITY_CONFLICT",
+		11: "TRADE_ERROR_CODE_RESERVATION_CONFLICT",
 	}
 	TradeErrorCode_value = map[string]int32{
-		"trade_error_code_unspecified": 0,
-		"insufficient_isk":             1,
-		"insufficient_items":           2,
-		"invalid_state_transition":     3,
-		"order_expired":                4,
-		"order_cancelled":              5,
-		"item_not_market_eligible":     6,
-		"duplicate_request":            7,
-		"settlement_conflict":          8,
-		"stale_version_conflict":       9,
-		"integrity_conflict":           10,
-		"reservation_conflict":         11,
+		"TRADE_ERROR_CODE_UNSPECIFIED":              0,
+		"TRADE_ERROR_CODE_INSUFFICIENT_ISK":         1,
+		"TRADE_ERROR_CODE_INSUFFICIENT_ITEMS":       2,
+		"TRADE_ERROR_CODE_INVALID_STATE_TRANSITION": 3,
+		"TRADE_ERROR_CODE_ORDER_EXPIRED":            4,
+		"TRADE_ERROR_CODE_ORDER_CANCELLED":          5,
+		"TRADE_ERROR_CODE_ITEM_NOT_MARKET_ELIGIBLE": 6,
+		"TRADE_ERROR_CODE_DUPLICATE_REQUEST":        7,
+		"TRADE_ERROR_CODE_SETTLEMENT_CONFLICT":      8,
+		"TRADE_ERROR_CODE_STALE_VERSION_CONFLICT":   9,
+		"TRADE_ERROR_CODE_INTEGRITY_CONFLICT":       10,
+		"TRADE_ERROR_CODE_RESERVATION_CONFLICT":     11,
 	}
 )
 
@@ -1832,7 +1832,7 @@ func (x *TradeError) GetCode() TradeErrorCode {
 	if x != nil {
 		return x.Code
 	}
-	return TradeErrorCode_trade_error_code_unspecified
+	return TradeErrorCode_TRADE_ERROR_CODE_UNSPECIFIED
 }
 
 func (x *TradeError) GetMessage() string {
@@ -1939,32 +1939,31 @@ const file_trade_v1_common_proto_rawDesc = "" +
 	"\x0fidempotency_key\x18\x04 \x01(\v2\x18.trade.v1.IdempotencyKeyR\x0eidempotencyKey\x12<\n" +
 	"\x0etrade_order_id\x18\x05 \x01(\v2\x16.trade.v1.TradeOrderIdR\ftradeOrderId\x12N\n" +
 	"\x14trade_transaction_id\x18\x06 \x01(\v2\x1c.trade.v1.TradeTransactionIdR\x12tradeTransactionId\x12;\n" +
-	"\rsettlement_id\x18\a \x01(\v2\x16.trade.v1.SettlementIdR\fsettlementId*\xcb\x01\n" +
+	"\rsettlement_id\x18\a \x01(\v2\x16.trade.v1.SettlementIdR\fsettlementId*\xff\x02\n" +
 	"\x10TransactionState\x12!\n" +
-	"\x1dtransaction_state_unspecified\x10\x00\x12\x11\n" +
-	"\rbeing_created\x10\x01\x12\x0f\n" +
-	"\voutstanding\x10\x02\x12\f\n" +
-	"\baccepted\x10\x03\x12\x0f\n" +
-	"\vin_progress\x10\x04\x12\r\n" +
-	"\tcompleted\x10\x05\x12\r\n" +
-	"\tclaimable\x10\x06\x12\v\n" +
-	"\aclaimed\x10\a\x12\v\n" +
-	"\aexpired\x10\b\x12\n" +
-	"\n" +
-	"\x06failed\x10\t\x12\r\n" +
-	"\tcancelled\x10\n" +
-	"*\xfc\x01\n" +
+	"\x1dTRANSACTION_STATE_UNSPECIFIED\x10\x00\x12#\n" +
+	"\x1fTRANSACTION_STATE_BEING_CREATED\x10\x01\x12!\n" +
+	"\x1dTRANSACTION_STATE_OUTSTANDING\x10\x02\x12\x1e\n" +
+	"\x1aTRANSACTION_STATE_ACCEPTED\x10\x03\x12!\n" +
+	"\x1dTRANSACTION_STATE_IN_PROGRESS\x10\x04\x12\x1f\n" +
+	"\x1bTRANSACTION_STATE_COMPLETED\x10\x05\x12\x1f\n" +
+	"\x1bTRANSACTION_STATE_CLAIMABLE\x10\x06\x12\x1d\n" +
+	"\x19TRANSACTION_STATE_CLAIMED\x10\a\x12\x1d\n" +
+	"\x19TRANSACTION_STATE_EXPIRED\x10\b\x12\x1c\n" +
+	"\x18TRANSACTION_STATE_FAILED\x10\t\x12\x1f\n" +
+	"\x1bTRANSACTION_STATE_CANCELLED\x10\n" +
+	"*\xa7\x03\n" +
 	"\x10TradeStateChange\x12\"\n" +
-	"\x1eTRADE_STATE_CHANGE_UNSPECIFIED\x10\x00\x12\x18\n" +
-	"\x14SET_TO_BEING_CREATED\x10\x01\x12\x16\n" +
-	"\x12SET_TO_OUTSTANDING\x10\x02\x12\x13\n" +
-	"\x0fSET_TO_ACCEPTED\x10\x03\x12\x16\n" +
-	"\x12SET_TO_IN_PROGRESS\x10\x04\x12\x14\n" +
-	"\x10SET_TO_CLAIMABLE\x10\x05\x12\x12\n" +
-	"\x0eSET_TO_CLAIMED\x10\x06\x12\x12\n" +
-	"\x0eSET_TO_EXPIRED\x10\a\x12\x11\n" +
-	"\rSET_TO_FAILED\x10\b\x12\x14\n" +
-	"\x10SET_TO_CANCELLED\x10\t*\xaa\x01\n" +
+	"\x1eTRADE_STATE_CHANGE_UNSPECIFIED\x10\x00\x12+\n" +
+	"'TRADE_STATE_CHANGE_SET_TO_BEING_CREATED\x10\x01\x12)\n" +
+	"%TRADE_STATE_CHANGE_SET_TO_OUTSTANDING\x10\x02\x12&\n" +
+	"\"TRADE_STATE_CHANGE_SET_TO_ACCEPTED\x10\x03\x12)\n" +
+	"%TRADE_STATE_CHANGE_SET_TO_IN_PROGRESS\x10\x04\x12'\n" +
+	"#TRADE_STATE_CHANGE_SET_TO_CLAIMABLE\x10\x05\x12%\n" +
+	"!TRADE_STATE_CHANGE_SET_TO_CLAIMED\x10\x06\x12%\n" +
+	"!TRADE_STATE_CHANGE_SET_TO_EXPIRED\x10\a\x12$\n" +
+	" TRADE_STATE_CHANGE_SET_TO_FAILED\x10\b\x12'\n" +
+	"#TRADE_STATE_CHANGE_SET_TO_CANCELLED\x10\t*\xaa\x01\n" +
 	"\x0eOperationState\x12\x1f\n" +
 	"\x1bOPERATION_STATE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17OPERATION_STATE_PENDING\x10\x01\x12\x1f\n" +
@@ -2042,21 +2041,21 @@ const file_trade_v1_common_proto_rawDesc = "" +
 	"\rTradeItemKind\x12\x1f\n" +
 	"\x1bTRADE_ITEM_KIND_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19TRADE_ITEM_KIND_STACKABLE\x10\x01\x12\x1d\n" +
-	"\x19TRADE_ITEM_KIND_SINGLETON\x10\x02*\xc2\x02\n" +
+	"\x19TRADE_ITEM_KIND_SINGLETON\x10\x02*\xfd\x03\n" +
 	"\x0eTradeErrorCode\x12 \n" +
-	"\x1ctrade_error_code_unspecified\x10\x00\x12\x14\n" +
-	"\x10insufficient_isk\x10\x01\x12\x16\n" +
-	"\x12insufficient_items\x10\x02\x12\x1c\n" +
-	"\x18invalid_state_transition\x10\x03\x12\x11\n" +
-	"\rorder_expired\x10\x04\x12\x13\n" +
-	"\x0forder_cancelled\x10\x05\x12\x1c\n" +
-	"\x18item_not_market_eligible\x10\x06\x12\x15\n" +
-	"\x11duplicate_request\x10\a\x12\x17\n" +
-	"\x13settlement_conflict\x10\b\x12\x1a\n" +
-	"\x16stale_version_conflict\x10\t\x12\x16\n" +
-	"\x12integrity_conflict\x10\n" +
-	"\x12\x18\n" +
-	"\x14reservation_conflict\x10\vB\xab\x01\n" +
+	"\x1cTRADE_ERROR_CODE_UNSPECIFIED\x10\x00\x12%\n" +
+	"!TRADE_ERROR_CODE_INSUFFICIENT_ISK\x10\x01\x12'\n" +
+	"#TRADE_ERROR_CODE_INSUFFICIENT_ITEMS\x10\x02\x12-\n" +
+	")TRADE_ERROR_CODE_INVALID_STATE_TRANSITION\x10\x03\x12\"\n" +
+	"\x1eTRADE_ERROR_CODE_ORDER_EXPIRED\x10\x04\x12$\n" +
+	" TRADE_ERROR_CODE_ORDER_CANCELLED\x10\x05\x12-\n" +
+	")TRADE_ERROR_CODE_ITEM_NOT_MARKET_ELIGIBLE\x10\x06\x12&\n" +
+	"\"TRADE_ERROR_CODE_DUPLICATE_REQUEST\x10\a\x12(\n" +
+	"$TRADE_ERROR_CODE_SETTLEMENT_CONFLICT\x10\b\x12+\n" +
+	"'TRADE_ERROR_CODE_STALE_VERSION_CONFLICT\x10\t\x12'\n" +
+	"#TRADE_ERROR_CODE_INTEGRITY_CONFLICT\x10\n" +
+	"\x12)\n" +
+	"%TRADE_ERROR_CODE_RESERVATION_CONFLICT\x10\vB\xab\x01\n" +
 	"\fcom.trade.v1B\vCommonProtoP\x01ZMgithub.com/QuasarRay/eve-trade/distributed-backend/proto/gen/trade/v1;tradev1\xa2\x02\x03TXX\xaa\x02\bTrade.V1\xca\x02\bTrade\\V1\xe2\x02\x14Trade\\V1\\GPBMetadata\xea\x02\tTrade::V1b\x06proto3"
 
 var (

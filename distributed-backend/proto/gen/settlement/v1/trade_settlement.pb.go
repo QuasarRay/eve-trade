@@ -209,7 +209,7 @@ func (x *OpenTradeOrderRequest) GetTerms() *TradeOrderTerms {
 	return nil
 }
 
-type OpenTradeOrderResult struct {
+type OpenTradeOrderResponse struct {
 	state                   protoimpl.MessageState          `protogen:"open.v1"`
 	Operation               *v1.OperationView               `protobuf:"bytes,1,opt,name=operation,proto3" json:"operation,omitempty"`
 	TradeOrder              *v1.TradeOrderView              `protobuf:"bytes,2,opt,name=trade_order,json=tradeOrder,proto3" json:"trade_order,omitempty"`
@@ -222,20 +222,20 @@ type OpenTradeOrderResult struct {
 	sizeCache               protoimpl.SizeCache
 }
 
-func (x *OpenTradeOrderResult) Reset() {
-	*x = OpenTradeOrderResult{}
+func (x *OpenTradeOrderResponse) Reset() {
+	*x = OpenTradeOrderResponse{}
 	mi := &file_settlement_v1_trade_settlement_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *OpenTradeOrderResult) String() string {
+func (x *OpenTradeOrderResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*OpenTradeOrderResult) ProtoMessage() {}
+func (*OpenTradeOrderResponse) ProtoMessage() {}
 
-func (x *OpenTradeOrderResult) ProtoReflect() protoreflect.Message {
+func (x *OpenTradeOrderResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_settlement_v1_trade_settlement_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -247,54 +247,54 @@ func (x *OpenTradeOrderResult) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use OpenTradeOrderResult.ProtoReflect.Descriptor instead.
-func (*OpenTradeOrderResult) Descriptor() ([]byte, []int) {
+// Deprecated: Use OpenTradeOrderResponse.ProtoReflect.Descriptor instead.
+func (*OpenTradeOrderResponse) Descriptor() ([]byte, []int) {
 	return file_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *OpenTradeOrderResult) GetOperation() *v1.OperationView {
+func (x *OpenTradeOrderResponse) GetOperation() *v1.OperationView {
 	if x != nil {
 		return x.Operation
 	}
 	return nil
 }
 
-func (x *OpenTradeOrderResult) GetTradeOrder() *v1.TradeOrderView {
+func (x *OpenTradeOrderResponse) GetTradeOrder() *v1.TradeOrderView {
 	if x != nil {
 		return x.TradeOrder
 	}
 	return nil
 }
 
-func (x *OpenTradeOrderResult) GetWalletReservation() *v1.WalletReservationView {
+func (x *OpenTradeOrderResponse) GetWalletReservation() *v1.WalletReservationView {
 	if x != nil {
 		return x.WalletReservation
 	}
 	return nil
 }
 
-func (x *OpenTradeOrderResult) GetItemStackReservation() *v1.ItemStackReservationView {
+func (x *OpenTradeOrderResponse) GetItemStackReservation() *v1.ItemStackReservationView {
 	if x != nil {
 		return x.ItemStackReservation
 	}
 	return nil
 }
 
-func (x *OpenTradeOrderResult) GetItemInstanceReservation() *v1.ItemInstanceReservationView {
+func (x *OpenTradeOrderResponse) GetItemInstanceReservation() *v1.ItemInstanceReservationView {
 	if x != nil {
 		return x.ItemInstanceReservation
 	}
 	return nil
 }
 
-func (x *OpenTradeOrderResult) GetIdempotentReplay() bool {
+func (x *OpenTradeOrderResponse) GetIdempotentReplay() bool {
 	if x != nil {
 		return x.IdempotentReplay
 	}
 	return false
 }
 
-func (x *OpenTradeOrderResult) GetFailure() *v1.TradeError {
+func (x *OpenTradeOrderResponse) GetFailure() *v1.TradeError {
 	if x != nil {
 		return x.Failure
 	}
@@ -380,7 +380,7 @@ func (x *CloseTradeOrderRequest) GetReason() string {
 	return ""
 }
 
-type CloseTradeOrderResult struct {
+type CloseTradeOrderResponse struct {
 	state                   protoimpl.MessageState          `protogen:"open.v1"`
 	Operation               *v1.OperationView               `protobuf:"bytes,1,opt,name=operation,proto3" json:"operation,omitempty"`
 	TradeOrder              *v1.TradeOrderView              `protobuf:"bytes,2,opt,name=trade_order,json=tradeOrder,proto3" json:"trade_order,omitempty"`
@@ -393,20 +393,20 @@ type CloseTradeOrderResult struct {
 	sizeCache               protoimpl.SizeCache
 }
 
-func (x *CloseTradeOrderResult) Reset() {
-	*x = CloseTradeOrderResult{}
+func (x *CloseTradeOrderResponse) Reset() {
+	*x = CloseTradeOrderResponse{}
 	mi := &file_settlement_v1_trade_settlement_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CloseTradeOrderResult) String() string {
+func (x *CloseTradeOrderResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CloseTradeOrderResult) ProtoMessage() {}
+func (*CloseTradeOrderResponse) ProtoMessage() {}
 
-func (x *CloseTradeOrderResult) ProtoReflect() protoreflect.Message {
+func (x *CloseTradeOrderResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_settlement_v1_trade_settlement_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -418,61 +418,61 @@ func (x *CloseTradeOrderResult) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CloseTradeOrderResult.ProtoReflect.Descriptor instead.
-func (*CloseTradeOrderResult) Descriptor() ([]byte, []int) {
+// Deprecated: Use CloseTradeOrderResponse.ProtoReflect.Descriptor instead.
+func (*CloseTradeOrderResponse) Descriptor() ([]byte, []int) {
 	return file_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *CloseTradeOrderResult) GetOperation() *v1.OperationView {
+func (x *CloseTradeOrderResponse) GetOperation() *v1.OperationView {
 	if x != nil {
 		return x.Operation
 	}
 	return nil
 }
 
-func (x *CloseTradeOrderResult) GetTradeOrder() *v1.TradeOrderView {
+func (x *CloseTradeOrderResponse) GetTradeOrder() *v1.TradeOrderView {
 	if x != nil {
 		return x.TradeOrder
 	}
 	return nil
 }
 
-func (x *CloseTradeOrderResult) GetWalletReservation() *v1.WalletReservationView {
+func (x *CloseTradeOrderResponse) GetWalletReservation() *v1.WalletReservationView {
 	if x != nil {
 		return x.WalletReservation
 	}
 	return nil
 }
 
-func (x *CloseTradeOrderResult) GetItemStackReservation() *v1.ItemStackReservationView {
+func (x *CloseTradeOrderResponse) GetItemStackReservation() *v1.ItemStackReservationView {
 	if x != nil {
 		return x.ItemStackReservation
 	}
 	return nil
 }
 
-func (x *CloseTradeOrderResult) GetItemInstanceReservation() *v1.ItemInstanceReservationView {
+func (x *CloseTradeOrderResponse) GetItemInstanceReservation() *v1.ItemInstanceReservationView {
 	if x != nil {
 		return x.ItemInstanceReservation
 	}
 	return nil
 }
 
-func (x *CloseTradeOrderResult) GetIdempotentReplay() bool {
+func (x *CloseTradeOrderResponse) GetIdempotentReplay() bool {
 	if x != nil {
 		return x.IdempotentReplay
 	}
 	return false
 }
 
-func (x *CloseTradeOrderResult) GetFailure() *v1.TradeError {
+func (x *CloseTradeOrderResponse) GetFailure() *v1.TradeError {
 	if x != nil {
 		return x.Failure
 	}
 	return nil
 }
 
-type SettlementRequest struct {
+type RequestSettlementRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Context            *v1.RequestContext     `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
 	TradeOrderId       *v1.TradeOrderId       `protobuf:"bytes,2,opt,name=trade_order_id,json=tradeOrderId,proto3" json:"trade_order_id,omitempty"`
@@ -504,20 +504,20 @@ type SettlementRequest struct {
 	sizeCache                   protoimpl.SizeCache
 }
 
-func (x *SettlementRequest) Reset() {
-	*x = SettlementRequest{}
+func (x *RequestSettlementRequest) Reset() {
+	*x = RequestSettlementRequest{}
 	mi := &file_settlement_v1_trade_settlement_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SettlementRequest) String() string {
+func (x *RequestSettlementRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SettlementRequest) ProtoMessage() {}
+func (*RequestSettlementRequest) ProtoMessage() {}
 
-func (x *SettlementRequest) ProtoReflect() protoreflect.Message {
+func (x *RequestSettlementRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_settlement_v1_trade_settlement_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -529,166 +529,166 @@ func (x *SettlementRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SettlementRequest.ProtoReflect.Descriptor instead.
-func (*SettlementRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use RequestSettlementRequest.ProtoReflect.Descriptor instead.
+func (*RequestSettlementRequest) Descriptor() ([]byte, []int) {
 	return file_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *SettlementRequest) GetContext() *v1.RequestContext {
+func (x *RequestSettlementRequest) GetContext() *v1.RequestContext {
 	if x != nil {
 		return x.Context
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetTradeOrderId() *v1.TradeOrderId {
+func (x *RequestSettlementRequest) GetTradeOrderId() *v1.TradeOrderId {
 	if x != nil {
 		return x.TradeOrderId
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetTradeTransactionId() *v1.TradeTransactionId {
+func (x *RequestSettlementRequest) GetTradeTransactionId() *v1.TradeTransactionId {
 	if x != nil {
 		return x.TradeTransactionId
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetSettlementId() *v1.SettlementId {
+func (x *RequestSettlementRequest) GetSettlementId() *v1.SettlementId {
 	if x != nil {
 		return x.SettlementId
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetItemKind() v1.TradeItemKind {
+func (x *RequestSettlementRequest) GetItemKind() v1.TradeItemKind {
 	if x != nil {
 		return x.ItemKind
 	}
 	return v1.TradeItemKind(0)
 }
 
-func (x *SettlementRequest) GetBuyerCapsuleerId() *v1.CapsuleerId {
+func (x *RequestSettlementRequest) GetBuyerCapsuleerId() *v1.CapsuleerId {
 	if x != nil {
 		return x.BuyerCapsuleerId
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetBuyerWalletId() *v1.WalletId {
+func (x *RequestSettlementRequest) GetBuyerWalletId() *v1.WalletId {
 	if x != nil {
 		return x.BuyerWalletId
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetSellerCapsuleerId() *v1.CapsuleerId {
+func (x *RequestSettlementRequest) GetSellerCapsuleerId() *v1.CapsuleerId {
 	if x != nil {
 		return x.SellerCapsuleerId
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetSellerWalletId() *v1.WalletId {
+func (x *RequestSettlementRequest) GetSellerWalletId() *v1.WalletId {
 	if x != nil {
 		return x.SellerWalletId
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetItemTypeId() *v1.ItemTypeId {
+func (x *RequestSettlementRequest) GetItemTypeId() *v1.ItemTypeId {
 	if x != nil {
 		return x.ItemTypeId
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetSourceItemStackId() *v1.ItemStackId {
+func (x *RequestSettlementRequest) GetSourceItemStackId() *v1.ItemStackId {
 	if x != nil {
 		return x.SourceItemStackId
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetDestinationItemStackId() *v1.ItemStackId {
+func (x *RequestSettlementRequest) GetDestinationItemStackId() *v1.ItemStackId {
 	if x != nil {
 		return x.DestinationItemStackId
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetSourceItemInstanceId() *v1.ItemInstanceId {
+func (x *RequestSettlementRequest) GetSourceItemInstanceId() *v1.ItemInstanceId {
 	if x != nil {
 		return x.SourceItemInstanceId
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetDestinationItemInstanceId() *v1.ItemInstanceId {
+func (x *RequestSettlementRequest) GetDestinationItemInstanceId() *v1.ItemInstanceId {
 	if x != nil {
 		return x.DestinationItemInstanceId
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetQuantity() *v1.Quantity {
+func (x *RequestSettlementRequest) GetQuantity() *v1.Quantity {
 	if x != nil {
 		return x.Quantity
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetUnitPriceIsk() *v1.IskAmount {
+func (x *RequestSettlementRequest) GetUnitPriceIsk() *v1.IskAmount {
 	if x != nil {
 		return x.UnitPriceIsk
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetTotalPriceIsk() *v1.IskAmount {
+func (x *RequestSettlementRequest) GetTotalPriceIsk() *v1.IskAmount {
 	if x != nil {
 		return x.TotalPriceIsk
 	}
 	return nil
 }
 
-func (x *SettlementRequest) GetExpectedTradeOrderState() v1.TransactionState {
+func (x *RequestSettlementRequest) GetExpectedTradeOrderState() v1.TransactionState {
 	if x != nil {
 		return x.ExpectedTradeOrderState
 	}
 	return v1.TransactionState(0)
 }
 
-func (x *SettlementRequest) GetExpectedSourceItemChecksum() string {
+func (x *RequestSettlementRequest) GetExpectedSourceItemChecksum() string {
 	if x != nil {
 		return x.ExpectedSourceItemChecksum
 	}
 	return ""
 }
 
-func (x *SettlementRequest) GetExpectedSourceItemVersion() uint64 {
+func (x *RequestSettlementRequest) GetExpectedSourceItemVersion() uint64 {
 	if x != nil {
 		return x.ExpectedSourceItemVersion
 	}
 	return 0
 }
 
-func (x *SettlementRequest) GetExpectedBuyerWalletChecksum() string {
+func (x *RequestSettlementRequest) GetExpectedBuyerWalletChecksum() string {
 	if x != nil {
 		return x.ExpectedBuyerWalletChecksum
 	}
 	return ""
 }
 
-func (x *SettlementRequest) GetExpectedBuyerWalletVersion() uint64 {
+func (x *RequestSettlementRequest) GetExpectedBuyerWalletVersion() uint64 {
 	if x != nil {
 		return x.ExpectedBuyerWalletVersion
 	}
 	return 0
 }
 
-type SettlementResult struct {
+type RequestSettlementResponse struct {
 	state            protoimpl.MessageState   `protogen:"open.v1"`
 	Operation        *v1.OperationView        `protobuf:"bytes,1,opt,name=operation,proto3" json:"operation,omitempty"`
 	TradeOrder       *v1.TradeOrderView       `protobuf:"bytes,2,opt,name=trade_order,json=tradeOrder,proto3" json:"trade_order,omitempty"`
@@ -706,20 +706,20 @@ type SettlementResult struct {
 	sizeCache               protoimpl.SizeCache
 }
 
-func (x *SettlementResult) Reset() {
-	*x = SettlementResult{}
+func (x *RequestSettlementResponse) Reset() {
+	*x = RequestSettlementResponse{}
 	mi := &file_settlement_v1_trade_settlement_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SettlementResult) String() string {
+func (x *RequestSettlementResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SettlementResult) ProtoMessage() {}
+func (*RequestSettlementResponse) ProtoMessage() {}
 
-func (x *SettlementResult) ProtoReflect() protoreflect.Message {
+func (x *RequestSettlementResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_settlement_v1_trade_settlement_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -731,75 +731,75 @@ func (x *SettlementResult) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SettlementResult.ProtoReflect.Descriptor instead.
-func (*SettlementResult) Descriptor() ([]byte, []int) {
+// Deprecated: Use RequestSettlementResponse.ProtoReflect.Descriptor instead.
+func (*RequestSettlementResponse) Descriptor() ([]byte, []int) {
 	return file_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *SettlementResult) GetOperation() *v1.OperationView {
+func (x *RequestSettlementResponse) GetOperation() *v1.OperationView {
 	if x != nil {
 		return x.Operation
 	}
 	return nil
 }
 
-func (x *SettlementResult) GetTradeOrder() *v1.TradeOrderView {
+func (x *RequestSettlementResponse) GetTradeOrder() *v1.TradeOrderView {
 	if x != nil {
 		return x.TradeOrder
 	}
 	return nil
 }
 
-func (x *SettlementResult) GetTradeTransaction() *v1.TradeTransactionView {
+func (x *RequestSettlementResponse) GetTradeTransaction() *v1.TradeTransactionView {
 	if x != nil {
 		return x.TradeTransaction
 	}
 	return nil
 }
 
-func (x *SettlementResult) GetSettlement() *v1.SettlementView {
+func (x *RequestSettlementResponse) GetSettlement() *v1.SettlementView {
 	if x != nil {
 		return x.Settlement
 	}
 	return nil
 }
 
-func (x *SettlementResult) GetSettlementSteps() []*v1.SettlementStepView {
+func (x *RequestSettlementResponse) GetSettlementSteps() []*v1.SettlementStepView {
 	if x != nil {
 		return x.SettlementSteps
 	}
 	return nil
 }
 
-func (x *SettlementResult) GetWalletOperationId() *v1.WalletOperationId {
+func (x *RequestSettlementResponse) GetWalletOperationId() *v1.WalletOperationId {
 	if x != nil {
 		return x.WalletOperationId
 	}
 	return nil
 }
 
-func (x *SettlementResult) GetItemStackOperationId() *v1.ItemStackOperationId {
+func (x *RequestSettlementResponse) GetItemStackOperationId() *v1.ItemStackOperationId {
 	if x != nil {
 		return x.ItemStackOperationId
 	}
 	return nil
 }
 
-func (x *SettlementResult) GetItemInstanceOperationId() *v1.ItemInstanceOperationId {
+func (x *RequestSettlementResponse) GetItemInstanceOperationId() *v1.ItemInstanceOperationId {
 	if x != nil {
 		return x.ItemInstanceOperationId
 	}
 	return nil
 }
 
-func (x *SettlementResult) GetIdempotentReplay() bool {
+func (x *RequestSettlementResponse) GetIdempotentReplay() bool {
 	if x != nil {
 		return x.IdempotentReplay
 	}
 	return false
 }
 
-func (x *SettlementResult) GetFailure() *v1.TradeError {
+func (x *RequestSettlementResponse) GetFailure() *v1.TradeError {
 	if x != nil {
 		return x.Failure
 	}
@@ -1490,7 +1490,7 @@ var File_settlement_v1_trade_settlement_proto protoreflect.FileDescriptor
 
 const file_settlement_v1_trade_settlement_proto_rawDesc = "" +
 	"\n" +
-	"$settlement/v1/trade_settlement.proto\x12\rsettlement.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15trade/v1/common.proto\x1a\x18trade/v1/operation.proto\x1a\x1btrade/v1/market_types.proto\x1a\x18trade/v1/ownership.proto\"\xec\x05\n" +
+	"$settlement/v1/trade_settlement.proto\x12\rsettlement.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15trade/v1/common.proto\x1a\x1btrade/v1/market_types.proto\x1a\x18trade/v1/operation.proto\"\xec\x05\n" +
 	"\x0fTradeOrderTerms\x127\n" +
 	"\n" +
 	"order_side\x18\x01 \x01(\x0e2\x18.trade.v1.TradeOrderSideR\torderSide\x124\n" +
@@ -1511,8 +1511,8 @@ const file_settlement_v1_trade_settlement_proto_rawDesc = "" +
 	"expires_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"\x81\x01\n" +
 	"\x15OpenTradeOrderRequest\x122\n" +
 	"\acontext\x18\x01 \x01(\v2\x18.trade.v1.RequestContextR\acontext\x124\n" +
-	"\x05terms\x18\x02 \x01(\v2\x1e.settlement.v1.TradeOrderTermsR\x05terms\"\xf2\x03\n" +
-	"\x14OpenTradeOrderResult\x125\n" +
+	"\x05terms\x18\x02 \x01(\v2\x1e.settlement.v1.TradeOrderTermsR\x05terms\"\xf4\x03\n" +
+	"\x16OpenTradeOrderResponse\x125\n" +
 	"\toperation\x18\x01 \x01(\v2\x17.trade.v1.OperationViewR\toperation\x129\n" +
 	"\vtrade_order\x18\x02 \x01(\v2\x18.trade.v1.TradeOrderViewR\n" +
 	"tradeOrder\x12N\n" +
@@ -1526,8 +1526,8 @@ const file_settlement_v1_trade_settlement_proto_rawDesc = "" +
 	"\x0etrade_order_id\x18\x02 \x01(\v2\x16.trade.v1.TradeOrderIdR\ftradeOrderId\x12E\n" +
 	"\x10requested_change\x18\x03 \x01(\x0e2\x1a.trade.v1.TradeStateChangeR\x0frequestedChange\x12P\n" +
 	"\x16expected_current_state\x18\x04 \x01(\x0e2\x1a.trade.v1.TransactionStateR\x14expectedCurrentState\x12\x16\n" +
-	"\x06reason\x18\x05 \x01(\tR\x06reason\"\xf3\x03\n" +
-	"\x15CloseTradeOrderResult\x125\n" +
+	"\x06reason\x18\x05 \x01(\tR\x06reason\"\xf5\x03\n" +
+	"\x17CloseTradeOrderResponse\x125\n" +
 	"\toperation\x18\x01 \x01(\v2\x17.trade.v1.OperationViewR\toperation\x129\n" +
 	"\vtrade_order\x18\x02 \x01(\v2\x18.trade.v1.TradeOrderViewR\n" +
 	"tradeOrder\x12N\n" +
@@ -1535,8 +1535,8 @@ const file_settlement_v1_trade_settlement_proto_rawDesc = "" +
 	"\x16item_stack_reservation\x18\x04 \x01(\v2\".trade.v1.ItemStackReservationViewR\x14itemStackReservation\x12a\n" +
 	"\x19item_instance_reservation\x18\x05 \x01(\v2%.trade.v1.ItemInstanceReservationViewR\x17itemInstanceReservation\x12+\n" +
 	"\x11idempotent_replay\x18\x06 \x01(\bR\x10idempotentReplay\x12.\n" +
-	"\afailure\x18\a \x01(\v2\x14.trade.v1.TradeErrorR\afailure\"\xd9\v\n" +
-	"\x11SettlementRequest\x122\n" +
+	"\afailure\x18\a \x01(\v2\x14.trade.v1.TradeErrorR\afailure\"\xe0\v\n" +
+	"\x18RequestSettlementRequest\x122\n" +
 	"\acontext\x18\x01 \x01(\v2\x18.trade.v1.RequestContextR\acontext\x12<\n" +
 	"\x0etrade_order_id\x18\x02 \x01(\v2\x16.trade.v1.TradeOrderIdR\ftradeOrderId\x12N\n" +
 	"\x14trade_transaction_id\x18\x03 \x01(\v2\x1c.trade.v1.TradeTransactionIdR\x12tradeTransactionId\x12;\n" +
@@ -1560,8 +1560,8 @@ const file_settlement_v1_trade_settlement_proto_rawDesc = "" +
 	"\x1dexpected_source_item_checksum\x18\x13 \x01(\tR\x1aexpectedSourceItemChecksum\x12?\n" +
 	"\x1cexpected_source_item_version\x18\x14 \x01(\x04R\x19expectedSourceItemVersion\x12C\n" +
 	"\x1eexpected_buyer_wallet_checksum\x18\x15 \x01(\tR\x1bexpectedBuyerWalletChecksum\x12A\n" +
-	"\x1dexpected_buyer_wallet_version\x18\x16 \x01(\x04R\x1aexpectedBuyerWalletVersion\"\xb5\x05\n" +
-	"\x10SettlementResult\x125\n" +
+	"\x1dexpected_buyer_wallet_version\x18\x16 \x01(\x04R\x1aexpectedBuyerWalletVersion\"\xbe\x05\n" +
+	"\x19RequestSettlementResponse\x125\n" +
 	"\toperation\x18\x01 \x01(\v2\x17.trade.v1.OperationViewR\toperation\x129\n" +
 	"\vtrade_order\x18\x02 \x01(\v2\x18.trade.v1.TradeOrderViewR\n" +
 	"tradeOrder\x12K\n" +
@@ -1627,11 +1627,11 @@ const file_settlement_v1_trade_settlement_proto_rawDesc = "" +
 	"\acontext\x18\x01 \x01(\v2\x18.trade.v1.RequestContextR\acontext\x128\n" +
 	"\foperation_id\x18\x02 \x01(\v2\x15.trade.v1.OperationIdR\voperationId\"M\n" +
 	"\x14GetOperationResponse\x125\n" +
-	"\toperation\x18\x01 \x01(\v2\x17.trade.v1.OperationViewR\toperation2\x86\a\n" +
-	"\x16TradeSettlementService\x12[\n" +
-	"\x0eOpenTradeOrder\x12$.settlement.v1.OpenTradeOrderRequest\x1a#.settlement.v1.OpenTradeOrderResult\x12^\n" +
-	"\x0fCloseTradeOrder\x12%.settlement.v1.CloseTradeOrderRequest\x1a$.settlement.v1.CloseTradeOrderResult\x12V\n" +
-	"\x11RequestSettlement\x12 .settlement.v1.SettlementRequest\x1a\x1f.settlement.v1.SettlementResult\x12T\n" +
+	"\toperation\x18\x01 \x01(\v2\x17.trade.v1.OperationViewR\toperation2\x9a\a\n" +
+	"\x16TradeSettlementService\x12]\n" +
+	"\x0eOpenTradeOrder\x12$.settlement.v1.OpenTradeOrderRequest\x1a%.settlement.v1.OpenTradeOrderResponse\x12`\n" +
+	"\x0fCloseTradeOrder\x12%.settlement.v1.CloseTradeOrderRequest\x1a&.settlement.v1.CloseTradeOrderResponse\x12f\n" +
+	"\x11RequestSettlement\x12'.settlement.v1.RequestSettlementRequest\x1a(.settlement.v1.RequestSettlementResponse\x12T\n" +
 	"\vClaimResult\x12!.settlement.v1.ClaimResultRequest\x1a\".settlement.v1.ClaimResultResponse\x12Z\n" +
 	"\rGetTradeOrder\x12#.settlement.v1.GetTradeOrderRequest\x1a$.settlement.v1.GetTradeOrderResponse\x12\x81\x01\n" +
 	"\x1aListOutstandingTradeOrders\x120.settlement.v1.ListOutstandingTradeOrdersRequest\x1a1.settlement.v1.ListOutstandingTradeOrdersResponse\x12l\n" +
@@ -1656,11 +1656,11 @@ var file_settlement_v1_trade_settlement_proto_msgTypes = make([]protoimpl.Messag
 var file_settlement_v1_trade_settlement_proto_goTypes = []any{
 	(*TradeOrderTerms)(nil),                    // 0: settlement.v1.TradeOrderTerms
 	(*OpenTradeOrderRequest)(nil),              // 1: settlement.v1.OpenTradeOrderRequest
-	(*OpenTradeOrderResult)(nil),               // 2: settlement.v1.OpenTradeOrderResult
+	(*OpenTradeOrderResponse)(nil),             // 2: settlement.v1.OpenTradeOrderResponse
 	(*CloseTradeOrderRequest)(nil),             // 3: settlement.v1.CloseTradeOrderRequest
-	(*CloseTradeOrderResult)(nil),              // 4: settlement.v1.CloseTradeOrderResult
-	(*SettlementRequest)(nil),                  // 5: settlement.v1.SettlementRequest
-	(*SettlementResult)(nil),                   // 6: settlement.v1.SettlementResult
+	(*CloseTradeOrderResponse)(nil),            // 4: settlement.v1.CloseTradeOrderResponse
+	(*RequestSettlementRequest)(nil),           // 5: settlement.v1.RequestSettlementRequest
+	(*RequestSettlementResponse)(nil),          // 6: settlement.v1.RequestSettlementResponse
 	(*ClaimResultRequest)(nil),                 // 7: settlement.v1.ClaimResultRequest
 	(*ClaimResultResponse)(nil),                // 8: settlement.v1.ClaimResultResponse
 	(*GetTradeOrderRequest)(nil),               // 9: settlement.v1.GetTradeOrderRequest
@@ -1721,49 +1721,49 @@ var file_settlement_v1_trade_settlement_proto_depIdxs = []int32{
 	30, // 11: settlement.v1.TradeOrderTerms.expires_at:type_name -> google.protobuf.Timestamp
 	31, // 12: settlement.v1.OpenTradeOrderRequest.context:type_name -> trade.v1.RequestContext
 	0,  // 13: settlement.v1.OpenTradeOrderRequest.terms:type_name -> settlement.v1.TradeOrderTerms
-	32, // 14: settlement.v1.OpenTradeOrderResult.operation:type_name -> trade.v1.OperationView
-	33, // 15: settlement.v1.OpenTradeOrderResult.trade_order:type_name -> trade.v1.TradeOrderView
-	34, // 16: settlement.v1.OpenTradeOrderResult.wallet_reservation:type_name -> trade.v1.WalletReservationView
-	35, // 17: settlement.v1.OpenTradeOrderResult.item_stack_reservation:type_name -> trade.v1.ItemStackReservationView
-	36, // 18: settlement.v1.OpenTradeOrderResult.item_instance_reservation:type_name -> trade.v1.ItemInstanceReservationView
-	37, // 19: settlement.v1.OpenTradeOrderResult.failure:type_name -> trade.v1.TradeError
+	32, // 14: settlement.v1.OpenTradeOrderResponse.operation:type_name -> trade.v1.OperationView
+	33, // 15: settlement.v1.OpenTradeOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
+	34, // 16: settlement.v1.OpenTradeOrderResponse.wallet_reservation:type_name -> trade.v1.WalletReservationView
+	35, // 17: settlement.v1.OpenTradeOrderResponse.item_stack_reservation:type_name -> trade.v1.ItemStackReservationView
+	36, // 18: settlement.v1.OpenTradeOrderResponse.item_instance_reservation:type_name -> trade.v1.ItemInstanceReservationView
+	37, // 19: settlement.v1.OpenTradeOrderResponse.failure:type_name -> trade.v1.TradeError
 	31, // 20: settlement.v1.CloseTradeOrderRequest.context:type_name -> trade.v1.RequestContext
 	38, // 21: settlement.v1.CloseTradeOrderRequest.trade_order_id:type_name -> trade.v1.TradeOrderId
 	39, // 22: settlement.v1.CloseTradeOrderRequest.requested_change:type_name -> trade.v1.TradeStateChange
 	40, // 23: settlement.v1.CloseTradeOrderRequest.expected_current_state:type_name -> trade.v1.TransactionState
-	32, // 24: settlement.v1.CloseTradeOrderResult.operation:type_name -> trade.v1.OperationView
-	33, // 25: settlement.v1.CloseTradeOrderResult.trade_order:type_name -> trade.v1.TradeOrderView
-	34, // 26: settlement.v1.CloseTradeOrderResult.wallet_reservation:type_name -> trade.v1.WalletReservationView
-	35, // 27: settlement.v1.CloseTradeOrderResult.item_stack_reservation:type_name -> trade.v1.ItemStackReservationView
-	36, // 28: settlement.v1.CloseTradeOrderResult.item_instance_reservation:type_name -> trade.v1.ItemInstanceReservationView
-	37, // 29: settlement.v1.CloseTradeOrderResult.failure:type_name -> trade.v1.TradeError
-	31, // 30: settlement.v1.SettlementRequest.context:type_name -> trade.v1.RequestContext
-	38, // 31: settlement.v1.SettlementRequest.trade_order_id:type_name -> trade.v1.TradeOrderId
-	41, // 32: settlement.v1.SettlementRequest.trade_transaction_id:type_name -> trade.v1.TradeTransactionId
-	42, // 33: settlement.v1.SettlementRequest.settlement_id:type_name -> trade.v1.SettlementId
-	20, // 34: settlement.v1.SettlementRequest.item_kind:type_name -> trade.v1.TradeItemKind
-	21, // 35: settlement.v1.SettlementRequest.buyer_capsuleer_id:type_name -> trade.v1.CapsuleerId
-	22, // 36: settlement.v1.SettlementRequest.buyer_wallet_id:type_name -> trade.v1.WalletId
-	21, // 37: settlement.v1.SettlementRequest.seller_capsuleer_id:type_name -> trade.v1.CapsuleerId
-	22, // 38: settlement.v1.SettlementRequest.seller_wallet_id:type_name -> trade.v1.WalletId
-	23, // 39: settlement.v1.SettlementRequest.item_type_id:type_name -> trade.v1.ItemTypeId
-	24, // 40: settlement.v1.SettlementRequest.source_item_stack_id:type_name -> trade.v1.ItemStackId
-	24, // 41: settlement.v1.SettlementRequest.destination_item_stack_id:type_name -> trade.v1.ItemStackId
-	25, // 42: settlement.v1.SettlementRequest.source_item_instance_id:type_name -> trade.v1.ItemInstanceId
-	25, // 43: settlement.v1.SettlementRequest.destination_item_instance_id:type_name -> trade.v1.ItemInstanceId
-	28, // 44: settlement.v1.SettlementRequest.quantity:type_name -> trade.v1.Quantity
-	29, // 45: settlement.v1.SettlementRequest.unit_price_isk:type_name -> trade.v1.IskAmount
-	29, // 46: settlement.v1.SettlementRequest.total_price_isk:type_name -> trade.v1.IskAmount
-	40, // 47: settlement.v1.SettlementRequest.expected_trade_order_state:type_name -> trade.v1.TransactionState
-	32, // 48: settlement.v1.SettlementResult.operation:type_name -> trade.v1.OperationView
-	33, // 49: settlement.v1.SettlementResult.trade_order:type_name -> trade.v1.TradeOrderView
-	43, // 50: settlement.v1.SettlementResult.trade_transaction:type_name -> trade.v1.TradeTransactionView
-	44, // 51: settlement.v1.SettlementResult.settlement:type_name -> trade.v1.SettlementView
-	45, // 52: settlement.v1.SettlementResult.settlement_steps:type_name -> trade.v1.SettlementStepView
-	46, // 53: settlement.v1.SettlementResult.wallet_operation_id:type_name -> trade.v1.WalletOperationId
-	47, // 54: settlement.v1.SettlementResult.item_stack_operation_id:type_name -> trade.v1.ItemStackOperationId
-	48, // 55: settlement.v1.SettlementResult.item_instance_operation_id:type_name -> trade.v1.ItemInstanceOperationId
-	37, // 56: settlement.v1.SettlementResult.failure:type_name -> trade.v1.TradeError
+	32, // 24: settlement.v1.CloseTradeOrderResponse.operation:type_name -> trade.v1.OperationView
+	33, // 25: settlement.v1.CloseTradeOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
+	34, // 26: settlement.v1.CloseTradeOrderResponse.wallet_reservation:type_name -> trade.v1.WalletReservationView
+	35, // 27: settlement.v1.CloseTradeOrderResponse.item_stack_reservation:type_name -> trade.v1.ItemStackReservationView
+	36, // 28: settlement.v1.CloseTradeOrderResponse.item_instance_reservation:type_name -> trade.v1.ItemInstanceReservationView
+	37, // 29: settlement.v1.CloseTradeOrderResponse.failure:type_name -> trade.v1.TradeError
+	31, // 30: settlement.v1.RequestSettlementRequest.context:type_name -> trade.v1.RequestContext
+	38, // 31: settlement.v1.RequestSettlementRequest.trade_order_id:type_name -> trade.v1.TradeOrderId
+	41, // 32: settlement.v1.RequestSettlementRequest.trade_transaction_id:type_name -> trade.v1.TradeTransactionId
+	42, // 33: settlement.v1.RequestSettlementRequest.settlement_id:type_name -> trade.v1.SettlementId
+	20, // 34: settlement.v1.RequestSettlementRequest.item_kind:type_name -> trade.v1.TradeItemKind
+	21, // 35: settlement.v1.RequestSettlementRequest.buyer_capsuleer_id:type_name -> trade.v1.CapsuleerId
+	22, // 36: settlement.v1.RequestSettlementRequest.buyer_wallet_id:type_name -> trade.v1.WalletId
+	21, // 37: settlement.v1.RequestSettlementRequest.seller_capsuleer_id:type_name -> trade.v1.CapsuleerId
+	22, // 38: settlement.v1.RequestSettlementRequest.seller_wallet_id:type_name -> trade.v1.WalletId
+	23, // 39: settlement.v1.RequestSettlementRequest.item_type_id:type_name -> trade.v1.ItemTypeId
+	24, // 40: settlement.v1.RequestSettlementRequest.source_item_stack_id:type_name -> trade.v1.ItemStackId
+	24, // 41: settlement.v1.RequestSettlementRequest.destination_item_stack_id:type_name -> trade.v1.ItemStackId
+	25, // 42: settlement.v1.RequestSettlementRequest.source_item_instance_id:type_name -> trade.v1.ItemInstanceId
+	25, // 43: settlement.v1.RequestSettlementRequest.destination_item_instance_id:type_name -> trade.v1.ItemInstanceId
+	28, // 44: settlement.v1.RequestSettlementRequest.quantity:type_name -> trade.v1.Quantity
+	29, // 45: settlement.v1.RequestSettlementRequest.unit_price_isk:type_name -> trade.v1.IskAmount
+	29, // 46: settlement.v1.RequestSettlementRequest.total_price_isk:type_name -> trade.v1.IskAmount
+	40, // 47: settlement.v1.RequestSettlementRequest.expected_trade_order_state:type_name -> trade.v1.TransactionState
+	32, // 48: settlement.v1.RequestSettlementResponse.operation:type_name -> trade.v1.OperationView
+	33, // 49: settlement.v1.RequestSettlementResponse.trade_order:type_name -> trade.v1.TradeOrderView
+	43, // 50: settlement.v1.RequestSettlementResponse.trade_transaction:type_name -> trade.v1.TradeTransactionView
+	44, // 51: settlement.v1.RequestSettlementResponse.settlement:type_name -> trade.v1.SettlementView
+	45, // 52: settlement.v1.RequestSettlementResponse.settlement_steps:type_name -> trade.v1.SettlementStepView
+	46, // 53: settlement.v1.RequestSettlementResponse.wallet_operation_id:type_name -> trade.v1.WalletOperationId
+	47, // 54: settlement.v1.RequestSettlementResponse.item_stack_operation_id:type_name -> trade.v1.ItemStackOperationId
+	48, // 55: settlement.v1.RequestSettlementResponse.item_instance_operation_id:type_name -> trade.v1.ItemInstanceOperationId
+	37, // 56: settlement.v1.RequestSettlementResponse.failure:type_name -> trade.v1.TradeError
 	31, // 57: settlement.v1.ClaimResultRequest.context:type_name -> trade.v1.RequestContext
 	41, // 58: settlement.v1.ClaimResultRequest.trade_transaction_id:type_name -> trade.v1.TradeTransactionId
 	21, // 59: settlement.v1.ClaimResultRequest.claiming_capsuleer_id:type_name -> trade.v1.CapsuleerId
@@ -1793,16 +1793,16 @@ var file_settlement_v1_trade_settlement_proto_depIdxs = []int32{
 	32, // 83: settlement.v1.GetOperationResponse.operation:type_name -> trade.v1.OperationView
 	1,  // 84: settlement.v1.TradeSettlementService.OpenTradeOrder:input_type -> settlement.v1.OpenTradeOrderRequest
 	3,  // 85: settlement.v1.TradeSettlementService.CloseTradeOrder:input_type -> settlement.v1.CloseTradeOrderRequest
-	5,  // 86: settlement.v1.TradeSettlementService.RequestSettlement:input_type -> settlement.v1.SettlementRequest
+	5,  // 86: settlement.v1.TradeSettlementService.RequestSettlement:input_type -> settlement.v1.RequestSettlementRequest
 	7,  // 87: settlement.v1.TradeSettlementService.ClaimResult:input_type -> settlement.v1.ClaimResultRequest
 	9,  // 88: settlement.v1.TradeSettlementService.GetTradeOrder:input_type -> settlement.v1.GetTradeOrderRequest
 	11, // 89: settlement.v1.TradeSettlementService.ListOutstandingTradeOrders:input_type -> settlement.v1.ListOutstandingTradeOrdersRequest
 	13, // 90: settlement.v1.TradeSettlementService.GetTransactionState:input_type -> settlement.v1.GetTransactionStateRequest
 	15, // 91: settlement.v1.TradeSettlementService.GetSettlement:input_type -> settlement.v1.GetSettlementRequest
 	17, // 92: settlement.v1.TradeSettlementService.GetOperation:input_type -> settlement.v1.GetOperationRequest
-	2,  // 93: settlement.v1.TradeSettlementService.OpenTradeOrder:output_type -> settlement.v1.OpenTradeOrderResult
-	4,  // 94: settlement.v1.TradeSettlementService.CloseTradeOrder:output_type -> settlement.v1.CloseTradeOrderResult
-	6,  // 95: settlement.v1.TradeSettlementService.RequestSettlement:output_type -> settlement.v1.SettlementResult
+	2,  // 93: settlement.v1.TradeSettlementService.OpenTradeOrder:output_type -> settlement.v1.OpenTradeOrderResponse
+	4,  // 94: settlement.v1.TradeSettlementService.CloseTradeOrder:output_type -> settlement.v1.CloseTradeOrderResponse
+	6,  // 95: settlement.v1.TradeSettlementService.RequestSettlement:output_type -> settlement.v1.RequestSettlementResponse
 	8,  // 96: settlement.v1.TradeSettlementService.ClaimResult:output_type -> settlement.v1.ClaimResultResponse
 	10, // 97: settlement.v1.TradeSettlementService.GetTradeOrder:output_type -> settlement.v1.GetTradeOrderResponse
 	12, // 98: settlement.v1.TradeSettlementService.ListOutstandingTradeOrders:output_type -> settlement.v1.ListOutstandingTradeOrdersResponse

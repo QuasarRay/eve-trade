@@ -2,19 +2,19 @@ syntax = "proto3";
 
 package market.v1;
 
-option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/market/v1;marketv1";
-
 import "google/protobuf/timestamp.proto";
 import "trade/v1/common.proto";
 import "trade/v1/market_types.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/market/v1;marketv1";
 
 // MarketService owns game-specific market meaning and rules. It validates order
 // creation, cancellation, expiration, and fill intent. It does not perform the
 // durable database transaction itself; it sends validated commands to
 // TradeSettlementService.
 service MarketService {
-  rpc CreateSellOrder(CreateSellOrderRequest) returns (CreateOrderResponse);
-  rpc CreateBuyOrder(CreateBuyOrderRequest) returns (CreateOrderResponse);
+  rpc CreateSellOrder(CreateSellOrderRequest) returns (CreateSellOrderResponse);
+  rpc CreateBuyOrder(CreateBuyOrderRequest) returns (CreateBuyOrderResponse);
 
   rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
   rpc ListOutstandingOrders(ListOutstandingOrdersRequest) returns (ListOutstandingOrdersResponse);
@@ -63,7 +63,13 @@ message CreateBuyOrderRequest {
   google.protobuf.Timestamp expires_at = 10;
 }
 
-message CreateOrderResponse {
+message CreateSellOrderResponse {
+  trade.v1.TradeOrderView trade_order = 1;
+  bool idempotent_replay = 2;
+  trade.v1.TradeError failure = 3;
+}
+
+message CreateBuyOrderResponse {
   trade.v1.TradeOrderView trade_order = 1;
   bool idempotent_replay = 2;
   trade.v1.TradeError failure = 3;

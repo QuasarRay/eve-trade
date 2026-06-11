@@ -2,24 +2,95 @@ syntax = "proto3";
 
 package gateway.v1;
 
-option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/gateway/v1;gatewayv1";
-
 import "market/v1/market.proto";
 
-// ApiGatewayTradeService is the external adapter boundary. It exposes the same
-// trade intent surface as MarketService for the MVP and delegates rule handling
-// to market. It does not own market rules and does not perform settlement.
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/gateway/v1;gatewayv1";
+
+// ApiGatewayTradeService is the external adapter boundary.
+//
+// The gateway intentionally owns its own RPC request/response messages instead
+// of exposing MarketService messages directly. This keeps the public adapter
+// contract stable even if the internal market service contract changes later.
 service ApiGatewayTradeService {
-  rpc CreateSellOrder(market.v1.CreateSellOrderRequest) returns (market.v1.CreateOrderResponse);
-  rpc CreateBuyOrder(market.v1.CreateBuyOrderRequest) returns (market.v1.CreateOrderResponse);
+  rpc CreateSellOrder(CreateSellOrderRequest) returns (CreateSellOrderResponse);
+  rpc CreateBuyOrder(CreateBuyOrderRequest) returns (CreateBuyOrderResponse);
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+  rpc ListOutstandingOrders(ListOutstandingOrdersRequest) returns (ListOutstandingOrdersResponse);
+  rpc AcceptFillOrder(AcceptFillOrderRequest) returns (AcceptFillOrderResponse);
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse);
+  rpc ExpireOrder(ExpireOrderRequest) returns (ExpireOrderResponse);
+  rpc GetTransactionState(GetTransactionStateRequest) returns (GetTransactionStateResponse);
+  rpc ClaimResult(ClaimResultRequest) returns (ClaimResultResponse);
+}
 
-  rpc GetOrder(market.v1.GetOrderRequest) returns (market.v1.GetOrderResponse);
-  rpc ListOutstandingOrders(market.v1.ListOutstandingOrdersRequest) returns (market.v1.ListOutstandingOrdersResponse);
+message CreateSellOrderRequest {
+  market.v1.CreateSellOrderRequest market_request = 1;
+}
 
-  rpc AcceptFillOrder(market.v1.AcceptFillOrderRequest) returns (market.v1.AcceptFillOrderResponse);
-  rpc CancelOrder(market.v1.CancelOrderRequest) returns (market.v1.CancelOrderResponse);
-  rpc ExpireOrder(market.v1.ExpireOrderRequest) returns (market.v1.ExpireOrderResponse);
+message CreateSellOrderResponse {
+  market.v1.CreateSellOrderResponse market_response = 1;
+}
 
-  rpc GetTransactionState(market.v1.GetTransactionStateRequest) returns (market.v1.GetTransactionStateResponse);
-  rpc ClaimResult(market.v1.ClaimResultRequest) returns (market.v1.ClaimResultResponse);
+message CreateBuyOrderRequest {
+  market.v1.CreateBuyOrderRequest market_request = 1;
+}
+
+message CreateBuyOrderResponse {
+  market.v1.CreateBuyOrderResponse market_response = 1;
+}
+
+message GetOrderRequest {
+  market.v1.GetOrderRequest market_request = 1;
+}
+
+message GetOrderResponse {
+  market.v1.GetOrderResponse market_response = 1;
+}
+
+message ListOutstandingOrdersRequest {
+  market.v1.ListOutstandingOrdersRequest market_request = 1;
+}
+
+message ListOutstandingOrdersResponse {
+  market.v1.ListOutstandingOrdersResponse market_response = 1;
+}
+
+message AcceptFillOrderRequest {
+  market.v1.AcceptFillOrderRequest market_request = 1;
+}
+
+message AcceptFillOrderResponse {
+  market.v1.AcceptFillOrderResponse market_response = 1;
+}
+
+message CancelOrderRequest {
+  market.v1.CancelOrderRequest market_request = 1;
+}
+
+message CancelOrderResponse {
+  market.v1.CancelOrderResponse market_response = 1;
+}
+
+message ExpireOrderRequest {
+  market.v1.ExpireOrderRequest market_request = 1;
+}
+
+message ExpireOrderResponse {
+  market.v1.ExpireOrderResponse market_response = 1;
+}
+
+message GetTransactionStateRequest {
+  market.v1.GetTransactionStateRequest market_request = 1;
+}
+
+message GetTransactionStateResponse {
+  market.v1.GetTransactionStateResponse market_response = 1;
+}
+
+message ClaimResultRequest {
+  market.v1.ClaimResultRequest market_request = 1;
+}
+
+message ClaimResultResponse {
+  market.v1.ClaimResultResponse market_response = 1;
 }

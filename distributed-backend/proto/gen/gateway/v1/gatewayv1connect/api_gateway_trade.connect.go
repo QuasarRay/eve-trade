@@ -8,8 +8,7 @@ import (
 	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	v11 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/gateway/v1"
-	v1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/market/v1"
+	v1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/gateway/v1"
 	http "net/http"
 	strings "strings"
 )
@@ -65,8 +64,8 @@ const (
 
 // ApiGatewayTradeServiceClient is a client for the gateway.v1.ApiGatewayTradeService service.
 type ApiGatewayTradeServiceClient interface {
-	CreateSellOrder(context.Context, *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error)
-	CreateBuyOrder(context.Context, *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error)
+	CreateSellOrder(context.Context, *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateSellOrderResponse], error)
+	CreateBuyOrder(context.Context, *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateBuyOrderResponse], error)
 	GetOrder(context.Context, *connect.Request[v1.GetOrderRequest]) (*connect.Response[v1.GetOrderResponse], error)
 	ListOutstandingOrders(context.Context, *connect.Request[v1.ListOutstandingOrdersRequest]) (*connect.Response[v1.ListOutstandingOrdersResponse], error)
 	AcceptFillOrder(context.Context, *connect.Request[v1.AcceptFillOrderRequest]) (*connect.Response[v1.AcceptFillOrderResponse], error)
@@ -85,15 +84,15 @@ type ApiGatewayTradeServiceClient interface {
 // http://api.acme.com or https://acme.com/grpc).
 func NewApiGatewayTradeServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ApiGatewayTradeServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	apiGatewayTradeServiceMethods := v11.File_gateway_v1_api_gateway_trade_proto.Services().ByName("ApiGatewayTradeService").Methods()
+	apiGatewayTradeServiceMethods := v1.File_gateway_v1_api_gateway_trade_proto.Services().ByName("ApiGatewayTradeService").Methods()
 	return &apiGatewayTradeServiceClient{
-		createSellOrder: connect.NewClient[v1.CreateSellOrderRequest, v1.CreateOrderResponse](
+		createSellOrder: connect.NewClient[v1.CreateSellOrderRequest, v1.CreateSellOrderResponse](
 			httpClient,
 			baseURL+ApiGatewayTradeServiceCreateSellOrderProcedure,
 			connect.WithSchema(apiGatewayTradeServiceMethods.ByName("CreateSellOrder")),
 			connect.WithClientOptions(opts...),
 		),
-		createBuyOrder: connect.NewClient[v1.CreateBuyOrderRequest, v1.CreateOrderResponse](
+		createBuyOrder: connect.NewClient[v1.CreateBuyOrderRequest, v1.CreateBuyOrderResponse](
 			httpClient,
 			baseURL+ApiGatewayTradeServiceCreateBuyOrderProcedure,
 			connect.WithSchema(apiGatewayTradeServiceMethods.ByName("CreateBuyOrder")),
@@ -146,8 +145,8 @@ func NewApiGatewayTradeServiceClient(httpClient connect.HTTPClient, baseURL stri
 
 // apiGatewayTradeServiceClient implements ApiGatewayTradeServiceClient.
 type apiGatewayTradeServiceClient struct {
-	createSellOrder       *connect.Client[v1.CreateSellOrderRequest, v1.CreateOrderResponse]
-	createBuyOrder        *connect.Client[v1.CreateBuyOrderRequest, v1.CreateOrderResponse]
+	createSellOrder       *connect.Client[v1.CreateSellOrderRequest, v1.CreateSellOrderResponse]
+	createBuyOrder        *connect.Client[v1.CreateBuyOrderRequest, v1.CreateBuyOrderResponse]
 	getOrder              *connect.Client[v1.GetOrderRequest, v1.GetOrderResponse]
 	listOutstandingOrders *connect.Client[v1.ListOutstandingOrdersRequest, v1.ListOutstandingOrdersResponse]
 	acceptFillOrder       *connect.Client[v1.AcceptFillOrderRequest, v1.AcceptFillOrderResponse]
@@ -158,12 +157,12 @@ type apiGatewayTradeServiceClient struct {
 }
 
 // CreateSellOrder calls gateway.v1.ApiGatewayTradeService.CreateSellOrder.
-func (c *apiGatewayTradeServiceClient) CreateSellOrder(ctx context.Context, req *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error) {
+func (c *apiGatewayTradeServiceClient) CreateSellOrder(ctx context.Context, req *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateSellOrderResponse], error) {
 	return c.createSellOrder.CallUnary(ctx, req)
 }
 
 // CreateBuyOrder calls gateway.v1.ApiGatewayTradeService.CreateBuyOrder.
-func (c *apiGatewayTradeServiceClient) CreateBuyOrder(ctx context.Context, req *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error) {
+func (c *apiGatewayTradeServiceClient) CreateBuyOrder(ctx context.Context, req *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateBuyOrderResponse], error) {
 	return c.createBuyOrder.CallUnary(ctx, req)
 }
 
@@ -205,8 +204,8 @@ func (c *apiGatewayTradeServiceClient) ClaimResult(ctx context.Context, req *con
 // ApiGatewayTradeServiceHandler is an implementation of the gateway.v1.ApiGatewayTradeService
 // service.
 type ApiGatewayTradeServiceHandler interface {
-	CreateSellOrder(context.Context, *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error)
-	CreateBuyOrder(context.Context, *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error)
+	CreateSellOrder(context.Context, *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateSellOrderResponse], error)
+	CreateBuyOrder(context.Context, *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateBuyOrderResponse], error)
 	GetOrder(context.Context, *connect.Request[v1.GetOrderRequest]) (*connect.Response[v1.GetOrderResponse], error)
 	ListOutstandingOrders(context.Context, *connect.Request[v1.ListOutstandingOrdersRequest]) (*connect.Response[v1.ListOutstandingOrdersResponse], error)
 	AcceptFillOrder(context.Context, *connect.Request[v1.AcceptFillOrderRequest]) (*connect.Response[v1.AcceptFillOrderResponse], error)
@@ -222,7 +221,7 @@ type ApiGatewayTradeServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewApiGatewayTradeServiceHandler(svc ApiGatewayTradeServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	apiGatewayTradeServiceMethods := v11.File_gateway_v1_api_gateway_trade_proto.Services().ByName("ApiGatewayTradeService").Methods()
+	apiGatewayTradeServiceMethods := v1.File_gateway_v1_api_gateway_trade_proto.Services().ByName("ApiGatewayTradeService").Methods()
 	apiGatewayTradeServiceCreateSellOrderHandler := connect.NewUnaryHandler(
 		ApiGatewayTradeServiceCreateSellOrderProcedure,
 		svc.CreateSellOrder,
@@ -306,11 +305,11 @@ func NewApiGatewayTradeServiceHandler(svc ApiGatewayTradeServiceHandler, opts ..
 // UnimplementedApiGatewayTradeServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedApiGatewayTradeServiceHandler struct{}
 
-func (UnimplementedApiGatewayTradeServiceHandler) CreateSellOrder(context.Context, *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error) {
+func (UnimplementedApiGatewayTradeServiceHandler) CreateSellOrder(context.Context, *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateSellOrderResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gateway.v1.ApiGatewayTradeService.CreateSellOrder is not implemented"))
 }
 
-func (UnimplementedApiGatewayTradeServiceHandler) CreateBuyOrder(context.Context, *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error) {
+func (UnimplementedApiGatewayTradeServiceHandler) CreateBuyOrder(context.Context, *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateBuyOrderResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gateway.v1.ApiGatewayTradeService.CreateBuyOrder is not implemented"))
 }
 

@@ -272,7 +272,7 @@ func (x *CreateBuyOrderRequest) GetExpiresAt() *timestamppb.Timestamp {
 	return nil
 }
 
-type CreateOrderResponse struct {
+type CreateSellOrderResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	TradeOrder       *v1.TradeOrderView     `protobuf:"bytes,1,opt,name=trade_order,json=tradeOrder,proto3" json:"trade_order,omitempty"`
 	IdempotentReplay bool                   `protobuf:"varint,2,opt,name=idempotent_replay,json=idempotentReplay,proto3" json:"idempotent_replay,omitempty"`
@@ -281,20 +281,20 @@ type CreateOrderResponse struct {
 	sizeCache        protoimpl.SizeCache
 }
 
-func (x *CreateOrderResponse) Reset() {
-	*x = CreateOrderResponse{}
+func (x *CreateSellOrderResponse) Reset() {
+	*x = CreateSellOrderResponse{}
 	mi := &file_market_v1_market_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CreateOrderResponse) String() string {
+func (x *CreateSellOrderResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CreateOrderResponse) ProtoMessage() {}
+func (*CreateSellOrderResponse) ProtoMessage() {}
 
-func (x *CreateOrderResponse) ProtoReflect() protoreflect.Message {
+func (x *CreateSellOrderResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_market_v1_market_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -306,26 +306,86 @@ func (x *CreateOrderResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CreateOrderResponse.ProtoReflect.Descriptor instead.
-func (*CreateOrderResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreateSellOrderResponse.ProtoReflect.Descriptor instead.
+func (*CreateSellOrderResponse) Descriptor() ([]byte, []int) {
 	return file_market_v1_market_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *CreateOrderResponse) GetTradeOrder() *v1.TradeOrderView {
+func (x *CreateSellOrderResponse) GetTradeOrder() *v1.TradeOrderView {
 	if x != nil {
 		return x.TradeOrder
 	}
 	return nil
 }
 
-func (x *CreateOrderResponse) GetIdempotentReplay() bool {
+func (x *CreateSellOrderResponse) GetIdempotentReplay() bool {
 	if x != nil {
 		return x.IdempotentReplay
 	}
 	return false
 }
 
-func (x *CreateOrderResponse) GetFailure() *v1.TradeError {
+func (x *CreateSellOrderResponse) GetFailure() *v1.TradeError {
+	if x != nil {
+		return x.Failure
+	}
+	return nil
+}
+
+type CreateBuyOrderResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	TradeOrder       *v1.TradeOrderView     `protobuf:"bytes,1,opt,name=trade_order,json=tradeOrder,proto3" json:"trade_order,omitempty"`
+	IdempotentReplay bool                   `protobuf:"varint,2,opt,name=idempotent_replay,json=idempotentReplay,proto3" json:"idempotent_replay,omitempty"`
+	Failure          *v1.TradeError         `protobuf:"bytes,3,opt,name=failure,proto3" json:"failure,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *CreateBuyOrderResponse) Reset() {
+	*x = CreateBuyOrderResponse{}
+	mi := &file_market_v1_market_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateBuyOrderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateBuyOrderResponse) ProtoMessage() {}
+
+func (x *CreateBuyOrderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_market_v1_market_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateBuyOrderResponse.ProtoReflect.Descriptor instead.
+func (*CreateBuyOrderResponse) Descriptor() ([]byte, []int) {
+	return file_market_v1_market_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *CreateBuyOrderResponse) GetTradeOrder() *v1.TradeOrderView {
+	if x != nil {
+		return x.TradeOrder
+	}
+	return nil
+}
+
+func (x *CreateBuyOrderResponse) GetIdempotentReplay() bool {
+	if x != nil {
+		return x.IdempotentReplay
+	}
+	return false
+}
+
+func (x *CreateBuyOrderResponse) GetFailure() *v1.TradeError {
 	if x != nil {
 		return x.Failure
 	}
@@ -342,7 +402,7 @@ type GetOrderRequest struct {
 
 func (x *GetOrderRequest) Reset() {
 	*x = GetOrderRequest{}
-	mi := &file_market_v1_market_proto_msgTypes[3]
+	mi := &file_market_v1_market_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -354,7 +414,7 @@ func (x *GetOrderRequest) String() string {
 func (*GetOrderRequest) ProtoMessage() {}
 
 func (x *GetOrderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[3]
+	mi := &file_market_v1_market_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -367,7 +427,7 @@ func (x *GetOrderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOrderRequest.ProtoReflect.Descriptor instead.
 func (*GetOrderRequest) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{3}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetOrderRequest) GetContext() *v1.RequestContext {
@@ -393,7 +453,7 @@ type GetOrderResponse struct {
 
 func (x *GetOrderResponse) Reset() {
 	*x = GetOrderResponse{}
-	mi := &file_market_v1_market_proto_msgTypes[4]
+	mi := &file_market_v1_market_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -405,7 +465,7 @@ func (x *GetOrderResponse) String() string {
 func (*GetOrderResponse) ProtoMessage() {}
 
 func (x *GetOrderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[4]
+	mi := &file_market_v1_market_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -418,7 +478,7 @@ func (x *GetOrderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOrderResponse.ProtoReflect.Descriptor instead.
 func (*GetOrderResponse) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{4}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetOrderResponse) GetTradeOrder() *v1.TradeOrderView {
@@ -443,7 +503,7 @@ type ListOutstandingOrdersRequest struct {
 
 func (x *ListOutstandingOrdersRequest) Reset() {
 	*x = ListOutstandingOrdersRequest{}
-	mi := &file_market_v1_market_proto_msgTypes[5]
+	mi := &file_market_v1_market_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -455,7 +515,7 @@ func (x *ListOutstandingOrdersRequest) String() string {
 func (*ListOutstandingOrdersRequest) ProtoMessage() {}
 
 func (x *ListOutstandingOrdersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[5]
+	mi := &file_market_v1_market_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -468,7 +528,7 @@ func (x *ListOutstandingOrdersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListOutstandingOrdersRequest.ProtoReflect.Descriptor instead.
 func (*ListOutstandingOrdersRequest) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{5}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListOutstandingOrdersRequest) GetContext() *v1.RequestContext {
@@ -530,7 +590,7 @@ type ListOutstandingOrdersResponse struct {
 
 func (x *ListOutstandingOrdersResponse) Reset() {
 	*x = ListOutstandingOrdersResponse{}
-	mi := &file_market_v1_market_proto_msgTypes[6]
+	mi := &file_market_v1_market_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -542,7 +602,7 @@ func (x *ListOutstandingOrdersResponse) String() string {
 func (*ListOutstandingOrdersResponse) ProtoMessage() {}
 
 func (x *ListOutstandingOrdersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[6]
+	mi := &file_market_v1_market_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -555,7 +615,7 @@ func (x *ListOutstandingOrdersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListOutstandingOrdersResponse.ProtoReflect.Descriptor instead.
 func (*ListOutstandingOrdersResponse) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{6}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListOutstandingOrdersResponse) GetTradeOrders() []*v1.TradeOrderView {
@@ -596,7 +656,7 @@ type AcceptFillOrderRequest struct {
 
 func (x *AcceptFillOrderRequest) Reset() {
 	*x = AcceptFillOrderRequest{}
-	mi := &file_market_v1_market_proto_msgTypes[7]
+	mi := &file_market_v1_market_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -608,7 +668,7 @@ func (x *AcceptFillOrderRequest) String() string {
 func (*AcceptFillOrderRequest) ProtoMessage() {}
 
 func (x *AcceptFillOrderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[7]
+	mi := &file_market_v1_market_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -621,7 +681,7 @@ func (x *AcceptFillOrderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcceptFillOrderRequest.ProtoReflect.Descriptor instead.
 func (*AcceptFillOrderRequest) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{7}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *AcceptFillOrderRequest) GetContext() *v1.RequestContext {
@@ -714,7 +774,7 @@ type AcceptFillOrderResponse struct {
 
 func (x *AcceptFillOrderResponse) Reset() {
 	*x = AcceptFillOrderResponse{}
-	mi := &file_market_v1_market_proto_msgTypes[8]
+	mi := &file_market_v1_market_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -726,7 +786,7 @@ func (x *AcceptFillOrderResponse) String() string {
 func (*AcceptFillOrderResponse) ProtoMessage() {}
 
 func (x *AcceptFillOrderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[8]
+	mi := &file_market_v1_market_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -739,7 +799,7 @@ func (x *AcceptFillOrderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcceptFillOrderResponse.ProtoReflect.Descriptor instead.
 func (*AcceptFillOrderResponse) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{8}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *AcceptFillOrderResponse) GetTradeOrder() *v1.TradeOrderView {
@@ -789,7 +849,7 @@ type CancelOrderRequest struct {
 
 func (x *CancelOrderRequest) Reset() {
 	*x = CancelOrderRequest{}
-	mi := &file_market_v1_market_proto_msgTypes[9]
+	mi := &file_market_v1_market_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -801,7 +861,7 @@ func (x *CancelOrderRequest) String() string {
 func (*CancelOrderRequest) ProtoMessage() {}
 
 func (x *CancelOrderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[9]
+	mi := &file_market_v1_market_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -814,7 +874,7 @@ func (x *CancelOrderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelOrderRequest.ProtoReflect.Descriptor instead.
 func (*CancelOrderRequest) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{9}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CancelOrderRequest) GetContext() *v1.RequestContext {
@@ -856,7 +916,7 @@ type CancelOrderResponse struct {
 
 func (x *CancelOrderResponse) Reset() {
 	*x = CancelOrderResponse{}
-	mi := &file_market_v1_market_proto_msgTypes[10]
+	mi := &file_market_v1_market_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -868,7 +928,7 @@ func (x *CancelOrderResponse) String() string {
 func (*CancelOrderResponse) ProtoMessage() {}
 
 func (x *CancelOrderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[10]
+	mi := &file_market_v1_market_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -881,7 +941,7 @@ func (x *CancelOrderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelOrderResponse.ProtoReflect.Descriptor instead.
 func (*CancelOrderResponse) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{10}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *CancelOrderResponse) GetTradeOrder() *v1.TradeOrderView {
@@ -915,7 +975,7 @@ type ExpireOrderRequest struct {
 
 func (x *ExpireOrderRequest) Reset() {
 	*x = ExpireOrderRequest{}
-	mi := &file_market_v1_market_proto_msgTypes[11]
+	mi := &file_market_v1_market_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -927,7 +987,7 @@ func (x *ExpireOrderRequest) String() string {
 func (*ExpireOrderRequest) ProtoMessage() {}
 
 func (x *ExpireOrderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[11]
+	mi := &file_market_v1_market_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -940,7 +1000,7 @@ func (x *ExpireOrderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExpireOrderRequest.ProtoReflect.Descriptor instead.
 func (*ExpireOrderRequest) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{11}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ExpireOrderRequest) GetContext() *v1.RequestContext {
@@ -968,7 +1028,7 @@ type ExpireOrderResponse struct {
 
 func (x *ExpireOrderResponse) Reset() {
 	*x = ExpireOrderResponse{}
-	mi := &file_market_v1_market_proto_msgTypes[12]
+	mi := &file_market_v1_market_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -980,7 +1040,7 @@ func (x *ExpireOrderResponse) String() string {
 func (*ExpireOrderResponse) ProtoMessage() {}
 
 func (x *ExpireOrderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[12]
+	mi := &file_market_v1_market_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -993,7 +1053,7 @@ func (x *ExpireOrderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExpireOrderResponse.ProtoReflect.Descriptor instead.
 func (*ExpireOrderResponse) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{12}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ExpireOrderResponse) GetTradeOrder() *v1.TradeOrderView {
@@ -1027,7 +1087,7 @@ type GetTransactionStateRequest struct {
 
 func (x *GetTransactionStateRequest) Reset() {
 	*x = GetTransactionStateRequest{}
-	mi := &file_market_v1_market_proto_msgTypes[13]
+	mi := &file_market_v1_market_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1039,7 +1099,7 @@ func (x *GetTransactionStateRequest) String() string {
 func (*GetTransactionStateRequest) ProtoMessage() {}
 
 func (x *GetTransactionStateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[13]
+	mi := &file_market_v1_market_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1052,7 +1112,7 @@ func (x *GetTransactionStateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTransactionStateRequest.ProtoReflect.Descriptor instead.
 func (*GetTransactionStateRequest) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{13}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetTransactionStateRequest) GetContext() *v1.RequestContext {
@@ -1079,7 +1139,7 @@ type GetTransactionStateResponse struct {
 
 func (x *GetTransactionStateResponse) Reset() {
 	*x = GetTransactionStateResponse{}
-	mi := &file_market_v1_market_proto_msgTypes[14]
+	mi := &file_market_v1_market_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1091,7 +1151,7 @@ func (x *GetTransactionStateResponse) String() string {
 func (*GetTransactionStateResponse) ProtoMessage() {}
 
 func (x *GetTransactionStateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[14]
+	mi := &file_market_v1_market_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1104,7 +1164,7 @@ func (x *GetTransactionStateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTransactionStateResponse.ProtoReflect.Descriptor instead.
 func (*GetTransactionStateResponse) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{14}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetTransactionStateResponse) GetTradeTransaction() *v1.TradeTransactionView {
@@ -1132,7 +1192,7 @@ type ClaimResultRequest struct {
 
 func (x *ClaimResultRequest) Reset() {
 	*x = ClaimResultRequest{}
-	mi := &file_market_v1_market_proto_msgTypes[15]
+	mi := &file_market_v1_market_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1144,7 +1204,7 @@ func (x *ClaimResultRequest) String() string {
 func (*ClaimResultRequest) ProtoMessage() {}
 
 func (x *ClaimResultRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[15]
+	mi := &file_market_v1_market_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1157,7 +1217,7 @@ func (x *ClaimResultRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClaimResultRequest.ProtoReflect.Descriptor instead.
 func (*ClaimResultRequest) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{15}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ClaimResultRequest) GetContext() *v1.RequestContext {
@@ -1193,7 +1253,7 @@ type ClaimResultResponse struct {
 
 func (x *ClaimResultResponse) Reset() {
 	*x = ClaimResultResponse{}
-	mi := &file_market_v1_market_proto_msgTypes[16]
+	mi := &file_market_v1_market_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1205,7 +1265,7 @@ func (x *ClaimResultResponse) String() string {
 func (*ClaimResultResponse) ProtoMessage() {}
 
 func (x *ClaimResultResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_market_v1_market_proto_msgTypes[16]
+	mi := &file_market_v1_market_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1218,7 +1278,7 @@ func (x *ClaimResultResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClaimResultResponse.ProtoReflect.Descriptor instead.
 func (*ClaimResultResponse) Descriptor() ([]byte, []int) {
-	return file_market_v1_market_proto_rawDescGZIP(), []int{16}
+	return file_market_v1_market_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ClaimResultResponse) GetClaim() *v1.TradeClaimView {
@@ -1285,8 +1345,13 @@ const file_market_v1_market_proto_rawDesc = "" +
 	"\x0eunit_price_isk\x18\t \x01(\v2\x13.trade.v1.IskAmountR\funitPriceIsk\x129\n" +
 	"\n" +
 	"expires_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"\xad\x01\n" +
-	"\x13CreateOrderResponse\x129\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"\xb1\x01\n" +
+	"\x17CreateSellOrderResponse\x129\n" +
+	"\vtrade_order\x18\x01 \x01(\v2\x18.trade.v1.TradeOrderViewR\n" +
+	"tradeOrder\x12+\n" +
+	"\x11idempotent_replay\x18\x02 \x01(\bR\x10idempotentReplay\x12.\n" +
+	"\afailure\x18\x03 \x01(\v2\x14.trade.v1.TradeErrorR\afailure\"\xb0\x01\n" +
+	"\x16CreateBuyOrderResponse\x129\n" +
 	"\vtrade_order\x18\x01 \x01(\v2\x18.trade.v1.TradeOrderViewR\n" +
 	"tradeOrder\x12+\n" +
 	"\x11idempotent_replay\x18\x02 \x01(\bR\x10idempotentReplay\x12.\n" +
@@ -1368,10 +1433,10 @@ const file_market_v1_market_proto_rawDesc = "" +
 	"\x05claim\x18\x01 \x01(\v2\x18.trade.v1.TradeClaimViewR\x05claim\x12K\n" +
 	"\x11trade_transaction\x18\x02 \x01(\v2\x1e.trade.v1.TradeTransactionViewR\x10tradeTransaction\x12+\n" +
 	"\x11idempotent_replay\x18\x03 \x01(\bR\x10idempotentReplay\x12.\n" +
-	"\afailure\x18\x04 \x01(\v2\x14.trade.v1.TradeErrorR\afailure2\x94\x06\n" +
-	"\rMarketService\x12T\n" +
-	"\x0fCreateSellOrder\x12!.market.v1.CreateSellOrderRequest\x1a\x1e.market.v1.CreateOrderResponse\x12R\n" +
-	"\x0eCreateBuyOrder\x12 .market.v1.CreateBuyOrderRequest\x1a\x1e.market.v1.CreateOrderResponse\x12C\n" +
+	"\afailure\x18\x04 \x01(\v2\x14.trade.v1.TradeErrorR\afailure2\x9b\x06\n" +
+	"\rMarketService\x12X\n" +
+	"\x0fCreateSellOrder\x12!.market.v1.CreateSellOrderRequest\x1a\".market.v1.CreateSellOrderResponse\x12U\n" +
+	"\x0eCreateBuyOrder\x12 .market.v1.CreateBuyOrderRequest\x1a!.market.v1.CreateBuyOrderResponse\x12C\n" +
 	"\bGetOrder\x12\x1a.market.v1.GetOrderRequest\x1a\x1b.market.v1.GetOrderResponse\x12j\n" +
 	"\x15ListOutstandingOrders\x12'.market.v1.ListOutstandingOrdersRequest\x1a(.market.v1.ListOutstandingOrdersResponse\x12X\n" +
 	"\x0fAcceptFillOrder\x12!.market.v1.AcceptFillOrderRequest\x1a\".market.v1.AcceptFillOrderResponse\x12L\n" +
@@ -1394,137 +1459,140 @@ func file_market_v1_market_proto_rawDescGZIP() []byte {
 	return file_market_v1_market_proto_rawDescData
 }
 
-var file_market_v1_market_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_market_v1_market_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_market_v1_market_proto_goTypes = []any{
 	(*CreateSellOrderRequest)(nil),        // 0: market.v1.CreateSellOrderRequest
 	(*CreateBuyOrderRequest)(nil),         // 1: market.v1.CreateBuyOrderRequest
-	(*CreateOrderResponse)(nil),           // 2: market.v1.CreateOrderResponse
-	(*GetOrderRequest)(nil),               // 3: market.v1.GetOrderRequest
-	(*GetOrderResponse)(nil),              // 4: market.v1.GetOrderResponse
-	(*ListOutstandingOrdersRequest)(nil),  // 5: market.v1.ListOutstandingOrdersRequest
-	(*ListOutstandingOrdersResponse)(nil), // 6: market.v1.ListOutstandingOrdersResponse
-	(*AcceptFillOrderRequest)(nil),        // 7: market.v1.AcceptFillOrderRequest
-	(*AcceptFillOrderResponse)(nil),       // 8: market.v1.AcceptFillOrderResponse
-	(*CancelOrderRequest)(nil),            // 9: market.v1.CancelOrderRequest
-	(*CancelOrderResponse)(nil),           // 10: market.v1.CancelOrderResponse
-	(*ExpireOrderRequest)(nil),            // 11: market.v1.ExpireOrderRequest
-	(*ExpireOrderResponse)(nil),           // 12: market.v1.ExpireOrderResponse
-	(*GetTransactionStateRequest)(nil),    // 13: market.v1.GetTransactionStateRequest
-	(*GetTransactionStateResponse)(nil),   // 14: market.v1.GetTransactionStateResponse
-	(*ClaimResultRequest)(nil),            // 15: market.v1.ClaimResultRequest
-	(*ClaimResultResponse)(nil),           // 16: market.v1.ClaimResultResponse
-	(*v1.RequestContext)(nil),             // 17: trade.v1.RequestContext
-	(*v1.CapsuleerId)(nil),                // 18: trade.v1.CapsuleerId
-	(*v1.WalletId)(nil),                   // 19: trade.v1.WalletId
-	(*v1.ItemTypeId)(nil),                 // 20: trade.v1.ItemTypeId
-	(v1.TradeItemKind)(0),                 // 21: trade.v1.TradeItemKind
-	(*v1.ItemStackId)(nil),                // 22: trade.v1.ItemStackId
-	(*v1.ItemInstanceId)(nil),             // 23: trade.v1.ItemInstanceId
-	(*v1.StationId)(nil),                  // 24: trade.v1.StationId
-	(*v1.RegionId)(nil),                   // 25: trade.v1.RegionId
-	(*v1.Quantity)(nil),                   // 26: trade.v1.Quantity
-	(*v1.IskAmount)(nil),                  // 27: trade.v1.IskAmount
-	(*timestamppb.Timestamp)(nil),         // 28: google.protobuf.Timestamp
-	(*v1.TradeOrderView)(nil),             // 29: trade.v1.TradeOrderView
-	(*v1.TradeError)(nil),                 // 30: trade.v1.TradeError
-	(*v1.TradeOrderId)(nil),               // 31: trade.v1.TradeOrderId
-	(v1.TradeOrderSide)(0),                // 32: trade.v1.TradeOrderSide
-	(*v1.TradeTransactionView)(nil),       // 33: trade.v1.TradeTransactionView
-	(*v1.SettlementView)(nil),             // 34: trade.v1.SettlementView
-	(*v1.TradeTransactionId)(nil),         // 35: trade.v1.TradeTransactionId
-	(*v1.TradeClaimView)(nil),             // 36: trade.v1.TradeClaimView
+	(*CreateSellOrderResponse)(nil),       // 2: market.v1.CreateSellOrderResponse
+	(*CreateBuyOrderResponse)(nil),        // 3: market.v1.CreateBuyOrderResponse
+	(*GetOrderRequest)(nil),               // 4: market.v1.GetOrderRequest
+	(*GetOrderResponse)(nil),              // 5: market.v1.GetOrderResponse
+	(*ListOutstandingOrdersRequest)(nil),  // 6: market.v1.ListOutstandingOrdersRequest
+	(*ListOutstandingOrdersResponse)(nil), // 7: market.v1.ListOutstandingOrdersResponse
+	(*AcceptFillOrderRequest)(nil),        // 8: market.v1.AcceptFillOrderRequest
+	(*AcceptFillOrderResponse)(nil),       // 9: market.v1.AcceptFillOrderResponse
+	(*CancelOrderRequest)(nil),            // 10: market.v1.CancelOrderRequest
+	(*CancelOrderResponse)(nil),           // 11: market.v1.CancelOrderResponse
+	(*ExpireOrderRequest)(nil),            // 12: market.v1.ExpireOrderRequest
+	(*ExpireOrderResponse)(nil),           // 13: market.v1.ExpireOrderResponse
+	(*GetTransactionStateRequest)(nil),    // 14: market.v1.GetTransactionStateRequest
+	(*GetTransactionStateResponse)(nil),   // 15: market.v1.GetTransactionStateResponse
+	(*ClaimResultRequest)(nil),            // 16: market.v1.ClaimResultRequest
+	(*ClaimResultResponse)(nil),           // 17: market.v1.ClaimResultResponse
+	(*v1.RequestContext)(nil),             // 18: trade.v1.RequestContext
+	(*v1.CapsuleerId)(nil),                // 19: trade.v1.CapsuleerId
+	(*v1.WalletId)(nil),                   // 20: trade.v1.WalletId
+	(*v1.ItemTypeId)(nil),                 // 21: trade.v1.ItemTypeId
+	(v1.TradeItemKind)(0),                 // 22: trade.v1.TradeItemKind
+	(*v1.ItemStackId)(nil),                // 23: trade.v1.ItemStackId
+	(*v1.ItemInstanceId)(nil),             // 24: trade.v1.ItemInstanceId
+	(*v1.StationId)(nil),                  // 25: trade.v1.StationId
+	(*v1.RegionId)(nil),                   // 26: trade.v1.RegionId
+	(*v1.Quantity)(nil),                   // 27: trade.v1.Quantity
+	(*v1.IskAmount)(nil),                  // 28: trade.v1.IskAmount
+	(*timestamppb.Timestamp)(nil),         // 29: google.protobuf.Timestamp
+	(*v1.TradeOrderView)(nil),             // 30: trade.v1.TradeOrderView
+	(*v1.TradeError)(nil),                 // 31: trade.v1.TradeError
+	(*v1.TradeOrderId)(nil),               // 32: trade.v1.TradeOrderId
+	(v1.TradeOrderSide)(0),                // 33: trade.v1.TradeOrderSide
+	(*v1.TradeTransactionView)(nil),       // 34: trade.v1.TradeTransactionView
+	(*v1.SettlementView)(nil),             // 35: trade.v1.SettlementView
+	(*v1.TradeTransactionId)(nil),         // 36: trade.v1.TradeTransactionId
+	(*v1.TradeClaimView)(nil),             // 37: trade.v1.TradeClaimView
 }
 var file_market_v1_market_proto_depIdxs = []int32{
-	17, // 0: market.v1.CreateSellOrderRequest.context:type_name -> trade.v1.RequestContext
-	18, // 1: market.v1.CreateSellOrderRequest.seller_capsuleer_id:type_name -> trade.v1.CapsuleerId
-	19, // 2: market.v1.CreateSellOrderRequest.seller_wallet_id:type_name -> trade.v1.WalletId
-	20, // 3: market.v1.CreateSellOrderRequest.item_type_id:type_name -> trade.v1.ItemTypeId
-	21, // 4: market.v1.CreateSellOrderRequest.item_kind:type_name -> trade.v1.TradeItemKind
-	22, // 5: market.v1.CreateSellOrderRequest.offered_item_stack_id:type_name -> trade.v1.ItemStackId
-	23, // 6: market.v1.CreateSellOrderRequest.offered_item_instance_id:type_name -> trade.v1.ItemInstanceId
-	24, // 7: market.v1.CreateSellOrderRequest.station_id:type_name -> trade.v1.StationId
-	25, // 8: market.v1.CreateSellOrderRequest.region_id:type_name -> trade.v1.RegionId
-	26, // 9: market.v1.CreateSellOrderRequest.quantity:type_name -> trade.v1.Quantity
-	27, // 10: market.v1.CreateSellOrderRequest.unit_price_isk:type_name -> trade.v1.IskAmount
-	28, // 11: market.v1.CreateSellOrderRequest.expires_at:type_name -> google.protobuf.Timestamp
-	17, // 12: market.v1.CreateBuyOrderRequest.context:type_name -> trade.v1.RequestContext
-	18, // 13: market.v1.CreateBuyOrderRequest.buyer_capsuleer_id:type_name -> trade.v1.CapsuleerId
-	19, // 14: market.v1.CreateBuyOrderRequest.buyer_wallet_id:type_name -> trade.v1.WalletId
-	20, // 15: market.v1.CreateBuyOrderRequest.item_type_id:type_name -> trade.v1.ItemTypeId
-	21, // 16: market.v1.CreateBuyOrderRequest.item_kind:type_name -> trade.v1.TradeItemKind
-	24, // 17: market.v1.CreateBuyOrderRequest.station_id:type_name -> trade.v1.StationId
-	25, // 18: market.v1.CreateBuyOrderRequest.region_id:type_name -> trade.v1.RegionId
-	26, // 19: market.v1.CreateBuyOrderRequest.quantity:type_name -> trade.v1.Quantity
-	27, // 20: market.v1.CreateBuyOrderRequest.unit_price_isk:type_name -> trade.v1.IskAmount
-	28, // 21: market.v1.CreateBuyOrderRequest.expires_at:type_name -> google.protobuf.Timestamp
-	29, // 22: market.v1.CreateOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
-	30, // 23: market.v1.CreateOrderResponse.failure:type_name -> trade.v1.TradeError
-	17, // 24: market.v1.GetOrderRequest.context:type_name -> trade.v1.RequestContext
-	31, // 25: market.v1.GetOrderRequest.trade_order_id:type_name -> trade.v1.TradeOrderId
-	29, // 26: market.v1.GetOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
-	17, // 27: market.v1.ListOutstandingOrdersRequest.context:type_name -> trade.v1.RequestContext
-	25, // 28: market.v1.ListOutstandingOrdersRequest.region_id:type_name -> trade.v1.RegionId
-	24, // 29: market.v1.ListOutstandingOrdersRequest.station_id:type_name -> trade.v1.StationId
-	20, // 30: market.v1.ListOutstandingOrdersRequest.item_type_id:type_name -> trade.v1.ItemTypeId
-	32, // 31: market.v1.ListOutstandingOrdersRequest.order_side:type_name -> trade.v1.TradeOrderSide
-	29, // 32: market.v1.ListOutstandingOrdersResponse.trade_orders:type_name -> trade.v1.TradeOrderView
-	17, // 33: market.v1.AcceptFillOrderRequest.context:type_name -> trade.v1.RequestContext
-	31, // 34: market.v1.AcceptFillOrderRequest.trade_order_id:type_name -> trade.v1.TradeOrderId
-	18, // 35: market.v1.AcceptFillOrderRequest.accepting_capsuleer_id:type_name -> trade.v1.CapsuleerId
-	19, // 36: market.v1.AcceptFillOrderRequest.buyer_wallet_id:type_name -> trade.v1.WalletId
-	19, // 37: market.v1.AcceptFillOrderRequest.seller_wallet_id:type_name -> trade.v1.WalletId
-	21, // 38: market.v1.AcceptFillOrderRequest.item_kind:type_name -> trade.v1.TradeItemKind
-	22, // 39: market.v1.AcceptFillOrderRequest.source_item_stack_id:type_name -> trade.v1.ItemStackId
-	23, // 40: market.v1.AcceptFillOrderRequest.source_item_instance_id:type_name -> trade.v1.ItemInstanceId
-	22, // 41: market.v1.AcceptFillOrderRequest.destination_item_stack_id:type_name -> trade.v1.ItemStackId
-	23, // 42: market.v1.AcceptFillOrderRequest.destination_item_instance_id:type_name -> trade.v1.ItemInstanceId
-	26, // 43: market.v1.AcceptFillOrderRequest.quantity:type_name -> trade.v1.Quantity
-	29, // 44: market.v1.AcceptFillOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
-	33, // 45: market.v1.AcceptFillOrderResponse.trade_transaction:type_name -> trade.v1.TradeTransactionView
-	34, // 46: market.v1.AcceptFillOrderResponse.settlement:type_name -> trade.v1.SettlementView
-	30, // 47: market.v1.AcceptFillOrderResponse.failure:type_name -> trade.v1.TradeError
-	17, // 48: market.v1.CancelOrderRequest.context:type_name -> trade.v1.RequestContext
-	31, // 49: market.v1.CancelOrderRequest.trade_order_id:type_name -> trade.v1.TradeOrderId
-	18, // 50: market.v1.CancelOrderRequest.requesting_capsuleer_id:type_name -> trade.v1.CapsuleerId
-	29, // 51: market.v1.CancelOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
-	30, // 52: market.v1.CancelOrderResponse.failure:type_name -> trade.v1.TradeError
-	17, // 53: market.v1.ExpireOrderRequest.context:type_name -> trade.v1.RequestContext
-	31, // 54: market.v1.ExpireOrderRequest.trade_order_id:type_name -> trade.v1.TradeOrderId
-	29, // 55: market.v1.ExpireOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
-	30, // 56: market.v1.ExpireOrderResponse.failure:type_name -> trade.v1.TradeError
-	17, // 57: market.v1.GetTransactionStateRequest.context:type_name -> trade.v1.RequestContext
-	35, // 58: market.v1.GetTransactionStateRequest.trade_transaction_id:type_name -> trade.v1.TradeTransactionId
-	33, // 59: market.v1.GetTransactionStateResponse.trade_transaction:type_name -> trade.v1.TradeTransactionView
-	34, // 60: market.v1.GetTransactionStateResponse.settlement:type_name -> trade.v1.SettlementView
-	17, // 61: market.v1.ClaimResultRequest.context:type_name -> trade.v1.RequestContext
-	35, // 62: market.v1.ClaimResultRequest.trade_transaction_id:type_name -> trade.v1.TradeTransactionId
-	18, // 63: market.v1.ClaimResultRequest.claiming_capsuleer_id:type_name -> trade.v1.CapsuleerId
-	36, // 64: market.v1.ClaimResultResponse.claim:type_name -> trade.v1.TradeClaimView
-	33, // 65: market.v1.ClaimResultResponse.trade_transaction:type_name -> trade.v1.TradeTransactionView
-	30, // 66: market.v1.ClaimResultResponse.failure:type_name -> trade.v1.TradeError
-	0,  // 67: market.v1.MarketService.CreateSellOrder:input_type -> market.v1.CreateSellOrderRequest
-	1,  // 68: market.v1.MarketService.CreateBuyOrder:input_type -> market.v1.CreateBuyOrderRequest
-	3,  // 69: market.v1.MarketService.GetOrder:input_type -> market.v1.GetOrderRequest
-	5,  // 70: market.v1.MarketService.ListOutstandingOrders:input_type -> market.v1.ListOutstandingOrdersRequest
-	7,  // 71: market.v1.MarketService.AcceptFillOrder:input_type -> market.v1.AcceptFillOrderRequest
-	9,  // 72: market.v1.MarketService.CancelOrder:input_type -> market.v1.CancelOrderRequest
-	11, // 73: market.v1.MarketService.ExpireOrder:input_type -> market.v1.ExpireOrderRequest
-	13, // 74: market.v1.MarketService.GetTransactionState:input_type -> market.v1.GetTransactionStateRequest
-	15, // 75: market.v1.MarketService.ClaimResult:input_type -> market.v1.ClaimResultRequest
-	2,  // 76: market.v1.MarketService.CreateSellOrder:output_type -> market.v1.CreateOrderResponse
-	2,  // 77: market.v1.MarketService.CreateBuyOrder:output_type -> market.v1.CreateOrderResponse
-	4,  // 78: market.v1.MarketService.GetOrder:output_type -> market.v1.GetOrderResponse
-	6,  // 79: market.v1.MarketService.ListOutstandingOrders:output_type -> market.v1.ListOutstandingOrdersResponse
-	8,  // 80: market.v1.MarketService.AcceptFillOrder:output_type -> market.v1.AcceptFillOrderResponse
-	10, // 81: market.v1.MarketService.CancelOrder:output_type -> market.v1.CancelOrderResponse
-	12, // 82: market.v1.MarketService.ExpireOrder:output_type -> market.v1.ExpireOrderResponse
-	14, // 83: market.v1.MarketService.GetTransactionState:output_type -> market.v1.GetTransactionStateResponse
-	16, // 84: market.v1.MarketService.ClaimResult:output_type -> market.v1.ClaimResultResponse
-	76, // [76:85] is the sub-list for method output_type
-	67, // [67:76] is the sub-list for method input_type
-	67, // [67:67] is the sub-list for extension type_name
-	67, // [67:67] is the sub-list for extension extendee
-	0,  // [0:67] is the sub-list for field type_name
+	18, // 0: market.v1.CreateSellOrderRequest.context:type_name -> trade.v1.RequestContext
+	19, // 1: market.v1.CreateSellOrderRequest.seller_capsuleer_id:type_name -> trade.v1.CapsuleerId
+	20, // 2: market.v1.CreateSellOrderRequest.seller_wallet_id:type_name -> trade.v1.WalletId
+	21, // 3: market.v1.CreateSellOrderRequest.item_type_id:type_name -> trade.v1.ItemTypeId
+	22, // 4: market.v1.CreateSellOrderRequest.item_kind:type_name -> trade.v1.TradeItemKind
+	23, // 5: market.v1.CreateSellOrderRequest.offered_item_stack_id:type_name -> trade.v1.ItemStackId
+	24, // 6: market.v1.CreateSellOrderRequest.offered_item_instance_id:type_name -> trade.v1.ItemInstanceId
+	25, // 7: market.v1.CreateSellOrderRequest.station_id:type_name -> trade.v1.StationId
+	26, // 8: market.v1.CreateSellOrderRequest.region_id:type_name -> trade.v1.RegionId
+	27, // 9: market.v1.CreateSellOrderRequest.quantity:type_name -> trade.v1.Quantity
+	28, // 10: market.v1.CreateSellOrderRequest.unit_price_isk:type_name -> trade.v1.IskAmount
+	29, // 11: market.v1.CreateSellOrderRequest.expires_at:type_name -> google.protobuf.Timestamp
+	18, // 12: market.v1.CreateBuyOrderRequest.context:type_name -> trade.v1.RequestContext
+	19, // 13: market.v1.CreateBuyOrderRequest.buyer_capsuleer_id:type_name -> trade.v1.CapsuleerId
+	20, // 14: market.v1.CreateBuyOrderRequest.buyer_wallet_id:type_name -> trade.v1.WalletId
+	21, // 15: market.v1.CreateBuyOrderRequest.item_type_id:type_name -> trade.v1.ItemTypeId
+	22, // 16: market.v1.CreateBuyOrderRequest.item_kind:type_name -> trade.v1.TradeItemKind
+	25, // 17: market.v1.CreateBuyOrderRequest.station_id:type_name -> trade.v1.StationId
+	26, // 18: market.v1.CreateBuyOrderRequest.region_id:type_name -> trade.v1.RegionId
+	27, // 19: market.v1.CreateBuyOrderRequest.quantity:type_name -> trade.v1.Quantity
+	28, // 20: market.v1.CreateBuyOrderRequest.unit_price_isk:type_name -> trade.v1.IskAmount
+	29, // 21: market.v1.CreateBuyOrderRequest.expires_at:type_name -> google.protobuf.Timestamp
+	30, // 22: market.v1.CreateSellOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
+	31, // 23: market.v1.CreateSellOrderResponse.failure:type_name -> trade.v1.TradeError
+	30, // 24: market.v1.CreateBuyOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
+	31, // 25: market.v1.CreateBuyOrderResponse.failure:type_name -> trade.v1.TradeError
+	18, // 26: market.v1.GetOrderRequest.context:type_name -> trade.v1.RequestContext
+	32, // 27: market.v1.GetOrderRequest.trade_order_id:type_name -> trade.v1.TradeOrderId
+	30, // 28: market.v1.GetOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
+	18, // 29: market.v1.ListOutstandingOrdersRequest.context:type_name -> trade.v1.RequestContext
+	26, // 30: market.v1.ListOutstandingOrdersRequest.region_id:type_name -> trade.v1.RegionId
+	25, // 31: market.v1.ListOutstandingOrdersRequest.station_id:type_name -> trade.v1.StationId
+	21, // 32: market.v1.ListOutstandingOrdersRequest.item_type_id:type_name -> trade.v1.ItemTypeId
+	33, // 33: market.v1.ListOutstandingOrdersRequest.order_side:type_name -> trade.v1.TradeOrderSide
+	30, // 34: market.v1.ListOutstandingOrdersResponse.trade_orders:type_name -> trade.v1.TradeOrderView
+	18, // 35: market.v1.AcceptFillOrderRequest.context:type_name -> trade.v1.RequestContext
+	32, // 36: market.v1.AcceptFillOrderRequest.trade_order_id:type_name -> trade.v1.TradeOrderId
+	19, // 37: market.v1.AcceptFillOrderRequest.accepting_capsuleer_id:type_name -> trade.v1.CapsuleerId
+	20, // 38: market.v1.AcceptFillOrderRequest.buyer_wallet_id:type_name -> trade.v1.WalletId
+	20, // 39: market.v1.AcceptFillOrderRequest.seller_wallet_id:type_name -> trade.v1.WalletId
+	22, // 40: market.v1.AcceptFillOrderRequest.item_kind:type_name -> trade.v1.TradeItemKind
+	23, // 41: market.v1.AcceptFillOrderRequest.source_item_stack_id:type_name -> trade.v1.ItemStackId
+	24, // 42: market.v1.AcceptFillOrderRequest.source_item_instance_id:type_name -> trade.v1.ItemInstanceId
+	23, // 43: market.v1.AcceptFillOrderRequest.destination_item_stack_id:type_name -> trade.v1.ItemStackId
+	24, // 44: market.v1.AcceptFillOrderRequest.destination_item_instance_id:type_name -> trade.v1.ItemInstanceId
+	27, // 45: market.v1.AcceptFillOrderRequest.quantity:type_name -> trade.v1.Quantity
+	30, // 46: market.v1.AcceptFillOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
+	34, // 47: market.v1.AcceptFillOrderResponse.trade_transaction:type_name -> trade.v1.TradeTransactionView
+	35, // 48: market.v1.AcceptFillOrderResponse.settlement:type_name -> trade.v1.SettlementView
+	31, // 49: market.v1.AcceptFillOrderResponse.failure:type_name -> trade.v1.TradeError
+	18, // 50: market.v1.CancelOrderRequest.context:type_name -> trade.v1.RequestContext
+	32, // 51: market.v1.CancelOrderRequest.trade_order_id:type_name -> trade.v1.TradeOrderId
+	19, // 52: market.v1.CancelOrderRequest.requesting_capsuleer_id:type_name -> trade.v1.CapsuleerId
+	30, // 53: market.v1.CancelOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
+	31, // 54: market.v1.CancelOrderResponse.failure:type_name -> trade.v1.TradeError
+	18, // 55: market.v1.ExpireOrderRequest.context:type_name -> trade.v1.RequestContext
+	32, // 56: market.v1.ExpireOrderRequest.trade_order_id:type_name -> trade.v1.TradeOrderId
+	30, // 57: market.v1.ExpireOrderResponse.trade_order:type_name -> trade.v1.TradeOrderView
+	31, // 58: market.v1.ExpireOrderResponse.failure:type_name -> trade.v1.TradeError
+	18, // 59: market.v1.GetTransactionStateRequest.context:type_name -> trade.v1.RequestContext
+	36, // 60: market.v1.GetTransactionStateRequest.trade_transaction_id:type_name -> trade.v1.TradeTransactionId
+	34, // 61: market.v1.GetTransactionStateResponse.trade_transaction:type_name -> trade.v1.TradeTransactionView
+	35, // 62: market.v1.GetTransactionStateResponse.settlement:type_name -> trade.v1.SettlementView
+	18, // 63: market.v1.ClaimResultRequest.context:type_name -> trade.v1.RequestContext
+	36, // 64: market.v1.ClaimResultRequest.trade_transaction_id:type_name -> trade.v1.TradeTransactionId
+	19, // 65: market.v1.ClaimResultRequest.claiming_capsuleer_id:type_name -> trade.v1.CapsuleerId
+	37, // 66: market.v1.ClaimResultResponse.claim:type_name -> trade.v1.TradeClaimView
+	34, // 67: market.v1.ClaimResultResponse.trade_transaction:type_name -> trade.v1.TradeTransactionView
+	31, // 68: market.v1.ClaimResultResponse.failure:type_name -> trade.v1.TradeError
+	0,  // 69: market.v1.MarketService.CreateSellOrder:input_type -> market.v1.CreateSellOrderRequest
+	1,  // 70: market.v1.MarketService.CreateBuyOrder:input_type -> market.v1.CreateBuyOrderRequest
+	4,  // 71: market.v1.MarketService.GetOrder:input_type -> market.v1.GetOrderRequest
+	6,  // 72: market.v1.MarketService.ListOutstandingOrders:input_type -> market.v1.ListOutstandingOrdersRequest
+	8,  // 73: market.v1.MarketService.AcceptFillOrder:input_type -> market.v1.AcceptFillOrderRequest
+	10, // 74: market.v1.MarketService.CancelOrder:input_type -> market.v1.CancelOrderRequest
+	12, // 75: market.v1.MarketService.ExpireOrder:input_type -> market.v1.ExpireOrderRequest
+	14, // 76: market.v1.MarketService.GetTransactionState:input_type -> market.v1.GetTransactionStateRequest
+	16, // 77: market.v1.MarketService.ClaimResult:input_type -> market.v1.ClaimResultRequest
+	2,  // 78: market.v1.MarketService.CreateSellOrder:output_type -> market.v1.CreateSellOrderResponse
+	3,  // 79: market.v1.MarketService.CreateBuyOrder:output_type -> market.v1.CreateBuyOrderResponse
+	5,  // 80: market.v1.MarketService.GetOrder:output_type -> market.v1.GetOrderResponse
+	7,  // 81: market.v1.MarketService.ListOutstandingOrders:output_type -> market.v1.ListOutstandingOrdersResponse
+	9,  // 82: market.v1.MarketService.AcceptFillOrder:output_type -> market.v1.AcceptFillOrderResponse
+	11, // 83: market.v1.MarketService.CancelOrder:output_type -> market.v1.CancelOrderResponse
+	13, // 84: market.v1.MarketService.ExpireOrder:output_type -> market.v1.ExpireOrderResponse
+	15, // 85: market.v1.MarketService.GetTransactionState:output_type -> market.v1.GetTransactionStateResponse
+	17, // 86: market.v1.MarketService.ClaimResult:output_type -> market.v1.ClaimResultResponse
+	78, // [78:87] is the sub-list for method output_type
+	69, // [69:78] is the sub-list for method input_type
+	69, // [69:69] is the sub-list for extension type_name
+	69, // [69:69] is the sub-list for extension extendee
+	0,  // [0:69] is the sub-list for field type_name
 }
 
 func init() { file_market_v1_market_proto_init() }
@@ -1538,7 +1606,7 @@ func file_market_v1_market_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_market_v1_market_proto_rawDesc), len(file_market_v1_market_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

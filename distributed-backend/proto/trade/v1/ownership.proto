@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package trade.v1;
 
-option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/trade/v1;tradev1";
-
 import "google/protobuf/timestamp.proto";
 import "trade/v1/common.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/trade/v1;tradev1";
 
 // ownership.proto contains shared wallet/item views used by market and
 // trade-settlement. It mirrors the shared persistence model without exposing

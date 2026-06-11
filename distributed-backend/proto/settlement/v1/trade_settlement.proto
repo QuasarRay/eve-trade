@@ -2,13 +2,12 @@ syntax = "proto3";
 
 package settlement.v1;
 
-option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/settlement/v1;settlementv1";
-
 import "google/protobuf/timestamp.proto";
 import "trade/v1/common.proto";
-import "trade/v1/operation.proto";
 import "trade/v1/market_types.proto";
-import "trade/v1/ownership.proto";
+import "trade/v1/operation.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/settlement/v1;settlementv1";
 
 // TradeSettlementService is the only service that performs durable trade writes.
 // Market decides whether a trade request is valid according to game mechanics.
@@ -17,16 +16,16 @@ import "trade/v1/ownership.proto";
 service TradeSettlementService {
   // Creates a durable trade order and its required reservation after market has
   // validated the game rules for the order.
-  rpc OpenTradeOrder(OpenTradeOrderRequest) returns (OpenTradeOrderResult);
+  rpc OpenTradeOrder(OpenTradeOrderRequest) returns (OpenTradeOrderResponse);
 
   // Closes an outstanding order as cancelled/expired/failed and releases any
   // remaining reservation. Market decides that closing is allowed; settlement
   // makes the durable state/reservation changes safely.
-  rpc CloseTradeOrder(CloseTradeOrderRequest) returns (CloseTradeOrderResult);
+  rpc CloseTradeOrder(CloseTradeOrderRequest) returns (CloseTradeOrderResponse);
 
   // Performs the correctness-critical atomic trade settlement. This is the main
   // RPC market calls after it has accepted/fill-matched an order.
-  rpc RequestSettlement(SettlementRequest) returns (SettlementResult);
+  rpc RequestSettlement(RequestSettlementRequest) returns (RequestSettlementResponse);
 
   // Claims a previously claimable result. If MVP uses immediate delivery, this
   // RPC can remain unused while the schema/proto still supports the lifecycle.
@@ -69,7 +68,7 @@ message OpenTradeOrderRequest {
   TradeOrderTerms terms = 2;
 }
 
-message OpenTradeOrderResult {
+message OpenTradeOrderResponse {
   trade.v1.OperationView operation = 1;
   trade.v1.TradeOrderView trade_order = 2;
   trade.v1.WalletReservationView wallet_reservation = 3;
@@ -92,7 +91,7 @@ message CloseTradeOrderRequest {
   string reason = 5;
 }
 
-message CloseTradeOrderResult {
+message CloseTradeOrderResponse {
   trade.v1.OperationView operation = 1;
   trade.v1.TradeOrderView trade_order = 2;
   trade.v1.WalletReservationView wallet_reservation = 3;
@@ -102,7 +101,7 @@ message CloseTradeOrderResult {
   trade.v1.TradeError failure = 7;
 }
 
-message SettlementRequest {
+message RequestSettlementRequest {
   trade.v1.RequestContext context = 1;
 
   trade.v1.TradeOrderId trade_order_id = 2;
@@ -139,7 +138,7 @@ message SettlementRequest {
   uint64 expected_buyer_wallet_version = 22;
 }
 
-message SettlementResult {
+message RequestSettlementResponse {
   trade.v1.OperationView operation = 1;
   trade.v1.TradeOrderView trade_order = 2;
   trade.v1.TradeTransactionView trade_transaction = 3;

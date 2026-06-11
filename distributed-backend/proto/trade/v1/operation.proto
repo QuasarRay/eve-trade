@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package trade.v1;
 
-option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/trade/v1;tradev1";
-
 import "google/protobuf/timestamp.proto";
 import "trade/v1/common.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/trade/v1;tradev1";
 
 // operation.proto exposes lightweight views of the operation/idempotency model.
 // These messages are not meant to make the database execute logic. They let

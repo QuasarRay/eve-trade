@@ -66,14 +66,14 @@ const (
 type TradeSettlementServiceClient interface {
 	// Creates a durable trade order and its required reservation after market has
 	// validated the game rules for the order.
-	OpenTradeOrder(context.Context, *connect.Request[v1.OpenTradeOrderRequest]) (*connect.Response[v1.OpenTradeOrderResult], error)
+	OpenTradeOrder(context.Context, *connect.Request[v1.OpenTradeOrderRequest]) (*connect.Response[v1.OpenTradeOrderResponse], error)
 	// Closes an outstanding order as cancelled/expired/failed and releases any
 	// remaining reservation. Market decides that closing is allowed; settlement
 	// makes the durable state/reservation changes safely.
-	CloseTradeOrder(context.Context, *connect.Request[v1.CloseTradeOrderRequest]) (*connect.Response[v1.CloseTradeOrderResult], error)
+	CloseTradeOrder(context.Context, *connect.Request[v1.CloseTradeOrderRequest]) (*connect.Response[v1.CloseTradeOrderResponse], error)
 	// Performs the correctness-critical atomic trade settlement. This is the main
 	// RPC market calls after it has accepted/fill-matched an order.
-	RequestSettlement(context.Context, *connect.Request[v1.SettlementRequest]) (*connect.Response[v1.SettlementResult], error)
+	RequestSettlement(context.Context, *connect.Request[v1.RequestSettlementRequest]) (*connect.Response[v1.RequestSettlementResponse], error)
 	// Claims a previously claimable result. If MVP uses immediate delivery, this
 	// RPC can remain unused while the schema/proto still supports the lifecycle.
 	ClaimResult(context.Context, *connect.Request[v1.ClaimResultRequest]) (*connect.Response[v1.ClaimResultResponse], error)
@@ -97,19 +97,19 @@ func NewTradeSettlementServiceClient(httpClient connect.HTTPClient, baseURL stri
 	baseURL = strings.TrimRight(baseURL, "/")
 	tradeSettlementServiceMethods := v1.File_settlement_v1_trade_settlement_proto.Services().ByName("TradeSettlementService").Methods()
 	return &tradeSettlementServiceClient{
-		openTradeOrder: connect.NewClient[v1.OpenTradeOrderRequest, v1.OpenTradeOrderResult](
+		openTradeOrder: connect.NewClient[v1.OpenTradeOrderRequest, v1.OpenTradeOrderResponse](
 			httpClient,
 			baseURL+TradeSettlementServiceOpenTradeOrderProcedure,
 			connect.WithSchema(tradeSettlementServiceMethods.ByName("OpenTradeOrder")),
 			connect.WithClientOptions(opts...),
 		),
-		closeTradeOrder: connect.NewClient[v1.CloseTradeOrderRequest, v1.CloseTradeOrderResult](
+		closeTradeOrder: connect.NewClient[v1.CloseTradeOrderRequest, v1.CloseTradeOrderResponse](
 			httpClient,
 			baseURL+TradeSettlementServiceCloseTradeOrderProcedure,
 			connect.WithSchema(tradeSettlementServiceMethods.ByName("CloseTradeOrder")),
 			connect.WithClientOptions(opts...),
 		),
-		requestSettlement: connect.NewClient[v1.SettlementRequest, v1.SettlementResult](
+		requestSettlement: connect.NewClient[v1.RequestSettlementRequest, v1.RequestSettlementResponse](
 			httpClient,
 			baseURL+TradeSettlementServiceRequestSettlementProcedure,
 			connect.WithSchema(tradeSettlementServiceMethods.ByName("RequestSettlement")),
@@ -156,9 +156,9 @@ func NewTradeSettlementServiceClient(httpClient connect.HTTPClient, baseURL stri
 
 // tradeSettlementServiceClient implements TradeSettlementServiceClient.
 type tradeSettlementServiceClient struct {
-	openTradeOrder             *connect.Client[v1.OpenTradeOrderRequest, v1.OpenTradeOrderResult]
-	closeTradeOrder            *connect.Client[v1.CloseTradeOrderRequest, v1.CloseTradeOrderResult]
-	requestSettlement          *connect.Client[v1.SettlementRequest, v1.SettlementResult]
+	openTradeOrder             *connect.Client[v1.OpenTradeOrderRequest, v1.OpenTradeOrderResponse]
+	closeTradeOrder            *connect.Client[v1.CloseTradeOrderRequest, v1.CloseTradeOrderResponse]
+	requestSettlement          *connect.Client[v1.RequestSettlementRequest, v1.RequestSettlementResponse]
 	claimResult                *connect.Client[v1.ClaimResultRequest, v1.ClaimResultResponse]
 	getTradeOrder              *connect.Client[v1.GetTradeOrderRequest, v1.GetTradeOrderResponse]
 	listOutstandingTradeOrders *connect.Client[v1.ListOutstandingTradeOrdersRequest, v1.ListOutstandingTradeOrdersResponse]
@@ -168,17 +168,17 @@ type tradeSettlementServiceClient struct {
 }
 
 // OpenTradeOrder calls settlement.v1.TradeSettlementService.OpenTradeOrder.
-func (c *tradeSettlementServiceClient) OpenTradeOrder(ctx context.Context, req *connect.Request[v1.OpenTradeOrderRequest]) (*connect.Response[v1.OpenTradeOrderResult], error) {
+func (c *tradeSettlementServiceClient) OpenTradeOrder(ctx context.Context, req *connect.Request[v1.OpenTradeOrderRequest]) (*connect.Response[v1.OpenTradeOrderResponse], error) {
 	return c.openTradeOrder.CallUnary(ctx, req)
 }
 
 // CloseTradeOrder calls settlement.v1.TradeSettlementService.CloseTradeOrder.
-func (c *tradeSettlementServiceClient) CloseTradeOrder(ctx context.Context, req *connect.Request[v1.CloseTradeOrderRequest]) (*connect.Response[v1.CloseTradeOrderResult], error) {
+func (c *tradeSettlementServiceClient) CloseTradeOrder(ctx context.Context, req *connect.Request[v1.CloseTradeOrderRequest]) (*connect.Response[v1.CloseTradeOrderResponse], error) {
 	return c.closeTradeOrder.CallUnary(ctx, req)
 }
 
 // RequestSettlement calls settlement.v1.TradeSettlementService.RequestSettlement.
-func (c *tradeSettlementServiceClient) RequestSettlement(ctx context.Context, req *connect.Request[v1.SettlementRequest]) (*connect.Response[v1.SettlementResult], error) {
+func (c *tradeSettlementServiceClient) RequestSettlement(ctx context.Context, req *connect.Request[v1.RequestSettlementRequest]) (*connect.Response[v1.RequestSettlementResponse], error) {
 	return c.requestSettlement.CallUnary(ctx, req)
 }
 
@@ -217,14 +217,14 @@ func (c *tradeSettlementServiceClient) GetOperation(ctx context.Context, req *co
 type TradeSettlementServiceHandler interface {
 	// Creates a durable trade order and its required reservation after market has
 	// validated the game rules for the order.
-	OpenTradeOrder(context.Context, *connect.Request[v1.OpenTradeOrderRequest]) (*connect.Response[v1.OpenTradeOrderResult], error)
+	OpenTradeOrder(context.Context, *connect.Request[v1.OpenTradeOrderRequest]) (*connect.Response[v1.OpenTradeOrderResponse], error)
 	// Closes an outstanding order as cancelled/expired/failed and releases any
 	// remaining reservation. Market decides that closing is allowed; settlement
 	// makes the durable state/reservation changes safely.
-	CloseTradeOrder(context.Context, *connect.Request[v1.CloseTradeOrderRequest]) (*connect.Response[v1.CloseTradeOrderResult], error)
+	CloseTradeOrder(context.Context, *connect.Request[v1.CloseTradeOrderRequest]) (*connect.Response[v1.CloseTradeOrderResponse], error)
 	// Performs the correctness-critical atomic trade settlement. This is the main
 	// RPC market calls after it has accepted/fill-matched an order.
-	RequestSettlement(context.Context, *connect.Request[v1.SettlementRequest]) (*connect.Response[v1.SettlementResult], error)
+	RequestSettlement(context.Context, *connect.Request[v1.RequestSettlementRequest]) (*connect.Response[v1.RequestSettlementResponse], error)
 	// Claims a previously claimable result. If MVP uses immediate delivery, this
 	// RPC can remain unused while the schema/proto still supports the lifecycle.
 	ClaimResult(context.Context, *connect.Request[v1.ClaimResultRequest]) (*connect.Response[v1.ClaimResultResponse], error)
@@ -327,15 +327,15 @@ func NewTradeSettlementServiceHandler(svc TradeSettlementServiceHandler, opts ..
 // UnimplementedTradeSettlementServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedTradeSettlementServiceHandler struct{}
 
-func (UnimplementedTradeSettlementServiceHandler) OpenTradeOrder(context.Context, *connect.Request[v1.OpenTradeOrderRequest]) (*connect.Response[v1.OpenTradeOrderResult], error) {
+func (UnimplementedTradeSettlementServiceHandler) OpenTradeOrder(context.Context, *connect.Request[v1.OpenTradeOrderRequest]) (*connect.Response[v1.OpenTradeOrderResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("settlement.v1.TradeSettlementService.OpenTradeOrder is not implemented"))
 }
 
-func (UnimplementedTradeSettlementServiceHandler) CloseTradeOrder(context.Context, *connect.Request[v1.CloseTradeOrderRequest]) (*connect.Response[v1.CloseTradeOrderResult], error) {
+func (UnimplementedTradeSettlementServiceHandler) CloseTradeOrder(context.Context, *connect.Request[v1.CloseTradeOrderRequest]) (*connect.Response[v1.CloseTradeOrderResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("settlement.v1.TradeSettlementService.CloseTradeOrder is not implemented"))
 }
 
-func (UnimplementedTradeSettlementServiceHandler) RequestSettlement(context.Context, *connect.Request[v1.SettlementRequest]) (*connect.Response[v1.SettlementResult], error) {
+func (UnimplementedTradeSettlementServiceHandler) RequestSettlement(context.Context, *connect.Request[v1.RequestSettlementRequest]) (*connect.Response[v1.RequestSettlementResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("settlement.v1.TradeSettlementService.RequestSettlement is not implemented"))
 }
 

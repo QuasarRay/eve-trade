@@ -102,7 +102,7 @@ func (x *TradeOrderView) GetState() TransactionState {
 	if x != nil {
 		return x.State
 	}
-	return TransactionState_transaction_state_unspecified
+	return TransactionState_TRANSACTION_STATE_UNSPECIFIED
 }
 
 func (x *TradeOrderView) GetOwnerCapsuleerId() *CapsuleerId {
@@ -688,7 +688,7 @@ func (x *TradeTransactionView) GetState() TransactionState {
 	if x != nil {
 		return x.State
 	}
-	return TransactionState_transaction_state_unspecified
+	return TransactionState_TRANSACTION_STATE_UNSPECIFIED
 }
 
 func (x *TradeTransactionView) GetBuyerCapsuleerId() *CapsuleerId {
@@ -1087,7 +1087,7 @@ func (x *TradeClaimView) GetState() TransactionState {
 	if x != nil {
 		return x.State
 	}
-	return TransactionState_transaction_state_unspecified
+	return TransactionState_TRANSACTION_STATE_UNSPECIFIED
 }
 
 func (x *TradeClaimView) GetCreatedAt() *timestamppb.Timestamp {

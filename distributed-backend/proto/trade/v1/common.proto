@@ -119,18 +119,17 @@ message Quantity {
 // names requested for trade lifecycle state. Do not rename them in docs, APIs,
 // or persisted state.
 enum TransactionState {
-  transaction_state_unspecified = 0;
-
-  being_created = 1;
-  outstanding = 2;
-  accepted = 3;
-  in_progress = 4;
-  completed = 5;
-  claimable = 6;
-  claimed = 7;
-  expired = 8;
-  failed = 9;
-  cancelled = 10;
+  TRANSACTION_STATE_UNSPECIFIED = 0;
+  TRANSACTION_STATE_BEING_CREATED = 1;
+  TRANSACTION_STATE_OUTSTANDING = 2;
+  TRANSACTION_STATE_ACCEPTED = 3;
+  TRANSACTION_STATE_IN_PROGRESS = 4;
+  TRANSACTION_STATE_COMPLETED = 5;
+  TRANSACTION_STATE_CLAIMABLE = 6;
+  TRANSACTION_STATE_CLAIMED = 7;
+  TRANSACTION_STATE_EXPIRED = 8;
+  TRANSACTION_STATE_FAILED = 9;
+  TRANSACTION_STATE_CANCELLED = 10;
 }
 
 // State-change commands used when market asks settlement to attempt a durable
@@ -138,15 +137,15 @@ enum TransactionState {
 // caller cannot pretend state assignment and legal transition are the same.
 enum TradeStateChange {
   TRADE_STATE_CHANGE_UNSPECIFIED = 0;
-  SET_TO_BEING_CREATED = 1;
-  SET_TO_OUTSTANDING = 2;
-  SET_TO_ACCEPTED = 3;
-  SET_TO_IN_PROGRESS = 4;
-  SET_TO_CLAIMABLE = 5;
-  SET_TO_CLAIMED = 6;
-  SET_TO_EXPIRED = 7;
-  SET_TO_FAILED = 8;
-  SET_TO_CANCELLED = 9;
+  TRADE_STATE_CHANGE_SET_TO_BEING_CREATED = 1;
+  TRADE_STATE_CHANGE_SET_TO_OUTSTANDING = 2;
+  TRADE_STATE_CHANGE_SET_TO_ACCEPTED = 3;
+  TRADE_STATE_CHANGE_SET_TO_IN_PROGRESS = 4;
+  TRADE_STATE_CHANGE_SET_TO_CLAIMABLE = 5;
+  TRADE_STATE_CHANGE_SET_TO_CLAIMED = 6;
+  TRADE_STATE_CHANGE_SET_TO_EXPIRED = 7;
+  TRADE_STATE_CHANGE_SET_TO_FAILED = 8;
+  TRADE_STATE_CHANGE_SET_TO_CANCELLED = 9;
 }
 
 // ---------- Other state families ----------
@@ -266,19 +265,18 @@ enum TradeItemKind {
 // ---------- Error model ----------
 
 enum TradeErrorCode {
-  trade_error_code_unspecified = 0;
-
-  insufficient_isk = 1;
-  insufficient_items = 2;
-  invalid_state_transition = 3;
-  order_expired = 4;
-  order_cancelled = 5;
-  item_not_market_eligible = 6;
-  duplicate_request = 7;
-  settlement_conflict = 8;
-  stale_version_conflict = 9;
-  integrity_conflict = 10;
-  reservation_conflict = 11;
+  TRADE_ERROR_CODE_UNSPECIFIED = 0;
+  TRADE_ERROR_CODE_INSUFFICIENT_ISK = 1;
+  TRADE_ERROR_CODE_INSUFFICIENT_ITEMS = 2;
+  TRADE_ERROR_CODE_INVALID_STATE_TRANSITION = 3;
+  TRADE_ERROR_CODE_ORDER_EXPIRED = 4;
+  TRADE_ERROR_CODE_ORDER_CANCELLED = 5;
+  TRADE_ERROR_CODE_ITEM_NOT_MARKET_ELIGIBLE = 6;
+  TRADE_ERROR_CODE_DUPLICATE_REQUEST = 7;
+  TRADE_ERROR_CODE_SETTLEMENT_CONFLICT = 8;
+  TRADE_ERROR_CODE_STALE_VERSION_CONFLICT = 9;
+  TRADE_ERROR_CODE_INTEGRITY_CONFLICT = 10;
+  TRADE_ERROR_CODE_RESERVATION_CONFLICT = 11;
 }
 
 message TradeError {

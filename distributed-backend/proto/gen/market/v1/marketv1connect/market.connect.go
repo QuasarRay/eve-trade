@@ -63,8 +63,8 @@ const (
 
 // MarketServiceClient is a client for the market.v1.MarketService service.
 type MarketServiceClient interface {
-	CreateSellOrder(context.Context, *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error)
-	CreateBuyOrder(context.Context, *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error)
+	CreateSellOrder(context.Context, *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateSellOrderResponse], error)
+	CreateBuyOrder(context.Context, *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateBuyOrderResponse], error)
 	GetOrder(context.Context, *connect.Request[v1.GetOrderRequest]) (*connect.Response[v1.GetOrderResponse], error)
 	ListOutstandingOrders(context.Context, *connect.Request[v1.ListOutstandingOrdersRequest]) (*connect.Response[v1.ListOutstandingOrdersResponse], error)
 	AcceptFillOrder(context.Context, *connect.Request[v1.AcceptFillOrderRequest]) (*connect.Response[v1.AcceptFillOrderResponse], error)
@@ -85,13 +85,13 @@ func NewMarketServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 	baseURL = strings.TrimRight(baseURL, "/")
 	marketServiceMethods := v1.File_market_v1_market_proto.Services().ByName("MarketService").Methods()
 	return &marketServiceClient{
-		createSellOrder: connect.NewClient[v1.CreateSellOrderRequest, v1.CreateOrderResponse](
+		createSellOrder: connect.NewClient[v1.CreateSellOrderRequest, v1.CreateSellOrderResponse](
 			httpClient,
 			baseURL+MarketServiceCreateSellOrderProcedure,
 			connect.WithSchema(marketServiceMethods.ByName("CreateSellOrder")),
 			connect.WithClientOptions(opts...),
 		),
-		createBuyOrder: connect.NewClient[v1.CreateBuyOrderRequest, v1.CreateOrderResponse](
+		createBuyOrder: connect.NewClient[v1.CreateBuyOrderRequest, v1.CreateBuyOrderResponse](
 			httpClient,
 			baseURL+MarketServiceCreateBuyOrderProcedure,
 			connect.WithSchema(marketServiceMethods.ByName("CreateBuyOrder")),
@@ -144,8 +144,8 @@ func NewMarketServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 
 // marketServiceClient implements MarketServiceClient.
 type marketServiceClient struct {
-	createSellOrder       *connect.Client[v1.CreateSellOrderRequest, v1.CreateOrderResponse]
-	createBuyOrder        *connect.Client[v1.CreateBuyOrderRequest, v1.CreateOrderResponse]
+	createSellOrder       *connect.Client[v1.CreateSellOrderRequest, v1.CreateSellOrderResponse]
+	createBuyOrder        *connect.Client[v1.CreateBuyOrderRequest, v1.CreateBuyOrderResponse]
 	getOrder              *connect.Client[v1.GetOrderRequest, v1.GetOrderResponse]
 	listOutstandingOrders *connect.Client[v1.ListOutstandingOrdersRequest, v1.ListOutstandingOrdersResponse]
 	acceptFillOrder       *connect.Client[v1.AcceptFillOrderRequest, v1.AcceptFillOrderResponse]
@@ -156,12 +156,12 @@ type marketServiceClient struct {
 }
 
 // CreateSellOrder calls market.v1.MarketService.CreateSellOrder.
-func (c *marketServiceClient) CreateSellOrder(ctx context.Context, req *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error) {
+func (c *marketServiceClient) CreateSellOrder(ctx context.Context, req *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateSellOrderResponse], error) {
 	return c.createSellOrder.CallUnary(ctx, req)
 }
 
 // CreateBuyOrder calls market.v1.MarketService.CreateBuyOrder.
-func (c *marketServiceClient) CreateBuyOrder(ctx context.Context, req *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error) {
+func (c *marketServiceClient) CreateBuyOrder(ctx context.Context, req *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateBuyOrderResponse], error) {
 	return c.createBuyOrder.CallUnary(ctx, req)
 }
 
@@ -202,8 +202,8 @@ func (c *marketServiceClient) ClaimResult(ctx context.Context, req *connect.Requ
 
 // MarketServiceHandler is an implementation of the market.v1.MarketService service.
 type MarketServiceHandler interface {
-	CreateSellOrder(context.Context, *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error)
-	CreateBuyOrder(context.Context, *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error)
+	CreateSellOrder(context.Context, *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateSellOrderResponse], error)
+	CreateBuyOrder(context.Context, *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateBuyOrderResponse], error)
 	GetOrder(context.Context, *connect.Request[v1.GetOrderRequest]) (*connect.Response[v1.GetOrderResponse], error)
 	ListOutstandingOrders(context.Context, *connect.Request[v1.ListOutstandingOrdersRequest]) (*connect.Response[v1.ListOutstandingOrdersResponse], error)
 	AcceptFillOrder(context.Context, *connect.Request[v1.AcceptFillOrderRequest]) (*connect.Response[v1.AcceptFillOrderResponse], error)
@@ -303,11 +303,11 @@ func NewMarketServiceHandler(svc MarketServiceHandler, opts ...connect.HandlerOp
 // UnimplementedMarketServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedMarketServiceHandler struct{}
 
-func (UnimplementedMarketServiceHandler) CreateSellOrder(context.Context, *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error) {
+func (UnimplementedMarketServiceHandler) CreateSellOrder(context.Context, *connect.Request[v1.CreateSellOrderRequest]) (*connect.Response[v1.CreateSellOrderResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("market.v1.MarketService.CreateSellOrder is not implemented"))
 }
 
-func (UnimplementedMarketServiceHandler) CreateBuyOrder(context.Context, *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateOrderResponse], error) {
+func (UnimplementedMarketServiceHandler) CreateBuyOrder(context.Context, *connect.Request[v1.CreateBuyOrderRequest]) (*connect.Response[v1.CreateBuyOrderResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("market.v1.MarketService.CreateBuyOrder is not implemented"))
 }
 

@@ -453,7 +453,7 @@ func (x *IdempotencyResultView) GetResultState() TransactionState {
 	if x != nil {
 		return x.ResultState
 	}
-	return TransactionState_transaction_state_unspecified
+	return TransactionState_TRANSACTION_STATE_UNSPECIFIED
 }
 
 func (x *IdempotencyResultView) GetFailure() *TradeError {

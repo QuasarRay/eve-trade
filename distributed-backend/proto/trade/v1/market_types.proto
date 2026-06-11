@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package trade.v1;
 
-option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/trade/v1;tradev1";
-
 import "google/protobuf/timestamp.proto";
 import "trade/v1/common.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/trade/v1;tradev1";
 
 // market_types.proto contains shared market/order/transaction views. These
 // types are game-shaped, but they do not encode market rules. Market decides
