@@ -12,4 +12,7 @@ Early foundation phase:
 
 - PostgreSQL schema exists.
 - gRPC/protobuf contracts exist.
-- Service implementations are not complete yet.
+- trade-settlement on the verge of completion
+- market is at the initial development stage
+- api-gateway is to be implemented in the future
+- orchestration, CI/CD, containerization, Observability, and IAC are to be implemented in the future
