@@ -39,7 +39,6 @@ use crate::generated::trade::v1::RequestContext;
 pub struct Guard {
     pub request_id: String,
     pub idempotency_key: String,
-    pub fingerprint: String,
     pub replay: Option<IdempotencyResultRow>,
 }
 
@@ -171,17 +170,12 @@ pub async fn begin<M: Message>(
     let replay = sqlx::query_as::<_, IdempotencyResultRow>(
         r#"
         SELECT
-            idempotency_key,
             operation_id::text AS operation_id,
-            result_kind,
             trade_order_id::text AS trade_order_id,
             trade_transaction_id::text AS trade_transaction_id,
             settlement_id::text AS settlement_id,
             wallet_operation_id::text AS wallet_operation_id,
-            item_stack_operation_id::text AS item_stack_operation_id,
-            item_instance_operation_id::text AS item_instance_operation_id,
-            result_state,
-            failure_code
+            item_stack_operation_id::text AS item_stack_operation_id
         FROM trade.idempotency_result
         WHERE idempotency_key = $1
         FOR UPDATE
@@ -193,33 +187,40 @@ pub async fn begin<M: Message>(
 
     // DB-BLOCK src_db_idempotency_018
     // What: returns the branch result.
-    // How: wraps the computed response/error with `Ok(Guard { request_id, idempotency_key, fingerprint, replay })`.
+    // How: wraps the computed response/error with `Ok(Guard { request_id, idempotency_key, replay })`.
     // Why: DB boundaries must propagate success/failure explicitly.
     Ok(Guard {
         request_id,
         idempotency_key,
-        fingerprint,
         replay,
     })
 }
 
 // DB-BLOCK src_db_idempotency_019
+// What: defines the `RecordSuccessInput` data shape.
+// How: groups the replay result columns that must be written together.
+// Why: named fields prevent wallet/item/settlement IDs from being swapped accidentally.
+pub struct RecordSuccessInput<'a> {
+    pub guard: &'a Guard,
+    pub result_kind: &'a str,
+    pub operation_id: Option<&'a str>,
+    pub trade_order_id: Option<&'a str>,
+    pub trade_transaction_id: Option<&'a str>,
+    pub settlement_id: Option<&'a str>,
+    pub wallet_operation_id: Option<&'a str>,
+    pub item_stack_operation_id: Option<&'a str>,
+    pub result_state: &'a str,
+}
+
+// DB-BLOCK src_db_idempotency_020
 // What: records the durable success result for idempotency replay.
 // How: inserts idempotency_result and completes idempotency_record inside the caller transaction.
 // Why: after commit, retries must return the existing result without re-running ownership movement.
 pub async fn record_success(
     tx: &mut Transaction<'_, Postgres>,
-    guard: &Guard,
-    result_kind: &str,
-    operation_id: Option<&str>,
-    trade_order_id: Option<&str>,
-    trade_transaction_id: Option<&str>,
-    settlement_id: Option<&str>,
-    wallet_operation_id: Option<&str>,
-    item_stack_operation_id: Option<&str>,
-    result_state: &str,
+    input: RecordSuccessInput<'_>,
 ) -> Result<(), SettlementError> {
-    // DB-BLOCK src_db_idempotency_020
+    // DB-BLOCK src_db_idempotency_021
     // What: performs a parameterized SQL operation against `the relevant trade schema table`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
     // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
@@ -234,15 +235,15 @@ pub async fn record_success(
         ON CONFLICT (idempotency_key) DO NOTHING
         "#,
     )
-    .bind(&guard.idempotency_key)
-    .bind(operation_id)
-    .bind(result_kind)
-    .bind(trade_order_id)
-    .bind(trade_transaction_id)
-    .bind(settlement_id)
-    .bind(wallet_operation_id)
-    .bind(item_stack_operation_id)
-    .bind(result_state)
+    .bind(&input.guard.idempotency_key)
+    .bind(input.operation_id)
+    .bind(input.result_kind)
+    .bind(input.trade_order_id)
+    .bind(input.trade_transaction_id)
+    .bind(input.settlement_id)
+    .bind(input.wallet_operation_id)
+    .bind(input.item_stack_operation_id)
+    .bind(input.result_state)
     .execute(&mut **tx)
     .await?;
 
@@ -257,7 +258,7 @@ pub async fn record_success(
         WHERE idempotency_key = $1
         "#,
     )
-    .bind(&guard.idempotency_key)
+    .bind(&input.guard.idempotency_key)
     .execute(&mut **tx)
     .await?;
 
@@ -272,7 +273,7 @@ pub async fn record_success(
         WHERE request_id = $1::uuid
         "#,
     )
-    .bind(&guard.request_id)
+    .bind(&input.guard.request_id)
     .execute(&mut **tx)
     .await?;
     // DB-BLOCK src_db_idempotency_023

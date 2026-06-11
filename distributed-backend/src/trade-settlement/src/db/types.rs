@@ -80,16 +80,7 @@ pub mod proto_i32 {
     pub const OP_SETTLE_TRADE: i32 = 64;
     pub const OP_CLAIM_TRADE_RESULT: i32 = 65;
 
-    pub const ERROR_INSUFFICIENT_ISK: i32 = 1;
-    pub const ERROR_INSUFFICIENT_ITEMS: i32 = 2;
-    pub const ERROR_INVALID_STATE_TRANSITION: i32 = 3;
-    pub const ERROR_ORDER_EXPIRED: i32 = 4;
-    pub const ERROR_ORDER_CANCELLED: i32 = 5;
-    pub const ERROR_DUPLICATE_REQUEST: i32 = 7;
     pub const ERROR_SETTLEMENT_CONFLICT: i32 = 8;
-    pub const ERROR_STALE_VERSION_CONFLICT: i32 = 9;
-    pub const ERROR_INTEGRITY_CONFLICT: i32 = 10;
-    pub const ERROR_RESERVATION_CONFLICT: i32 = 11;
 }
 
 // DB-BLOCK src_db_types_003
@@ -404,19 +395,4 @@ impl CloseTarget {
         }
     }
 
-    // DB-BLOCK src_db_types_038
-    // What: implements `operation_kind_proto_i32`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn operation_kind_proto_i32(self) -> i32 {
-        // DB-BLOCK src_db_types_039
-        // What: branches across known alternatives.
-        // How: uses Rust `match` on `match self {`.
-        // Why: closed branching is safer than ad-hoc string/boolean decision trees.
-        match self {
-            Self::Cancelled => proto_i32::OP_CANCEL_TRADE_ORDER,
-            Self::Expired => proto_i32::OP_EXPIRE_TRADE_ORDER,
-            Self::Failed => proto_i32::OP_EXPIRE_TRADE_ORDER,
-        }
-    }
 }

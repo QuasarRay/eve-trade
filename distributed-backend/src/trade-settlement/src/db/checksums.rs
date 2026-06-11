@@ -64,31 +64,37 @@ pub fn wallet_checksum(
 }
 
 // DB-BLOCK src_db_checksums_006
+// What: defines the `ItemStackChecksumInput` data shape.
+// How: groups every stack field that participates in deterministic checksum construction.
+// Why: named input fields prevent positional argument mistakes in correctness-critical hashes.
+pub struct ItemStackChecksumInput<'a> {
+    pub item_stack_id: &'a str,
+    pub capsuleer_id: &'a str,
+    pub item_type_id: &'a str,
+    pub station_id: &'a str,
+    pub available_quantity: i64,
+    pub reserved_quantity: i64,
+    pub stack_state: &'a str,
+    pub stack_version: i64,
+}
+
+// DB-BLOCK src_db_checksums_007
 // What: implements `item_stack_checksum`.
-// How: performs the smallest focused operation implied by this module and propagates typed errors.
-// Why: small named functions make correctness review and testing possible.
-pub fn item_stack_checksum(
-    item_stack_id: &str,
-    capsuleer_id: &str,
-    item_type_id: &str,
-    station_id: &str,
-    available_quantity: i64,
-    reserved_quantity: i64,
-    stack_state: &str,
-    stack_version: i64,
-) -> String {
-    // DB-BLOCK src_db_checksums_007
+// How: hashes the named `ItemStackChecksumInput` fields in the stable DB checksum order.
+// Why: small named functions make correctness review and testing possible without unsafe positional arguments.
+pub fn item_stack_checksum(input: ItemStackChecksumInput<'_>) -> String {
+    // DB-BLOCK src_db_checksums_008
     // What: binds `h` as a named intermediate.
     // How: computes/extracts `h` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
     let mut h = Sha256::new();
-    write_text(&mut h, item_stack_id);
-    write_text(&mut h, capsuleer_id);
-    write_text(&mut h, item_type_id);
-    write_text(&mut h, station_id);
-    write_i64(&mut h, available_quantity);
-    write_i64(&mut h, reserved_quantity);
-    write_text(&mut h, stack_state);
-    write_i64(&mut h, stack_version);
+    write_text(&mut h, input.item_stack_id);
+    write_text(&mut h, input.capsuleer_id);
+    write_text(&mut h, input.item_type_id);
+    write_text(&mut h, input.station_id);
+    write_i64(&mut h, input.available_quantity);
+    write_i64(&mut h, input.reserved_quantity);
+    write_text(&mut h, input.stack_state);
+    write_i64(&mut h, input.stack_version);
     format!("{:x}", h.finalize())
 }

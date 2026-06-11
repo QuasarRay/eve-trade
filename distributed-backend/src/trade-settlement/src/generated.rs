@@ -22,6 +22,7 @@ pub mod trade {
     // How: makes `v1.rs` part of the Rust module tree.
     // Why: the DB project is split by responsibility instead of becoming one unsafe file.
     pub mod v1 {
+        #![allow(dead_code)]
         tonic::include_proto!("trade.v1");
     }
 }
@@ -36,6 +37,7 @@ pub mod settlement {
     // How: makes `v1.rs` part of the Rust module tree.
     // Why: the DB project is split by responsibility instead of becoming one unsafe file.
     pub mod v1 {
+        #![allow(dead_code)]
         tonic::include_proto!("settlement.v1");
     }
 }

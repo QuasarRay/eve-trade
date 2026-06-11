@@ -217,17 +217,6 @@ pub fn item_stack_id_optional(
     optional_uuid_text(field, value.as_ref().map(|x| &x.value))
 }
 
-// DB-BLOCK src_db_extract_025
-// What: implements `item_instance_id_optional`.
-// How: performs the smallest focused operation implied by this module and propagates typed errors.
-// Why: small named functions make correctness review and testing possible.
-pub fn item_instance_id_optional(
-    field: &str,
-    value: &Option<ItemInstanceId>,
-) -> Result<Option<String>, SettlementError> {
-    optional_uuid_text(field, value.as_ref().map(|x| &x.value))
-}
-
 // DB-BLOCK src_db_extract_026
 // What: implements `station_id`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.

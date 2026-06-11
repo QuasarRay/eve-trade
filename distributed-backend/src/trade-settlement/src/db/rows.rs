@@ -39,7 +39,6 @@ pub struct OperationRow {
     pub created_by_service: String,
     pub started_at: DateTime<Utc>,
     pub completed_at: Option<DateTime<Utc>>,
-    pub failure_code: Option<String>,
     pub failure_message: Option<String>,
 }
 
@@ -53,17 +52,12 @@ pub struct OperationRow {
 // How: groups fields that are read, written, or returned together.
 // Why: named row/request/result shapes prevent accidental tuple-order bugs.
 pub struct IdempotencyResultRow {
-    pub idempotency_key: String,
     pub operation_id: Option<String>,
-    pub result_kind: String,
     pub trade_order_id: Option<String>,
     pub trade_transaction_id: Option<String>,
     pub settlement_id: Option<String>,
     pub wallet_operation_id: Option<String>,
     pub item_stack_operation_id: Option<String>,
-    pub item_instance_operation_id: Option<String>,
-    pub result_state: String,
-    pub failure_code: Option<String>,
 }
 
 // DB-BLOCK src_db_rows_006
@@ -238,7 +232,6 @@ pub struct SettlementRow {
     pub retry_count: i32,
     pub started_at: DateTime<Utc>,
     pub decided_at: Option<DateTime<Utc>>,
-    pub failure_code: Option<String>,
     pub failure_message: Option<String>,
 }
 
@@ -258,6 +251,5 @@ pub struct SettlementStepRow {
     pub step_state: String,
     pub started_at: DateTime<Utc>,
     pub completed_at: Option<DateTime<Utc>>,
-    pub failure_code: Option<String>,
     pub failure_message: Option<String>,
 }

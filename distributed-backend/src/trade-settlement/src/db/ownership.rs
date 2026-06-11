@@ -24,7 +24,7 @@
 // Why: explicit imports make coupling visible during review.
 use sqlx::{Postgres, Transaction};
 
-use crate::db::checksums::{item_stack_checksum, wallet_checksum};
+use crate::db::checksums::{item_stack_checksum, wallet_checksum, ItemStackChecksumInput};
 use crate::db::rows::{ItemStackRow, WalletRow};
 use crate::error::SettlementError;
 
@@ -227,16 +227,16 @@ pub async fn create_empty_stack(
     // What: binds `checksum` as a named intermediate.
     // How: computes/extracts `checksum` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let checksum = item_stack_checksum(
-        &id.0,
+    let checksum = item_stack_checksum(ItemStackChecksumInput {
+        item_stack_id: &id.0,
         capsuleer_id,
         item_type_id,
         station_id,
-        0,
-        0,
-        "active",
-        1,
-    );
+        available_quantity: 0,
+        reserved_quantity: 0,
+        stack_state: "active",
+        stack_version: 1,
+    });
     // DB-BLOCK src_db_ownership_021
     // What: performs a parameterized SQL operation against `item_stack`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
@@ -468,16 +468,16 @@ pub async fn move_stack(
     // What: binds `after_checksum` as a named intermediate.
     // How: computes/extracts `after_checksum` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let after_checksum = item_stack_checksum(
-        &before.item_stack_id,
-        &before.capsuleer_id,
-        &before.item_type_id,
-        &before.station_id,
-        after_available,
-        after_reserved,
-        after_state,
-        after_version,
-    );
+    let after_checksum = item_stack_checksum(ItemStackChecksumInput {
+        item_stack_id: &before.item_stack_id,
+        capsuleer_id: &before.capsuleer_id,
+        item_type_id: &before.item_type_id,
+        station_id: &before.station_id,
+        available_quantity: after_available,
+        reserved_quantity: after_reserved,
+        stack_state: after_state,
+        stack_version: after_version,
+    });
 
     // DB-BLOCK src_db_ownership_044
     // What: binds `result` as a named intermediate.

@@ -650,15 +650,17 @@ pub async fn request_settlement(
     operation_log::complete(&mut tx, &operation_id).await?;
     idempotency::record_success(
         &mut tx,
-        &guard,
-        "request_settlement",
-        Some(&operation_id),
-        Some(&order_id),
-        Some(&trade_tx.trade_transaction_id),
-        Some(&settlement_id),
-        Some(&wallet_op),
-        Some(&stack_op),
-        TradeState::Completed.as_db(),
+        idempotency::RecordSuccessInput {
+            guard: &guard,
+            result_kind: "request_settlement",
+            operation_id: Some(&operation_id),
+            trade_order_id: Some(&order_id),
+            trade_transaction_id: Some(&trade_tx.trade_transaction_id),
+            settlement_id: Some(&settlement_id),
+            wallet_operation_id: Some(&wallet_op),
+            item_stack_operation_id: Some(&stack_op),
+            result_state: TradeState::Completed.as_db(),
+        },
     )
     .await?;
 
@@ -738,7 +740,7 @@ pub async fn get_transaction_state(
     // How: computes/extracts `settlement` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
     let settlement = sqlx::query_as::<_, crate::db::rows::SettlementRow>(
-        r#"SELECT settlement_id::text AS settlement_id, operation_id::text AS operation_id, trade_transaction_id::text AS trade_transaction_id, idempotency_key, state::text AS state, settlement_phase::text AS settlement_phase, retry_count, started_at, decided_at, failure_code, failure_message FROM trade.settlement WHERE trade_transaction_id = $1::uuid"#
+        r#"SELECT settlement_id::text AS settlement_id, operation_id::text AS operation_id, trade_transaction_id::text AS trade_transaction_id, idempotency_key, state::text AS state, settlement_phase::text AS settlement_phase, retry_count, started_at, decided_at, failure_message FROM trade.settlement WHERE trade_transaction_id = $1::uuid"#
     ).bind(&id).fetch_optional(&mut *tx).await?;
     tx.commit().await?;
     // DB-BLOCK src_db_settlements_087

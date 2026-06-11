@@ -225,7 +225,7 @@ pub async fn load_settlement(
         SELECT settlement_id::text AS settlement_id, operation_id::text AS operation_id,
                trade_transaction_id::text AS trade_transaction_id, idempotency_key,
                state::text AS state, settlement_phase::text AS settlement_phase, retry_count,
-               started_at, decided_at, failure_code, failure_message
+               started_at, decided_at, failure_message
         FROM trade.settlement
         WHERE settlement_id = $1::uuid
         "#,
@@ -251,7 +251,7 @@ pub async fn settlement_steps(
     sqlx::query_as::<_, SettlementStepRow>(
         r#"
         SELECT settlement_step_id::text AS settlement_step_id, settlement_id::text AS settlement_id,
-               step_name, step_state::text AS step_state, started_at, completed_at, failure_code, failure_message
+               step_name, step_state::text AS step_state, started_at, completed_at, failure_message
         FROM trade.settlement_step
         WHERE settlement_id = $1::uuid
         ORDER BY started_at ASC

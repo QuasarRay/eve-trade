@@ -104,7 +104,7 @@ pub async fn load(
                external_operation_id, request_id::text AS request_id,
                idempotency_key, caused_by_capsuleer_id::text AS caused_by_capsuleer_id,
                operation_state::text AS operation_state, created_by_service,
-               started_at, completed_at, failure_code, failure_message
+               started_at, completed_at, failure_message
         FROM trade.operation
         WHERE operation_id = $1::uuid
         "#,
@@ -138,39 +138,6 @@ pub async fn complete(
     .execute(&mut **tx)
     .await?;
     // DB-BLOCK src_db_operation_log_014
-    // What: returns the branch result.
-    // How: wraps the computed response/error with `Ok(())`.
-    // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(())
-}
-
-// DB-BLOCK src_db_operation_log_015
-// What: marks an operation as failed.
-// How: stores failure code/message and completes the operation row.
-// Why: operators and retries need durable failure evidence.
-pub async fn fail(
-    tx: &mut Transaction<'_, Postgres>,
-    operation_id: &str,
-    failure_code: &str,
-    failure_message: &str,
-) -> Result<(), SettlementError> {
-    // DB-BLOCK src_db_operation_log_016
-    // What: performs a parameterized SQL operation against `the relevant trade schema table`.
-    // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
-    // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
-    sqlx::query(
-        r#"
-        UPDATE trade.operation
-        SET operation_state = 'failed', completed_at = now(), failure_code = $2, failure_message = $3
-        WHERE operation_id = $1::uuid
-        "#,
-    )
-    .bind(operation_id)
-    .bind(failure_code)
-    .bind(failure_message)
-    .execute(&mut **tx)
-    .await?;
-    // DB-BLOCK src_db_operation_log_017
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(())`.
     // Why: DB boundaries must propagate success/failure explicitly.
