@@ -1,2 +1,8 @@
-/distributed-backend/src/trade-settlement/target
+# Rust build output
 /target
+/distributed-backend/src/trade-settlement/target
+
+# Local Go/Windows build artifacts
+/market
+/market.exe
+*.exe

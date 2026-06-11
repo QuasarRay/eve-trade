@@ -8,11 +8,10 @@ incrementally grow into a production ready trade-system that is compatible with 
 
 ## Current Status
 
-Early foundation phase:
-
-- PostgreSQL schema exists.
+Current foundation:
+- PostgreSQL trade schema exists.
 - gRPC/protobuf contracts exist.
-- trade-settlement on the verge of completion
-- market is at the initial development stage
-- api-gateway is to be implemented in the future
-- orchestration, CI/CD, containerization, Observability, and IAC are to be implemented in the future
+- CI verification exists for protobuf, Go market, and Rust trade-settlement.
+- trade-settlement implements the initial atomic settlement path for stackable items.
+- market implements initial order/fill/cancel/expire forwarding logic.
+- api-gateway, orchestration, containerization, observability, and IaC remain future work.

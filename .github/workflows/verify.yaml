@@ -96,7 +96,7 @@ jobs:
         run: go test ./...
 
       - name: Build market service
-        run: go build ./distributed-backend/src/market/cmd/market
+        run: go build -o /tmp/eve-trade-market ./distributed-backend/src/market/cmd/market
 
   rust-trade-settlement:
     name: rust / trade-settlement
