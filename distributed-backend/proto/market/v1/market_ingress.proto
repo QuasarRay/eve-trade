@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package market.v1;
+
+import "eve_trade/v1/project_trade_interaction.proto";
+import "eve_trade/v1/transaction_outcome.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/market/v1;marketv1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.market.v1";
+
+// This file represents Market Layer 1 only: the gRPC ingress adapter that
+// receives project-proto interactions from the API Gateway. It intentionally
+// contains no Layer 2 gRPC service, so pure game-trade rule code cannot become
+// a web/microservice boundary by accident.
+
+// MarketInteractionResult is returned by Market after it has routed the
+// interaction through Layer 1, Layer 2, Layer 3, and Trade Settlement. It carries
+// the settlement outcome but not raw database errors or raw game-server fields.
+message MarketInteractionResult {
+  eve_trade.v1.ProjectTradeInteractionId interaction_id = 1;
+  eve_trade.v1.CorrelationId correlation_id = 2;
+  eve_trade.v1.TradeInstanceTransactionOutcome transaction_outcome = 3;
+}
+
+// MarketInteractionIngressService enforces the lifecycle hop:
+// @Market_Layer_1_receives_Project_Proto_trade_interactions_from_API_gateway_via_gRPC.
+// The input is already Project Proto, not raw GameUI activity, and it still does
+// not contain transaction function metadata; Layer 2 must derive that locally.
+service MarketInteractionIngressService {
+  rpc StreamProjectTradeInteractions(stream eve_trade.v1.ProjectTradeInteraction)
+      returns (stream MarketInteractionResult);
+}

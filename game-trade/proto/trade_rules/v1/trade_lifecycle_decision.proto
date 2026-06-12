@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package trade_rules.v1;
+
+import "eve_trade/v1/project_trade_interaction.proto";
+import "eve_trade/v1/trade_instance_transaction.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/game-trade/proto/gen/trade_rules/v1;traderulesv1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.traderules.v1";
+
+// This file models Market Layer 2 as pure game-domain data, not a gRPC service.
+// There is deliberately no `service` block here. Layer 1 calls Layer 2 as local
+// game-trade code, preserving the rule that game developers do not depend on
+// web, gRPC, Kubernetes, or DevOps concepts.
+
+// GameTradeDomainInput is the clean domain input after Market Layer 1 shields
+// Layer 2 from gRPC/web/DevOps details.
+message GameTradeDomainInput {
+  eve_trade.v1.ProjectTradeInteraction interaction = 1;
+}
+
+// TradeLifecycleDecision is the exact result Market Layer 2 is allowed to give
+// Layer 3. The oneof contains only the current lifecycle transaction functions:
+// issue_trade_instance, settle_trade_instance, and cancel_trade_instance.
+message TradeLifecycleDecision {
+  eve_trade.v1.ProjectTradeInteractionId source_interaction_id = 1;
+  eve_trade.v1.CorrelationId correlation_id = 2;
+  eve_trade.v1.TradeInstanceTransactionMetadata required_transaction_metadata = 3;
+}

@@ -1,0 +1,99 @@
+﻿# This block names the compose project so Docker resources are grouped under one predictable prefix.
+# It exists so repeated integration runs are easy to inspect and clean up with `docker compose down -v`.
+name: eve-trade-integration
+
+# This block declares the  runtime services used by the integration harness.
+# It exists because these tests intentionally exercise market -> trade-settlement -> PostgreSQL instead of replacing settlement with a fake.
+services:
+  # This block starts the only durable storage dependency required by the MVP trade path.
+  # It exists so settlement writes against a  PostgreSQL engine,  enum types,  constraints, and  transactions.
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: eve_trade
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d eve_trade"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    volumes:
+      - eve_trade_pgdata:/var/lib/postgresql/data
+
+  # This block applies the canonical SQL migrations before either service accepts traffic.
+  # It exists so the test database is recreated deterministically from the same migration files the project owns.
+  migrate:
+    image: postgres:16
+    depends_on:
+      postgres:
+        condition: service_healthy
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    environment:
+      PGPASSWORD: postgres
+    command: >
+      bash -lc "
+      psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -c 'DROP SCHEMA IF EXISTS trade CASCADE; DROP EXTENSION IF EXISTS pgcrypto;' &&
+      psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/migrations/postgresql/0001_create_trade_schema.up.sql &&
+      psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/migrations/postgresql/0002_make_checksum_algorithm_match_code.sql
+      "
+
+  # This block builds and runs the  Rust settlement service from the current repository checkout.
+  # It exists because market must talk to the  correctness-critical service over gRPC-compatible transport.
+  trade-settlement:
+    build:
+      context: .
+      dockerfile: distributed-backend/docker/trade-settlement.Dockerfile
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
+    ports:
+      - "9092:9092"
+
+  # This block builds and runs the  Go market service from the current repository checkout.
+  # It exists so the tests cover market validation/translation plus  settlement calls, not settlement alone.
+  market:
+    build:
+      context: .
+      dockerfile: distributed-backend/docker/market.Dockerfile
+    depends_on:
+      trade-settlement:
+        condition: service_started
+    environment:
+      MARKET_ADDR: :8081
+      SETTLEMENT_URL: http://trade-settlement:9092
+    ports:
+      - "8081:8081"
+
+  # This block runs the Go e2e test package inside the same Docker network as market, settlement, and PostgreSQL.
+  # It exists so CI and local runs use the same network names and do not depend on host-specific service discovery.
+  e2e-tests:
+    image: golang:1.26-bookworm
+    profiles:
+      - test
+    depends_on:
+      market:
+        condition: service_started
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+      - go_cache:/go/pkg/mod
+      - go_build_cache:/root/.cache/go-build
+    environment:
+      EVE_TRADE_MARKET_URL: http://market:8081
+      EVE_TRADE_DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
+    command: >
+      bash -lc "go test -tags=e2e ./distributed-backend/tests/e2e -count=1 -v"
+
+# This block stores PostgreSQL state between container restarts while still allowing full cleanup via `down -v`.
+# It exists so local runs are fast, but deterministic reset is still handled by the migrate service.
+volumes:
+  eve_trade_pgdata:
+  go_cache:
+  go_build_cache:

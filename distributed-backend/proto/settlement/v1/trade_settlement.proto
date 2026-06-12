@@ -2,222 +2,38 @@ syntax = "proto3";
 
 package settlement.v1;
 
-import "google/protobuf/timestamp.proto";
-import "trade/v1/common.proto";
-import "trade/v1/market_types.proto";
-import "trade/v1/operation.proto";
+import "eve_trade/v1/trade_instance_transaction.proto";
+import "eve_trade/v1/transaction_outcome.proto";
 
 option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/settlement/v1;settlementv1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.settlement.v1";
 
-// TradeSettlementService is the only service that performs durable trade writes.
-// Market decides whether a trade request is valid according to game mechanics.
-// Settlement performs the database transaction, enforces structural correctness,
-// idempotency, state transitions, reservations, and atomic wallet/item movement.
+// This file is the only Market-to-Trade-Settlement gRPC contract. It receives
+// transaction metadata chosen by Market Layer 2 and executes only the three
+// lifecycle transaction functions present in TradeInstanceTransactionMetadata.
+
+// TradeInstanceTransactionRequest wraps the lifecycle-enforcing metadata. The
+// oneof inside metadata is the dispatch instruction for trade-settlement's
+// same-named internal function: issue_trade_instance, settle_trade_instance, or
+// cancel_trade_instance.
+message TradeInstanceTransactionRequest {
+  eve_trade.v1.TradeInstanceTransactionMetadata metadata = 1;
+}
+
+// TradeInstanceTransactionResponse returns the result of the transaction
+// attempt. It separates attempt status from durable trade lifecycle outcomes, so
+// a failed transaction attempt cannot be confused with a TradeState failing.
+message TradeInstanceTransactionResponse {
+  eve_trade.v1.TradeInstanceTransactionOutcome outcome = 1;
+}
+
+// TradeSettlementService enforces the lifecycle hop:
+// @trade_settlement_receives_transaction_request_via_gRPC_validates_metadata_reads_requested_transaction_function_name_and_dispatches_to_same_named_internal_transaction_function.
+// It is a stream so unrelated trade-instance transactions can be processed
+// concurrently, while causally related transactions are controlled by metadata
+// and settlement locking/idempotency rules.
 service TradeSettlementService {
-  // Creates a durable trade order and its required reservation after market has
-  // validated the game rules for the order.
-  rpc OpenTradeOrder(OpenTradeOrderRequest) returns (OpenTradeOrderResponse);
-
-  // Closes an outstanding order as cancelled/expired/failed and releases any
-  // remaining reservation. Market decides that closing is allowed; settlement
-  // makes the durable state/reservation changes safely.
-  rpc CloseTradeOrder(CloseTradeOrderRequest) returns (CloseTradeOrderResponse);
-
-  // Performs the correctness-critical atomic trade settlement. This is the main
-  // RPC market calls after it has accepted/fill-matched an order.
-  rpc RequestSettlement(RequestSettlementRequest) returns (RequestSettlementResponse);
-
-  // Claims a previously claimable result. If MVP uses immediate delivery, this
-  // RPC can remain unused while the schema/proto still supports the lifecycle.
-  rpc ClaimResult(ClaimResultRequest) returns (ClaimResultResponse);
-
-  // Read APIs. These keep market/api-gateway from needing to know settlement's
-  // table layout even when they need current durable state.
-  rpc GetTradeOrder(GetTradeOrderRequest) returns (GetTradeOrderResponse);
-  rpc ListOutstandingTradeOrders(ListOutstandingTradeOrdersRequest) returns (ListOutstandingTradeOrdersResponse);
-  rpc GetTransactionState(GetTransactionStateRequest) returns (GetTransactionStateResponse);
-  rpc GetSettlement(GetSettlementRequest) returns (GetSettlementResponse);
-  rpc GetOperation(GetOperationRequest) returns (GetOperationResponse);
-}
-
-message TradeOrderTerms {
-  trade.v1.TradeOrderSide order_side = 1;
-  trade.v1.TradeItemKind item_kind = 2;
-
-  trade.v1.CapsuleerId owner_capsuleer_id = 3;
-  trade.v1.WalletId owner_wallet_id = 4;
-  trade.v1.ItemTypeId item_type_id = 5;
-
-  // Present for stackable sell orders.
-  trade.v1.ItemStackId offered_item_stack_id = 6;
-
-  // Present for singleton sell orders.
-  trade.v1.ItemInstanceId offered_item_instance_id = 7;
-
-  trade.v1.StationId station_id = 8;
-  trade.v1.RegionId region_id = 9;
-
-  trade.v1.Quantity total_quantity = 10;
-  trade.v1.IskAmount unit_price_isk = 11;
-
-  google.protobuf.Timestamp expires_at = 12;
-}
-
-message OpenTradeOrderRequest {
-  trade.v1.RequestContext context = 1;
-  TradeOrderTerms terms = 2;
-}
-
-message OpenTradeOrderResponse {
-  trade.v1.OperationView operation = 1;
-  trade.v1.TradeOrderView trade_order = 2;
-  trade.v1.WalletReservationView wallet_reservation = 3;
-  trade.v1.ItemStackReservationView item_stack_reservation = 4;
-  trade.v1.ItemInstanceReservationView item_instance_reservation = 5;
-  bool idempotent_replay = 6;
-  trade.v1.TradeError failure = 7;
-}
-
-message CloseTradeOrderRequest {
-  trade.v1.RequestContext context = 1;
-  trade.v1.TradeOrderId trade_order_id = 2;
-
-  // Allowed target changes for this RPC are SET_TO_CANCELLED, SET_TO_EXPIRED,
-  // or SET_TO_FAILED. SET_TO_COMPLETED is deliberately not available as a
-  // state-change command; completion comes from RequestSettlement.
-  trade.v1.TradeStateChange requested_change = 3;
-
-  trade.v1.TransactionState expected_current_state = 4;
-  string reason = 5;
-}
-
-message CloseTradeOrderResponse {
-  trade.v1.OperationView operation = 1;
-  trade.v1.TradeOrderView trade_order = 2;
-  trade.v1.WalletReservationView wallet_reservation = 3;
-  trade.v1.ItemStackReservationView item_stack_reservation = 4;
-  trade.v1.ItemInstanceReservationView item_instance_reservation = 5;
-  bool idempotent_replay = 6;
-  trade.v1.TradeError failure = 7;
-}
-
-message RequestSettlementRequest {
-  trade.v1.RequestContext context = 1;
-
-  trade.v1.TradeOrderId trade_order_id = 2;
-  trade.v1.TradeTransactionId trade_transaction_id = 3;
-  trade.v1.SettlementId settlement_id = 4;
-
-  trade.v1.TradeItemKind item_kind = 5;
-
-  trade.v1.CapsuleerId buyer_capsuleer_id = 6;
-  trade.v1.WalletId buyer_wallet_id = 7;
-  trade.v1.CapsuleerId seller_capsuleer_id = 8;
-  trade.v1.WalletId seller_wallet_id = 9;
-
-  trade.v1.ItemTypeId item_type_id = 10;
-
-  // Stackable item path.
-  trade.v1.ItemStackId source_item_stack_id = 11;
-  trade.v1.ItemStackId destination_item_stack_id = 12;
-
-  // Singleton item path.
-  trade.v1.ItemInstanceId source_item_instance_id = 13;
-  trade.v1.ItemInstanceId destination_item_instance_id = 14;
-
-  trade.v1.Quantity quantity = 15;
-  trade.v1.IskAmount unit_price_isk = 16;
-  trade.v1.IskAmount total_price_isk = 17;
-
-  // Concurrency/staleness hints. Settlement still locks and verifies durable
-  // rows; these fields help detect stale market/game views early and clearly.
-  trade.v1.TransactionState expected_trade_order_state = 18;
-  string expected_source_item_checksum = 19;
-  uint64 expected_source_item_version = 20;
-  string expected_buyer_wallet_checksum = 21;
-  uint64 expected_buyer_wallet_version = 22;
-}
-
-message RequestSettlementResponse {
-  trade.v1.OperationView operation = 1;
-  trade.v1.TradeOrderView trade_order = 2;
-  trade.v1.TradeTransactionView trade_transaction = 3;
-  trade.v1.SettlementView settlement = 4;
-  repeated trade.v1.SettlementStepView settlement_steps = 5;
-
-  // Operation IDs let callers correlate the result to operation/ledger history
-  // without pulling entire ledger rows through the hot path response.
-  trade.v1.WalletOperationId wallet_operation_id = 6;
-  trade.v1.ItemStackOperationId item_stack_operation_id = 7;
-  trade.v1.ItemInstanceOperationId item_instance_operation_id = 8;
-
-  bool idempotent_replay = 9;
-  trade.v1.TradeError failure = 10;
-}
-
-message ClaimResultRequest {
-  trade.v1.RequestContext context = 1;
-  trade.v1.TradeTransactionId trade_transaction_id = 2;
-  trade.v1.CapsuleerId claiming_capsuleer_id = 3;
-}
-
-message ClaimResultResponse {
-  trade.v1.OperationView operation = 1;
-  trade.v1.TradeClaimView claim = 2;
-  trade.v1.TradeTransactionView trade_transaction = 3;
-  bool idempotent_replay = 4;
-  trade.v1.TradeError failure = 5;
-}
-
-message GetTradeOrderRequest {
-  trade.v1.RequestContext context = 1;
-  trade.v1.TradeOrderId trade_order_id = 2;
-}
-
-message GetTradeOrderResponse {
-  trade.v1.TradeOrderView trade_order = 1;
-}
-
-message ListOutstandingTradeOrdersRequest {
-  trade.v1.RequestContext context = 1;
-  trade.v1.RegionId region_id = 2;
-  trade.v1.StationId station_id = 3;
-  trade.v1.ItemTypeId item_type_id = 4;
-  trade.v1.TradeOrderSide order_side = 5;
-  uint32 page_size = 6;
-  string page_token = 7;
-}
-
-message ListOutstandingTradeOrdersResponse {
-  repeated trade.v1.TradeOrderView trade_orders = 1;
-  string next_page_token = 2;
-}
-
-message GetTransactionStateRequest {
-  trade.v1.RequestContext context = 1;
-  trade.v1.TradeTransactionId trade_transaction_id = 2;
-}
-
-message GetTransactionStateResponse {
-  trade.v1.TradeTransactionView trade_transaction = 1;
-  trade.v1.SettlementView settlement = 2;
-}
-
-message GetSettlementRequest {
-  trade.v1.RequestContext context = 1;
-  trade.v1.SettlementId settlement_id = 2;
-}
-
-message GetSettlementResponse {
-  trade.v1.SettlementView settlement = 1;
-  repeated trade.v1.SettlementStepView settlement_steps = 2;
-}
-
-message GetOperationRequest {
-  trade.v1.RequestContext context = 1;
-  trade.v1.OperationId operation_id = 2;
-}
-
-message GetOperationResponse {
-  trade.v1.OperationView operation = 1;
+  rpc StreamTradeInstanceTransactions(stream TradeInstanceTransactionRequest)
+      returns (stream TradeInstanceTransactionResponse);
 }

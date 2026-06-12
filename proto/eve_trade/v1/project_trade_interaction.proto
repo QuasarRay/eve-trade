@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package eve_trade.v1;
+
+import "eve_trade/v1/identity.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/proto/gen/eve_trade/v1;evetradev1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.v1";
+
+// This file defines the Project Proto contract produced by the API Gateway and
+// consumed by Market Layer 1. It removes raw game-server naming but still does
+// not contain settlement transaction function names; Market Layer 2 must derive
+// those later.
+
+// ProjectTradeInteractionKind is the project-level meaning of the player's GUI
+// activity. It remains an interaction, not a transaction command.
+enum ProjectTradeInteractionKind {
+  PROJECT_TRADE_INTERACTION_KIND_UNSPECIFIED = 0;
+  PROJECT_TRADE_INTERACTION_KIND_PLAYER_ISSUED_VISIBLE_TRADE = 1;
+  PROJECT_TRADE_INTERACTION_KIND_PLAYER_ACCEPTED_VISIBLE_TRADE = 2;
+  PROJECT_TRADE_INTERACTION_KIND_PLAYER_CANCELLED_VISIBLE_TRADE = 3;
+}
+
+// KnownTradeWindow names the trade GUI surface in eve-trade language, not in
+// game-server UI naming. These names help Market derive trade type without
+// exposing raw UI conventions.
+enum KnownTradeWindow {
+  KNOWN_TRADE_WINDOW_UNSPECIFIED = 0;
+  KNOWN_TRADE_WINDOW_MARKET_WINDOW = 1;
+  KNOWN_TRADE_WINDOW_AUCTION_WINDOW = 2;
+  KNOWN_TRADE_WINDOW_DIRECT_TRADE_WINDOW = 3;
+  KNOWN_TRADE_WINDOW_CONTRACT_WINDOW = 4;
+}
+
+// KnownTradeButton names the player's visible trade control in eve-trade
+// language. This is still not a settlement function name.
+enum KnownTradeButton {
+  KNOWN_TRADE_BUTTON_UNSPECIFIED = 0;
+  KNOWN_TRADE_BUTTON_ISSUE = 1;
+  KNOWN_TRADE_BUTTON_ACCEPT = 2;
+  KNOWN_TRADE_BUTTON_CANCEL = 3;
+}
+
+// PlayerSelectedItem describes item context after gateway translation. It uses
+// stable eve-trade identifiers and prevents raw game field names from leaking
+// into Market Layer 2.
+message PlayerSelectedItem {
+  ItemTypeId item_type_id = 1;
+  ItemStackId item_stack_id = 2;
+  repeated ItemInstanceId item_instance_ids = 3;
+  ItemQuantity quantity = 4;
+}
+
+// PlayerTypedTradeValues contains only typed values needed for Market rule
+// decisions. Market receives parsed ISK/quantity values, not raw text boxes.
+message PlayerTypedTradeValues {
+  ItemQuantity quantity = 1;
+  IskAmount unit_price = 2;
+  IskAmount total_price = 3;
+}
+
+// ProjectTradeInteraction is what Market Layer 1 receives. It carries no
+// settlement transaction function names and no TradeState, forcing Layer 2 to decide
+// issue_trade_instance, settle_trade_instance, or cancel_trade_instance.
+message ProjectTradeInteraction {
+  ProjectTradeInteractionId interaction_id = 1;
+  GameUiActivityId source_activity_id = 2;
+  CorrelationId correlation_id = 3;
+  TraceId trace_id = 4;
+  CapsuleerId capsuleer_id = 5;
+  GameSessionId game_session_id = 6;
+  ProjectTradeInteractionKind interaction_kind = 7;
+  KnownTradeWindow trade_window = 8;
+  KnownTradeButton trade_button = 9;
+  TradeHubId visible_trade_hub_id = 10;
+  TradeInstanceId visible_trade_instance_id = 11;
+  repeated PlayerSelectedItem selected_items = 12;
+  PlayerTypedTradeValues typed_values = 13;
+  int64 occurred_at_unix_millis = 14;
+}

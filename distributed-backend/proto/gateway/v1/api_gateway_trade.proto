@@ -2,95 +2,20 @@ syntax = "proto3";
 
 package gateway.v1;
 
-import "market/v1/market.proto";
+import "eve_trade/v1/game_ui_activity.proto";
 
 option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/gateway/v1;gatewayv1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.gateway.v1";
 
-// ApiGatewayTradeService is the external adapter boundary.
-//
-// The gateway intentionally owns its own RPC request/response messages instead
-// of exposing MarketService messages directly. This keeps the public adapter
-// contract stable even if the internal market service contract changes later.
+// This service is the only game-server-facing trade entry point. It accepts raw
+// trade-GUI activity and does not expose market transaction functions, TradeState,
+// settlement metadata, or database row identities to the game server.
 service ApiGatewayTradeService {
-  rpc CreateSellOrder(CreateSellOrderRequest) returns (CreateSellOrderResponse);
-  rpc CreateBuyOrder(CreateBuyOrderRequest) returns (CreateBuyOrderResponse);
-  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
-  rpc ListOutstandingOrders(ListOutstandingOrdersRequest) returns (ListOutstandingOrdersResponse);
-  rpc AcceptFillOrder(AcceptFillOrderRequest) returns (AcceptFillOrderResponse);
-  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse);
-  rpc ExpireOrder(ExpireOrderRequest) returns (ExpireOrderResponse);
-  rpc GetTransactionState(GetTransactionStateRequest) returns (GetTransactionStateResponse);
-  rpc ClaimResult(ClaimResultRequest) returns (ClaimResultResponse);
-}
-
-message CreateSellOrderRequest {
-  market.v1.CreateSellOrderRequest market_request = 1;
-}
-
-message CreateSellOrderResponse {
-  market.v1.CreateSellOrderResponse market_response = 1;
-}
-
-message CreateBuyOrderRequest {
-  market.v1.CreateBuyOrderRequest market_request = 1;
-}
-
-message CreateBuyOrderResponse {
-  market.v1.CreateBuyOrderResponse market_response = 1;
-}
-
-message GetOrderRequest {
-  market.v1.GetOrderRequest market_request = 1;
-}
-
-message GetOrderResponse {
-  market.v1.GetOrderResponse market_response = 1;
-}
-
-message ListOutstandingOrdersRequest {
-  market.v1.ListOutstandingOrdersRequest market_request = 1;
-}
-
-message ListOutstandingOrdersResponse {
-  market.v1.ListOutstandingOrdersResponse market_response = 1;
-}
-
-message AcceptFillOrderRequest {
-  market.v1.AcceptFillOrderRequest market_request = 1;
-}
-
-message AcceptFillOrderResponse {
-  market.v1.AcceptFillOrderResponse market_response = 1;
-}
-
-message CancelOrderRequest {
-  market.v1.CancelOrderRequest market_request = 1;
-}
-
-message CancelOrderResponse {
-  market.v1.CancelOrderResponse market_response = 1;
-}
-
-message ExpireOrderRequest {
-  market.v1.ExpireOrderRequest market_request = 1;
-}
-
-message ExpireOrderResponse {
-  market.v1.ExpireOrderResponse market_response = 1;
-}
-
-message GetTransactionStateRequest {
-  market.v1.GetTransactionStateRequest market_request = 1;
-}
-
-message GetTransactionStateResponse {
-  market.v1.GetTransactionStateResponse market_response = 1;
-}
-
-message ClaimResultRequest {
-  market.v1.ClaimResultRequest market_request = 1;
-}
-
-message ClaimResultResponse {
-  market.v1.ClaimResultResponse market_response = 1;
+  // StreamGameTradeUiActivities enforces the first lifecycle hop:
+  // @API-gateway receives GameUI activity(...) from Game Server via gRPC.
+  // The request type is raw GUI activity only; the game server cannot call
+  // issue_trade_instance, settle_trade_instance, or cancel_trade_instance.
+  rpc StreamGameTradeUiActivities(stream eve_trade.v1.GameTradeUiActivity)
+      returns (stream eve_trade.v1.GameTradeUiActivityResult);
 }
