@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-Set-Location (Join-Path $PSScriptRoot "..")
+Set-Location (Resolve-Path (Join-Path $PSScriptRoot "..\.."))
 
 Write-Host "Checking protobuf workspace..."
 buf build

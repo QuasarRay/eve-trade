@@ -1,0 +1,14 @@
+version: v2
+
+modules:
+  - path: proto
+  - path: distributed-backend/proto
+  - path: game-trade/proto
+
+lint:
+  use:
+    - STANDARD
+
+breaking:
+  use:
+    - FILE

@@ -39,7 +39,8 @@ services:
       bash -lc "
       psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -c 'DROP SCHEMA IF EXISTS trade CASCADE; DROP EXTENSION IF EXISTS pgcrypto;' &&
       psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/migrations/postgresql/0001_create_trade_schema.up.sql &&
-      psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/migrations/postgresql/0002_make_checksum_algorithm_match_code.sql
+      psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/migrations/postgresql/0002_make_checksum_algorithm_match_code.sql &&
+      psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/migrations/postgresql/0003_simple_trade_instance_rename_and_offered_item.sql
       "
 
   # This block builds and runs the  Rust settlement service from the current repository checkout.
@@ -71,6 +72,19 @@ services:
     ports:
       - "8081:8081"
 
+  api-gateway:
+    build:
+      context: .
+      dockerfile: distributed-backend/docker/api-gateway.Dockerfile
+    depends_on:
+      market:
+        condition: service_started
+    environment:
+      API_GATEWAY_ADDR: :8080
+      MARKET_URL: http://market:8081
+    ports:
+      - "8080:8080"
+
   # This block runs the Go e2e test package inside the same Docker network as market, settlement, and PostgreSQL.
   # It exists so CI and local runs use the same network names and do not depend on host-specific service discovery.
   e2e-tests:
@@ -78,7 +92,7 @@ services:
     profiles:
       - test
     depends_on:
-      market:
+      api-gateway:
         condition: service_started
     working_dir: /workspace
     volumes:
@@ -86,6 +100,7 @@ services:
       - go_cache:/go/pkg/mod
       - go_build_cache:/root/.cache/go-build
     environment:
+      EVE_TRADE_API_GATEWAY_URL: http://api-gateway:8080
       EVE_TRADE_MARKET_URL: http://market:8081
       EVE_TRADE_DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
     command: >

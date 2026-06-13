@@ -1,41 +1,56 @@
 package market
 
 import (
-	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
-	"time"
 
-	tradev1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/trade/v1"
+	evetradev1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/v1"
 )
 
-// newPrefixedID creates opaque service-generated IDs for settlement commands.
-// It uses 128 bits of cryptographic randomness and prefixes the encoded value
-// with the domain category so logs remain human-scannable without relying on
-// global counters. It exists because AcceptFillOrder creates a transaction and
-// settlement record, but the market proto request does not provide those IDs.
-func newPrefixedID(prefix string) string {
-	var randomBytes [16]byte
-	if _, err := rand.Read(randomBytes[:]); err != nil {
-		return fmt.Sprintf("%s-%d", prefix, time.Now().UnixNano())
+func stableID(prefix string, values ...string) string {
+	hash := sha256.New()
+	writeStableText(hash, prefix)
+	for _, value := range values {
+		writeStableText(hash, value)
+	}
+	sum := hash.Sum(nil)
+	return prefix + "-" + hex.EncodeToString(sum[:16])
+}
+
+func writeStableText(hash interface{ Write([]byte) (int, error) }, value string) {
+	_, _ = hash.Write([]byte{byte(len(value) >> 24), byte(len(value) >> 16), byte(len(value) >> 8), byte(len(value))})
+	_, _ = hash.Write([]byte(value))
+}
+
+func interactionStableSeed(interaction *evetradev1.ProjectTradeInteraction) []string {
+	return []string{
+		interaction.GetInteractionId().GetValue(),
+		interaction.GetSourceActivityId().GetValue(),
+		interaction.GetCorrelationId().GetValue(),
+		interaction.GetTraceId().GetValue(),
+	}
+}
+
+func tradeInstanceIDForInteraction(interaction *evetradev1.ProjectTradeInteraction) *evetradev1.TradeInstanceId {
+	if interaction.GetVisibleTradeInstanceId().GetValue() != "" {
+		return interaction.GetVisibleTradeInstanceId()
 	}
 
-	return prefix + "-" + hex.EncodeToString(randomBytes[:])
+	return &evetradev1.TradeInstanceId{
+		Value: stableID("trade-instance", interactionStableSeed(interaction)...),
+	}
 }
 
-// newTradeTransactionID adapts a generated opaque string into the protobuf
-// TradeTransactionId wrapper. It delegates the randomness to newPrefixedID and
-// only performs the transport-shape wrapping here. It exists so service logic
-// can ask for a domain ID without repeating protobuf construction everywhere.
-func newTradeTransactionID() *tradev1.TradeTransactionId {
-	return &tradev1.TradeTransactionId{Value: newPrefixedID("trade-tx")}
+func transactionIDForInteraction(function transactionFunction, interaction *evetradev1.ProjectTradeInteraction) *evetradev1.TradeInstanceTransactionId {
+	seed := append([]string{string(function)}, interactionStableSeed(interaction)...)
+	return &evetradev1.TradeInstanceTransactionId{
+		Value: stableID("trade-tx", seed...),
+	}
 }
 
-// newSettlementID adapts a generated opaque string into the protobuf
-// SettlementId wrapper. It uses the same generator as transaction IDs but a
-// different prefix so operation traces clearly distinguish the settlement row
-// from the trade transaction row. It exists because settlement requires a stable
-// settlement identifier for idempotent writes.
-func newSettlementID() *tradev1.SettlementId {
-	return &tradev1.SettlementId{Value: newPrefixedID("settlement")}
+func idempotencyKeyForInteraction(function transactionFunction, interaction *evetradev1.ProjectTradeInteraction) *evetradev1.IdempotencyKey {
+	seed := append([]string{string(function)}, interactionStableSeed(interaction)...)
+	return &evetradev1.IdempotencyKey{
+		Value: stableID("market-idem", seed...),
+	}
 }
