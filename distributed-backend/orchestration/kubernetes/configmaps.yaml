@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-config
+  labels:
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/component: gateway
+data:
+  API_GATEWAY_ADDR: ":8080"
+  MARKET_URL: "http://market:8081"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: market-config
+  labels:
+    app.kubernetes.io/name: market
+    app.kubernetes.io/component: market
+data:
+  MARKET_ADDR: ":8081"
+  SETTLEMENT_URL: "http://trade-settlement:9092"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trade-settlement-config
+  labels:
+    app.kubernetes.io/name: trade-settlement
+    app.kubernetes.io/component: settlement
+data:
+  RUST_LOG: "info"
