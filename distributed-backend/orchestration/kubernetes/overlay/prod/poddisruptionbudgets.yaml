@@ -1,0 +1,38 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway
+  labels:
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/component: gateway
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: market
+  labels:
+    app.kubernetes.io/name: market
+    app.kubernetes.io/component: market
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: market
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: trade-settlement
+  labels:
+    app.kubernetes.io/name: trade-settlement
+    app.kubernetes.io/component: settlement
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: trade-settlement

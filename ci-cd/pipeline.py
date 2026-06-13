@@ -404,7 +404,7 @@ set -eu
 rm -rf /tmp/kubernetes
 mkdir -p /out
 cp -R distributed-backend/orchestration/kubernetes /tmp/kubernetes
-cd /tmp/kubernetes
+cd /tmp/kubernetes/overlay/prod
 {image_commands}
 kustomize build . > /out/kubernetes.yaml
 """
@@ -442,7 +442,7 @@ rm -rf /tmp/kubernetes
 cp -R distributed-backend/orchestration/kubernetes /tmp/kubernetes
 printf '%s' "$KUBE_CONFIG_B64" | base64 -d > /tmp/kubeconfig
 chmod 600 /tmp/kubeconfig
-cd /tmp/kubernetes
+cd /tmp/kubernetes/overlay/prod
 {image_commands}
 kubectl --kubeconfig /tmp/kubeconfig apply -k .
 """

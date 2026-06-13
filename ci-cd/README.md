@@ -29,6 +29,10 @@ Render Kubernetes manifests with release image tags:
 python ci-cd\pipeline.py render-kubernetes --registry registry.example.com/eve-trade --tag sha-1234 --output ci-cd\out\kubernetes.yaml
 ```
 
+The renderer targets
+`distributed-backend/orchestration/kubernetes/overlay/prod`, not the base
+kustomization.
+
 ## GitLab Variables
 
 GitLab provides `CI_REGISTRY`, `CI_REGISTRY_IMAGE`, `CI_REGISTRY_USER`,

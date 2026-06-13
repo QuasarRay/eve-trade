@@ -1,0 +1,34 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: eve-trade
+
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/environment: production
+
+resources:
+  - ../../base
+  - horizontalpodautoscalers.yaml
+  - httproute.yaml
+  - networkpolicies.yaml
+  - poddisruptionbudgets.yaml
+  - resource-governance.yaml
+
+patches:
+  - path: patches/namespace.yaml
+  - path: patches/configmaps.yaml
+  - path: patches/deployments.yaml
+  - path: patches/delete-placeholder-secret.yaml
+
+images:
+  - name: eve-trade/api-gateway
+    newName: registry.example.com/eve-trade/api-gateway
+    newTag: prod
+  - name: eve-trade/market
+    newName: registry.example.com/eve-trade/market
+    newTag: prod
+  - name: eve-trade/trade-settlement
+    newName: registry.example.com/eve-trade/trade-settlement
+    newTag: prod

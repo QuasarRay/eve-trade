@@ -4,7 +4,7 @@ metadata:
   name: letsencrypt-prod
 spec:
   acme:
-    email: email@example.com
+    email: platform@example.com
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
       name: letsencrypt-prod-account-key
@@ -13,5 +13,5 @@ spec:
           gatewayHTTPRoute:
             parentRefs:
               - name: public-web
-                namespace: online-boutique-gateway
+                namespace: eve-trade-gateway
                 kind: Gateway

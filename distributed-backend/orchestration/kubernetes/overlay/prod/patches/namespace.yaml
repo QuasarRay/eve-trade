@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: eve-trade
+  labels:
+    app.kubernetes.io/environment: production
+    gateway.networking.k8s.io/access: public-web
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted

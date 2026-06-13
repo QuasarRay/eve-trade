@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-config
+data:
+  ENVIRONMENT: production
+  API_GATEWAY_ADDR: ":8080"
+  MARKET_URL: "http://market.eve-trade.svc.cluster.local:8081"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: market-config
+data:
+  ENVIRONMENT: production
+  MARKET_ADDR: ":8081"
+  SETTLEMENT_URL: "http://trade-settlement.eve-trade.svc.cluster.local:9092"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trade-settlement-config
+data:
+  ENVIRONMENT: production
+  RUST_LOG: "info"
+  RUST_BACKTRACE: "0"

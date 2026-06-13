@@ -2,14 +2,14 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: public-web
-  namespace: online-boutique-gateway
+  namespace: eve-trade-gateway
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   gatewayClassName: internet
   listeners:
     - name: http
-      hostname: shop.example.com
+      hostname: api.eve-trade.example.com
       port: 80
       protocol: HTTP
       allowedRoutes:
@@ -20,13 +20,13 @@ spec:
               gateway.networking.k8s.io/access: public-web
 
     - name: https
-      hostname: shop.example.com
+      hostname: api.eve-trade.example.com
       port: 443
       protocol: HTTPS
       tls:
         mode: Terminate
         certificateRefs:
-          - name: shop-example-com-tls
+          - name: api-eve-trade-example-com-tls
             kind: Secret
       allowedRoutes:
         namespaces:

@@ -10,7 +10,13 @@ labels:
       app.kubernetes.io/managed-by: kustomize
 
 resources:
-  - base
+  - namespace.yaml
+  - serviceaccounts.yaml
+  - configmaps.yaml
+  - secret.database.yaml
+  - api-gateway.yaml
+  - market.yaml
+  - trade-settlement.yaml
 
 images:
   - name: eve-trade/api-gateway
