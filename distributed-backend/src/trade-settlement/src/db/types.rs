@@ -1,397 +1,223 @@
-//! Internal database-domain types.
-//!
-//! What this file contains:
-//! - Small enums and constants used by the DB layer.
-//! - Numeric protobuf enum constants copied from the current proto contract.
-//!
-//! How it works:
-//! - The DB layer uses these internal enums instead of matching directly on
-//!   prost-generated enum variants.
-//! - The proto messages still receive `i32` enum values at the boundary.
-//!
-//! Why it exists:
-//! - Durable correctness must not depend on generated Rust variant names.
-//! - The proto deliberately uses canonical lowercase state names, and prost's
-//!   naming conversion can become irritating. This file makes DB logic stable.
+use chrono::{DateTime, Utc};
+use sqlx::{Postgres, Transaction};
+use uuid::Uuid;
 
-// DB-BLOCK src_db_types_001
-// What: imports this file’s dependencies.
-// How: brings required symbols into scope for internal DB-domain enums independent from generated protobuf enum names.
-// Why: explicit imports make coupling visible during review.
-use crate::error::SettlementError;
+use crate::generated::eve_trade::{
+    common::v1::OperationMetadata, settlement::v1::TradeSettlementResult,
+};
 
-// -----------------------------------------------------------------------------
-// Protobuf enum numeric constants.
-// -----------------------------------------------------------------------------
-// These values match the latest proto generated in the conversation. Using
-// numeric constants here makes the DB code independent of prost variant names
-// while still producing correct protobuf responses.
+pub(crate) const SERVICE_NAME: &str = "trade-settlement";
+pub(crate) const CHECKSUM_ALGORITHM: &str = "sha256-v1";
 
-// DB-BLOCK src_db_types_002
-// What: exposes the `proto_i32` submodule.
-// How: makes `proto_i32.rs` part of the Rust module tree.
-// Why: the DB project is split by responsibility instead of becoming one unsafe file.
-pub mod proto_i32 {
-    pub const TRANSACTION_BEING_CREATED: i32 = 1;
-    pub const TRANSACTION_OUTSTANDING: i32 = 2;
-    pub const TRANSACTION_ACCEPTED: i32 = 3;
-    pub const TRANSACTION_IN_PROGRESS: i32 = 4;
-    pub const TRANSACTION_COMPLETED: i32 = 5;
-    pub const TRANSACTION_CLAIMABLE: i32 = 6;
-    pub const TRANSACTION_CLAIMED: i32 = 7;
-    pub const TRANSACTION_EXPIRED: i32 = 8;
-    pub const TRANSACTION_FAILED: i32 = 9;
-    pub const TRANSACTION_CANCELLED: i32 = 10;
+pub(crate) const OP_ISSUE: i32 = 1;
+pub(crate) const OP_CANCEL: i32 = 3;
+pub(crate) const OP_EXPIRE: i32 = 4;
+pub(crate) const OP_SETTLE: i32 = 5;
 
-    pub const CHANGE_SET_TO_EXPIRED: i32 = 7;
-    pub const CHANGE_SET_TO_FAILED: i32 = 8;
-    pub const CHANGE_SET_TO_CANCELLED: i32 = 9;
+pub(crate) const ATTEMPT_COMMITTED: i32 = 1;
+pub(crate) const ATTEMPT_REJECTED: i32 = 2;
+pub(crate) const ATTEMPT_RESULT_UNKNOWN: i32 = 4;
+pub(crate) const ATTEMPT_IDEMPOTENT_REPLAY: i32 = 5;
 
-    pub const OPERATION_PENDING: i32 = 1;
-    pub const OPERATION_IN_PROGRESS: i32 = 2;
-    pub const OPERATION_COMPLETED: i32 = 3;
-    pub const OPERATION_FAILED: i32 = 4;
+pub(crate) const TRADE_STATE_OUTSTANDING: i32 = 1;
+pub(crate) const TRADE_STATE_COMPLETED: i32 = 2;
+pub(crate) const TRADE_STATE_FAILED: i32 = 3;
+pub(crate) const TRADE_STATE_EXPIRED: i32 = 4;
+pub(crate) const TRADE_STATE_CANCELLED: i32 = 5;
 
-    pub const RESERVATION_ACTIVE: i32 = 1;
-    pub const RESERVATION_PARTIALLY_USED: i32 = 2;
-    pub const RESERVATION_USED: i32 = 3;
-    pub const RESERVATION_RELEASED: i32 = 4;
+pub(crate) const TRANSACTION_STATE_COMPLETED: i32 = 2;
+pub(crate) const TRANSACTION_STATE_EXPIRED: i32 = 4;
 
-    pub const SETTLEMENT_CREATED: i32 = 1;
-    pub const SETTLEMENT_LOCKED_TRADE: i32 = 2;
-    pub const SETTLEMENT_LOCKED_WALLETS: i32 = 3;
-    pub const SETTLEMENT_LOCKED_ITEMS: i32 = 4;
-    pub const SETTLEMENT_WALLET_MOVED: i32 = 5;
-    pub const SETTLEMENT_ITEMS_MOVED: i32 = 6;
-    pub const SETTLEMENT_STATE_RECORDED: i32 = 7;
-    pub const SETTLEMENT_COMPLETED: i32 = 8;
-    pub const SETTLEMENT_FAILED: i32 = 9;
+pub(crate) const ESCROW_STATE_HELD: i32 = 1;
+pub(crate) const ESCROW_STATE_PARTIALLY_USED: i32 = 2;
+pub(crate) const ESCROW_STATE_USED: i32 = 3;
+pub(crate) const ESCROW_STATE_RELEASED: i32 = 4;
+pub(crate) const ESCROW_STATE_CANCELLED: i32 = 5;
+pub(crate) const ESCROW_STATE_EXPIRED: i32 = 6;
 
-    pub const ORDER_SIDE_BUY_ORDER: i32 = 1;
-    pub const ORDER_SIDE_SELL_ORDER: i32 = 2;
+pub(crate) const CLAIM_STATE_CREATED: i32 = 1;
 
-    pub const ITEM_KIND_STACKABLE: i32 = 1;
-    pub const ITEM_KIND_SINGLETON: i32 = 2;
+pub(crate) const SETTLEMENT_STATE_COMPLETED: i32 = 2;
+pub(crate) const SETTLEMENT_STATE_IDEMPOTENT_REPLAY: i32 = 6;
 
-    pub const OP_CREATE_TRADE_ORDER: i32 = 60;
-    pub const OP_CANCEL_TRADE_ORDER: i32 = 61;
-    pub const OP_EXPIRE_TRADE_ORDER: i32 = 62;
-    pub const OP_ACCEPT_TRADE_ORDER: i32 = 63;
-    pub const OP_SETTLE_TRADE: i32 = 64;
-    pub const OP_CLAIM_TRADE_RESULT: i32 = 65;
+pub(crate) const SETTLEMENT_PHASE_VALIDATING_METADATA: i32 = 2;
+pub(crate) const SETTLEMENT_PHASE_LOCKING_ROWS: i32 = 3;
+pub(crate) const SETTLEMENT_PHASE_APPLYING_OWNERSHIP: i32 = 4;
+pub(crate) const SETTLEMENT_PHASE_WRITING_AUDIT: i32 = 5;
+pub(crate) const SETTLEMENT_PHASE_COMPLETED: i32 = 6;
 
-    pub const ERROR_SETTLEMENT_CONFLICT: i32 = 8;
+pub(crate) type DbTx<'a> = Transaction<'a, Postgres>;
+
+#[derive(Clone)]
+pub(crate) struct CommandContext {
+    pub(crate) metadata: OperationMetadata,
+    pub(crate) operation_kind: i32,
+    pub(crate) operation_name: &'static str,
+    pub(crate) request_fingerprint: String,
+    pub(crate) operation_id: Uuid,
+    pub(crate) request_id: Uuid,
+    pub(crate) idempotency_key: String,
+    pub(crate) source_system: String,
+    pub(crate) external_operation_id: Option<String>,
+    pub(crate) caused_by_capsuleer_id: Option<i64>,
+    pub(crate) created_by_service: String,
+    pub(crate) requested_at: DateTime<Utc>,
 }
 
-// DB-BLOCK src_db_types_003
-// What: defines the `enum` controlled vocabulary.
-// How: uses Rust variants and conversion functions instead of scattering raw strings.
-// Why: DB state must be explicit and reject unknown values.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-// DB-BLOCK src_db_types_004
-// What: defines the `TradeState` controlled vocabulary.
-// How: uses Rust variants and conversion functions instead of scattering raw strings.
-// Why: DB state must be explicit and reject unknown values.
-pub enum TradeState {
-    BeingCreated,
-    Outstanding,
-    Accepted,
-    InProgress,
-    Completed,
-    Claimable,
-    Claimed,
-    Expired,
-    Failed,
-    Cancelled,
+#[derive(sqlx::FromRow)]
+pub(crate) struct IdempotencyRecordRow {
+    pub(crate) request_fingerprint: String,
+    pub(crate) operation_name: String,
 }
 
-// DB-BLOCK src_db_types_005
-// What: groups behavior for a type or trait.
-// How: keeps conversion/validation/service methods attached to the thing they operate on.
-// Why: centralized behavior prevents duplicate inconsistent logic.
-impl TradeState {
-    // Converts the DB enum text into the internal enum.
-    // This gives one trusted place for validating persisted state values.
-    // DB-BLOCK src_db_types_006
-    // What: implements `from_db`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn from_db(value: &str) -> Result<Self, SettlementError> {
-        // DB-BLOCK src_db_types_007
-        // What: branches across known alternatives.
-        // How: uses Rust `match` on `match value {`.
-        // Why: closed branching is safer than ad-hoc string/boolean decision trees.
-        match value {
-            "being_created" => Ok(Self::BeingCreated),
-            "outstanding" => Ok(Self::Outstanding),
-            "accepted" => Ok(Self::Accepted),
-            "in_progress" => Ok(Self::InProgress),
-            "completed" => Ok(Self::Completed),
-            "claimable" => Ok(Self::Claimable),
-            "claimed" => Ok(Self::Claimed),
-            "expired" => Ok(Self::Expired),
-            "failed" => Ok(Self::Failed),
-            "cancelled" => Ok(Self::Cancelled),
-            other => Err(SettlementError::IntegrityConflict(format!(
-                "unknown persisted trade state: {other}"
-            ))),
-        }
-    }
-
-    // Converts the internal enum into the canonical database string.
-    // These strings are the canonical lifecycle names chosen for this project.
-    // DB-BLOCK src_db_types_008
-    // What: implements `as_db`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn as_db(self) -> &'static str {
-        // DB-BLOCK src_db_types_009
-        // What: branches across known alternatives.
-        // How: uses Rust `match` on `match self {`.
-        // Why: closed branching is safer than ad-hoc string/boolean decision trees.
-        match self {
-            Self::BeingCreated => "being_created",
-            Self::Outstanding => "outstanding",
-            Self::Accepted => "accepted",
-            Self::InProgress => "in_progress",
-            Self::Completed => "completed",
-            Self::Claimable => "claimable",
-            Self::Claimed => "claimed",
-            Self::Expired => "expired",
-            Self::Failed => "failed",
-            Self::Cancelled => "cancelled",
-        }
-    }
-
-    // Converts internal state to protobuf enum numeric value.
-    // Response construction uses this to avoid prost enum naming coupling.
-    // DB-BLOCK src_db_types_010
-    // What: implements `as_proto_i32`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn as_proto_i32(self) -> i32 {
-        // DB-BLOCK src_db_types_011
-        // What: branches across known alternatives.
-        // How: uses Rust `match` on `match self {`.
-        // Why: closed branching is safer than ad-hoc string/boolean decision trees.
-        match self {
-            Self::BeingCreated => proto_i32::TRANSACTION_BEING_CREATED,
-            Self::Outstanding => proto_i32::TRANSACTION_OUTSTANDING,
-            Self::Accepted => proto_i32::TRANSACTION_ACCEPTED,
-            Self::InProgress => proto_i32::TRANSACTION_IN_PROGRESS,
-            Self::Completed => proto_i32::TRANSACTION_COMPLETED,
-            Self::Claimable => proto_i32::TRANSACTION_CLAIMABLE,
-            Self::Claimed => proto_i32::TRANSACTION_CLAIMED,
-            Self::Expired => proto_i32::TRANSACTION_EXPIRED,
-            Self::Failed => proto_i32::TRANSACTION_FAILED,
-            Self::Cancelled => proto_i32::TRANSACTION_CANCELLED,
-        }
-    }
-
-    // DB-BLOCK src_db_types_012
-    // What: implements `is_terminal`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn is_terminal(self) -> bool {
-        matches!(
-            self,
-            Self::Completed | Self::Claimed | Self::Expired | Self::Failed | Self::Cancelled
-        )
-    }
+#[derive(sqlx::FromRow)]
+pub(crate) struct IdempotencyResultRow {
+    pub(crate) result_kind: String,
+    pub(crate) trade_instance_id: Option<Uuid>,
+    pub(crate) trade_transaction_id: Option<Uuid>,
+    pub(crate) settlement_id: Option<Uuid>,
+    pub(crate) result_state: String,
 }
 
-// DB-BLOCK src_db_types_013
-// What: defines the `enum` controlled vocabulary.
-// How: uses Rust variants and conversion functions instead of scattering raw strings.
-// Why: DB state must be explicit and reject unknown values.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-// DB-BLOCK src_db_types_014
-// What: defines the `OrderSide` controlled vocabulary.
-// How: uses Rust variants and conversion functions instead of scattering raw strings.
-// Why: DB state must be explicit and reject unknown values.
-pub enum OrderSide {
-    Buy,
-    Sell,
+#[derive(sqlx::FromRow, Clone)]
+pub(crate) struct TradeInstanceRow {
+    pub(crate) trade_instance_id: Uuid,
+    pub(crate) operation_id: Uuid,
+    pub(crate) trade_state: String,
+    pub(crate) issuer_id: i64,
+    pub(crate) issuer_wallet_id: Uuid,
+    pub(crate) item_type_id: i64,
+    pub(crate) station_id: i64,
+    pub(crate) region_id: i64,
+    pub(crate) total_quantity: i64,
+    pub(crate) remaining_quantity: i64,
+    pub(crate) unit_price_minor: i64,
+    pub(crate) expires_at: Option<DateTime<Utc>>,
+    pub(crate) created_at: DateTime<Utc>,
+    pub(crate) updated_at: DateTime<Utc>,
 }
 
-// DB-BLOCK src_db_types_015
-// What: groups behavior for a type or trait.
-// How: keeps conversion/validation/service methods attached to the thing they operate on.
-// Why: centralized behavior prevents duplicate inconsistent logic.
-impl OrderSide {
-    // DB-BLOCK src_db_types_016
-    // What: implements `from_proto_i32`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn from_proto_i32(value: i32) -> Result<Self, SettlementError> {
-        // DB-BLOCK src_db_types_017
-        // What: branches across known alternatives.
-        // How: uses Rust `match` on `match value {`.
-        // Why: closed branching is safer than ad-hoc string/boolean decision trees.
-        match value {
-            proto_i32::ORDER_SIDE_BUY_ORDER => Ok(Self::Buy),
-            proto_i32::ORDER_SIDE_SELL_ORDER => Ok(Self::Sell),
-            other => Err(SettlementError::InvalidRequest(format!(
-                "unknown order_side enum value: {other}"
-            ))),
-        }
-    }
-
-    // DB-BLOCK src_db_types_018
-    // What: implements `from_db`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn from_db(value: &str) -> Result<Self, SettlementError> {
-        // DB-BLOCK src_db_types_019
-        // What: branches across known alternatives.
-        // How: uses Rust `match` on `match value {`.
-        // Why: closed branching is safer than ad-hoc string/boolean decision trees.
-        match value {
-            "buy_order" => Ok(Self::Buy),
-            "sell_order" => Ok(Self::Sell),
-            other => Err(SettlementError::IntegrityConflict(format!(
-                "unknown persisted order_side: {other}"
-            ))),
-        }
-    }
-
-    // DB-BLOCK src_db_types_020
-    // What: implements `as_db`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn as_db(self) -> &'static str {
-        // DB-BLOCK src_db_types_021
-        // What: branches across known alternatives.
-        // How: uses Rust `match` on `match self {`.
-        // Why: closed branching is safer than ad-hoc string/boolean decision trees.
-        match self {
-            Self::Buy => "buy_order",
-            Self::Sell => "sell_order",
-        }
-    }
-
-    // DB-BLOCK src_db_types_022
-    // What: implements `as_proto_i32`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn as_proto_i32(self) -> i32 {
-        // DB-BLOCK src_db_types_023
-        // What: branches across known alternatives.
-        // How: uses Rust `match` on `match self {`.
-        // Why: closed branching is safer than ad-hoc string/boolean decision trees.
-        match self {
-            Self::Buy => proto_i32::ORDER_SIDE_BUY_ORDER,
-            Self::Sell => proto_i32::ORDER_SIDE_SELL_ORDER,
-        }
-    }
+#[derive(sqlx::FromRow, Clone)]
+pub(crate) struct ItemStackRow {
+    pub(crate) item_stack_id: Uuid,
+    pub(crate) owner_id: i64,
+    pub(crate) item_type_id: i64,
+    pub(crate) station_id: i64,
+    pub(crate) region_id: i64,
+    pub(crate) quantity: i64,
+    pub(crate) stack_version: i64,
+    pub(crate) stack_checksum: String,
 }
 
-// DB-BLOCK src_db_types_024
-// What: defines the `enum` controlled vocabulary.
-// How: uses Rust variants and conversion functions instead of scattering raw strings.
-// Why: DB state must be explicit and reject unknown values.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-// DB-BLOCK src_db_types_025
-// What: defines the `ItemKind` controlled vocabulary.
-// How: uses Rust variants and conversion functions instead of scattering raw strings.
-// Why: DB state must be explicit and reject unknown values.
-pub enum ItemKind {
-    Stackable,
-    Singleton,
+#[derive(sqlx::FromRow, Clone)]
+pub(crate) struct WalletRow {
+    pub(crate) wallet_id: Uuid,
+    pub(crate) capsuleer_id: i64,
+    pub(crate) isk_minor: i64,
+    pub(crate) wallet_version: i64,
+    pub(crate) wallet_checksum: String,
 }
 
-// DB-BLOCK src_db_types_026
-// What: groups behavior for a type or trait.
-// How: keeps conversion/validation/service methods attached to the thing they operate on.
-// Why: centralized behavior prevents duplicate inconsistent logic.
-impl ItemKind {
-    // DB-BLOCK src_db_types_027
-    // What: implements `from_proto_i32`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn from_proto_i32(value: i32) -> Result<Self, SettlementError> {
-        // DB-BLOCK src_db_types_028
-        // What: branches across known alternatives.
-        // How: uses Rust `match` on `match value {`.
-        // Why: closed branching is safer than ad-hoc string/boolean decision trees.
-        match value {
-            proto_i32::ITEM_KIND_STACKABLE => Ok(Self::Stackable),
-            proto_i32::ITEM_KIND_SINGLETON => Ok(Self::Singleton),
-            other => Err(SettlementError::InvalidRequest(format!(
-                "unknown item_kind enum value: {other}"
-            ))),
-        }
-    }
+#[derive(sqlx::FromRow, Clone)]
+pub(crate) struct ItemStackEscrowRow {
+    pub(crate) item_stack_escrow_id: Uuid,
+    pub(crate) issuer_id: i64,
+    pub(crate) trade_instance_id: Uuid,
+    pub(crate) quantity: i64,
+    pub(crate) created_at: DateTime<Utc>,
+    pub(crate) updated_at: DateTime<Utc>,
+    pub(crate) released_at: Option<DateTime<Utc>>,
+    pub(crate) escrow_state: String,
+    pub(crate) release_reason: Option<String>,
+    pub(crate) source_item_stack_id: Uuid,
 }
 
-// DB-BLOCK src_db_types_029
-// What: defines the `enum` controlled vocabulary.
-// How: uses Rust variants and conversion functions instead of scattering raw strings.
-// Why: DB state must be explicit and reject unknown values.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-// DB-BLOCK src_db_types_030
-// What: defines the `CloseTarget` controlled vocabulary.
-// How: uses Rust variants and conversion functions instead of scattering raw strings.
-// Why: DB state must be explicit and reject unknown values.
-pub enum CloseTarget {
-    Cancelled,
-    Expired,
-    Failed,
+#[derive(sqlx::FromRow, Clone)]
+pub(crate) struct WalletEscrowRow {
+    pub(crate) wallet_escrow_id: Uuid,
+    pub(crate) trade_instance_id: Uuid,
+    pub(crate) isk_minor: i64,
+    pub(crate) owner_id: i64,
+    pub(crate) created_wallet_operation_id: Uuid,
+    pub(crate) released_wallet_operation_id: Option<Uuid>,
+    pub(crate) created_at: DateTime<Utc>,
+    pub(crate) updated_at: DateTime<Utc>,
+    pub(crate) released_at: Option<DateTime<Utc>>,
 }
 
-// DB-BLOCK src_db_types_031
-// What: groups behavior for a type or trait.
-// How: keeps conversion/validation/service methods attached to the thing they operate on.
-// Why: centralized behavior prevents duplicate inconsistent logic.
-impl CloseTarget {
-    // DB-BLOCK src_db_types_032
-    // What: implements `from_requested_change`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn from_requested_change(value: i32) -> Result<Self, SettlementError> {
-        // DB-BLOCK src_db_types_033
-        // What: branches across known alternatives.
-        // How: uses Rust `match` on `match value {`.
-        // Why: closed branching is safer than ad-hoc string/boolean decision trees.
-        match value {
-            proto_i32::CHANGE_SET_TO_CANCELLED => Ok(Self::Cancelled),
-            proto_i32::CHANGE_SET_TO_EXPIRED => Ok(Self::Expired),
-            proto_i32::CHANGE_SET_TO_FAILED => Ok(Self::Failed),
-            other => Err(SettlementError::InvalidRequest(format!(
-                "close_trade_order accepts only cancelled/expired/failed; got enum value {other}"
-            ))),
-        }
-    }
+#[derive(sqlx::FromRow, Clone)]
+pub(crate) struct TradeTransactionRow {
+    pub(crate) trade_transaction_id: Uuid,
+    pub(crate) operation_id: Uuid,
+    pub(crate) trade_instance_id: Uuid,
+    pub(crate) trade_transaction_state: String,
+    pub(crate) buyer_capsuleer_id: i64,
+    pub(crate) buyer_wallet_id: Uuid,
+    pub(crate) seller_capsuleer_id: i64,
+    pub(crate) seller_wallet_id: Uuid,
+    pub(crate) item_type_id: i64,
+    pub(crate) source_item_stack_escrow_id: Uuid,
+    pub(crate) destination_item_stack_id: Option<Uuid>,
+    pub(crate) quantity: i64,
+    pub(crate) unit_price_minor: i64,
+    pub(crate) total_price_minor: i64,
+    pub(crate) created_at: DateTime<Utc>,
+    pub(crate) updated_at: DateTime<Utc>,
+    pub(crate) completed_at: Option<DateTime<Utc>>,
+}
 
-    // DB-BLOCK src_db_types_034
-    // What: implements `as_trade_state`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn as_trade_state(self) -> TradeState {
-        // DB-BLOCK src_db_types_035
-        // What: branches across known alternatives.
-        // How: uses Rust `match` on `match self {`.
-        // Why: closed branching is safer than ad-hoc string/boolean decision trees.
-        match self {
-            Self::Cancelled => TradeState::Cancelled,
-            Self::Expired => TradeState::Expired,
-            Self::Failed => TradeState::Failed,
-        }
-    }
+#[derive(sqlx::FromRow, Clone)]
+pub(crate) struct SettlementStepRow {
+    pub(crate) settlement_step_id: Uuid,
+    pub(crate) settlement_id: Uuid,
+    pub(crate) step_name: String,
+    pub(crate) step_state: String,
+    pub(crate) started_at: DateTime<Utc>,
+    pub(crate) completed_at: Option<DateTime<Utc>>,
+    pub(crate) failure_code: Option<String>,
+    pub(crate) failure_message: Option<String>,
+}
 
-    // DB-BLOCK src_db_types_036
-    // What: implements `operation_kind_db`.
-    // How: performs the smallest focused operation implied by this module and propagates typed errors.
-    // Why: small named functions make correctness review and testing possible.
-    pub fn operation_kind_db(self) -> &'static str {
-        // DB-BLOCK src_db_types_037
-        // What: branches across known alternatives.
-        // How: uses Rust `match` on `match self {`.
-        // Why: closed branching is safer than ad-hoc string/boolean decision trees.
-        match self {
-            Self::Cancelled => "cancel_trade_order",
-            Self::Expired => "expire_trade_order",
-            Self::Failed => "fail_trade_order",
-        }
-    }
+#[derive(sqlx::FromRow, Clone)]
+pub(crate) struct TradeClaimRow {
+    pub(crate) trade_claim_id: Uuid,
+    pub(crate) operation_id: Uuid,
+    pub(crate) trade_transaction_id: Uuid,
+    pub(crate) settlement_id: Uuid,
+    pub(crate) claiming_capsuleer_id: i64,
+    pub(crate) claim_state: String,
+    pub(crate) created_at: DateTime<Utc>,
+    pub(crate) claimed_at: Option<DateTime<Utc>>,
+}
+
+#[derive(sqlx::FromRow, Clone)]
+pub(crate) struct TradeClaimIskRow {
+    pub(crate) trade_claim_isk_id: Uuid,
+    pub(crate) trade_claim_id: Uuid,
+    pub(crate) wallet_id: Uuid,
+    pub(crate) amount_minor: i64,
+}
+
+#[derive(sqlx::FromRow, Clone)]
+pub(crate) struct TradeClaimItemStackRow {
+    pub(crate) trade_claim_item_stack_id: Uuid,
+    pub(crate) trade_claim_id: Uuid,
+    pub(crate) item_type_id: i64,
+    pub(crate) item_stack_id: Uuid,
+    pub(crate) quantity: i64,
+}
+
+pub(crate) enum BeginCommand {
+    Started,
+    Replay(TradeSettlementResult),
+}
+
+pub(crate) struct FinishIds {
+    pub(crate) trade_instance_id: Option<Uuid>,
+    pub(crate) trade_transaction_id: Option<Uuid>,
+    pub(crate) settlement_id: Option<Uuid>,
+    pub(crate) wallet_operation_id: Option<Uuid>,
+    pub(crate) item_stack_operation_id: Option<Uuid>,
+    pub(crate) result_kind: &'static str,
+    pub(crate) result_state: &'static str,
 }

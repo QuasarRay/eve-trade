@@ -4,3 +4,9 @@
 binding = "0.0.0.0"
 port = 9092
 graceful = true
+
+[sqlx]
+uri = "postgres://postgres:postgres@localhost:5432/eve_trade"
+min_connections = 1
+max_connections = 10
+acquire_timeout = 5000

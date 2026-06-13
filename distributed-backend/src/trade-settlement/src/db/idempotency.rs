@@ -1,284 +1,318 @@
-//! Idempotency protocol.
-//!
-//! What this file contains:
-//! - The database protocol for one logical command, many retry attempts, and one
-//!   final result.
-//!
-//! How it works:
-//! - A request fingerprint is computed from the protobuf bytes plus operation name.
-//! - `idempotency_record` is inserted once per logical command.
-//! - `request_attempt` is inserted once per RPC attempt.
-//! - Existing result rows are loaded under lock and returned as replay.
-//!
-//! Why it exists:
-//! - Retrying `RequestSettlement` must never move ISK/items twice.
-//! - Same key with different request body must be rejected as unsafe.
-
-// DB-BLOCK src_db_idempotency_001
-// What: imports this file’s dependencies.
-// How: brings required symbols into scope for idempotency records, attempts, replay detection, and result recording.
-// Why: explicit imports make coupling visible during review.
-use prost::Message;
-use sha2::{Digest, Sha256};
-use sqlx::{Postgres, Transaction};
-
-use crate::db::extract;
-use crate::db::rows::IdempotencyResultRow;
 use crate::error::SettlementError;
-use crate::generated::trade::v1::RequestContext;
+use crate::generated::eve_trade::{common::v1::*, operation::v1::*, settlement::v1::*};
 
-// DB-BLOCK src_db_idempotency_002
-// What: defines the `struct` data shape.
-// How: groups fields that are read, written, or returned together.
-// Why: named row/request/result shapes prevent accidental tuple-order bugs.
-#[derive(Debug, Clone)]
-// DB-BLOCK src_db_idempotency_003
-// What: defines the `Guard` data shape.
-// How: groups fields that are read, written, or returned together.
-// Why: named row/request/result shapes prevent accidental tuple-order bugs.
-pub struct Guard {
-    pub request_id: String,
-    pub idempotency_key: String,
-    pub replay: Option<IdempotencyResultRow>,
-}
+use super::{queries::*, responses::*, types::*};
 
-// DB-BLOCK src_db_idempotency_004
-// What: implements `fingerprint`.
-// How: performs the smallest focused operation implied by this module and propagates typed errors.
-// Why: small named functions make correctness review and testing possible.
-pub fn fingerprint<M: Message>(operation_name: &str, msg: &M) -> String {
-    // DB-BLOCK src_db_idempotency_005
-    // What: binds `bytes` as a named intermediate.
-    // How: computes/extracts `bytes` once before SQL or response construction.
-    // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let mut bytes = Vec::new();
-    msg.encode(&mut bytes)
-        .expect("encoding protobuf message into Vec cannot fail");
-    // DB-BLOCK src_db_idempotency_006
-    // What: binds `h` as a named intermediate.
-    // How: computes/extracts `h` once before SQL or response construction.
-    // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let mut h = Sha256::new();
-    h.update((operation_name.len() as u64).to_be_bytes());
-    h.update(operation_name.as_bytes());
-    h.update((bytes.len() as u64).to_be_bytes());
-    h.update(bytes);
-    format!("{:x}", h.finalize())
-}
-
-// DB-BLOCK src_db_idempotency_007
-// What: starts idempotency handling for a write request.
-// How: extracts context, hashes the request, locks or creates idempotency rows, and records the attempt.
-// Why: same key/same request must replay; same key/different request must be rejected.
-pub async fn begin<M: Message>(
-    tx: &mut Transaction<'_, Postgres>,
-    context: &Option<RequestContext>,
-    operation_name: &str,
-    msg: &M,
-) -> Result<Guard, SettlementError> {
-    // DB-BLOCK src_db_idempotency_008
-    // What: binds `request_id` as a named intermediate.
-    // How: computes/extracts `request_id` once before SQL or response construction.
-    // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let request_id = extract::request_id(context)?;
-    // DB-BLOCK src_db_idempotency_009
-    // What: binds `idempotency_key` as a named intermediate.
-    // How: computes/extracts `idempotency_key` once before SQL or response construction.
-    // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let idempotency_key = extract::idempotency_key(context)?;
-    // DB-BLOCK src_db_idempotency_010
-    // What: binds `created_by_service` as a named intermediate.
-    // How: computes/extracts `created_by_service` once before SQL or response construction.
-    // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let created_by_service = extract::created_by_service(context)?;
-    // DB-BLOCK src_db_idempotency_011
-    // What: binds `fingerprint` as a named intermediate.
-    // How: computes/extracts `fingerprint` once before SQL or response construction.
-    // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let fingerprint = fingerprint(operation_name, msg);
-
-    // DB-BLOCK src_db_idempotency_012
-    // What: performs a parameterized SQL operation against `the relevant trade schema table`.
-    // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
-    // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
+pub(crate) async fn begin_operation(
+    tx: &mut DbTx<'_>,
+    ctx: &CommandContext,
+) -> Result<BeginCommand, SettlementError> {
     sqlx::query(
         r#"
-        INSERT INTO trade.idempotency_record
-            (idempotency_key, request_fingerprint, operation_name, operation_state, created_by_service)
-        VALUES ($1, $2, $3, 'in_progress', $4)
+        INSERT INTO idempotency_record (
+            idempotency_key, request_fingerprint, operation_name, operation_state,
+            created_by_service, created_at
+        )
+        VALUES ($1, $2, $3, 'started', $4, $5)
         ON CONFLICT (idempotency_key) DO NOTHING
         "#,
     )
-    .bind(&idempotency_key)
-    .bind(&fingerprint)
-    .bind(operation_name)
-    .bind(&created_by_service)
-    .execute(&mut **tx)
+    .bind(&ctx.idempotency_key)
+    .bind(&ctx.request_fingerprint)
+    .bind(ctx.operation_name)
+    .bind(&ctx.created_by_service)
+    .bind(ctx.requested_at)
+    .execute(tx.as_mut())
     .await?;
 
-    // DB-BLOCK src_db_idempotency_013
-    // What: binds `existing` as a named intermediate.
-    // How: computes/extracts `existing` once before SQL or response construction.
-    // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let existing: (String,) = sqlx::query_as(
-        r#"
-        SELECT request_fingerprint
-        FROM trade.idempotency_record
-        WHERE idempotency_key = $1
-        FOR UPDATE
-        "#,
+    let idem = sqlx::query_as::<_, IdempotencyRecordRow>(
+        "SELECT request_fingerprint, operation_name FROM idempotency_record WHERE idempotency_key = $1",
     )
-    .bind(&idempotency_key)
-    .fetch_one(&mut **tx)
+    .bind(&ctx.idempotency_key)
+    .fetch_one(tx.as_mut())
     .await?;
 
-    // DB-BLOCK src_db_idempotency_014
-    // What: guards a correctness-sensitive branch.
-    // How: evaluates `if existing.0 != fingerprint {` before continuing.
-    // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
-    if existing.0 != fingerprint {
-        // DB-BLOCK src_db_idempotency_015
-        // What: exits the current workflow early.
-        // How: returns from `return Err(SettlementError::RequestIdConflict);` before later mutation blocks execute.
-        // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
+    if idem.request_fingerprint != ctx.request_fingerprint
+        || idem.operation_name != ctx.operation_name
+    {
         return Err(SettlementError::RequestIdConflict);
     }
 
-    // DB-BLOCK src_db_idempotency_016
-    // What: performs a parameterized SQL operation against `the relevant trade schema table`.
-    // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
-    // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
     sqlx::query(
         r#"
-        INSERT INTO trade.request_attempt
-            (request_id, idempotency_key, received_by_service, attempt_state)
-        VALUES ($1::uuid, $2, $3, 'in_progress')
-        ON CONFLICT (request_id) DO UPDATE
-        SET attempt_state = 'replayed'
+        INSERT INTO request_attempt (
+            request_id, idempotency_key, received_by_service, attempt_state, received_at
+        )
+        VALUES ($1, $2, $3, 'started', $4)
+        ON CONFLICT (request_id) DO NOTHING
         "#,
     )
-    .bind(&request_id)
-    .bind(&idempotency_key)
-    .bind(&created_by_service)
-    .execute(&mut **tx)
+    .bind(ctx.request_id)
+    .bind(&ctx.idempotency_key)
+    .bind(SERVICE_NAME)
+    .bind(ctx.requested_at)
+    .execute(tx.as_mut())
     .await?;
 
-    // DB-BLOCK src_db_idempotency_017
-    // What: binds `replay` as a named intermediate.
-    // How: computes/extracts `replay` once before SQL or response construction.
-    // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let replay = sqlx::query_as::<_, IdempotencyResultRow>(
+    let request_key: String =
+        sqlx::query_scalar("SELECT idempotency_key FROM request_attempt WHERE request_id = $1")
+            .bind(ctx.request_id)
+            .fetch_one(tx.as_mut())
+            .await?;
+    if request_key != ctx.idempotency_key {
+        return Err(SettlementError::RequestIdConflict);
+    }
+
+    if let Some(row) = load_idempotency_result(tx, &ctx.idempotency_key).await? {
+        sqlx::query(
+            r#"
+            UPDATE request_attempt
+            SET attempt_state = 'idempotent_replay', completed_at = $2
+            WHERE request_id = $1
+            "#,
+        )
+        .bind(ctx.request_id)
+        .bind(ctx.requested_at)
+        .execute(tx.as_mut())
+        .await?;
+
+        let result =
+            build_result_from_idempotency(tx, ctx, &row, ATTEMPT_IDEMPOTENT_REPLAY).await?;
+        return Ok(BeginCommand::Replay(result));
+    }
+
+    sqlx::query(
         r#"
-        SELECT
-            operation_id::text AS operation_id,
-            trade_instance_id::text AS trade_instance_id,
-            trade_transaction_id::text AS trade_transaction_id,
-            settlement_id::text AS settlement_id,
-            wallet_operation_id::text AS wallet_operation_id,
-            item_stack_operation_id::text AS item_stack_operation_id
-        FROM trade.idempotency_result
-        WHERE idempotency_key = $1
-        FOR UPDATE
+        INSERT INTO operation (
+            operation_id, operation_kind, source_system, external_operation_id,
+            request_id, idempotency_key, caused_by_capsuleer_id, operation_state,
+            created_by_service, started_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'started', $8, $9)
+        ON CONFLICT (operation_id) DO NOTHING
         "#,
     )
-    .bind(&idempotency_key)
-    .fetch_optional(&mut **tx)
+    .bind(ctx.operation_id)
+    .bind(ctx.operation_name)
+    .bind(&ctx.source_system)
+    .bind(&ctx.external_operation_id)
+    .bind(ctx.request_id)
+    .bind(&ctx.idempotency_key)
+    .bind(ctx.caused_by_capsuleer_id)
+    .bind(&ctx.created_by_service)
+    .bind(ctx.requested_at)
+    .execute(tx.as_mut())
     .await?;
 
-    // DB-BLOCK src_db_idempotency_018
-    // What: returns the branch result.
-    // How: wraps the computed response/error with `Ok(Guard { request_id, idempotency_key, replay })`.
-    // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(Guard {
-        request_id,
-        idempotency_key,
-        replay,
-    })
+    let operation_key: Option<String> =
+        sqlx::query_scalar("SELECT idempotency_key FROM operation WHERE operation_id = $1")
+            .bind(ctx.operation_id)
+            .fetch_one(tx.as_mut())
+            .await?;
+    if operation_key.as_deref() != Some(ctx.idempotency_key.as_str()) {
+        return Err(SettlementError::RequestIdConflict);
+    }
+
+    Ok(BeginCommand::Started)
 }
 
-// DB-BLOCK src_db_idempotency_019
-// What: defines the `RecordSuccessInput` data shape.
-// How: groups the replay result columns that must be written together.
-// Why: named fields prevent wallet/item/settlement IDs from being swapped accidentally.
-pub struct RecordSuccessInput<'a> {
-    pub guard: &'a Guard,
-    pub result_kind: &'a str,
-    pub operation_id: Option<&'a str>,
-    pub trade_instance_id: Option<&'a str>,
-    pub trade_transaction_id: Option<&'a str>,
-    pub settlement_id: Option<&'a str>,
-    pub wallet_operation_id: Option<&'a str>,
-    pub item_stack_operation_id: Option<&'a str>,
-    pub result_state: &'a str,
-}
-
-// DB-BLOCK src_db_idempotency_020
-// What: records the durable success result for idempotency replay.
-// How: inserts idempotency_result and completes idempotency_record inside the caller transaction.
-// Why: after commit, retries must return the existing result without re-running ownership movement.
-pub async fn record_success(
-    tx: &mut Transaction<'_, Postgres>,
-    input: RecordSuccessInput<'_>,
+pub(crate) async fn finish_operation(
+    tx: &mut DbTx<'_>,
+    ctx: &CommandContext,
+    ids: FinishIds,
 ) -> Result<(), SettlementError> {
-    // DB-BLOCK src_db_idempotency_021
-    // What: performs a parameterized SQL operation against `the relevant trade schema table`.
-    // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
-    // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
     sqlx::query(
         r#"
-        INSERT INTO trade.idempotency_result (
+        UPDATE operation
+        SET operation_state = 'completed', completed_at = $2
+        WHERE operation_id = $1
+        "#,
+    )
+    .bind(ctx.operation_id)
+    .bind(ctx.requested_at)
+    .execute(tx.as_mut())
+    .await?;
+
+    sqlx::query(
+        r#"
+        UPDATE request_attempt
+        SET attempt_state = 'completed', completed_at = $2
+        WHERE request_id = $1
+        "#,
+    )
+    .bind(ctx.request_id)
+    .bind(ctx.requested_at)
+    .execute(tx.as_mut())
+    .await?;
+
+    sqlx::query(
+        r#"
+        UPDATE idempotency_record
+        SET operation_state = 'completed', completed_at = $2
+        WHERE idempotency_key = $1
+        "#,
+    )
+    .bind(&ctx.idempotency_key)
+    .bind(ctx.requested_at)
+    .execute(tx.as_mut())
+    .await?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO idempotency_result (
             idempotency_key, operation_id, result_kind, trade_instance_id,
             trade_transaction_id, settlement_id, wallet_operation_id,
-            item_stack_operation_id, result_state
+            item_stack_operation_id, result_state, created_at
         )
-        VALUES ($1, $2::uuid, $3, $4::uuid, $5::uuid, $6::uuid, $7::uuid, $8::uuid, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (idempotency_key) DO NOTHING
         "#,
     )
-    .bind(&input.guard.idempotency_key)
-    .bind(input.operation_id)
-    .bind(input.result_kind)
-    .bind(input.trade_instance_id)
-    .bind(input.trade_transaction_id)
-    .bind(input.settlement_id)
-    .bind(input.wallet_operation_id)
-    .bind(input.item_stack_operation_id)
-    .bind(input.result_state)
-    .execute(&mut **tx)
+    .bind(&ctx.idempotency_key)
+    .bind(ctx.operation_id)
+    .bind(ids.result_kind)
+    .bind(ids.trade_instance_id)
+    .bind(ids.trade_transaction_id)
+    .bind(ids.settlement_id)
+    .bind(ids.wallet_operation_id)
+    .bind(ids.item_stack_operation_id)
+    .bind(ids.result_state)
+    .bind(ctx.requested_at)
+    .execute(tx.as_mut())
     .await?;
 
-    // DB-BLOCK src_db_idempotency_021
-    // What: performs a parameterized SQL operation against `the relevant trade schema table`.
-    // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
-    // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
-    sqlx::query(
+    Ok(())
+}
+
+pub(crate) async fn load_idempotency_result(
+    tx: &mut DbTx<'_>,
+    idempotency_key: &str,
+) -> Result<Option<IdempotencyResultRow>, SettlementError> {
+    Ok(sqlx::query_as::<_, IdempotencyResultRow>(
         r#"
-        UPDATE trade.idempotency_record
-        SET operation_state = 'completed', completed_at = now()
+        SELECT result_kind, trade_instance_id, trade_transaction_id, settlement_id, result_state
+        FROM idempotency_result
         WHERE idempotency_key = $1
         "#,
     )
-    .bind(&input.guard.idempotency_key)
-    .execute(&mut **tx)
-    .await?;
+    .bind(idempotency_key)
+    .fetch_optional(tx.as_mut())
+    .await?)
+}
 
-    // DB-BLOCK src_db_idempotency_022
-    // What: performs a parameterized SQL operation against `the relevant trade schema table`.
-    // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
-    // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
-    sqlx::query(
-        r#"
-        UPDATE trade.request_attempt
-        SET attempt_state = 'completed', completed_at = now()
-        WHERE request_id = $1::uuid
-        "#,
-    )
-    .bind(&input.guard.request_id)
-    .execute(&mut **tx)
-    .await?;
-    // DB-BLOCK src_db_idempotency_023
-    // What: returns the branch result.
-    // How: wraps the computed response/error with `Ok(())`.
-    // Why: DB boundaries must propagate success/failure explicitly.
-    Ok(())
+pub(crate) async fn build_result_from_idempotency(
+    tx: &mut DbTx<'_>,
+    ctx: &CommandContext,
+    row: &IdempotencyResultRow,
+    attempt_status: i32,
+) -> Result<TradeSettlementResult, SettlementError> {
+    let trade = match row.trade_instance_id {
+        Some(id) => Some(load_trade_instance(tx, id).await?),
+        None => None,
+    };
+    let transaction = match row.trade_transaction_id {
+        Some(id) => Some(load_trade_transaction(tx, id).await?),
+        None => None,
+    };
+    let item_escrows = match row.trade_instance_id {
+        Some(id) => load_item_stack_escrows(tx, id).await?,
+        None => Vec::new(),
+    };
+    let wallet_escrows = match row.trade_instance_id {
+        Some(id) => load_wallet_escrows(tx, id).await?,
+        None => Vec::new(),
+    };
+
+    let result = match row.result_kind.as_str() {
+        "issue_trade_instance" => {
+            trade_settlement_result::Result::IssueTradeInstance(IssueTradeInstanceOutcome {
+                applied: Some(IssueTradeInstanceApplied {
+                    trade_instance: trade.as_ref().map(trade_instance_proto),
+                    item_stack_escrow: item_escrows.first().map(item_stack_escrow_proto),
+                    wallet_escrow: wallet_escrows.first().map(wallet_escrow_proto),
+                }),
+            })
+        }
+        "settle_trade_instance" => {
+            let claims = match row.trade_transaction_id {
+                Some(id) => load_trade_claims(tx, id).await?,
+                None => (Vec::new(), Vec::new(), Vec::new()),
+            };
+            trade_settlement_result::Result::SettleTradeInstance(SettleTradeInstanceOutcome {
+                applied: Some(SettleTradeInstanceApplied {
+                    trade_instance: trade.as_ref().map(trade_instance_proto),
+                    trade_transaction: transaction.as_ref().map(trade_transaction_proto),
+                    trade_claims: claims.0.iter().map(trade_claim_proto).collect(),
+                    trade_claim_isks: claims.1.iter().map(trade_claim_isk_proto).collect(),
+                    trade_claim_item_stacks: claims
+                        .2
+                        .iter()
+                        .map(trade_claim_item_stack_proto)
+                        .collect(),
+                }),
+                resulting_trade_state: trade_state_i32(&row.result_state),
+            })
+        }
+        "cancel_trade_instance" => {
+            trade_settlement_result::Result::CancelTradeInstance(CancelTradeInstanceOutcome {
+                applied: Some(CancelTradeInstanceApplied {
+                    trade_instance: trade.as_ref().map(trade_instance_proto),
+                    released_item_stack_escrows: item_escrows
+                        .iter()
+                        .filter(|escrow| escrow.escrow_state != "held")
+                        .map(item_stack_escrow_proto)
+                        .collect(),
+                    released_wallet_escrows: wallet_escrows
+                        .iter()
+                        .map(wallet_escrow_proto)
+                        .collect(),
+                }),
+            })
+        }
+        "expire_trade_instance" => {
+            trade_settlement_result::Result::ExpireTradeInstance(ExpireTradeInstanceOutcome {
+                applied: Some(ExpireTradeInstanceApplied {
+                    trade_instance: trade.as_ref().map(trade_instance_proto),
+                    released_item_stack_escrows: item_escrows
+                        .iter()
+                        .filter(|escrow| escrow.escrow_state != "held")
+                        .map(item_stack_escrow_proto)
+                        .collect(),
+                    released_wallet_escrows: wallet_escrows
+                        .iter()
+                        .map(wallet_escrow_proto)
+                        .collect(),
+                }),
+            })
+        }
+        _ => {
+            return Err(SettlementError::DatabaseConflict(format!(
+                "unknown idempotency result kind {}",
+                row.result_kind
+            )));
+        }
+    };
+
+    let steps = match row.settlement_id {
+        Some(id) => load_settlement_steps(tx, id).await?,
+        None => Vec::new(),
+    };
+
+    Ok(TradeSettlementResult {
+        metadata: Some(ctx.metadata.clone()),
+        operation_kind: ctx.operation_kind,
+        attempt_status,
+        trade_instance_id: row.trade_instance_id.map(|id| TradeInstanceId {
+            value: id.to_string(),
+        }),
+        trade_transaction_id: row.trade_transaction_id.map(|id| TradeTransactionId {
+            value: id.to_string(),
+        }),
+        settlement_id: row.settlement_id.map(|id| SettlementId {
+            value: id.to_string(),
+        }),
+        resulting_trade_state: trade_state_i32(&row.result_state),
+        settlement_steps: steps,
+        result: Some(result),
+    })
 }

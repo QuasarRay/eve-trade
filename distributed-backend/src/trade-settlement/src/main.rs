@@ -5,18 +5,29 @@ mod service;
 
 use summer::App;
 use summer_grpc::GrpcPlugin;
+use summer_sqlx::SqlxPlugin;
 
-// This block starts the executable. It initializes the database pool before
-// summer-grpc begins accepting requests, because trade-settlement cannot honestly
-// return COMPLETED without an available authoritative database.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5432/eve_trade".to_string());
 
-    db::initialize_pool(&database_url).await?;
+    let sqlx_config = format!(
+        "[sqlx]\nuri = \"{}\"\n",
+        toml_basic_string_escape(&database_url)
+    );
 
-    App::new().add_plugin(GrpcPlugin).run().await;
+    let mut app = App::new();
+    app.use_config_file("./config/default.toml");
+    app.merge_config_str(&sqlx_config)?;
+    app.add_plugin(SqlxPlugin)
+        .add_plugin(GrpcPlugin)
+        .run()
+        .await;
 
     Ok(())
+}
+
+fn toml_basic_string_escape(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('"', "\\\"")
 }
