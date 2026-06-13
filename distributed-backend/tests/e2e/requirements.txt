@@ -1,0 +1,5 @@
+grpcio==1.73.0
+grpcio-tools==1.73.0
+protobuf==6.31.1
+psycopg[binary]==3.2.9
+pytest==8.4.0
