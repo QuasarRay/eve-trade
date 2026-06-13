@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: online-boutique-gateway
+  labels:
+    app.kubernetes.io/name: online-boutique-gateway
+    app.kubernetes.io/part-of: online-boutique

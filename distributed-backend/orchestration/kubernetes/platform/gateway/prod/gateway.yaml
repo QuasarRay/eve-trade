@@ -1,0 +1,36 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: public-web
+  namespace: online-boutique-gateway
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  gatewayClassName: internet
+  listeners:
+    - name: http
+      hostname: shop.example.com
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              gateway.networking.k8s.io/access: public-web
+
+    - name: https
+      hostname: shop.example.com
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: shop-example-com-tls
+            kind: Secret
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              gateway.networking.k8s.io/access: public-web
