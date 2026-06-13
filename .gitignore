@@ -6,3 +6,12 @@
 /market
 /market.exe
 *.exe
+
+# CI/CD local artifacts
+/.ci-venv
+/ci-cd/out
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
