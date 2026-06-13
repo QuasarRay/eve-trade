@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package eve_trade.domain.trade.v1;
+
+import "eve_trade/common/v1/identity.proto";
+import "eve_trade/common/v1/money.proto";
+import "eve_trade/common/v1/quantity.proto";
+import "eve_trade/domain/trade/v1/trade_state.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/domain/trade/v1;tradev1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.domain.trade.v1";
+
+message TradeClaim {
+  eve_trade.common.v1.TradeClaimId trade_claim_id = 1;
+  eve_trade.common.v1.OperationId operation_id = 2;
+  eve_trade.common.v1.TradeTransactionId trade_transaction_id = 3;
+  eve_trade.common.v1.SettlementId settlement_id = 4;
+  eve_trade.common.v1.CapsuleerId claiming_capsuleer_id = 5;
+  TradeClaimState claim_state = 6;
+  int64 created_at_unix_millis = 7;
+  int64 claimed_at_unix_millis = 8;
+}
+
+message TradeClaimIsk {
+  eve_trade.common.v1.TradeClaimIskId trade_claim_isk_id = 1;
+  eve_trade.common.v1.TradeClaimId trade_claim_id = 2;
+  eve_trade.common.v1.WalletId wallet_id = 3;
+  eve_trade.common.v1.IskAmount amount_isk = 4;
+}
+
+message TradeClaimItemStack {
+  eve_trade.common.v1.TradeClaimItemStackId trade_claim_item_stack_id = 1;
+  eve_trade.common.v1.TradeClaimId trade_claim_id = 2;
+  eve_trade.common.v1.ItemTypeId item_type_id = 3;
+  eve_trade.common.v1.ItemStackId item_stack_id = 4;
+  eve_trade.common.v1.ItemQuantity quantity = 5;
+}

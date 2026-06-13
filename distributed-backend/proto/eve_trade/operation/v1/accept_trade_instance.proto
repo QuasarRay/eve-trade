@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package eve_trade.operation.v1;
+
+import "eve_trade/common/v1/identity.proto";
+import "eve_trade/common/v1/money.proto";
+import "eve_trade/common/v1/operation_metadata.proto";
+import "eve_trade/common/v1/quantity.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/operation/v1;operationv1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.operation.v1";
+
+message AcceptTradeInstanceRowIds {
+  eve_trade.common.v1.TradeInstanceId trade_instance_id = 1;
+  eve_trade.common.v1.CapsuleerId buyer_capsuleer_id = 2;
+  eve_trade.common.v1.WalletId buyer_wallet_id = 3;
+  eve_trade.common.v1.ItemStackId destination_item_stack_id = 4;
+}
+
+message AcceptTradeInstanceTerms {
+  eve_trade.common.v1.ItemQuantity quantity = 1;
+  eve_trade.common.v1.IskAmount expected_unit_price_isk = 2;
+  eve_trade.common.v1.IskAmount expected_total_price_isk = 3;
+  int64 accepted_at_unix_millis = 4;
+}
+
+message AcceptTradeInstanceCommand {
+  eve_trade.common.v1.OperationMetadata metadata = 1;
+  AcceptTradeInstanceRowIds row_ids = 2;
+  AcceptTradeInstanceTerms terms = 3;
+}

@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package eve_trade.domain.trade.v1;
+
+import "eve_trade/common/v1/identity.proto";
+import "eve_trade/common/v1/idempotency.proto";
+import "eve_trade/common/v1/money.proto";
+import "eve_trade/common/v1/quantity.proto";
+import "eve_trade/domain/trade/v1/trade_state.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/domain/trade/v1;tradev1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.domain.trade.v1";
+
+message TradeInstance {
+  eve_trade.common.v1.TradeInstanceId trade_instance_id = 1;
+  eve_trade.common.v1.OperationId operation_id = 2;
+  TradeState trade_state = 3;
+  eve_trade.common.v1.CapsuleerId issuer_id = 4;
+  eve_trade.common.v1.WalletId issuer_wallet_id = 5;
+  eve_trade.common.v1.ItemTypeId item_type_id = 6;
+  eve_trade.common.v1.StationId station_id = 7;
+  eve_trade.common.v1.RegionId region_id = 8;
+  eve_trade.common.v1.ItemQuantity total_quantity = 9;
+  eve_trade.common.v1.ItemQuantity remaining_quantity = 10;
+  eve_trade.common.v1.IskAmount unit_price_isk = 11;
+  int64 expires_at_unix_millis = 12;
+  int64 created_at_unix_millis = 13;
+  int64 updated_at_unix_millis = 14;
+}
+
+message TradeStateChange {
+  eve_trade.common.v1.TradeStateChangeId trade_state_change_id = 1;
+  eve_trade.common.v1.OperationId operation_id = 2;
+  eve_trade.common.v1.TradeInstanceId trade_instance_id = 3;
+  eve_trade.common.v1.TradeTransactionId trade_transaction_id = 4;
+  eve_trade.common.v1.SettlementId settlement_id = 5;
+  eve_trade.common.v1.IdempotencyKey idempotency_key = 6;
+  eve_trade.common.v1.RequestId request_id = 7;
+  TradeState from_trade_state = 8;
+  TradeState to_trade_state = 9;
+  string trade_state_change_kind = 10;
+  string changed_by_service = 11;
+  int64 changed_at_unix_millis = 12;
+}

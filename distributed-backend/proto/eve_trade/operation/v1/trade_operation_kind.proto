@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package eve_trade.operation.v1;
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/operation/v1;operationv1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.operation.v1";
+
+enum TradeOperationKind {
+  TRADE_OPERATION_KIND_UNSPECIFIED = 0;
+  TRADE_OPERATION_KIND_ISSUE_TRADE_INSTANCE = 1;
+  TRADE_OPERATION_KIND_ACCEPT_TRADE_INSTANCE = 2;
+  TRADE_OPERATION_KIND_CANCEL_TRADE_INSTANCE = 3;
+  TRADE_OPERATION_KIND_EXPIRE_TRADE_INSTANCE = 4;
+  TRADE_OPERATION_KIND_SETTLE_TRADE_INSTANCE = 5;
+}

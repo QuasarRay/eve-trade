@@ -1,0 +1,147 @@
+syntax = "proto3";
+
+package eve_trade.common.v1;
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/common/v1;commonv1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.common.v1";
+
+message CapsuleerId {
+  int64 value = 1;
+}
+
+message RegionId {
+  int64 value = 1;
+}
+
+message StationId {
+  int64 value = 1;
+}
+
+message ItemTypeId {
+  int64 value = 1;
+}
+
+message WalletId {
+  string value = 1;
+}
+
+message WalletOperationId {
+  string value = 1;
+}
+
+message WalletLedgerId {
+  string value = 1;
+}
+
+message ItemStackId {
+  string value = 1;
+}
+
+message ItemStackOperationId {
+  string value = 1;
+}
+
+message ItemStackLedgerId {
+  string value = 1;
+}
+
+message TradeInstanceId {
+  string value = 1;
+}
+
+message WalletEscrowId {
+  string value = 1;
+}
+
+message ItemStackEscrowId {
+  string value = 1;
+}
+
+message TradeTransactionId {
+  string value = 1;
+}
+
+message SettlementId {
+  string value = 1;
+}
+
+message SettlementStepId {
+  string value = 1;
+}
+
+message TradeStateChangeId {
+  string value = 1;
+}
+
+message TradeClaimId {
+  string value = 1;
+}
+
+message TradeClaimIskId {
+  string value = 1;
+}
+
+message TradeClaimItemStackId {
+  string value = 1;
+}
+
+message OperationId {
+  string value = 1;
+}
+
+message RequestId {
+  string value = 1;
+}
+
+message DomainEventId {
+  string value = 1;
+}
+
+message GameServerId {
+  string value = 1;
+}
+
+message GameSessionId {
+  string value = 1;
+}
+
+message GameUiVersion {
+  string value = 1;
+}
+
+message GameUiActivityId {
+  string value = 1;
+}
+
+message ProjectTradeInteractionId {
+  string value = 1;
+}
+
+message SourceSystem {
+  string value = 1;
+}
+
+message ExternalOperationId {
+  string value = 1;
+}
+
+message CreatedByService {
+  string value = 1;
+}
+
+message CorrelationId {
+  string value = 1;
+}
+
+message TraceId {
+  string value = 1;
+}
+
+message Checksum {
+  string value = 1;
+}
+
+message ChecksumAlgorithm {
+  string value = 1;
+}

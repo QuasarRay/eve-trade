@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package eve_trade.settlement.v1;
+
+import "eve_trade/settlement/v1/settlement_command.proto";
+import "eve_trade/settlement/v1/settlement_result.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/settlement/v1;settlementv1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.settlement.v1";
+
+message StreamTradeSettlementCommandsRequest {
+  TradeSettlementCommand command = 1;
+}
+
+message StreamTradeSettlementCommandsResponse {
+  TradeSettlementResult result = 1;
+}
+
+service TradeSettlementService {
+  rpc StreamTradeSettlementCommands(stream StreamTradeSettlementCommandsRequest) returns (stream StreamTradeSettlementCommandsResponse);
+}

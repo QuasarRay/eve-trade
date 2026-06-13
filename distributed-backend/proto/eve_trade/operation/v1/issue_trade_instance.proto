@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package eve_trade.operation.v1;
+
+import "eve_trade/common/v1/identity.proto";
+import "eve_trade/common/v1/money.proto";
+import "eve_trade/common/v1/operation_metadata.proto";
+import "eve_trade/common/v1/quantity.proto";
+import "eve_trade/domain/trade/v1/trade_escrow.proto";
+import "eve_trade/domain/trade/v1/trade_instance.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/operation/v1;operationv1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.operation.v1";
+
+message IssueTradeInstanceRowIds {
+  eve_trade.common.v1.TradeInstanceId trade_instance_id = 1;
+  eve_trade.common.v1.CapsuleerId issuer_id = 2;
+  eve_trade.common.v1.WalletId issuer_wallet_id = 3;
+  eve_trade.common.v1.ItemTypeId item_type_id = 4;
+  eve_trade.common.v1.StationId station_id = 5;
+  eve_trade.common.v1.RegionId region_id = 6;
+  eve_trade.common.v1.ItemStackId source_item_stack_id = 7;
+  eve_trade.common.v1.ItemStackEscrowId item_stack_escrow_id = 8;
+  eve_trade.common.v1.WalletEscrowId wallet_escrow_id = 9;
+}
+
+message IssueTradeInstanceTerms {
+  eve_trade.common.v1.ItemQuantity total_quantity = 1;
+  eve_trade.common.v1.IskAmount unit_price_isk = 2;
+  int64 expires_at_unix_millis = 3;
+}
+
+message IssueTradeInstanceCommand {
+  eve_trade.common.v1.OperationMetadata metadata = 1;
+  IssueTradeInstanceRowIds row_ids = 2;
+  IssueTradeInstanceTerms terms = 3;
+}
+
+message IssueTradeInstanceApplied {
+  eve_trade.domain.trade.v1.TradeInstance trade_instance = 1;
+  eve_trade.domain.trade.v1.ItemStackEscrow item_stack_escrow = 2;
+  eve_trade.domain.trade.v1.WalletEscrow wallet_escrow = 3;
+}

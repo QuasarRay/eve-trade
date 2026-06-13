@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package eve_trade.operation.v1;
+
+import "eve_trade/common/v1/identity.proto";
+import "eve_trade/common/v1/operation_metadata.proto";
+import "eve_trade/domain/trade/v1/trade_escrow.proto";
+import "eve_trade/domain/trade/v1/trade_instance.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/operation/v1;operationv1";
+option java_multiple_files = true;
+option java_package = "com.quasarray.evetrade.operation.v1";
+
+message ExpireTradeInstanceRowIds {
+  eve_trade.common.v1.TradeInstanceId trade_instance_id = 1;
+}
+
+message ExpireTradeInstanceCommand {
+  eve_trade.common.v1.OperationMetadata metadata = 1;
+  ExpireTradeInstanceRowIds row_ids = 2;
+  int64 evaluated_at_unix_millis = 3;
+}
+
+message ExpireTradeInstanceApplied {
+  eve_trade.domain.trade.v1.TradeInstance trade_instance = 1;
+  repeated eve_trade.domain.trade.v1.ItemStackEscrow released_item_stack_escrows = 2;
+  repeated eve_trade.domain.trade.v1.WalletEscrow released_wallet_escrows = 3;
+}
