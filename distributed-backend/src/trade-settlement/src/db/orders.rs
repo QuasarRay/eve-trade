@@ -1,4 +1,4 @@
-//! Trade order opening, closing, and listing.
+//! Trade instance opening, closing, and listing.
 //!
 //! What this file contains:
 //! - `open_trade_order`: creates an outstanding market order and its reservation.
@@ -15,7 +15,7 @@
 
 // DB-BLOCK src_db_orders_001
 // What: imports this file’s dependencies.
-// How: brings required symbols into scope for trade order open/close/read/list behavior.
+// How: brings required symbols into scope for trade instance open/close/read/list behavior.
 // Why: explicit imports make coupling visible during review.
 use sqlx::{PgPool, Postgres, Transaction};
 
@@ -159,7 +159,7 @@ async fn release_stack_reservation(
 }
 
 // DB-BLOCK src_db_orders_014
-// What: opens or replays a durable trade order request.
+// What: opens or replays a durable trade instance request.
 // How: delegates to the order workflow that validates, idempotency-checks, reserves assets if needed, and commits.
 // Why: order creation is a write boundary and must be centralized.
 pub async fn open_trade_order(
@@ -187,9 +187,9 @@ pub async fn open_trade_order(
         // What: binds `order_id` as a named intermediate.
         // How: computes/extracts `order_id` once before SQL or response construction.
         // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-        let order_id = replay.trade_order_id.ok_or_else(|| {
+        let order_id = replay.trade_instance_id.ok_or_else(|| {
             SettlementError::IntegrityConflict(
-                "open_trade_order replay missing trade_order_id".to_string(),
+                "open_trade_order replay missing trade_instance_id".to_string(),
             )
         })?;
         // DB-BLOCK src_db_orders_019
@@ -296,8 +296,8 @@ pub async fn open_trade_order(
     // How: computes/extracts `offered_stack` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
     let offered_stack = extract::item_stack_id_optional(
-        "terms.offered_item_stack_id",
-        &terms.offered_item_stack_id,
+        "terms.offered_item",
+        &terms.offered_item,
     )?;
 
     // DB-BLOCK src_db_orders_036
@@ -306,13 +306,13 @@ pub async fn open_trade_order(
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
     let order_id: (String,) = sqlx::query_as(
         r#"
-        INSERT INTO trade.trade_order (
+        INSERT INTO trade.trade_instance (
             operation_id, order_side, state, owner_capsuleer_id, owner_wallet_id,
-            item_type_id, offered_item_stack_id, station_id, region_id,
+            item_type_id, offered_item, station_id, region_id,
             total_quantity, remaining_quantity, unit_price_isk, expires_at
         ) VALUES ($1::uuid, $2::trade.order_side, 'outstanding', $3::uuid, $4::uuid, $5::uuid,
                   $6::uuid, $7::uuid, $8::uuid, $9, $9, $10, $11)
-        RETURNING trade_order_id::text
+        RETURNING trade_instance_id::text
         "#,
     )
     .bind(&operation_id)
@@ -378,10 +378,10 @@ pub async fn open_trade_order(
             let row = sqlx::query_as::<_, crate::db::rows::WalletReservationRow>(
                 r#"
                 INSERT INTO trade.wallet_reservation (
-                    trade_order_id, wallet_id, created_wallet_operation_id,
+                    trade_instance_id, wallet_id, created_wallet_operation_id,
                     original_reserved_isk, remaining_reserved_isk, reservation_state
                 ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $4, 'active')
-                RETURNING wallet_reservation_id::text AS wallet_reservation_id, trade_order_id::text AS trade_order_id,
+                RETURNING wallet_reservation_id::text AS wallet_reservation_id, trade_instance_id::text AS trade_instance_id,
                           wallet_id::text AS wallet_id, created_wallet_operation_id::text AS created_wallet_operation_id,
                           released_wallet_operation_id::text AS released_wallet_operation_id, original_reserved_isk,
                           remaining_reserved_isk, used_reserved_isk, released_reserved_isk,
@@ -419,10 +419,10 @@ pub async fn open_trade_order(
             {
                 // DB-BLOCK src_db_orders_047
                 // What: exits the current workflow early.
-                // How: returns from `return Err(SettlementError::TradeMismatch { trade_order_id: order_id.0 });` before later mutation blocks execute.
+                // How: returns from `return Err(SettlementError::TradeMismatch { trade_instance_id: order_id.0 });` before later mutation blocks execute.
                 // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
                 return Err(SettlementError::TradeMismatch {
-                    trade_order_id: order_id.0,
+                    trade_instance_id: order_id.0,
                 });
             }
             // DB-BLOCK src_db_orders_048
@@ -448,10 +448,10 @@ pub async fn open_trade_order(
             let row = sqlx::query_as::<_, crate::db::rows::ItemStackReservationRow>(
                 r#"
                 INSERT INTO trade.item_stack_reservation (
-                    trade_order_id, item_stack_id, created_item_stack_operation_id,
+                    trade_instance_id, item_stack_id, created_item_stack_operation_id,
                     original_reserved_quantity, remaining_reserved_quantity, reservation_state
                 ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $4, 'active')
-                RETURNING item_stack_reservation_id::text AS item_stack_reservation_id, trade_order_id::text AS trade_order_id,
+                RETURNING item_stack_reservation_id::text AS item_stack_reservation_id, trade_instance_id::text AS trade_instance_id,
                           item_stack_id::text AS item_stack_id, created_item_stack_operation_id::text AS created_item_stack_operation_id,
                           released_item_stack_operation_id::text AS released_item_stack_operation_id, original_reserved_quantity,
                           remaining_reserved_quantity, used_reserved_quantity, released_reserved_quantity,
@@ -482,7 +482,7 @@ pub async fn open_trade_order(
             guard: &guard,
             result_kind: "open_trade_order",
             operation_id: Some(&operation_id),
-            trade_order_id: Some(&order_id.0),
+            trade_instance_id: Some(&order_id.0),
             trade_transaction_id: None,
             settlement_id: None,
             wallet_operation_id: wallet_operation_id.as_deref(),
@@ -520,7 +520,7 @@ pub async fn open_trade_order(
 }
 
 // DB-BLOCK src_db_orders_053
-// What: closes a trade order with a requested terminal state.
+// What: closes a trade instance with a requested terminal state.
 // How: delegates to the order workflow that locks the order and writes a valid close result.
 // Why: cancel/expire/fail transitions must be durable and replay-safe.
 pub async fn close_trade_order(
@@ -547,7 +547,7 @@ pub async fn close_trade_order(
     // What: binds `order_id` as a named intermediate.
     // How: computes/extracts `order_id` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let order_id = extract::trade_order_id("trade_order_id", &req.trade_order_id)?;
+    let order_id = extract::trade_instance_id("trade_instance_id", &req.trade_instance_id)?;
     // DB-BLOCK src_db_orders_058
     // What: guards a correctness-sensitive branch.
     // How: evaluates `if guard.replay.is_some() {` before continuing.
@@ -642,7 +642,7 @@ pub async fn close_trade_order(
     // What: performs a parameterized SQL operation against `trade_order`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
     // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
-    sqlx::query("UPDATE trade.trade_order SET state = $2::trade.trade_state, updated_at = now() WHERE trade_order_id = $1::uuid")
+    sqlx::query("UPDATE trade.trade_instance SET state = $2::trade.trade_state, updated_at = now() WHERE trade_instance_id = $1::uuid")
         .bind(&order_id)
         .bind(target.as_trade_state().as_db())
         .execute(&mut *tx)
@@ -654,7 +654,7 @@ pub async fn close_trade_order(
             guard: &guard,
             result_kind: "close_trade_order",
             operation_id: Some(&operation_id),
-            trade_order_id: Some(&order_id),
+            trade_instance_id: Some(&order_id),
             trade_transaction_id: None,
             settlement_id: None,
             wallet_operation_id: wallet_op.as_deref(),
@@ -691,7 +691,7 @@ pub async fn close_trade_order(
 }
 
 // DB-BLOCK src_db_orders_076
-// What: loads one durable trade order.
+// What: loads one durable trade instance.
 // How: extracts the request ID and maps the row into a protobuf response.
 // Why: read APIs should not duplicate SQL or bypass the DB boundary.
 pub async fn get_trade_order(
@@ -702,7 +702,7 @@ pub async fn get_trade_order(
     // What: binds `id` as a named intermediate.
     // How: computes/extracts `id` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let id = extract::trade_order_id("trade_order_id", &req.trade_order_id)?;
+    let id = extract::trade_instance_id("trade_instance_id", &req.trade_instance_id)?;
     // DB-BLOCK src_db_orders_078
     // What: opens a SQL transaction.
     // How: calls `pool.begin()` and passes the transaction through subsequent DB work.
@@ -765,16 +765,16 @@ pub async fn list_outstanding_trade_orders(
     // What: binds `rows` as a named intermediate.
     // How: computes/extracts `rows` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let rows = sqlx::query_as::<_, crate::db::rows::TradeOrderRow>(
+    let rows = sqlx::query_as::<_, crate::db::rows::TradeInstanceRow>(
         r#"
-        SELECT trade_order_id::text AS trade_order_id, operation_id::text AS operation_id,
+        SELECT trade_instance_id::text AS trade_instance_id, operation_id::text AS operation_id,
                order_side::text AS order_side, state::text AS state,
                owner_capsuleer_id::text AS owner_capsuleer_id, owner_wallet_id::text AS owner_wallet_id,
-               item_type_id::text AS item_type_id, offered_item_stack_id::text AS offered_item_stack_id,
+               item_type_id::text AS item_type_id, offered_item::text AS offered_item,
                offered_item_instance_id::text AS offered_item_instance_id,
                station_id::text AS station_id, region_id::text AS region_id,
                total_quantity, remaining_quantity, unit_price_isk, expires_at, created_at, updated_at
-        FROM trade.trade_order
+        FROM trade.trade_instance
         WHERE state = 'outstanding' AND region_id = $1::uuid AND station_id = $2::uuid
           AND item_type_id = $3::uuid AND order_side = $4::trade.order_side
         ORDER BY unit_price_isk ASC, created_at ASC

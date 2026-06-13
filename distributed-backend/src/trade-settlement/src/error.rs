@@ -32,8 +32,8 @@ pub enum SettlementError {
     #[error("invalid transition from {from} using {action}")]
     InvalidTransition { from: String, action: &'static str },
 
-    #[error("request does not match durable trade order {trade_order_id}")]
-    TradeMismatch { trade_order_id: String },
+    #[error("request does not match durable trade instance {trade_instance_id}")]
+    TradeMismatch { trade_instance_id: String },
 
     #[error("reservation conflict: {0}")]
     ReservationConflict(String),

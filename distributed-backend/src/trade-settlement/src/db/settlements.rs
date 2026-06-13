@@ -81,7 +81,7 @@ async fn create_transaction_if_needed(
     tx: &mut Transaction<'_, Postgres>,
     operation_id: &str,
     req: &RequestSettlementRequest,
-    order: &crate::db::rows::TradeOrderRow,
+    order: &crate::db::rows::TradeInstanceRow,
 ) -> Result<crate::db::rows::TradeTransactionRow, SettlementError> {
     // DB-BLOCK src_db_settlements_008
     // What: binds `tx_id` as a named intermediate.
@@ -180,10 +180,10 @@ async fn create_transaction_if_needed(
     {
         // DB-BLOCK src_db_settlements_024
         // What: exits the current workflow early.
-        // How: returns from `return Err(SettlementError::TradeMismatch { trade_order_id: order.trade_order_id` before later mutation blocks execute.
+        // How: returns from `return Err(SettlementError::TradeMismatch { trade_instance_id: order.trade_instance_id` before later mutation blocks execute.
         // Why: replay/invalid/unsupported paths must not fall through into ownership movement.
         return Err(SettlementError::TradeMismatch {
-            trade_order_id: order.trade_order_id.clone(),
+            trade_instance_id: order.trade_instance_id.clone(),
         });
     }
     // DB-BLOCK src_db_settlements_025
@@ -193,7 +193,7 @@ async fn create_transaction_if_needed(
     sqlx::query(
         r#"
         INSERT INTO trade.trade_transaction (
-            trade_transaction_id, operation_id, trade_order_id, state,
+            trade_transaction_id, operation_id, trade_instance_id, state,
             buyer_capsuleer_id, buyer_wallet_id, seller_capsuleer_id, seller_wallet_id,
             item_type_id, source_item_stack_id, destination_item_stack_id,
             quantity, unit_price_isk, total_price_isk
@@ -201,7 +201,7 @@ async fn create_transaction_if_needed(
                   $8::uuid, $9::uuid, $10::uuid, $11, $12, $13)
         "#,
     )
-    .bind(&tx_id).bind(operation_id).bind(&order.trade_order_id)
+    .bind(&tx_id).bind(operation_id).bind(&order.trade_instance_id)
     .bind(&buyer_capsuleer_id).bind(&buyer_wallet_id).bind(&seller_capsuleer_id).bind(&seller_wallet_id)
     .bind(&item_type_id).bind(&source_stack).bind(&destination_stack)
     .bind(quantity).bind(unit).bind(total)
@@ -221,7 +221,7 @@ async fn create_transaction_if_needed(
 // How: compares request buyer/seller identities and wallets with the order owner depending on buy/sell side.
 // Why: settlement must not let a request redirect the order to different actors.
 fn verify_roles(
-    order: &crate::db::rows::TradeOrderRow,
+    order: &crate::db::rows::TradeInstanceRow,
     req: &RequestSettlementRequest,
 ) -> Result<OrderSide, SettlementError> {
     // DB-BLOCK src_db_settlements_028
@@ -261,7 +261,7 @@ fn verify_roles(
             // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
             if buyer != order.owner_capsuleer_id || buyer_wallet != order.owner_wallet_id {
                 return Err(SettlementError::TradeMismatch {
-                    trade_order_id: order.trade_order_id.clone(),
+                    trade_instance_id: order.trade_instance_id.clone(),
                 });
             }
         }
@@ -272,7 +272,7 @@ fn verify_roles(
             // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
             if seller != order.owner_capsuleer_id || seller_wallet != order.owner_wallet_id {
                 return Err(SettlementError::TradeMismatch {
-                    trade_order_id: order.trade_order_id.clone(),
+                    trade_instance_id: order.trade_instance_id.clone(),
                 });
             }
         }
@@ -343,7 +343,7 @@ pub async fn request_settlement(
         // What: binds `order_id` as a named intermediate.
         // How: computes/extracts `order_id` once before SQL or response construction.
         // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-        let order_id = replay.trade_order_id.ok_or_else(|| {
+        let order_id = replay.trade_instance_id.ok_or_else(|| {
             SettlementError::IntegrityConflict("settlement replay missing order id".to_string())
         })?;
         // DB-BLOCK src_db_settlements_046
@@ -401,7 +401,7 @@ pub async fn request_settlement(
     // What: binds `order_id` as a named intermediate.
     // How: computes/extracts `order_id` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
-    let order_id = extract::trade_order_id("trade_order_id", &req.trade_order_id)?;
+    let order_id = extract::trade_instance_id("trade_instance_id", &req.trade_instance_id)?;
     // DB-BLOCK src_db_settlements_053
     // What: binds `order` as a named intermediate.
     // How: computes/extracts `order` once before SQL or response construction.
@@ -568,7 +568,7 @@ pub async fn request_settlement(
             // Why: bad state, replay, mismatch, or unsupported flow must stop before side effects.
             if stack_res.item_stack_id != source_stack_id {
                 return Err(SettlementError::TradeMismatch {
-                    trade_order_id: order_id.clone(),
+                    trade_instance_id: order_id.clone(),
                 });
             }
             ownership::move_stack(
@@ -630,7 +630,7 @@ pub async fn request_settlement(
     // What: performs a parameterized SQL operation against `trade_order`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
     // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
-    sqlx::query("UPDATE trade.trade_order SET remaining_quantity = remaining_quantity - $2, state = CASE WHEN remaining_quantity - $2 = 0 THEN 'completed'::trade.trade_state ELSE state END, updated_at = now() WHERE trade_order_id = $1::uuid")
+    sqlx::query("UPDATE trade.trade_instance SET remaining_quantity = remaining_quantity - $2, state = CASE WHEN remaining_quantity - $2 = 0 THEN 'completed'::trade.trade_state ELSE state END, updated_at = now() WHERE trade_instance_id = $1::uuid")
         .bind(&order_id).bind(trade_tx.quantity).execute(&mut *tx).await?;
     // DB-BLOCK src_db_settlements_074
     // What: performs a parameterized SQL operation against `trade_transaction`.
@@ -654,7 +654,7 @@ pub async fn request_settlement(
             guard: &guard,
             result_kind: "request_settlement",
             operation_id: Some(&operation_id),
-            trade_order_id: Some(&order_id),
+            trade_instance_id: Some(&order_id),
             trade_transaction_id: Some(&trade_tx.trade_transaction_id),
             settlement_id: Some(&settlement_id),
             wallet_operation_id: Some(&wallet_op),

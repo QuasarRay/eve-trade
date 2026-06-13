@@ -1,7 +1,7 @@
 //! Shared read/lock queries.
 //!
 //! What this file contains:
-//! - Reusable loaders for trade orders, transactions, settlements, reservations,
+//! - Reusable loaders for trade instances, transactions, settlements, reservations,
 //!   and operations.
 //!
 //! How it works:
@@ -28,7 +28,7 @@ use crate::error::SettlementError;
 pub async fn lock_order(
     tx: &mut Transaction<'_, Postgres>,
     id: &str,
-) -> Result<TradeOrderRow, SettlementError> {
+) -> Result<TradeInstanceRow, SettlementError> {
     order_query("FOR UPDATE", tx, id).await
 }
 
@@ -39,7 +39,7 @@ pub async fn lock_order(
 pub async fn load_order(
     tx: &mut Transaction<'_, Postgres>,
     id: &str,
-) -> Result<TradeOrderRow, SettlementError> {
+) -> Result<TradeInstanceRow, SettlementError> {
     order_query("", tx, id).await
 }
 
@@ -51,22 +51,22 @@ async fn order_query(
     lock: &str,
     tx: &mut Transaction<'_, Postgres>,
     id: &str,
-) -> Result<TradeOrderRow, SettlementError> {
+) -> Result<TradeInstanceRow, SettlementError> {
     // DB-BLOCK src_db_queries_005
     // What: binds `sql` as a named intermediate.
     // How: computes/extracts `sql` once before SQL or response construction.
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
     let sql = format!(
         r#"
-        SELECT trade_order_id::text AS trade_order_id, operation_id::text AS operation_id,
+        SELECT trade_instance_id::text AS trade_instance_id, operation_id::text AS operation_id,
                order_side::text AS order_side, state::text AS state,
                owner_capsuleer_id::text AS owner_capsuleer_id, owner_wallet_id::text AS owner_wallet_id,
-               item_type_id::text AS item_type_id, offered_item_stack_id::text AS offered_item_stack_id,
+               item_type_id::text AS item_type_id, offered_item::text AS offered_item,
                offered_item_instance_id::text AS offered_item_instance_id,
                station_id::text AS station_id, region_id::text AS region_id,
                total_quantity, remaining_quantity, unit_price_isk, expires_at, created_at, updated_at
-        FROM trade.trade_order
-        WHERE trade_order_id = $1::uuid
+        FROM trade.trade_instance
+        WHERE trade_instance_id = $1::uuid
         {lock}
     "#
     );
@@ -74,7 +74,7 @@ async fn order_query(
     // What: performs a parameterized SQL operation against `settlement`.
     // How: uses `sqlx::query` or `query_as` with bind parameters inside the active transaction.
     // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
-    sqlx::query_as::<_, TradeOrderRow>(&sql)
+    sqlx::query_as::<_, TradeInstanceRow>(&sql)
         .bind(id)
         .fetch_one(&mut **tx)
         .await
@@ -95,13 +95,13 @@ pub async fn lock_wallet_reservation(
     // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
     sqlx::query_as::<_, WalletReservationRow>(
         r#"
-        SELECT wallet_reservation_id::text AS wallet_reservation_id, trade_order_id::text AS trade_order_id,
+        SELECT wallet_reservation_id::text AS wallet_reservation_id, trade_instance_id::text AS trade_instance_id,
                wallet_id::text AS wallet_id, created_wallet_operation_id::text AS created_wallet_operation_id,
                released_wallet_operation_id::text AS released_wallet_operation_id,
                original_reserved_isk, remaining_reserved_isk, used_reserved_isk, released_reserved_isk,
                reservation_state::text AS reservation_state, release_reason, created_at, updated_at, released_at
         FROM trade.wallet_reservation
-        WHERE trade_order_id = $1::uuid
+        WHERE trade_instance_id = $1::uuid
         FOR UPDATE
         "#,
     )
@@ -125,13 +125,13 @@ pub async fn lock_stack_reservation(
     // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
     sqlx::query_as::<_, ItemStackReservationRow>(
         r#"
-        SELECT item_stack_reservation_id::text AS item_stack_reservation_id, trade_order_id::text AS trade_order_id,
+        SELECT item_stack_reservation_id::text AS item_stack_reservation_id, trade_instance_id::text AS trade_instance_id,
                item_stack_id::text AS item_stack_id, created_item_stack_operation_id::text AS created_item_stack_operation_id,
                released_item_stack_operation_id::text AS released_item_stack_operation_id,
                original_reserved_quantity, remaining_reserved_quantity, used_reserved_quantity, released_reserved_quantity,
                reservation_state::text AS reservation_state, release_reason, created_at, updated_at, released_at
         FROM trade.item_stack_reservation
-        WHERE trade_order_id = $1::uuid
+        WHERE trade_instance_id = $1::uuid
         FOR UPDATE
         "#,
     )
@@ -156,7 +156,7 @@ pub async fn lock_transaction(
     sqlx::query_as::<_, TradeTransactionRow>(
         r#"
         SELECT trade_transaction_id::text AS trade_transaction_id, operation_id::text AS operation_id,
-               trade_order_id::text AS trade_order_id, state::text AS state,
+               trade_instance_id::text AS trade_instance_id, state::text AS state,
                buyer_capsuleer_id::text AS buyer_capsuleer_id, buyer_wallet_id::text AS buyer_wallet_id,
                seller_capsuleer_id::text AS seller_capsuleer_id, seller_wallet_id::text AS seller_wallet_id,
                item_type_id::text AS item_type_id, source_item_stack_id::text AS source_item_stack_id,
@@ -190,7 +190,7 @@ pub async fn load_transaction(
     sqlx::query_as::<_, TradeTransactionRow>(
         r#"
         SELECT trade_transaction_id::text AS trade_transaction_id, operation_id::text AS operation_id,
-               trade_order_id::text AS trade_order_id, state::text AS state,
+               trade_instance_id::text AS trade_instance_id, state::text AS state,
                buyer_capsuleer_id::text AS buyer_capsuleer_id, buyer_wallet_id::text AS buyer_wallet_id,
                seller_capsuleer_id::text AS seller_capsuleer_id, seller_wallet_id::text AS seller_wallet_id,
                item_type_id::text AS item_type_id, source_item_stack_id::text AS source_item_stack_id,

@@ -150,7 +150,7 @@ pub async fn lock_wallet(
     // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
     sqlx::query_as::<_, WalletRow>(
         r#"
-        SELECT wallet_id::text AS wallet_id, capsuleer_id::text AS capsuleer_id,
+        SELECT wallet_id::text AS wallet_id, owner_id::text AS owner_id,
                wallet_kind::text AS wallet_kind, available_isk, reserved_isk,
                wallet_state::text AS wallet_state, wallet_version, wallet_checksum
         FROM trade.wallet
@@ -178,7 +178,7 @@ pub async fn lock_stack(
     // Why: database reads/writes must be explicit, typed, injection-safe, and atomic with surrounding work.
     sqlx::query_as::<_, ItemStackRow>(
         r#"
-        SELECT item_stack_id::text AS item_stack_id, capsuleer_id::text AS capsuleer_id,
+        SELECT item_stack_id::text AS item_stack_id, owner_id::text AS owner_id,
                item_type_id::text AS item_type_id, station_id::text AS station_id,
                available_quantity, reserved_quantity, stack_state::text AS stack_state,
                stack_version, stack_checksum
@@ -210,7 +210,7 @@ pub async fn create_empty_stack(
     let id: (String,) = sqlx::query_as(
         r#"
         INSERT INTO trade.item_stack (
-            capsuleer_id, item_type_id, station_id, available_quantity, reserved_quantity,
+            owner_id, item_type_id, station_id, available_quantity, reserved_quantity,
             stack_state, stack_version, stack_checksum, checksum_algorithm
         )
         VALUES ($1::uuid, $2::uuid, $3::uuid, 0, 0, 'active', 1, 'pending', 'sha256-v1')
@@ -229,7 +229,7 @@ pub async fn create_empty_stack(
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
     let checksum = item_stack_checksum(ItemStackChecksumInput {
         item_stack_id: &id.0,
-        capsuleer_id,
+        owner_id,
         item_type_id,
         station_id,
         available_quantity: 0,
@@ -361,7 +361,7 @@ pub async fn move_wallet(
     sqlx::query(
         r#"
         INSERT INTO trade.wallet_ledger (
-          wallet_operation_id, wallet_id, capsuleer_id, entry_kind,
+          wallet_operation_id, wallet_id, owner_id, entry_kind,
           available_isk_delta, reserved_isk_delta,
           available_isk_before, reserved_isk_before,
           available_isk_after, reserved_isk_after,
@@ -470,7 +470,7 @@ pub async fn move_stack(
     // Why: named intermediates make invariants visible and avoid repeating fallible extraction.
     let after_checksum = item_stack_checksum(ItemStackChecksumInput {
         item_stack_id: &before.item_stack_id,
-        capsuleer_id: &before.capsuleer_id,
+        capsuleer_id: &before.owner_id,
         item_type_id: &before.item_type_id,
         station_id: &before.station_id,
         available_quantity: after_available,
@@ -522,7 +522,7 @@ pub async fn move_stack(
     sqlx::query(
         r#"
         INSERT INTO trade.item_stack_ledger (
-          item_stack_operation_id, item_stack_id, item_type_id, capsuleer_id, station_id, entry_kind,
+          item_stack_operation_id, item_stack_id, item_type_id, owner_id, station_id, entry_kind,
           available_quantity_delta, reserved_quantity_delta,
           available_quantity_before, reserved_quantity_before,
           available_quantity_after, reserved_quantity_after,

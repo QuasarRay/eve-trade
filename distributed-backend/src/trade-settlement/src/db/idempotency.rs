@@ -171,7 +171,7 @@ pub async fn begin<M: Message>(
         r#"
         SELECT
             operation_id::text AS operation_id,
-            trade_order_id::text AS trade_order_id,
+            trade_instance_id::text AS trade_instance_id,
             trade_transaction_id::text AS trade_transaction_id,
             settlement_id::text AS settlement_id,
             wallet_operation_id::text AS wallet_operation_id,
@@ -204,7 +204,7 @@ pub struct RecordSuccessInput<'a> {
     pub guard: &'a Guard,
     pub result_kind: &'a str,
     pub operation_id: Option<&'a str>,
-    pub trade_order_id: Option<&'a str>,
+    pub trade_instance_id: Option<&'a str>,
     pub trade_transaction_id: Option<&'a str>,
     pub settlement_id: Option<&'a str>,
     pub wallet_operation_id: Option<&'a str>,
@@ -227,7 +227,7 @@ pub async fn record_success(
     sqlx::query(
         r#"
         INSERT INTO trade.idempotency_result (
-            idempotency_key, operation_id, result_kind, trade_order_id,
+            idempotency_key, operation_id, result_kind, trade_instance_id,
             trade_transaction_id, settlement_id, wallet_operation_id,
             item_stack_operation_id, result_state
         )
@@ -238,7 +238,7 @@ pub async fn record_success(
     .bind(&input.guard.idempotency_key)
     .bind(input.operation_id)
     .bind(input.result_kind)
-    .bind(input.trade_order_id)
+    .bind(input.trade_instance_id)
     .bind(input.trade_transaction_id)
     .bind(input.settlement_id)
     .bind(input.wallet_operation_id)

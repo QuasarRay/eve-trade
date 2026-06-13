@@ -55,7 +55,7 @@ pub fn trade_error(code: i32, message: impl Into<String>) -> TradeError {
         message: message.into(),
         request_id: None,
         idempotency_key: None,
-        trade_order_id: None,
+        trade_instance_id: None,
         trade_transaction_id: None,
         settlement_id: None,
     }
@@ -129,20 +129,20 @@ fn operation_kind_proto_i32(value: &str) -> i32 {
 // What: implements `trade_order_view`.
 // How: performs the smallest focused operation implied by this module and propagates typed errors.
 // Why: small named functions make correctness review and testing possible.
-pub fn trade_order_view(row: TradeOrderRow) -> Result<TradeOrderView, SettlementError> {
+pub fn trade_order_view(row: TradeInstanceRow) -> Result<TradeOrderView, SettlementError> {
     // DB-BLOCK src_db_proto_builders_012
     // What: returns the branch result.
     // How: wraps the computed response/error with `Ok(TradeOrderView {`.
     // Why: DB boundaries must propagate success/failure explicitly.
     Ok(TradeOrderView {
-        trade_order_id: id(row.trade_order_id, |value| TradeOrderId { value }),
+        trade_instance_id: id(row.trade_instance_id, |value| TradeOrderId { value }),
         operation_id: id(row.operation_id, |value| OperationId { value }),
         order_side: OrderSide::from_db(&row.order_side)?.as_proto_i32(),
         state: TradeState::from_db(&row.state)?.as_proto_i32(),
         owner_capsuleer_id: id(row.owner_capsuleer_id, |value| CapsuleerId { value }),
         owner_wallet_id: id(row.owner_wallet_id, |value| WalletId { value }),
         item_type_id: id(row.item_type_id, |value| ItemTypeId { value }),
-        offered_item_stack_id: row.offered_item_stack_id.map(|value| ItemStackId { value }),
+        offered_item: row.offered_item.map(|value| ItemStackId { value }),
         offered_item_instance_id: row
             .offered_item_instance_id
             .map(|value| ItemInstanceId { value }),
@@ -164,7 +164,7 @@ pub fn trade_order_view(row: TradeOrderRow) -> Result<TradeOrderView, Settlement
 pub fn wallet_reservation_view(row: WalletReservationRow) -> WalletReservationView {
     WalletReservationView {
         wallet_reservation_id: row.wallet_reservation_id,
-        trade_order_id: id(row.trade_order_id, |value| TradeOrderId { value }),
+        trade_instance_id: id(row.trade_instance_id, |value| TradeOrderId { value }),
         wallet_id: id(row.wallet_id, |value| WalletId { value }),
         created_wallet_operation_id: id(row.created_wallet_operation_id, |value| {
             WalletOperationId { value }
@@ -191,7 +191,7 @@ pub fn wallet_reservation_view(row: WalletReservationRow) -> WalletReservationVi
 pub fn item_stack_reservation_view(row: ItemStackReservationRow) -> ItemStackReservationView {
     ItemStackReservationView {
         item_stack_reservation_id: row.item_stack_reservation_id,
-        trade_order_id: id(row.trade_order_id, |value| TradeOrderId { value }),
+        trade_instance_id: id(row.trade_instance_id, |value| TradeOrderId { value }),
         item_stack_id: id(row.item_stack_id, |value| ItemStackId { value }),
         created_item_stack_operation_id: id(row.created_item_stack_operation_id, |value| {
             ItemStackOperationId { value }
@@ -245,7 +245,7 @@ pub fn trade_transaction_view(
             value,
         }),
         operation_id: id(row.operation_id, |value| OperationId { value }),
-        trade_order_id: id(row.trade_order_id, |value| TradeOrderId { value }),
+        trade_instance_id: id(row.trade_instance_id, |value| TradeOrderId { value }),
         state: TradeState::from_db(&row.state)?.as_proto_i32(),
         buyer_capsuleer_id: id(row.buyer_capsuleer_id, |value| CapsuleerId { value }),
         buyer_wallet_id: id(row.buyer_wallet_id, |value| WalletId { value }),

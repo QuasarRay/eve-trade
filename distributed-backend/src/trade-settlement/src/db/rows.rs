@@ -53,7 +53,7 @@ pub struct OperationRow {
 // Why: named row/request/result shapes prevent accidental tuple-order bugs.
 pub struct IdempotencyResultRow {
     pub operation_id: Option<String>,
-    pub trade_order_id: Option<String>,
+    pub trade_instance_id: Option<String>,
     pub trade_transaction_id: Option<String>,
     pub settlement_id: Option<String>,
     pub wallet_operation_id: Option<String>,
@@ -107,18 +107,18 @@ pub struct ItemStackRow {
 // Why: named row/request/result shapes prevent accidental tuple-order bugs.
 #[derive(Debug, Clone, sqlx::FromRow)]
 // DB-BLOCK src_db_rows_011
-// What: defines the `TradeOrderRow` data shape.
+// What: defines the `TradeInstanceRow` data shape.
 // How: groups fields that are read, written, or returned together.
 // Why: named row/request/result shapes prevent accidental tuple-order bugs.
-pub struct TradeOrderRow {
-    pub trade_order_id: String,
+pub struct TradeInstanceRow {
+    pub trade_instance_id: String,
     pub operation_id: String,
     pub order_side: String,
     pub state: String,
     pub owner_capsuleer_id: String,
     pub owner_wallet_id: String,
     pub item_type_id: String,
-    pub offered_item_stack_id: Option<String>,
+    pub offered_item: Option<String>,
     pub offered_item_instance_id: Option<String>,
     pub station_id: String,
     pub region_id: String,
@@ -141,7 +141,7 @@ pub struct TradeOrderRow {
 // Why: named row/request/result shapes prevent accidental tuple-order bugs.
 pub struct WalletReservationRow {
     pub wallet_reservation_id: String,
-    pub trade_order_id: String,
+    pub trade_instance_id: String,
     pub wallet_id: String,
     pub created_wallet_operation_id: String,
     pub released_wallet_operation_id: Option<String>,
@@ -167,7 +167,7 @@ pub struct WalletReservationRow {
 // Why: named row/request/result shapes prevent accidental tuple-order bugs.
 pub struct ItemStackReservationRow {
     pub item_stack_reservation_id: String,
-    pub trade_order_id: String,
+    pub trade_instance_id: String,
     pub item_stack_id: String,
     pub created_item_stack_operation_id: String,
     pub released_item_stack_operation_id: Option<String>,
@@ -194,7 +194,7 @@ pub struct ItemStackReservationRow {
 pub struct TradeTransactionRow {
     pub trade_transaction_id: String,
     pub operation_id: String,
-    pub trade_order_id: String,
+    pub trade_instance_id: String,
     pub state: String,
     pub buyer_capsuleer_id: String,
     pub buyer_wallet_id: String,
