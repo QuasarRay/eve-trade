@@ -6,11 +6,14 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/market/v1/marketv1connect"
-	market "github.com/QuasarRay/eve-trade/distributed-backend/src/market"
 	"github.com/QuasarRay/eve-trade/distributed-backend/src/internal/observability"
+	"github.com/QuasarRay/eve-trade/distributed-backend/src/internal/rabbitmq"
+	market "github.com/QuasarRay/eve-trade/distributed-backend/src/market"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -31,10 +34,12 @@ func main() {
 	serverInterceptor := observability.NewInternalServerInterceptor()
 	clientInterceptor := observability.NewClientInterceptor()
 
-	settlementClient := market.NewSettlementClient(
-		settlementURL,
-		connect.WithInterceptors(clientInterceptor),
-	)
+	settlementClient, closeSettlement := newSettlementClient(settlementURL, clientInterceptor)
+	defer func() {
+		if err := closeSettlement(); err != nil {
+			slog.Error("failed to close settlement client", "error", err)
+		}
+	}()
 
 	path, handler := marketv1connect.NewMarketTradeServiceHandler(
 		market.NewService(settlementClient),
@@ -68,4 +73,38 @@ func getenv(key, fallback string) string {
 	}
 
 	return fallback
+}
+
+func newSettlementClient(settlementURL string, clientInterceptor connect.Interceptor) (market.Settlement, func() error) {
+	transport := strings.ToLower(getenv("SETTLEMENT_TRANSPORT", "grpc"))
+	switch transport {
+	case "rabbitmq", "amqp":
+		client, err := rabbitmq.NewSettlementClient(rabbitmq.SettlementConfig{
+			URL:            getenv("RABBITMQ_URL", rabbitmq.DefaultSettlementURL),
+			Exchange:       getenv("RABBITMQ_SETTLEMENT_EXCHANGE", rabbitmq.DefaultSettlementExchange),
+			CommandQueue:   getenv("RABBITMQ_SETTLEMENT_COMMAND_QUEUE", rabbitmq.DefaultSettlementCommandQueue),
+			RoutingKey:     getenv("RABBITMQ_SETTLEMENT_ROUTING_KEY", rabbitmq.DefaultSettlementRoutingKey),
+			RequestTimeout: getenvDuration("RABBITMQ_SETTLEMENT_REQUEST_TIMEOUT", 30*time.Second),
+		})
+		if err != nil {
+			slog.Error("failed to initialize RabbitMQ settlement client", "error", err)
+			os.Exit(1)
+		}
+		return client, client.Close
+	default:
+		return market.NewSettlementClient(settlementURL, connect.WithInterceptors(clientInterceptor)), func() error { return nil }
+	}
+}
+
+func getenvDuration(key string, fallback time.Duration) time.Duration {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	duration, err := time.ParseDuration(value)
+	if err != nil {
+		slog.Warn("invalid duration value, using fallback", "key", key, "value", value, "fallback", fallback)
+		return fallback
+	}
+	return duration
 }

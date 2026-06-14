@@ -10,7 +10,9 @@ import (
 	"time"
 	"unicode"
 
-	evetradev1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/v1"
+	commonv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/common/v1"
+	gatewayv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/gateway/v1"
+	marketv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/market/v1"
 )
 
 var (
@@ -26,7 +28,7 @@ var (
 
 type visibleFieldSet map[string]string
 
-func validateGameTradeUIActivity(activity *evetradev1.GameTradeUiActivity) error {
+func validateGameTradeUIActivity(activity *gatewayv1.GameTradeUiActivity) error {
 	if activity == nil {
 		return ErrMissingActivity
 	}
@@ -45,66 +47,66 @@ func validateGameTradeUIActivity(activity *evetradev1.GameTradeUiActivity) error
 	if activity.GetGameUiVersion().GetValue() == "" {
 		return ErrMissingGameUIVersion
 	}
-	if projectInteractionKind(activity.GetActivityKind()) == evetradev1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_UNSPECIFIED {
+	if projectInteractionKind(activity.GetActivityKind()) == marketv1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_UNSPECIFIED {
 		return ErrInvalidActivityKind
 	}
 
 	return nil
 }
 
-func projectInteractionKind(kind evetradev1.GameTradeUiActivityKind) evetradev1.ProjectTradeInteractionKind {
+func projectInteractionKind(kind gatewayv1.GameTradeUiActivityKind) marketv1.ProjectTradeInteractionKind {
 	switch kind {
-	case evetradev1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_ISSUE_BUTTON_PRESSED:
-		return evetradev1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_PLAYER_ISSUED_VISIBLE_TRADE
-	case evetradev1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_ACCEPT_BUTTON_PRESSED:
-		return evetradev1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_PLAYER_ACCEPTED_VISIBLE_TRADE
-	case evetradev1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_CANCEL_BUTTON_PRESSED:
-		return evetradev1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_PLAYER_CANCELLED_VISIBLE_TRADE
+	case gatewayv1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_ISSUE_BUTTON_PRESSED:
+		return marketv1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_PLAYER_ISSUED_VISIBLE_TRADE
+	case gatewayv1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_ACCEPT_BUTTON_PRESSED:
+		return marketv1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_PLAYER_ACCEPTED_VISIBLE_TRADE
+	case gatewayv1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_CANCEL_BUTTON_PRESSED:
+		return marketv1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_PLAYER_CANCELLED_VISIBLE_TRADE
 	default:
-		return evetradev1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_UNSPECIFIED
+		return marketv1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_UNSPECIFIED
 	}
 }
 
-func knownTradeButton(kind evetradev1.GameTradeUiActivityKind, raw string) evetradev1.KnownTradeButton {
+func knownTradeButton(kind gatewayv1.GameTradeUiActivityKind, raw string) marketv1.KnownTradeButton {
 	normalized := strings.ToLower(raw)
 	switch {
 	case strings.Contains(normalized, "issue"), strings.Contains(normalized, "create"), strings.Contains(normalized, "sell"), strings.Contains(normalized, "buy"):
-		return evetradev1.KnownTradeButton_KNOWN_TRADE_BUTTON_ISSUE
+		return marketv1.KnownTradeButton_KNOWN_TRADE_BUTTON_ISSUE
 	case strings.Contains(normalized, "accept"), strings.Contains(normalized, "confirm"), strings.Contains(normalized, "fill"):
-		return evetradev1.KnownTradeButton_KNOWN_TRADE_BUTTON_ACCEPT
+		return marketv1.KnownTradeButton_KNOWN_TRADE_BUTTON_ACCEPT
 	case strings.Contains(normalized, "cancel"), strings.Contains(normalized, "withdraw"):
-		return evetradev1.KnownTradeButton_KNOWN_TRADE_BUTTON_CANCEL
+		return marketv1.KnownTradeButton_KNOWN_TRADE_BUTTON_CANCEL
 	}
 
 	switch kind {
-	case evetradev1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_ISSUE_BUTTON_PRESSED:
-		return evetradev1.KnownTradeButton_KNOWN_TRADE_BUTTON_ISSUE
-	case evetradev1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_ACCEPT_BUTTON_PRESSED:
-		return evetradev1.KnownTradeButton_KNOWN_TRADE_BUTTON_ACCEPT
-	case evetradev1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_CANCEL_BUTTON_PRESSED:
-		return evetradev1.KnownTradeButton_KNOWN_TRADE_BUTTON_CANCEL
+	case gatewayv1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_ISSUE_BUTTON_PRESSED:
+		return marketv1.KnownTradeButton_KNOWN_TRADE_BUTTON_ISSUE
+	case gatewayv1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_ACCEPT_BUTTON_PRESSED:
+		return marketv1.KnownTradeButton_KNOWN_TRADE_BUTTON_ACCEPT
+	case gatewayv1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_CANCEL_BUTTON_PRESSED:
+		return marketv1.KnownTradeButton_KNOWN_TRADE_BUTTON_CANCEL
 	default:
-		return evetradev1.KnownTradeButton_KNOWN_TRADE_BUTTON_UNSPECIFIED
+		return marketv1.KnownTradeButton_KNOWN_TRADE_BUTTON_UNSPECIFIED
 	}
 }
 
-func knownTradeWindow(raw string, fields visibleFieldSet) evetradev1.KnownTradeWindow {
+func knownTradeWindow(raw string, fields visibleFieldSet) marketv1.KnownTradeWindow {
 	value := strings.ToLower(raw + " " + fields.first("tradewindow", "window", "screen"))
 	switch {
 	case strings.Contains(value, "auction"):
-		return evetradev1.KnownTradeWindow_KNOWN_TRADE_WINDOW_AUCTION_WINDOW
+		return marketv1.KnownTradeWindow_KNOWN_TRADE_WINDOW_AUCTION_WINDOW
 	case strings.Contains(value, "direct"):
-		return evetradev1.KnownTradeWindow_KNOWN_TRADE_WINDOW_DIRECT_TRADE_WINDOW
+		return marketv1.KnownTradeWindow_KNOWN_TRADE_WINDOW_DIRECT_TRADE_WINDOW
 	case strings.Contains(value, "contract"):
-		return evetradev1.KnownTradeWindow_KNOWN_TRADE_WINDOW_CONTRACT_WINDOW
+		return marketv1.KnownTradeWindow_KNOWN_TRADE_WINDOW_CONTRACT_WINDOW
 	case strings.Contains(value, "market"), value == " ":
-		return evetradev1.KnownTradeWindow_KNOWN_TRADE_WINDOW_MARKET_WINDOW
+		return marketv1.KnownTradeWindow_KNOWN_TRADE_WINDOW_MARKET_WINDOW
 	default:
-		return evetradev1.KnownTradeWindow_KNOWN_TRADE_WINDOW_MARKET_WINDOW
+		return marketv1.KnownTradeWindow_KNOWN_TRADE_WINDOW_MARKET_WINDOW
 	}
 }
 
-func occurredAtUnixMillis(activity *evetradev1.GameTradeUiActivity) int64 {
+func occurredAtUnixMillis(activity *gatewayv1.GameTradeUiActivity) int64 {
 	if activity.GetOccurredAtUnixMillis() > 0 {
 		return activity.GetOccurredAtUnixMillis()
 	}
@@ -112,7 +114,7 @@ func occurredAtUnixMillis(activity *evetradev1.GameTradeUiActivity) int64 {
 	return time.Now().UnixMilli()
 }
 
-func newVisibleFieldSet(fields []*evetradev1.GameTradeUiField) visibleFieldSet {
+func newVisibleFieldSet(fields []*gatewayv1.GameTradeUiField) visibleFieldSet {
 	out := make(visibleFieldSet, len(fields))
 	for _, field := range fields {
 		key := normalizeFieldName(field.GetRawGameFieldName())
@@ -165,7 +167,7 @@ func normalizeIntegerFieldValue(value string) string {
 	return replacer.Replace(value)
 }
 
-func (f visibleFieldSet) typedValues() (*evetradev1.PlayerTypedTradeValues, error) {
+func (f visibleFieldSet) typedValues() (*marketv1.PlayerTypedTradeValues, error) {
 	quantity, _, err := f.int64("quantity", "itemquantity", "qty")
 	if err != nil {
 		return nil, err
@@ -179,24 +181,24 @@ func (f visibleFieldSet) typedValues() (*evetradev1.PlayerTypedTradeValues, erro
 		return nil, err
 	}
 
-	values := &evetradev1.PlayerTypedTradeValues{}
+	values := &marketv1.PlayerTypedTradeValues{}
 	if quantity > 0 {
-		values.Quantity = &evetradev1.ItemQuantity{Value: quantity}
+		values.Quantity = &commonv1.ItemQuantity{Units: quantity}
 	}
 	if unitPrice > 0 {
-		values.UnitPrice = &evetradev1.IskAmount{Value: unitPrice}
+		values.UnitPriceIsk = &commonv1.IskAmount{MinorUnits: unitPrice}
 	}
 	if totalPrice > 0 {
-		values.TotalPrice = &evetradev1.IskAmount{Value: totalPrice}
+		values.TotalPriceIsk = &commonv1.IskAmount{MinorUnits: totalPrice}
 	}
 	if totalPrice == 0 && unitPrice > 0 && quantity > 0 {
-		values.TotalPrice = &evetradev1.IskAmount{Value: unitPrice * quantity}
+		values.TotalPriceIsk = &commonv1.IskAmount{MinorUnits: unitPrice * quantity}
 	}
 
 	return values, nil
 }
 
-func (f visibleFieldSet) selectedItems(values *evetradev1.PlayerTypedTradeValues) ([]*evetradev1.PlayerSelectedItem, error) {
+func (f visibleFieldSet) selectedItems(values *marketv1.PlayerTypedTradeValues) ([]*marketv1.PlayerSelectedItem, error) {
 	itemTypeID, hasItemTypeID, err := f.int64("itemtypeid", "typeid", "selecteditemtypeid")
 	if err != nil {
 		return nil, err
@@ -205,7 +207,7 @@ func (f visibleFieldSet) selectedItems(values *evetradev1.PlayerTypedTradeValues
 		return nil, nil
 	}
 
-	quantity := values.GetQuantity().GetValue()
+	quantity := values.GetQuantity().GetUnits()
 	itemQuantity, hasItemQuantity, err := f.int64("selectedquantity", "itemquantity", "quantity", "qty")
 	if err != nil {
 		return nil, err
@@ -214,44 +216,49 @@ func (f visibleFieldSet) selectedItems(values *evetradev1.PlayerTypedTradeValues
 		quantity = itemQuantity
 	}
 
-	selected := &evetradev1.PlayerSelectedItem{
-		ItemTypeId: &evetradev1.ItemTypeId{Value: itemTypeID},
-		Quantity:   &evetradev1.ItemQuantity{Value: quantity},
+	selected := &marketv1.PlayerSelectedItem{
+		ItemTypeId: &commonv1.ItemTypeId{Value: itemTypeID},
+		Quantity:   &commonv1.ItemQuantity{Units: quantity},
 	}
-	if stackID := f.first("itemstackid", "stackid", "selecteditemstackid"); stackID != "" {
-		selected.ItemStackId = &evetradev1.ItemStackId{Value: stackID}
-	}
-	for _, itemInstanceID := range splitIDs(f.first("iteminstanceid", "iteminstanceids", "selectediteminstanceid")) {
-		selected.ItemInstanceIds = append(selected.ItemInstanceIds, &evetradev1.ItemInstanceId{Value: itemInstanceID})
+	if stackID := f.first("itemstackid", "stackid", "selecteditemstackid", "sourceitemstackid"); stackID != "" {
+		selected.ItemStackId = &commonv1.ItemStackId{Value: stackID}
 	}
 
-	return []*evetradev1.PlayerSelectedItem{selected}, nil
+	return []*marketv1.PlayerSelectedItem{selected}, nil
 }
 
-func (f visibleFieldSet) tradeHubID() *evetradev1.TradeHubId {
-	if value := f.first("tradehubid", "hubid", "stationid", "structureid", "locationid"); value != "" {
-		return &evetradev1.TradeHubId{Value: value}
-	}
-
-	return nil
-}
-
-func (f visibleFieldSet) tradeInstanceID() *evetradev1.TradeInstanceId {
+func (f visibleFieldSet) visibleTradeContext() (*marketv1.VisibleTradeContext, error) {
+	context := &marketv1.VisibleTradeContext{}
 	if value := f.first("tradeinstanceid", "visibletradeinstanceid", "tradeid", "orderid"); value != "" {
-		return &evetradev1.TradeInstanceId{Value: value}
+		context.TradeInstanceId = &commonv1.TradeInstanceId{Value: value}
+	}
+	if value := f.first("walletid", "wallet", "issuerwalletid", "buyerwalletid"); value != "" {
+		context.WalletId = &commonv1.WalletId{Value: value}
+	}
+	if value := f.first("itemstackid", "stackid", "sourceitemstackid", "selecteditemstackid"); value != "" {
+		context.SourceItemStackId = &commonv1.ItemStackId{Value: value}
+	}
+	if value := f.first("destinationitemstackid", "destinationstackid", "buyeritemstackid"); value != "" {
+		context.DestinationItemStackId = &commonv1.ItemStackId{Value: value}
 	}
 
-	return nil
-}
-
-func splitIDs(value string) []string {
-	if value == "" {
-		return nil
+	stationID, hasStationID, err := f.int64("stationid", "station", "locationid")
+	if err != nil {
+		return nil, err
+	}
+	if hasStationID {
+		context.StationId = &commonv1.StationId{Value: stationID}
 	}
 
-	return strings.FieldsFunc(value, func(r rune) bool {
-		return r == ',' || r == ';' || unicode.IsSpace(r)
-	})
+	regionID, hasRegionID, err := f.int64("regionid", "region")
+	if err != nil {
+		return nil, err
+	}
+	if hasRegionID {
+		context.RegionId = &commonv1.RegionId{Value: regionID}
+	}
+
+	return context, nil
 }
 
 func stableID(prefix string, values ...string) string {

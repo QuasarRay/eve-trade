@@ -28,8 +28,37 @@ metadata:
 data:
   MARKET_ADDR: ":8081"
   SETTLEMENT_URL: "http://trade-settlement:9092"
+  SETTLEMENT_TRANSPORT: "rabbitmq"
+  RABBITMQ_SETTLEMENT_EXCHANGE: "eve_trade.settlement"
+  RABBITMQ_SETTLEMENT_COMMAND_QUEUE: "eve_trade.settlement.commands"
+  RABBITMQ_SETTLEMENT_ROUTING_KEY: "settlement.command"
+  RABBITMQ_SETTLEMENT_REQUEST_TIMEOUT: "30s"
 
   OTEL_SERVICE_NAME: "market"
+  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://eve-trade-otel-cluster.eve-trade-observability.svc.cluster.local:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_LOGS_EXPORTER: "otlp"
+  OTEL_PROPAGATORS: "tracecontext,baggage"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: settlement-worker-config
+  labels:
+    app.kubernetes.io/name: settlement-worker
+    app.kubernetes.io/component: settlement-worker
+data:
+  SETTLEMENT_URL: "http://trade-settlement:9092"
+  RABBITMQ_SETTLEMENT_EXCHANGE: "eve_trade.settlement"
+  RABBITMQ_SETTLEMENT_COMMAND_QUEUE: "eve_trade.settlement.commands"
+  RABBITMQ_SETTLEMENT_ROUTING_KEY: "settlement.command"
+  RABBITMQ_SETTLEMENT_REQUEST_TIMEOUT: "30s"
+  RABBITMQ_SETTLEMENT_PREFETCH: "8"
+
+  OTEL_SERVICE_NAME: "settlement-worker"
   OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://eve-trade-otel-cluster.eve-trade-observability.svc.cluster.local:4318"
   OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"

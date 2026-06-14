@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	commonv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/common/v1"
 	gatewayv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/gateway/v1"
 	marketv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/market/v1"
 	"github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/market/v1/marketv1connect"
@@ -120,27 +121,20 @@ func playerSafeMessage(result *MarketInteractionResult) string {
 	return "The trade request entered the trade lifecycle."
 }
 
-func playerSafeTradeReference(result *MarketInteractionResult) string {
+func playerSafeTradeReference(result *MarketInteractionResult) *commonv1.TradeInstanceId {
 	if result == nil || result.GetSettlementResult() == nil {
-		return ""
+		return nil
 	}
 
-	tradeInstanceID := result.GetSettlementResult().GetTradeInstanceId()
-	if tradeInstanceID == nil {
-		return ""
-	}
-
-	return tradeInstanceID.GetValue()
+	return result.GetSettlementResult().GetTradeInstanceId()
 }
 
 func playerSafeGatewayStatus(result *MarketInteractionResult) gatewayv1.GameTradeUiActivityResultStatus {
 	switch playerSafeStatus(result) {
 	case "committed", "idempotent_replay":
-		return gatewayv1.GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_APPLIED
+		return gatewayv1.GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_ACCEPTED
 	case "rejected":
 		return gatewayv1.GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_REJECTED
-	case "rolled_back":
-		return gatewayv1.GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_FAILED
 	default:
 		return gatewayv1.GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_RESULT_UNKNOWN
 	}

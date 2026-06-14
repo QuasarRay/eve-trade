@@ -4,15 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	evetradev1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/v1"
-)
-
-type transactionFunction string
-
-const (
-	transactionFunctionIssueTradeInstance  transactionFunction = "issue_trade_instance"
-	transactionFunctionSettleTradeInstance transactionFunction = "settle_trade_instance"
-	transactionFunctionCancelTradeInstance transactionFunction = "cancel_trade_instance"
+	marketv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/market/v1"
+	operationv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/operation/v1"
 )
 
 var (
@@ -26,27 +19,33 @@ var (
 	ErrInvalidInteractionKind      = errors.New("project trade interaction.interaction_kind is invalid")
 	ErrInvalidTradeButton          = errors.New("project trade interaction.trade_button contradicts interaction_kind")
 	ErrInvalidTradeWindow          = errors.New("project trade interaction.trade_window is required")
-	ErrMissingVisibleTradeID       = errors.New("visible_trade_instance_id is required for existing trade interactions")
+	ErrMissingVisibleTradeContext  = errors.New("project trade interaction.visible_trade_context is required")
+	ErrMissingVisibleTradeID       = errors.New("visible_trade_context.trade_instance_id is required for existing trade interactions")
+	ErrMissingVisibleWalletID      = errors.New("visible_trade_context.wallet_id is required")
+	ErrMissingVisibleStationID     = errors.New("visible_trade_context.station_id is required")
+	ErrMissingVisibleRegionID      = errors.New("visible_trade_context.region_id is required")
+	ErrMissingSourceItemStackID    = errors.New("source item stack id is required")
+	ErrMissingDestinationStackID   = errors.New("destination item stack id is required")
 	ErrMissingSelectedItem         = errors.New("at least one selected item is required to issue a trade instance")
 	ErrMissingSelectedItemType     = errors.New("selected item.item_type_id is required")
 	ErrMissingSelectedItemQuantity = errors.New("selected item.quantity must be greater than zero")
-	ErrMissingTransactionMetadata  = errors.New("trade lifecycle decision is missing transaction metadata")
-	ErrMissingSettlementOutcome    = errors.New("trade-settlement response is missing transaction outcome")
+	ErrMissingSettlementCommand    = errors.New("trade decision is missing settlement command")
+	ErrMissingSettlementResult     = errors.New("trade-settlement response is missing settlement result")
 )
 
 type tradeLifecycleDecisionDraft struct {
-	requiredFunction transactionFunction
-	interaction      *evetradev1.ProjectTradeInteraction
+	requiredOperation operationv1.TradeOperationKind
+	interaction       *marketv1.ProjectTradeInteraction
 }
 
-func newTradeLifecycleDecisionDraft(requiredFunction transactionFunction, interaction *evetradev1.ProjectTradeInteraction) *tradeLifecycleDecisionDraft {
+func newTradeLifecycleDecisionDraft(requiredOperation operationv1.TradeOperationKind, interaction *marketv1.ProjectTradeInteraction) *tradeLifecycleDecisionDraft {
 	return &tradeLifecycleDecisionDraft{
-		requiredFunction: requiredFunction,
-		interaction:      interaction,
+		requiredOperation: requiredOperation,
+		interaction:       interaction,
 	}
 }
 
-func validateProjectTradeInteraction(interaction *evetradev1.ProjectTradeInteraction) error {
+func validateProjectTradeInteraction(interaction *marketv1.ProjectTradeInteraction) error {
 	if interaction == nil {
 		return ErrMissingInteraction
 	}
@@ -68,30 +67,30 @@ func validateProjectTradeInteraction(interaction *evetradev1.ProjectTradeInterac
 	if interaction.GetGameSessionId().GetValue() == "" {
 		return ErrMissingGameSessionID
 	}
-	if interaction.GetTradeWindow() == evetradev1.KnownTradeWindow_KNOWN_TRADE_WINDOW_UNSPECIFIED {
+	if interaction.GetTradeWindow() == marketv1.KnownTradeWindow_KNOWN_TRADE_WINDOW_UNSPECIFIED {
 		return ErrInvalidTradeWindow
 	}
 
 	return validateButtonMatchesInteractionKind(interaction)
 }
 
-func validateButtonMatchesInteractionKind(interaction *evetradev1.ProjectTradeInteraction) error {
+func validateButtonMatchesInteractionKind(interaction *marketv1.ProjectTradeInteraction) error {
 	button := interaction.GetTradeButton()
-	if button == evetradev1.KnownTradeButton_KNOWN_TRADE_BUTTON_UNSPECIFIED {
+	if button == marketv1.KnownTradeButton_KNOWN_TRADE_BUTTON_UNSPECIFIED {
 		return nil
 	}
 
 	switch interaction.GetInteractionKind() {
-	case evetradev1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_PLAYER_ISSUED_VISIBLE_TRADE:
-		if button == evetradev1.KnownTradeButton_KNOWN_TRADE_BUTTON_ISSUE {
+	case marketv1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_PLAYER_ISSUED_VISIBLE_TRADE:
+		if button == marketv1.KnownTradeButton_KNOWN_TRADE_BUTTON_ISSUE {
 			return nil
 		}
-	case evetradev1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_PLAYER_ACCEPTED_VISIBLE_TRADE:
-		if button == evetradev1.KnownTradeButton_KNOWN_TRADE_BUTTON_ACCEPT {
+	case marketv1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_PLAYER_ACCEPTED_VISIBLE_TRADE:
+		if button == marketv1.KnownTradeButton_KNOWN_TRADE_BUTTON_ACCEPT {
 			return nil
 		}
-	case evetradev1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_PLAYER_CANCELLED_VISIBLE_TRADE:
-		if button == evetradev1.KnownTradeButton_KNOWN_TRADE_BUTTON_CANCEL {
+	case marketv1.ProjectTradeInteractionKind_PROJECT_TRADE_INTERACTION_KIND_PLAYER_CANCELLED_VISIBLE_TRADE:
+		if button == marketv1.KnownTradeButton_KNOWN_TRADE_BUTTON_CANCEL {
 			return nil
 		}
 	}
@@ -99,7 +98,10 @@ func validateButtonMatchesInteractionKind(interaction *evetradev1.ProjectTradeIn
 	return ErrInvalidTradeButton
 }
 
-func validateIssueInteraction(interaction *evetradev1.ProjectTradeInteraction) error {
+func validateIssueInteraction(interaction *marketv1.ProjectTradeInteraction) error {
+	if err := validateVisibleContextForIssue(interaction.GetVisibleTradeContext()); err != nil {
+		return err
+	}
 	if len(interaction.GetSelectedItems()) == 0 {
 		return ErrMissingSelectedItem
 	}
@@ -107,7 +109,7 @@ func validateIssueInteraction(interaction *evetradev1.ProjectTradeInteraction) e
 		if selected.GetItemTypeId().GetValue() == 0 {
 			return fmt.Errorf("%w at index %d", ErrMissingSelectedItemType, index)
 		}
-		if selected.GetQuantity().GetValue() <= 0 {
+		if selected.GetQuantity().GetUnits() <= 0 {
 			return fmt.Errorf("%w at index %d", ErrMissingSelectedItemQuantity, index)
 		}
 	}
@@ -115,25 +117,50 @@ func validateIssueInteraction(interaction *evetradev1.ProjectTradeInteraction) e
 	return nil
 }
 
-func validateExistingTradeInteraction(interaction *evetradev1.ProjectTradeInteraction, _ string) error {
-	if interaction.GetVisibleTradeInstanceId().GetValue() == "" {
-		return ErrMissingVisibleTradeID
+func validateVisibleContextForIssue(context *marketv1.VisibleTradeContext) error {
+	if context == nil {
+		return ErrMissingVisibleTradeContext
+	}
+	if context.GetWalletId().GetValue() == "" {
+		return ErrMissingVisibleWalletID
+	}
+	if context.GetStationId().GetValue() == 0 {
+		return ErrMissingVisibleStationID
+	}
+	if context.GetRegionId().GetValue() == 0 {
+		return ErrMissingVisibleRegionID
+	}
+	if context.GetSourceItemStackId().GetValue() == "" {
+		return ErrMissingSourceItemStackID
 	}
 
 	return nil
 }
 
-func tradeTypeNameForWindow(window evetradev1.KnownTradeWindow) string {
-	switch window {
-	case evetradev1.KnownTradeWindow_KNOWN_TRADE_WINDOW_MARKET_WINDOW:
-		return "market"
-	case evetradev1.KnownTradeWindow_KNOWN_TRADE_WINDOW_AUCTION_WINDOW:
-		return "auction"
-	case evetradev1.KnownTradeWindow_KNOWN_TRADE_WINDOW_DIRECT_TRADE_WINDOW:
-		return "direct_trade"
-	case evetradev1.KnownTradeWindow_KNOWN_TRADE_WINDOW_CONTRACT_WINDOW:
-		return "contract"
-	default:
-		return "unspecified"
+func validateSettleInteraction(interaction *marketv1.ProjectTradeInteraction) error {
+	if err := validateExistingTradeInteraction(interaction, "accepted visible trade"); err != nil {
+		return err
 	}
+	if interaction.GetVisibleTradeContext().GetWalletId().GetValue() == "" {
+		return ErrMissingVisibleWalletID
+	}
+	if interaction.GetVisibleTradeContext().GetDestinationItemStackId().GetValue() == "" {
+		return ErrMissingDestinationStackID
+	}
+	if interaction.GetTypedValues().GetQuantity().GetUnits() <= 0 {
+		return ErrMissingSelectedItemQuantity
+	}
+
+	return nil
+}
+
+func validateExistingTradeInteraction(interaction *marketv1.ProjectTradeInteraction, _ string) error {
+	if interaction.GetVisibleTradeContext() == nil {
+		return ErrMissingVisibleTradeContext
+	}
+	if interaction.GetVisibleTradeContext().GetTradeInstanceId().GetValue() == "" {
+		return ErrMissingVisibleTradeID
+	}
+
+	return nil
 }

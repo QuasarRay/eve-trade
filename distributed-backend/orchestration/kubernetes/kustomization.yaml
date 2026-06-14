@@ -17,5 +17,7 @@ images:
     newTag: latest
   - name: eve-trade/market
     newTag: latest
+  - name: eve-trade/settlement-worker
+    newTag: latest
   - name: eve-trade/trade-settlement
     newTag: latest

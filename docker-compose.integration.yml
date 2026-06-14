@@ -23,6 +23,22 @@ services:
     volumes:
       - eve_trade_pgdata:/var/lib/postgresql/data
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: eve_trade
+      RABBITMQ_DEFAULT_PASS: eve_trade
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - eve_trade_rabbitmq:/var/lib/rabbitmq
+
   # This block applies the canonical SQL migrations before either service accepts traffic.
   # It exists so the test database is recreated deterministically from the same migration files the project owns.
   migrate:
@@ -57,6 +73,23 @@ services:
     ports:
       - "9092:9092"
 
+  settlement-worker:
+    build:
+      context: .
+      dockerfile: distributed-backend/docker/settlement-worker.Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      trade-settlement:
+        condition: service_started
+    environment:
+      SETTLEMENT_URL: http://trade-settlement:9092
+      RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
+      RABBITMQ_SETTLEMENT_EXCHANGE: eve_trade.settlement
+      RABBITMQ_SETTLEMENT_COMMAND_QUEUE: eve_trade.settlement.commands
+      RABBITMQ_SETTLEMENT_ROUTING_KEY: settlement.command
+      RABBITMQ_SETTLEMENT_PREFETCH: "8"
+
   # This block builds and runs the  Go market service from the current repository checkout.
   # It exists so the tests cover market validation/translation plus  settlement calls, not settlement alone.
   market:
@@ -64,11 +97,18 @@ services:
       context: .
       dockerfile: distributed-backend/docker/market.Dockerfile
     depends_on:
-      trade-settlement:
+      rabbitmq:
+        condition: service_healthy
+      settlement-worker:
         condition: service_started
     environment:
       MARKET_ADDR: :8081
       SETTLEMENT_URL: http://trade-settlement:9092
+      SETTLEMENT_TRANSPORT: rabbitmq
+      RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
+      RABBITMQ_SETTLEMENT_EXCHANGE: eve_trade.settlement
+      RABBITMQ_SETTLEMENT_COMMAND_QUEUE: eve_trade.settlement.commands
+      RABBITMQ_SETTLEMENT_ROUTING_KEY: settlement.command
     ports:
       - "8081:8081"
 
@@ -110,5 +150,6 @@ services:
 # It exists so local runs are fast, but deterministic reset is still handled by the migrate service.
 volumes:
   eve_trade_pgdata:
+  eve_trade_rabbitmq:
   go_cache:
   go_build_cache:

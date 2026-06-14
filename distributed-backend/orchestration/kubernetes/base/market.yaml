@@ -38,6 +38,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: market-config
+            - secretRef:
+                name: rabbitmq
           readinessProbe:
             tcpSocket:
               port: http

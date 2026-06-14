@@ -10,25 +10,27 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	settlementv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/settlement/v1"
-	"github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/settlement/v1/settlementv1connect"
+	settlementv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/settlement/v1"
+	"github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/settlement/v1/settlementv1connect"
 	"golang.org/x/net/http2"
 )
 
 type Settlement interface {
-	SendTradeInstanceTransaction(context.Context, *settlementv1.TradeInstanceTransactionRequest) (*settlementv1.TradeInstanceTransactionResponse, error)
+	SendTradeSettlementCommand(context.Context, *settlementv1.TradeSettlementCommand) (*settlementv1.TradeSettlementResult, error)
 }
 
 type SettlementClient struct {
 	client settlementv1connect.TradeSettlementServiceClient
 }
 
-func NewSettlementClient(url string) SettlementClient {
+func NewSettlementClient(url string, opts ...connect.ClientOption) SettlementClient {
+	options := append([]connect.ClientOption{connect.WithGRPC()}, opts...)
+
 	return SettlementClient{
 		client: settlementv1connect.NewTradeSettlementServiceClient(
 			newH2CGRPCClient(),
 			url,
-			connect.WithGRPC(),
+			options...,
 		),
 	}
 }
@@ -49,9 +51,9 @@ func newH2CGRPCClient() *http.Client {
 	}
 }
 
-func (s SettlementClient) SendTradeInstanceTransaction(ctx context.Context, request *settlementv1.TradeInstanceTransactionRequest) (*settlementv1.TradeInstanceTransactionResponse, error) {
-	stream := s.client.StreamTradeInstanceTransactions(ctx)
-	if err := stream.Send(request); err != nil {
+func (s SettlementClient) SendTradeSettlementCommand(ctx context.Context, command *settlementv1.TradeSettlementCommand) (*settlementv1.TradeSettlementResult, error) {
+	stream := s.client.StreamTradeSettlementCommands(ctx)
+	if err := stream.Send(&settlementv1.StreamTradeSettlementCommandsRequest{Command: command}); err != nil {
 		return nil, err
 	}
 	if err := stream.CloseRequest(); err != nil {
@@ -66,5 +68,5 @@ func (s SettlementClient) SendTradeInstanceTransaction(ctx context.Context, requ
 		return nil, err
 	}
 
-	return response, nil
+	return response.GetResult(), nil
 }
