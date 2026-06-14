@@ -1,5 +1,3 @@
-use sqlx::PgPool;
-
 use crate::error::SettlementError;
 use crate::generated::eve_trade::{operation::v1::*, settlement::v1::*};
 
@@ -11,8 +9,17 @@ use super::{
     validation::*,
 };
 
+#[tracing::instrument(
+    name = "trade_settlement.issue_trade_instance",
+    skip(pool, ctx, command),
+    fields(
+        trade.operation.id = %ctx.operation_id,
+        trade.request.id = %ctx.request_id,
+        trade.operation.kind = ctx.operation_kind,
+    )
+)]
 pub(crate) async fn issue_trade_instance(
-    pool: &PgPool,
+    pool: &DbPool,
     ctx: CommandContext,
     command: IssueTradeInstanceCommand,
 ) -> Result<TradeSettlementResult, SettlementError> {
@@ -137,7 +144,7 @@ pub(crate) async fn issue_trade_instance(
     .bind(unit_price_minor)
     .bind(expires_at)
     .bind(ctx.requested_at)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?;
 
     let item_escrow = sqlx::query_as::<_, ItemStackEscrowRow>(
@@ -158,7 +165,7 @@ pub(crate) async fn issue_trade_instance(
     .bind(total_quantity)
     .bind(ctx.requested_at)
     .bind(source_item_stack_id)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?;
 
     insert_trade_state_change(
@@ -218,8 +225,17 @@ pub(crate) async fn issue_trade_instance(
     })
 }
 
+#[tracing::instrument(
+    name = "trade_settlement.settle_trade_instance",
+    skip(pool, ctx, command),
+    fields(
+        trade.operation.id = %ctx.operation_id,
+        trade.request.id = %ctx.request_id,
+        trade.operation.kind = ctx.operation_kind,
+    )
+)]
 pub(crate) async fn settle_trade_instance(
-    pool: &PgPool,
+    pool: &DbPool,
     ctx: CommandContext,
     command: SettleTradeInstanceCommand,
 ) -> Result<TradeSettlementResult, SettlementError> {
@@ -517,7 +533,7 @@ pub(crate) async fn settle_trade_instance(
     .bind(remaining_escrow_quantity)
     .bind(escrow_state)
     .bind(requested_at)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
 
     let new_remaining_quantity = trade.remaining_quantity - quantity;
@@ -648,8 +664,17 @@ pub(crate) async fn settle_trade_instance(
     })
 }
 
+#[tracing::instrument(
+    name = "trade_settlement.cancel_trade_instance",
+    skip(pool, ctx, command),
+    fields(
+        trade.operation.id = %ctx.operation_id,
+        trade.request.id = %ctx.request_id,
+        trade.operation.kind = ctx.operation_kind,
+    )
+)]
 pub(crate) async fn cancel_trade_instance(
-    pool: &PgPool,
+    pool: &DbPool,
     ctx: CommandContext,
     command: CancelTradeInstanceCommand,
 ) -> Result<TradeSettlementResult, SettlementError> {
@@ -772,8 +797,17 @@ pub(crate) async fn cancel_trade_instance(
     })
 }
 
+#[tracing::instrument(
+    name = "trade_settlement.expire_trade_instance",
+    skip(pool, ctx, command),
+    fields(
+        trade.operation.id = %ctx.operation_id,
+        trade.request.id = %ctx.request_id,
+        trade.operation.kind = ctx.operation_kind,
+    )
+)]
 pub(crate) async fn expire_trade_instance(
-    pool: &PgPool,
+    pool: &DbPool,
     ctx: CommandContext,
     command: ExpireTradeInstanceCommand,
 ) -> Result<TradeSettlementResult, SettlementError> {

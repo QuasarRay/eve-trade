@@ -22,14 +22,14 @@ pub(crate) async fn begin_operation(
     .bind(ctx.operation_name)
     .bind(&ctx.created_by_service)
     .bind(ctx.requested_at)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
 
     let idem = sqlx::query_as::<_, IdempotencyRecordRow>(
         "SELECT request_fingerprint, operation_name FROM idempotency_record WHERE idempotency_key = $1",
     )
     .bind(&ctx.idempotency_key)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?;
 
     if idem.request_fingerprint != ctx.request_fingerprint
@@ -51,13 +51,13 @@ pub(crate) async fn begin_operation(
     .bind(&ctx.idempotency_key)
     .bind(SERVICE_NAME)
     .bind(ctx.requested_at)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
 
     let request_key: String =
         sqlx::query_scalar("SELECT idempotency_key FROM request_attempt WHERE request_id = $1")
             .bind(ctx.request_id)
-            .fetch_one(tx.as_mut())
+            .fetch_one(&mut tx.executor())
             .await?;
     if request_key != ctx.idempotency_key {
         return Err(SettlementError::RequestIdConflict);
@@ -73,7 +73,7 @@ pub(crate) async fn begin_operation(
         )
         .bind(ctx.request_id)
         .bind(ctx.requested_at)
-        .execute(tx.as_mut())
+        .execute(&mut tx.executor())
         .await?;
 
         let result =
@@ -101,13 +101,13 @@ pub(crate) async fn begin_operation(
     .bind(ctx.caused_by_capsuleer_id)
     .bind(&ctx.created_by_service)
     .bind(ctx.requested_at)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
 
     let operation_key: Option<String> =
         sqlx::query_scalar("SELECT idempotency_key FROM operation WHERE operation_id = $1")
             .bind(ctx.operation_id)
-            .fetch_one(tx.as_mut())
+            .fetch_one(&mut tx.executor())
             .await?;
     if operation_key.as_deref() != Some(ctx.idempotency_key.as_str()) {
         return Err(SettlementError::RequestIdConflict);
@@ -130,7 +130,7 @@ pub(crate) async fn finish_operation(
     )
     .bind(ctx.operation_id)
     .bind(ctx.requested_at)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
 
     sqlx::query(
@@ -142,7 +142,7 @@ pub(crate) async fn finish_operation(
     )
     .bind(ctx.request_id)
     .bind(ctx.requested_at)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
 
     sqlx::query(
@@ -154,7 +154,7 @@ pub(crate) async fn finish_operation(
     )
     .bind(&ctx.idempotency_key)
     .bind(ctx.requested_at)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
 
     sqlx::query(
@@ -178,7 +178,7 @@ pub(crate) async fn finish_operation(
     .bind(ids.item_stack_operation_id)
     .bind(ids.result_state)
     .bind(ctx.requested_at)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
 
     Ok(())
@@ -196,7 +196,7 @@ pub(crate) async fn load_idempotency_result(
         "#,
     )
     .bind(idempotency_key)
-    .fetch_optional(tx.as_mut())
+    .fetch_optional(&mut tx.executor())
     .await?)
 }
 

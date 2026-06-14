@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use sqlx::{Postgres, Transaction};
+use sqlx::Postgres;
 use uuid::Uuid;
 
 use crate::generated::eve_trade::{
@@ -46,7 +46,8 @@ pub(crate) const SETTLEMENT_PHASE_APPLYING_OWNERSHIP: i32 = 4;
 pub(crate) const SETTLEMENT_PHASE_WRITING_AUDIT: i32 = 5;
 pub(crate) const SETTLEMENT_PHASE_COMPLETED: i32 = 6;
 
-pub(crate) type DbTx<'a> = Transaction<'a, Postgres>;
+pub(crate) type DbPool = sqlx_tracing::Pool<Postgres>;
+pub(crate) type DbTx<'a> = sqlx_tracing::Transaction<'a, Postgres>;
 
 #[derive(Clone)]
 pub(crate) struct CommandContext {

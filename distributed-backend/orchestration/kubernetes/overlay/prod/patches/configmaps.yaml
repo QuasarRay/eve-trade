@@ -22,5 +22,10 @@ metadata:
   name: trade-settlement-config
 data:
   ENVIRONMENT: production
-  RUST_LOG: "info"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "https://api.honeycomb.io/v1/traces"
+  OTEL_SERVICE_NAME: "trade-settlement"
+  OTEL_TRACES_EXPORTER: "otlp"
+  HONEYCOMB_DATASET: "eve-trade-prod"
+  RUST_LOG: "info,sqlx=info,tonic=info,h2=warn,hyper=warn,trade_settlement=debug"
   RUST_BACKTRACE: "0"
+  TRACING_JSON: "true"

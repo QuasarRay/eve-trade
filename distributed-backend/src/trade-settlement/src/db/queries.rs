@@ -26,7 +26,7 @@ pub(crate) async fn lock_trade_instance(
         "#,
     )
     .bind(trade_instance_id)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?)
 }
 
@@ -45,7 +45,7 @@ pub(crate) async fn load_trade_instance(
         "#,
     )
     .bind(trade_instance_id)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?)
 }
 
@@ -71,7 +71,7 @@ pub(crate) async fn update_trade_state_and_remaining(
     .bind(trade_state)
     .bind(remaining_quantity)
     .bind(updated_at)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?)
 }
 
@@ -90,7 +90,7 @@ pub(crate) async fn lock_item_stack(
         "#,
     )
     .bind(item_stack_id)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?)
 }
 
@@ -114,7 +114,7 @@ pub(crate) async fn lock_or_create_item_stack(
         "#,
     )
     .bind(item_stack_id)
-    .fetch_optional(tx.as_mut())
+    .fetch_optional(&mut tx.executor())
     .await?
     {
         if row.region_id != region_id {
@@ -143,7 +143,7 @@ pub(crate) async fn lock_or_create_item_stack(
     .bind(checksum)
     .bind(CHECKSUM_ALGORITHM)
     .bind(created_at)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
 
     let row = lock_item_stack(tx, item_stack_id).await?;
@@ -169,7 +169,7 @@ pub(crate) async fn lock_wallet(
         "#,
     )
     .bind(wallet_id)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?)
 }
 
@@ -188,7 +188,7 @@ pub(crate) async fn lock_item_stack_escrow(
         "#,
     )
     .bind(item_stack_escrow_id)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?)
 }
 
@@ -207,7 +207,7 @@ pub(crate) async fn load_item_stack_escrows(
         "#,
     )
     .bind(trade_instance_id)
-    .fetch_all(tx.as_mut())
+    .fetch_all(&mut tx.executor())
     .await?)
 }
 
@@ -226,7 +226,7 @@ pub(crate) async fn load_wallet_escrows(
         "#,
     )
     .bind(trade_instance_id)
-    .fetch_all(tx.as_mut())
+    .fetch_all(&mut tx.executor())
     .await?)
 }
 
@@ -248,7 +248,7 @@ pub(crate) async fn create_wallet_operation(
     .bind(wallet_operation_id)
     .bind(operation_id)
     .bind(operation_kind)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
     Ok(wallet_operation_id)
 }
@@ -271,7 +271,7 @@ pub(crate) async fn create_item_stack_operation(
     .bind(item_stack_operation_id)
     .bind(operation_id)
     .bind(operation_kind)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
     Ok(item_stack_operation_id)
 }
@@ -316,7 +316,7 @@ pub(crate) async fn mutate_wallet(
     .bind(after_version)
     .bind(&after_checksum)
     .bind(CHECKSUM_ALGORITHM)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?;
 
     sqlx::query(
@@ -345,7 +345,7 @@ pub(crate) async fn mutate_wallet(
     .bind(after_version)
     .bind(&before.wallet_checksum)
     .bind(&after_checksum)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
 
     Ok(row)
@@ -400,7 +400,7 @@ pub(crate) async fn mutate_item_stack(
     .bind(&after_checksum)
     .bind(CHECKSUM_ALGORITHM)
     .bind(before.region_id)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?;
 
     sqlx::query(
@@ -428,7 +428,7 @@ pub(crate) async fn mutate_item_stack(
     .bind(after_version)
     .bind(&before.stack_checksum)
     .bind(&after_checksum)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
 
     Ok(row)
@@ -489,7 +489,7 @@ pub(crate) async fn insert_trade_transaction(
     .bind(unit_price_minor)
     .bind(total_price_minor)
     .bind(at)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?)
 }
 
@@ -512,7 +512,7 @@ pub(crate) async fn load_trade_transaction(
         "#,
     )
     .bind(trade_transaction_id)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?)
 }
 
@@ -547,7 +547,7 @@ pub(crate) async fn insert_settlement(
     .bind(at)
     .bind(failure_code)
     .bind(failure_message)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
     Ok(())
 }
@@ -581,7 +581,7 @@ pub(crate) async fn create_settlement_steps(
         .bind(id)
         .bind(settlement_id)
         .bind(name)
-        .fetch_one(tx.as_mut())
+        .fetch_one(&mut tx.executor())
         .await?;
         steps.push(settlement_step_proto(&row, phase));
     }
@@ -603,7 +603,7 @@ pub(crate) async fn load_settlement_steps(
         "#,
     )
     .bind(settlement_id)
-    .fetch_all(tx.as_mut())
+    .fetch_all(&mut tx.executor())
     .await?;
 
     Ok(rows
@@ -670,7 +670,7 @@ pub(crate) async fn create_trade_claims(
     .bind(seller_claim_id)
     .bind(seller_wallet_id)
     .bind(total_price_minor)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?;
 
     let claim_item_stack = sqlx::query_as::<_, TradeClaimItemStackRow>(
@@ -688,7 +688,7 @@ pub(crate) async fn create_trade_claims(
     .bind(item_type_id)
     .bind(destination_item_stack_id)
     .bind(quantity)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?;
 
     Ok((
@@ -724,7 +724,7 @@ pub(crate) async fn insert_trade_claim(
     .bind(settlement_id)
     .bind(claiming_capsuleer_id)
     .bind(at)
-    .fetch_one(tx.as_mut())
+    .fetch_one(&mut tx.executor())
     .await?)
 }
 
@@ -749,7 +749,7 @@ pub(crate) async fn load_trade_claims(
         "#,
     )
     .bind(trade_transaction_id)
-    .fetch_all(tx.as_mut())
+    .fetch_all(&mut tx.executor())
     .await?;
     let claim_ids: Vec<Uuid> = claims.iter().map(|claim| claim.trade_claim_id).collect();
 
@@ -766,7 +766,7 @@ pub(crate) async fn load_trade_claims(
             "#,
         )
         .bind(&claim_ids)
-        .fetch_all(tx.as_mut())
+        .fetch_all(&mut tx.executor())
         .await?
     };
 
@@ -783,7 +783,7 @@ pub(crate) async fn load_trade_claims(
             "#,
         )
         .bind(&claim_ids)
-        .fetch_all(tx.as_mut())
+        .fetch_all(&mut tx.executor())
         .await?
     };
 
@@ -812,7 +812,7 @@ pub(crate) async fn release_remaining_item_escrows(
         "#,
     )
     .bind(trade_instance_id)
-    .fetch_all(tx.as_mut())
+    .fetch_all(&mut tx.executor())
     .await?;
 
     if escrows.is_empty() {
@@ -847,7 +847,7 @@ pub(crate) async fn release_remaining_item_escrows(
         .bind(released_state)
         .bind(reason)
         .bind(at)
-        .fetch_one(tx.as_mut())
+        .fetch_one(&mut tx.executor())
         .await?;
         released.push(row);
     }
@@ -927,7 +927,7 @@ pub(crate) async fn insert_trade_state_change(
     .bind(kind)
     .bind(SERVICE_NAME)
     .bind(ctx.requested_at)
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
     Ok(())
 }
@@ -954,7 +954,7 @@ pub(crate) async fn insert_domain_event(
     .bind(aggregate_kind)
     .bind(aggregate_id.to_string())
     .bind(format!("{aggregate_kind}:{aggregate_id}"))
-    .execute(tx.as_mut())
+    .execute(&mut tx.executor())
     .await?;
     Ok(())
 }

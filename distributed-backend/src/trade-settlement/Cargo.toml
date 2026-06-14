@@ -10,9 +10,13 @@ async-stream = "0.3"
 chrono = { version = "0.4.45", features = ["clock"] }
 prost = "0.14"
 prost-types = "0.14.4"
+opentelemetry = "0.32"
+opentelemetry-otlp = { version = "0.32", default-features = false, features = ["trace", "http-proto", "reqwest-blocking-client", "reqwest-rustls"] }
+opentelemetry_sdk = { version = "0.32", features = ["trace", "rt-tokio"] }
 serde = { version = "1", features = ["derive"] }
 sha2 = "0.10"
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "any"] }
+sqlx-tracing = { version = "0.2.1", features = ["postgres"] }
 summer = "0.7.1"
 summer-grpc = "0.7.1"
 summer-sqlx = { version = "0.7.1", default-features = false, features = ["sqlx", "postgres", "runtime-tokio-rustls", "with-chrono", "with-uuid"] }
@@ -22,6 +26,9 @@ tokio-stream = "0.1"
 tonic = "0.14"
 tonic-prost = "0.14.6"
 tracing = "0.1"
+tracing-log = "0.2"
+tracing-opentelemetry = "0.33"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
 uuid = { version = "1.23.3", features = ["v4"] }
 
 [build-dependencies]

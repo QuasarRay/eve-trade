@@ -182,6 +182,13 @@ spec:
       containers:
         - name: trade-settlement
           imagePullPolicy: Always
+          env:
+            - name: HONEYCOMB_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: trade-settlement-observability
+                  key: HONEYCOMB_API_KEY
+                  optional: true
           resources:
             requests:
               cpu: 250m
