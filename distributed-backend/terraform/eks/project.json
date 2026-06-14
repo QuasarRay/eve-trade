@@ -1,0 +1,41 @@
+{
+  "name": "terraform-eks-default",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "distributed-backend/terraform/eks",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "inputs": ["{projectRoot}/**/*"],
+      "options": {
+        "cwd": "distributed-backend/terraform/eks",
+        "command": "terraform init"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "distributed-backend/terraform/eks",
+        "command": "terraform validate"
+      }
+    },
+    "test:integration": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "distributed-backend/terraform/eks",
+        "command": "exit 0"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "distributed-backend/terraform/eks",
+        "command": "exit 0"
+      }
+    }
+  },
+  "tags": ["terraform"]
+}
