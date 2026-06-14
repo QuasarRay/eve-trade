@@ -33,6 +33,21 @@ The renderer targets
 `distributed-backend/orchestration/kubernetes/overlay/prod`, not the base
 kustomization.
 
+Render the production Litmus chaos suite with:
+
+```powershell
+python ci-cd\pipeline.py render-chaos --output ci-cd\out\chaos-litmus.yaml
+```
+
+Run the Litmus suite against a cluster with:
+
+```powershell
+python ci-cd\pipeline.py chaos --namespace eve-trade --selector "chaos.eve-trade.io/suite=pod-resilience" --timeout-seconds 900
+```
+
+Chaos runs require the Litmus Chaos Operator CRDs, the `pod-delete`
+`ChaosExperiment` in the target namespace, and `KUBE_CONFIG_B64`.
+
 ## GitLab Variables
 
 GitLab provides `CI_REGISTRY`, `CI_REGISTRY_IMAGE`, `CI_REGISTRY_USER`,
@@ -45,6 +60,15 @@ Optional variables:
 - `IMAGE_REGISTRY`: overrides `CI_REGISTRY_IMAGE`.
 - `KUBE_CONFIG_B64`: base64-encoded kubeconfig for the manual deploy job.
 - `DEPLOY_ENVIRONMENT`: GitLab environment name, default `production`.
+- `CHAOS_NAMESPACE`: target namespace for production chaos, default `eve-trade`.
+- `CHAOS_SELECTOR`: label selector for Litmus `ChaosEngine` resources, default
+  `chaos.eve-trade.io/suite=pod-resilience`.
+- `CHAOS_TIMEOUT_SECONDS`: maximum wait for Litmus `ChaosResult` verdicts,
+  default `900`.
+- `CHAOS_CLEANUP`: set to `true` to delete selected `ChaosEngine` and
+  `ChaosResult` resources after a successful run.
+- `RUN_PRODUCTION_CHAOS`: set to `true` on scheduled default-branch pipelines to
+  run the production chaos job automatically.
 
 ## Pipeline Gates
 
@@ -55,3 +79,6 @@ Optional variables:
   the Python e2e suite.
 - `publish` publishes service images to the GitLab registry.
 - `deploy` applies the rendered kustomize tree after image tags are injected.
+- `chaos` applies stopped Litmus engines, activates the selected suite, waits for
+  all `ChaosResult` verdicts to pass, stops engines on failure or timeout, and
+  verifies deployments recover.

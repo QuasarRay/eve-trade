@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - rbac.yaml
+  - pod-delete-engines.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: eve-trade
+      app.kubernetes.io/managed-by: kustomize
+      chaos.eve-trade.io/managed-by: eve-trade-ci

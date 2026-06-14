@@ -427,6 +427,34 @@ kustomize build . > /out/kubernetes.yaml
         rendered = self.kubernetes_render_file("registry.local/eve-trade", "ci")
         await rendered.contents()
 
+    def chaos_render_file(self) -> dagger.File:
+        script = r"""
+set -eu
+rm -rf /tmp/kubernetes
+mkdir -p /out
+cp -R distributed-backend/orchestration/kubernetes /tmp/kubernetes
+cd /tmp/kubernetes/chaos/litmus/overlays/prod
+kustomize build . > /out/chaos-litmus.yaml
+"""
+        return (
+            self.client.container()
+            .from_(KUSTOMIZE_IMAGE)
+            .with_directory("/workspace", self.source)
+            .with_workdir("/workspace")
+            .with_exec(["sh", "-c", script])
+            .file("/out/chaos-litmus.yaml")
+        )
+
+    async def render_chaos(self, output: str) -> None:
+        rendered = self.chaos_render_file()
+        Path(output).parent.mkdir(parents=True, exist_ok=True)
+        await rendered.export(output, allow_parent_dir_path=True)
+        print(f"rendered Litmus chaos manifests to {output}", flush=True)
+
+    async def validate_chaos_render(self) -> None:
+        rendered = self.chaos_render_file()
+        await rendered.contents()
+
     async def deploy(self, registry: str, tag: str) -> None:
         kubeconfig = env("KUBE_CONFIG_B64")
         if not kubeconfig:
@@ -453,6 +481,171 @@ kubectl --kubeconfig /tmp/kubeconfig apply -k .
             .with_directory("/workspace", self.source)
             .with_workdir("/workspace")
             .with_secret_variable("KUBE_CONFIG_B64", kubeconfig_secret)
+            .with_exec(["sh", "-c", script]),
+        )
+
+    async def chaos(
+        self,
+        namespace: str,
+        selector: str,
+        timeout_seconds: int,
+        cleanup: bool,
+    ) -> None:
+        kubeconfig = env("KUBE_CONFIG_B64")
+        if not kubeconfig:
+            raise RuntimeError("KUBE_CONFIG_B64 is required for chaos")
+        if timeout_seconds < 300:
+            raise ValueError("chaos timeout must be at least 300 seconds")
+
+        kubeconfig_secret = self.client.set_secret("kubeconfig-b64", kubeconfig)
+        cleanup_value = "true" if cleanup else "false"
+        script = r"""
+set -eu
+
+KUBECONFIG_PATH=/tmp/kubeconfig
+printf '%s' "$KUBE_CONFIG_B64" | base64 -d > "$KUBECONFIG_PATH"
+chmod 600 "$KUBECONFIG_PATH"
+KUBECTL="kubectl --kubeconfig $KUBECONFIG_PATH"
+
+rm -rf /tmp/kubernetes
+cp -R distributed-backend/orchestration/kubernetes /tmp/kubernetes
+
+echo "Checking Kubernetes namespace and Litmus CRDs"
+$KUBECTL get namespace "$CHAOS_NAMESPACE" >/dev/null
+for crd in chaosengines.litmuschaos.io chaosresults.litmuschaos.io chaosexperiments.litmuschaos.io; do
+  $KUBECTL get crd "$crd" >/dev/null
+done
+
+echo "Checking steady state before chaos"
+for deploy in api-gateway market trade-settlement; do
+  $KUBECTL -n "$CHAOS_NAMESPACE" rollout status "deployment/$deploy" --timeout=180s
+done
+
+cd /tmp/kubernetes/chaos/litmus/overlays/prod
+
+echo "Resetting previously managed ChaosEngines selected by: $CHAOS_SELECTOR"
+$KUBECTL -n "$CHAOS_NAMESPACE" delete chaosengine -l "$CHAOS_SELECTOR" --ignore-not-found --wait=true
+$KUBECTL apply -k .
+
+engines="$($KUBECTL -n "$CHAOS_NAMESPACE" get chaosengine -l "$CHAOS_SELECTOR" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')"
+if [ -z "$engines" ]; then
+  echo "No ChaosEngines matched selector: $CHAOS_SELECTOR" >&2
+  exit 1
+fi
+
+: > /tmp/chaos-results
+for engine in $engines; do
+  experiments="$($KUBECTL -n "$CHAOS_NAMESPACE" get chaosengine "$engine" -o jsonpath='{range .spec.experiments[*]}{.name}{"\n"}{end}')"
+  for experiment in $experiments; do
+    echo "$engine $experiment ${engine}-${experiment}" >> /tmp/chaos-results
+  done
+done
+
+if [ ! -s /tmp/chaos-results ]; then
+  echo "Selected ChaosEngines do not contain experiments" >&2
+  exit 1
+fi
+
+echo "Checking installed Litmus ChaosExperiment resources"
+awk '{print $2}' /tmp/chaos-results | sort -u | while read -r experiment; do
+  $KUBECTL -n "$CHAOS_NAMESPACE" get chaosexperiment "$experiment" >/dev/null
+done
+
+echo "Removing stale ChaosResults for the selected run"
+while read -r engine experiment result; do
+  $KUBECTL -n "$CHAOS_NAMESPACE" delete chaosresult "$result" --ignore-not-found
+done < /tmp/chaos-results
+
+stop_engines() {
+  for engine in $engines; do
+    $KUBECTL -n "$CHAOS_NAMESPACE" patch chaosengine "$engine" --type merge -p '{"spec":{"engineState":"stop"}}' >/dev/null 2>&1 || true
+  done
+}
+
+print_results() {
+  while read -r engine experiment result; do
+    echo "--- ChaosResult: $result"
+    $KUBECTL -n "$CHAOS_NAMESPACE" get chaosresult "$result" -o yaml || true
+  done < /tmp/chaos-results
+}
+
+trap 'echo "Chaos run interrupted; stopping engines"; stop_engines' INT TERM
+
+echo "Activating selected ChaosEngines"
+for engine in $engines; do
+  $KUBECTL -n "$CHAOS_NAMESPACE" patch chaosengine "$engine" --type merge -p '{"spec":{"engineState":"active"}}' >/dev/null
+done
+
+deadline=$(( $(date +%s) + CHAOS_TIMEOUT_SECONDS ))
+while :; do
+  total=0
+  passed=0
+  failed=0
+
+  while read -r engine experiment result; do
+    total=$(( total + 1 ))
+    phase="$($KUBECTL -n "$CHAOS_NAMESPACE" get chaosresult "$result" -o jsonpath='{.status.experimentStatus.phase}' 2>/dev/null || true)"
+    verdict="$($KUBECTL -n "$CHAOS_NAMESPACE" get chaosresult "$result" -o jsonpath='{.status.experimentStatus.verdict}' 2>/dev/null || true)"
+    probes="$($KUBECTL -n "$CHAOS_NAMESPACE" get chaosresult "$result" -o jsonpath='{.status.experimentStatus.probeSuccessPercentage}' 2>/dev/null || true)"
+    echo "$result phase=${phase:-Pending} verdict=${verdict:-Awaited} probes=${probes:-n/a}"
+
+    case "$verdict" in
+      Pass)
+        passed=$(( passed + 1 ))
+        ;;
+      Fail|Stopped)
+        failed=$(( failed + 1 ))
+        ;;
+    esac
+  done < /tmp/chaos-results
+
+  if [ "$failed" -gt 0 ]; then
+    echo "At least one Litmus experiment failed; stopping chaos engines" >&2
+    stop_engines
+    print_results
+    exit 1
+  fi
+
+  if [ "$total" -gt 0 ] && [ "$passed" -eq "$total" ]; then
+    break
+  fi
+
+  if [ "$(date +%s)" -ge "$deadline" ]; then
+    echo "Timed out waiting for Litmus ChaosResults after ${CHAOS_TIMEOUT_SECONDS}s" >&2
+    stop_engines
+    print_results
+    exit 1
+  fi
+
+  sleep 15
+done
+
+echo "Litmus chaos verdicts passed; stopping engines and checking recovery"
+stop_engines
+for deploy in api-gateway market trade-settlement; do
+  $KUBECTL -n "$CHAOS_NAMESPACE" rollout status "deployment/$deploy" --timeout=240s
+done
+print_results
+
+if [ "$CHAOS_CLEANUP" = "true" ]; then
+  echo "Cleaning up selected Litmus chaos resources"
+  $KUBECTL -n "$CHAOS_NAMESPACE" delete chaosengine -l "$CHAOS_SELECTOR" --ignore-not-found --wait=true
+  while read -r engine experiment result; do
+    $KUBECTL -n "$CHAOS_NAMESPACE" delete chaosresult "$result" --ignore-not-found
+  done < /tmp/chaos-results
+fi
+"""
+        await self.run_container(
+            "run Litmus chaos suite",
+            self.client.container()
+            .from_(KUSTOMIZE_IMAGE)
+            .with_directory("/workspace", self.source)
+            .with_workdir("/workspace")
+            .with_secret_variable("KUBE_CONFIG_B64", kubeconfig_secret)
+            .with_env_variable("CHAOS_NAMESPACE", namespace)
+            .with_env_variable("CHAOS_SELECTOR", selector)
+            .with_env_variable("CHAOS_TIMEOUT_SECONDS", str(timeout_seconds))
+            .with_env_variable("CHAOS_CLEANUP", cleanup_value)
             .with_exec(["sh", "-c", script]),
         )
 
@@ -554,6 +747,7 @@ pytest distributed-backend/tests/e2e -q
         await self.proto_lint()
         await self.proto_generate_check()
         await self.validate_kubernetes_render()
+        await self.validate_chaos_render()
         await self.security_scan()
 
     async def test(self) -> None:
@@ -590,6 +784,37 @@ def parse_args() -> argparse.Namespace:
         help="Path to write rendered Kubernetes YAML.",
     )
 
+    render_chaos = subcommands.add_parser("render-chaos", parents=[shared])
+    render_chaos.add_argument(
+        "--output",
+        default="ci-cd/out/chaos-litmus.yaml",
+        help="Path to write rendered Litmus chaos YAML.",
+    )
+
+    chaos = subcommands.add_parser("chaos", parents=[shared])
+    chaos.add_argument(
+        "--namespace",
+        default=env("CHAOS_NAMESPACE", "eve-trade"),
+        help="Kubernetes namespace containing Eve Trade and the Litmus chaos experiments.",
+    )
+    chaos.add_argument(
+        "--selector",
+        default=env("CHAOS_SELECTOR", "chaos.eve-trade.io/suite=pod-resilience"),
+        help="Label selector identifying the ChaosEngines to activate.",
+    )
+    chaos.add_argument(
+        "--timeout-seconds",
+        type=int,
+        default=int(env("CHAOS_TIMEOUT_SECONDS", "900")),
+        help="Maximum time to wait for all selected ChaosResults to pass.",
+    )
+    chaos.add_argument(
+        "--cleanup",
+        action="store_true",
+        default=env("CHAOS_CLEANUP", "").lower() in {"1", "true", "yes"},
+        help="Delete selected ChaosEngines and ChaosResults after a successful run.",
+    )
+
     subcommands.add_parser("deploy", parents=[shared])
     return parser.parse_args()
 
@@ -617,6 +842,15 @@ async def run(args: argparse.Namespace) -> None:
             await pipeline.render_kubernetes(registry, tag, args.output)
         elif args.command == "deploy":
             await pipeline.deploy(registry, tag)
+        elif args.command == "render-chaos":
+            await pipeline.render_chaos(args.output)
+        elif args.command == "chaos":
+            await pipeline.chaos(
+                namespace=args.namespace,
+                selector=args.selector,
+                timeout_seconds=args.timeout_seconds,
+                cleanup=args.cleanup,
+            )
         else:
             raise ValueError(f"unknown command: {args.command}")
 

@@ -1,0 +1,116 @@
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: eve-trade-api-gateway
+  labels:
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/component: gateway
+    chaos.eve-trade.io/fault: pod-delete
+    chaos.eve-trade.io/suite: pod-resilience
+    chaos.eve-trade.io/target: api-gateway
+  annotations:
+    chaos.eve-trade.io/intent: "Validate API gateway recovery and service continuity after one graceful pod deletion."
+spec:
+  engineState: "stop"
+  annotationCheck: "false"
+  jobCleanUpPolicy: "delete"
+  appinfo:
+    appns: "eve-trade"
+    applabel: "app.kubernetes.io/name=api-gateway"
+    appkind: "deployment"
+  chaosServiceAccount: eve-trade-chaos-runner
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          env:
+            - name: TOTAL_CHAOS_DURATION
+              value: "30"
+            - name: CHAOS_INTERVAL
+              value: "10"
+            - name: FORCE
+              value: "false"
+            - name: PODS_AFFECTED_PERC
+              value: "0"
+            - name: SEQUENCE
+              value: "serial"
+            - name: RAMP_TIME
+              value: "10"
+---
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: eve-trade-market
+  labels:
+    app.kubernetes.io/name: market
+    app.kubernetes.io/component: market
+    chaos.eve-trade.io/fault: pod-delete
+    chaos.eve-trade.io/suite: pod-resilience
+    chaos.eve-trade.io/target: market
+  annotations:
+    chaos.eve-trade.io/intent: "Validate market service recovery while API gateway callers keep a stable backend target."
+spec:
+  engineState: "stop"
+  annotationCheck: "false"
+  jobCleanUpPolicy: "delete"
+  appinfo:
+    appns: "eve-trade"
+    applabel: "app.kubernetes.io/name=market"
+    appkind: "deployment"
+  chaosServiceAccount: eve-trade-chaos-runner
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          env:
+            - name: TOTAL_CHAOS_DURATION
+              value: "30"
+            - name: CHAOS_INTERVAL
+              value: "10"
+            - name: FORCE
+              value: "false"
+            - name: PODS_AFFECTED_PERC
+              value: "0"
+            - name: SEQUENCE
+              value: "serial"
+            - name: RAMP_TIME
+              value: "10"
+---
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: eve-trade-trade-settlement
+  labels:
+    app.kubernetes.io/name: trade-settlement
+    app.kubernetes.io/component: settlement
+    chaos.eve-trade.io/fault: pod-delete
+    chaos.eve-trade.io/suite: pod-resilience
+    chaos.eve-trade.io/target: trade-settlement
+  annotations:
+    chaos.eve-trade.io/intent: "Validate settlement gRPC recovery and connection re-establishment after one graceful pod deletion."
+spec:
+  engineState: "stop"
+  annotationCheck: "false"
+  jobCleanUpPolicy: "delete"
+  appinfo:
+    appns: "eve-trade"
+    applabel: "app.kubernetes.io/name=trade-settlement"
+    appkind: "deployment"
+  chaosServiceAccount: eve-trade-chaos-runner
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          env:
+            - name: TOTAL_CHAOS_DURATION
+              value: "30"
+            - name: CHAOS_INTERVAL
+              value: "10"
+            - name: FORCE
+              value: "false"
+            - name: PODS_AFFECTED_PERC
+              value: "0"
+            - name: SEQUENCE
+              value: "serial"
+            - name: RAMP_TIME
+              value: "10"

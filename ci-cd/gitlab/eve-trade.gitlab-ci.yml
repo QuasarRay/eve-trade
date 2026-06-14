@@ -10,11 +10,15 @@ stages:
   - build
   - publish
   - deploy
+  - chaos
 
 variables:
   DAGGER_VERSION: "0.21.6"
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
+  CHAOS_NAMESPACE: eve-trade
+  CHAOS_SELECTOR: "chaos.eve-trade.io/suite=pod-resilience"
+  CHAOS_TIMEOUT_SECONDS: "900"
   DEPLOY_ENVIRONMENT: production
   IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
@@ -46,6 +50,19 @@ validate:check:
   script:
     - . .ci-venv/bin/activate
     - python ci-cd/pipeline.py check
+
+validate:chaos:
+  extends: .dagger
+  stage: validate
+  script:
+    - . .ci-venv/bin/activate
+    - mkdir -p ci-cd/out
+    - python ci-cd/pipeline.py render-chaos --output ci-cd/out/chaos-litmus.yaml
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - ci-cd/out/chaos-litmus.yaml
 
 test:unit:
   extends: .dagger
@@ -115,6 +132,8 @@ deploy:production:
   needs:
     - deploy:render
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $RUN_PRODUCTION_CHAOS == "true"'
+      when: never
     - if: '$CI_COMMIT_TAG'
       when: manual
       variables:
@@ -126,3 +145,26 @@ deploy:production:
   script:
     - . .ci-venv/bin/activate
     - python ci-cd/pipeline.py deploy --tag "$IMAGE_TAG"
+
+chaos:production:
+  extends: .dagger
+  stage: chaos
+  allow_failure: false
+  interruptible: false
+  timeout: 30m
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $RUN_PRODUCTION_CHAOS == "true"'
+      when: on_success
+    - if: '$CI_COMMIT_TAG'
+      when: manual
+      variables:
+        IMAGE_TAG: "$CI_COMMIT_TAG"
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: manual
+  resource_group: production-chaos
+  environment:
+    name: $DEPLOY_ENVIRONMENT
+    action: verify
+  script:
+    - . .ci-venv/bin/activate
+    - python ci-cd/pipeline.py chaos --namespace "$CHAOS_NAMESPACE" --selector "$CHAOS_SELECTOR" --timeout-seconds "$CHAOS_TIMEOUT_SECONDS"

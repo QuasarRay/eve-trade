@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eve-trade-chaos-runner
+  labels:
+    app.kubernetes.io/name: eve-trade-chaos-runner
+    app.kubernetes.io/component: chaos
+    app.kubernetes.io/part-of: litmus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: eve-trade-chaos-runner
+  labels:
+    app.kubernetes.io/name: eve-trade-chaos-runner
+    app.kubernetes.io/component: chaos
+    app.kubernetes.io/part-of: litmus
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+      - patch
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - get
+      - list
+      - patch
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - pods/log
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods/exec
+    verbs:
+      - create
+      - get
+      - list
+  - apiGroups:
+      - apps
+    resources:
+      - daemonsets
+      - deployments
+      - replicasets
+      - statefulsets
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+  - apiGroups:
+      - litmuschaos.io
+    resources:
+      - chaosengines
+      - chaosexperiments
+      - chaosresults
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eve-trade-chaos-runner
+  labels:
+    app.kubernetes.io/name: eve-trade-chaos-runner
+    app.kubernetes.io/component: chaos
+    app.kubernetes.io/part-of: litmus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: eve-trade-chaos-runner
+subjects:
+  - kind: ServiceAccount
+    name: eve-trade-chaos-runner
