@@ -1,0 +1,96 @@
+mode: deployment
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
+
+fullnameOverride: eve-trade-otel-cluster
+
+namespaceOverride: eve-trade-observability
+
+clusterRole:
+  create: true
+
+extraEnvs:
+  - name: HONEYCOMB_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: honeycomb
+        key: api-key
+
+presets:
+  kubernetesAttributes:
+    enabled: true
+    extractAllPodLabels: true
+    extractAllPodAnnotations: false
+
+  clusterMetrics:
+    enabled: true
+
+  kubernetesEvents:
+    enabled: true
+
+ports:
+  otlp:
+    enabled: true
+    containerPort: 4317
+    servicePort: 4317
+    protocol: TCP
+
+  otlp-http:
+    enabled: true
+    containerPort: 4318
+    servicePort: 4318
+    protocol: TCP
+
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: ${env:MY_POD_IP}:4317
+        http:
+          endpoint: ${env:MY_POD_IP}:4318
+
+  processors:
+    memory_limiter:
+      check_interval: 5s
+      limit_percentage: 80
+      spike_limit_percentage: 25
+
+    batch:
+      timeout: 5s
+      send_batch_size: 8192
+
+    resource:
+      attributes:
+        - key: service.namespace
+          value: eve-trade
+          action: upsert
+        - key: deployment.environment.name
+          value: production
+          action: upsert
+
+  exporters:
+    otlphttp/honeycomb:
+      endpoint: https://api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+
+  service:
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, k8sattributes, resource, batch]
+        exporters: [otlphttp/honeycomb]
+
+      metrics:
+        receivers: [otlp, k8s_cluster]
+        processors: [memory_limiter, k8sattributes, resource, batch]
+        exporters: [otlphttp/honeycomb]
+
+      logs:
+        receivers: [otlp, k8sobjects]
+        processors: [memory_limiter, k8sattributes, resource, batch]
+        exporters: [otlphttp/honeycomb]

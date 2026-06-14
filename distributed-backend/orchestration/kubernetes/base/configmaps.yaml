@@ -8,6 +8,15 @@ metadata:
 data:
   API_GATEWAY_ADDR: ":8080"
   MARKET_URL: "http://market:8081"
+
+  OTEL_SERVICE_NAME: "api-gateway"
+  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://eve-trade-otel-cluster.eve-trade-observability.svc.cluster.local:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_LOGS_EXPORTER: "otlp"
+  OTEL_PROPAGATORS: "tracecontext,baggage"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -19,6 +28,15 @@ metadata:
 data:
   MARKET_ADDR: ":8081"
   SETTLEMENT_URL: "http://trade-settlement:9092"
+
+  OTEL_SERVICE_NAME: "market"
+  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://eve-trade-otel-cluster.eve-trade-observability.svc.cluster.local:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_LOGS_EXPORTER: "otlp"
+  OTEL_PROPAGATORS: "tracecontext,baggage"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -28,4 +46,15 @@ metadata:
     app.kubernetes.io/name: trade-settlement
     app.kubernetes.io/component: settlement
 data:
-  RUST_LOG: "info"
+  OTEL_SERVICE_NAME: "trade-settlement"
+  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://eve-trade-otel-cluster.eve-trade-observability.svc.cluster.local:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_LOGS_EXPORTER: "otlp"
+  OTEL_PROPAGATORS: "tracecontext,baggage"
+
+  RUST_LOG: "info,sqlx=info,tonic=info,h2=warn,hyper=warn,trade_settlement=debug"
+  RUST_BACKTRACE: "0"
+  TRACING_JSON: "true"

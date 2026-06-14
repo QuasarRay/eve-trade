@@ -1,0 +1,90 @@
+mode: daemonset
+
+image:
+  repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
+
+fullnameOverride: eve-trade-otel-daemonset
+
+namespaceOverride: eve-trade-observability
+
+clusterRole:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources:
+        - nodes
+        - nodes/proxy
+        - nodes/stats
+        - pods
+        - namespaces
+      verbs: ["get", "list", "watch"]
+
+extraEnvs:
+  - name: HONEYCOMB_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: honeycomb
+        key: api-key
+  - name: K8S_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+
+presets:
+  kubernetesAttributes:
+    enabled: true
+    extractAllPodLabels: true
+    extractAllPodAnnotations: false
+
+  kubeletMetrics:
+    enabled: true
+
+  logsCollection:
+    enabled: true
+    includeCollectorLogs: false
+
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: ${env:MY_POD_IP}:4317
+        http:
+          endpoint: ${env:MY_POD_IP}:4318
+
+  processors:
+    memory_limiter:
+      check_interval: 5s
+      limit_percentage: 80
+      spike_limit_percentage: 25
+
+    batch:
+      timeout: 5s
+      send_batch_size: 8192
+
+    resource:
+      attributes:
+        - key: service.namespace
+          value: eve-trade
+          action: upsert
+        - key: deployment.environment.name
+          value: production
+          action: upsert
+
+  exporters:
+    otlphttp/honeycomb:
+      endpoint: https://api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+
+  service:
+    pipelines:
+      metrics:
+        receivers: [otlp, kubeletstats]
+        processors: [memory_limiter, k8sattributes, resource, batch]
+        exporters: [otlphttp/honeycomb]
+
+      logs:
+        receivers: [otlp, filelog]
+        processors: [memory_limiter, k8sattributes, resource, batch]
+        exporters: [otlphttp/honeycomb]
