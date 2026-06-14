@@ -97,6 +97,13 @@ class SeedWorld:
     initial_issuer_wallet_major: Decimal
 
 
+@dataclass(frozen=True)
+class SeedBuyer:
+    buyer_id: int
+    buyer_wallet_id: str
+    initial_buyer_wallet_major: Decimal
+
+
 def env_flag(name: str, *, default: bool = False) -> bool:
     raw = os.environ.get(name)
     if raw is None:
@@ -368,6 +375,40 @@ class TradeDatabase:
             initial_source_quantity=source_quantity,
             initial_buyer_wallet_major=buyer_wallet_major,
             initial_issuer_wallet_major=issuer_wallet_major,
+        )
+
+    def seed_extra_buyer_wallet(
+        self,
+        *,
+        buyer_wallet_id: str,
+        buyer_id: int | None = None,
+        buyer_wallet_major: Decimal = Decimal("1000000.00"),
+    ) -> SeedBuyer:
+        buyer_id = buyer_id or unique_bigint()
+        self.execute(
+            """
+            INSERT INTO capsuleer (
+                capsuleer_id, capsuleer_name, projection_state, source_system,
+                source_version
+            )
+            VALUES (%s, %s, 'active', 'e2e', '1')
+            """,
+            (buyer_id, f"Competing Buyer {buyer_id}"),
+        )
+        self.execute(
+            """
+            INSERT INTO wallet (
+                wallet_id, capsuleer_id, wallet_kind, isk_amount, wallet_state,
+                wallet_checksum, checksum_algorithm
+            )
+            VALUES (%s, %s, 'personal', %s, 'active', 'seed-buyer', 'seed')
+            """,
+            (buyer_wallet_id, buyer_id, buyer_wallet_major),
+        )
+        return SeedBuyer(
+            buyer_id=buyer_id,
+            buyer_wallet_id=buyer_wallet_id,
+            initial_buyer_wallet_major=buyer_wallet_major,
         )
 
     def scenario_snapshot(self, ids) -> dict[str, Any]:

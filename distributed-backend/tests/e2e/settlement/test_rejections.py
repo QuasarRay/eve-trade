@@ -14,8 +14,10 @@ from helpers.assertions import (
 )
 from helpers.builders import (
     TradeScenarioIds,
+    expire_command,
     cancel_command,
     issue_command,
+    now_millis,
     operation_metadata,
     settle_command,
 )
@@ -57,6 +59,36 @@ def test_issue_with_insufficient_items_is_rejected_without_side_effects(
         proto,
         settlement_target,
         issue_command(proto, ids, world, total_quantity=5),
+    )
+
+    assert_result_rejected(
+        proto,
+        result,
+        error_code=proto.errors.ERROR_CODE_FAILED_PRECONDITION,
+        retryable=False,
+        message_contains="insufficient quantity",
+    )
+    assert_no_mutation(before, trade_db.scenario_snapshot(ids))
+    assert_no_trade_side_effects(trade_db, ids)
+
+
+def test_issue_with_huge_quantity_is_rejected_without_side_effects(
+    proto_modules, trade_db, settlement_target
+) -> None:
+    proto = proto_modules
+    ids = TradeScenarioIds()
+    world = trade_db.seed_basic_trade_world(
+        issuer_wallet_id=ids.issuer_wallet_id,
+        buyer_wallet_id=ids.buyer_wallet_id,
+        issuer_item_stack_id=ids.issuer_item_stack_id,
+        source_quantity=10,
+    )
+    before = trade_db.scenario_snapshot(ids)
+
+    result = single_settlement_response(
+        proto,
+        settlement_target,
+        issue_command(proto, ids, world, total_quantity=9_223_372_036_854_775_000),
     )
 
     assert_result_rejected(
@@ -131,6 +163,52 @@ def test_settle_with_price_mismatch_is_rejected_and_trade_remains_open(
         retryable=False,
     )
     assert_trade_state(trade_db, ids.trade_instance_id, state="outstanding", remaining=5)
+    assert_no_mutation(before, trade_db.scenario_snapshot(ids))
+    assert_value_conservation(trade_db, ids, world)
+
+
+def test_settle_with_total_price_overflow_is_rejected_without_side_effects(
+    proto_modules, trade_db, settlement_target
+) -> None:
+    proto = proto_modules
+    ids = TradeScenarioIds()
+    world = trade_db.seed_basic_trade_world(
+        issuer_wallet_id=ids.issuer_wallet_id,
+        buyer_wallet_id=ids.buyer_wallet_id,
+        issuer_item_stack_id=ids.issuer_item_stack_id,
+        source_quantity=10,
+    )
+    assert_result_committed(
+        proto,
+        single_settlement_response(
+            proto,
+            settlement_target,
+            issue_command(proto, ids, world, total_quantity=5, unit_price_minor=10_000),
+        ),
+        expected_oneof="issue_trade_instance",
+    )
+    before = trade_db.scenario_snapshot(ids)
+
+    rejected = single_settlement_response(
+        proto,
+        settlement_target,
+        settle_command(
+            proto,
+            ids,
+            world,
+            quantity=9_223_372_036_854_775,
+            unit_price_minor=9_223_372_036_854_775,
+            total_price_minor=0,
+        ),
+    )
+
+    assert_result_rejected(
+        proto,
+        rejected,
+        error_code=proto.errors.ERROR_CODE_VALIDATION_FAILED,
+        retryable=False,
+        message_contains="overflow",
+    )
     assert_no_mutation(before, trade_db.scenario_snapshot(ids))
     assert_value_conservation(trade_db, ids, world)
 
@@ -289,6 +367,51 @@ def test_wrong_actor_cannot_cancel_open_trade(
         error_code=proto.errors.ERROR_CODE_VALIDATION_FAILED,
         retryable=False,
         message_contains="only the issuer can cancel",
+    )
+    assert_no_mutation(before, trade_db.scenario_snapshot(ids))
+    assert_value_conservation(trade_db, ids, world)
+
+
+def test_expire_before_expiry_is_rejected_without_side_effects(
+    proto_modules, trade_db, settlement_target
+) -> None:
+    proto = proto_modules
+    ids = TradeScenarioIds()
+    world = trade_db.seed_basic_trade_world(
+        issuer_wallet_id=ids.issuer_wallet_id,
+        buyer_wallet_id=ids.buyer_wallet_id,
+        issuer_item_stack_id=ids.issuer_item_stack_id,
+    )
+    expires_at = now_millis() + 3_600_000
+    assert_result_committed(
+        proto,
+        single_settlement_response(
+            proto,
+            settlement_target,
+            issue_command(
+                proto,
+                ids,
+                world,
+                total_quantity=5,
+                expires_at_unix_millis=expires_at,
+            ),
+        ),
+        expected_oneof="issue_trade_instance",
+    )
+    before = trade_db.scenario_snapshot(ids)
+
+    rejected = single_settlement_response(
+        proto,
+        settlement_target,
+        expire_command(proto, ids, world, evaluated_at_unix_millis=expires_at - 1),
+    )
+
+    assert_result_rejected(
+        proto,
+        rejected,
+        error_code=proto.errors.ERROR_CODE_VALIDATION_FAILED,
+        retryable=False,
+        message_contains="has not reached its expiration time",
     )
     assert_no_mutation(before, trade_db.scenario_snapshot(ids))
     assert_value_conservation(trade_db, ids, world)

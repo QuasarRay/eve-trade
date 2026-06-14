@@ -279,6 +279,69 @@ def project_trade_interaction(proto, world, *, selected_quantity: int = 5):
     )
 
 
+def project_accept_interaction(
+    proto,
+    world,
+    ids: TradeScenarioIds,
+    *,
+    selected_quantity: int = 5,
+    unit_price_minor: int = 10_000,
+):
+    identity = proto.identity
+    return proto.project_interaction.ProjectTradeInteraction(
+        interaction_id=identity.ProjectTradeInteractionId(value=new_uuid()),
+        source_activity_id=identity.GameUiActivityId(value=new_uuid()),
+        correlation_id=identity.CorrelationId(value=f"e2e-{new_uuid()}"),
+        trace_id=identity.TraceId(value=f"e2e-{new_uuid()}"),
+        capsuleer_id=identity.CapsuleerId(value=world.buyer_id),
+        game_session_id=identity.GameSessionId(value=f"e2e-session-{new_uuid()}"),
+        interaction_kind=proto.project_interaction.PROJECT_TRADE_INTERACTION_KIND_PLAYER_ACCEPTED_VISIBLE_TRADE,
+        trade_window=proto.project_interaction.KNOWN_TRADE_WINDOW_MARKET_WINDOW,
+        trade_button=proto.project_interaction.KNOWN_TRADE_BUTTON_ACCEPT,
+        visible_trade_context=proto.project_interaction.VisibleTradeContext(
+            station_id=identity.StationId(value=world.station_id),
+            region_id=identity.RegionId(value=world.region_id),
+            trade_instance_id=identity.TradeInstanceId(value=ids.trade_instance_id),
+            wallet_id=identity.WalletId(value=ids.buyer_wallet_id),
+            source_item_stack_id=identity.ItemStackId(value=ids.issuer_item_stack_id),
+            destination_item_stack_id=identity.ItemStackId(
+                value=ids.buyer_destination_stack_id
+            ),
+        ),
+        typed_values=proto.project_interaction.PlayerTypedTradeValues(
+            quantity=proto.quantity.ItemQuantity(units=selected_quantity),
+            unit_price_isk=proto.money.IskAmount(minor_units=unit_price_minor),
+            total_price_isk=proto.money.IskAmount(
+                minor_units=selected_quantity * unit_price_minor
+            ),
+        ),
+        occurred_at_unix_millis=now_millis(),
+    )
+
+
+def project_cancel_interaction(proto, world, ids: TradeScenarioIds):
+    identity = proto.identity
+    return proto.project_interaction.ProjectTradeInteraction(
+        interaction_id=identity.ProjectTradeInteractionId(value=new_uuid()),
+        source_activity_id=identity.GameUiActivityId(value=new_uuid()),
+        correlation_id=identity.CorrelationId(value=f"e2e-{new_uuid()}"),
+        trace_id=identity.TraceId(value=f"e2e-{new_uuid()}"),
+        capsuleer_id=identity.CapsuleerId(value=world.issuer_id),
+        game_session_id=identity.GameSessionId(value=f"e2e-session-{new_uuid()}"),
+        interaction_kind=proto.project_interaction.PROJECT_TRADE_INTERACTION_KIND_PLAYER_CANCELLED_VISIBLE_TRADE,
+        trade_window=proto.project_interaction.KNOWN_TRADE_WINDOW_MARKET_WINDOW,
+        trade_button=proto.project_interaction.KNOWN_TRADE_BUTTON_CANCEL,
+        visible_trade_context=proto.project_interaction.VisibleTradeContext(
+            station_id=identity.StationId(value=world.station_id),
+            region_id=identity.RegionId(value=world.region_id),
+            trade_instance_id=identity.TradeInstanceId(value=ids.trade_instance_id),
+            wallet_id=identity.WalletId(value=ids.issuer_wallet_id),
+            source_item_stack_id=identity.ItemStackId(value=ids.issuer_item_stack_id),
+        ),
+        occurred_at_unix_millis=now_millis(),
+    )
+
+
 def game_trade_ui_activity(proto, world, *, selected_quantity: int = 5):
     identity = proto.identity
     fields = [
@@ -300,6 +363,74 @@ def game_trade_ui_activity(proto, world, *, selected_quantity: int = 5):
         activity_kind=proto.gateway_activity.GAME_TRADE_UI_ACTIVITY_KIND_ISSUE_BUTTON_PRESSED,
         raw_game_screen_name="market-window",
         raw_game_button_name="issue",
+        visible_fields=[
+            proto.gateway_activity.GameTradeUiField(
+                raw_game_field_name=name,
+                raw_game_field_value=value,
+            )
+            for name, value in fields
+        ],
+        occurred_at_unix_millis=now_millis(),
+    )
+
+
+def game_accept_ui_activity(
+    proto,
+    world,
+    ids: TradeScenarioIds,
+    *,
+    selected_quantity: int = 5,
+    unit_price_minor: int = 10_000,
+):
+    fields = [
+        ("trade_instance_id", ids.trade_instance_id),
+        ("station_id", str(world.station_id)),
+        ("region_id", str(world.region_id)),
+        ("wallet_id", ids.buyer_wallet_id),
+        ("destination_item_stack_id", ids.buyer_destination_stack_id),
+        ("quantity", str(selected_quantity)),
+        ("unit_price_isk", str(unit_price_minor)),
+        ("total_price_isk", str(selected_quantity * unit_price_minor)),
+    ]
+    identity = proto.identity
+    return proto.gateway_activity.GameTradeUiActivity(
+        activity_id=identity.GameUiActivityId(value=new_uuid()),
+        game_server_id=identity.GameServerId(value=f"e2e-server-{new_uuid()}"),
+        game_session_id=identity.GameSessionId(value=f"e2e-session-{new_uuid()}"),
+        capsuleer_id=identity.CapsuleerId(value=world.buyer_id),
+        game_ui_version=identity.GameUiVersion(value="e2e-ui-v1"),
+        activity_kind=proto.gateway_activity.GAME_TRADE_UI_ACTIVITY_KIND_ACCEPT_BUTTON_PRESSED,
+        raw_game_screen_name="market-window",
+        raw_game_button_name="accept",
+        visible_fields=[
+            proto.gateway_activity.GameTradeUiField(
+                raw_game_field_name=name,
+                raw_game_field_value=value,
+            )
+            for name, value in fields
+        ],
+        occurred_at_unix_millis=now_millis(),
+    )
+
+
+def game_cancel_ui_activity(proto, world, ids: TradeScenarioIds):
+    fields = [
+        ("trade_instance_id", ids.trade_instance_id),
+        ("station_id", str(world.station_id)),
+        ("region_id", str(world.region_id)),
+        ("wallet_id", ids.issuer_wallet_id),
+        ("item_stack_id", ids.issuer_item_stack_id),
+    ]
+    identity = proto.identity
+    return proto.gateway_activity.GameTradeUiActivity(
+        activity_id=identity.GameUiActivityId(value=new_uuid()),
+        game_server_id=identity.GameServerId(value=f"e2e-server-{new_uuid()}"),
+        game_session_id=identity.GameSessionId(value=f"e2e-session-{new_uuid()}"),
+        capsuleer_id=identity.CapsuleerId(value=world.issuer_id),
+        game_ui_version=identity.GameUiVersion(value="e2e-ui-v1"),
+        activity_kind=proto.gateway_activity.GAME_TRADE_UI_ACTIVITY_KIND_CANCEL_BUTTON_PRESSED,
+        raw_game_screen_name="market-window",
+        raw_game_button_name="cancel",
         visible_fields=[
             proto.gateway_activity.GameTradeUiField(
                 raw_game_field_name=name,

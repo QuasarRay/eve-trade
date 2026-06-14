@@ -739,6 +739,11 @@ pytest distributed-backend/tests/e2e -q
             .with_env_variable("EVE_TRADE_SETTLEMENT_GRPC", "trade-settlement:9092")
             .with_env_variable("EVE_TRADE_MARKET_GRPC", "market:8081")
             .with_env_variable("EVE_TRADE_GATEWAY_GRPC", "api-gateway:8080")
+            .with_env_variable("EVE_TRADE_E2E_PRODUCTION_GATE", "true")
+            .with_env_variable(
+                "EVE_TRADE_E2E_ARTIFACT_DIR",
+                "/workspace/ci-cd/out/e2e-artifacts",
+            )
             .with_exec(["sh", "-c", wait_and_test])
         )
         await self.run_container("live Python e2e tests", tests)

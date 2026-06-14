@@ -30,6 +30,10 @@ entrypoint:
 python ci-cd\pipeline.py integration
 ```
 
+That entrypoint sets `EVE_TRADE_E2E_PRODUCTION_GATE=true`. In production-gate
+mode pytest fails if the suite collects zero live tests, omits gateway/market/
+settlement live coverage, skips a live test, or enables local skip mode.
+
 ## Environment
 
 The defaults match the local integration stack:
@@ -51,3 +55,17 @@ To clear mutable tables once at session startup, set
 `EVE_TRADE_RESET_DATABASE=true`. Destructive reset is refused unless the
 database name contains `e2e`, `test`, `testing`, or `ci`, or
 `EVE_TRADE_ALLOW_DESTRUCTIVE_DB_RESET=true` is explicitly set.
+
+Failed live tests write JSON diagnostics under
+`.pytest_cache/eve_trade_e2e_artifacts` by default, or
+`EVE_TRADE_E2E_ARTIFACT_DIR` when set. The Dagger integration gate writes them
+to `ci-cd/out/e2e-artifacts`.
+
+## Governance
+
+- `docs/coverage_matrix.md` maps the canonical lifecycle `@` steps to tests.
+- `docs/taxonomy.md` defines what belongs in e2e, contract, integration, and
+  chaos coverage.
+- Contract tests fail if the matrix no longer mentions every canonical
+  lifecycle step or if the CI integration path stops enforcing production-gate
+  mode.

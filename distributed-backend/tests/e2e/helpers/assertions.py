@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from decimal import Decimal
 from pprint import pformat
 from typing import Any
@@ -23,6 +24,45 @@ SETTLEMENT_STEP_NAMES = [
 
 def minor_to_major(minor_units: int) -> Decimal:
     return Decimal(minor_units) / Decimal(100)
+
+
+def major_to_minor(major_units: Decimal) -> int:
+    return int(Decimal(major_units) * Decimal(100))
+
+
+def checksum(parts: list[str]) -> str:
+    digest = hashlib.sha256()
+    for part in parts:
+        digest.update(part.encode("utf-8"))
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def wallet_checksum(wallet_id: str, capsuleer_id: int, isk_minor: int, version: int) -> str:
+    return checksum(
+        ["wallet", wallet_id, str(capsuleer_id), str(isk_minor), str(version)]
+    )
+
+
+def item_stack_checksum(
+    item_stack_id: str,
+    owner_id: int,
+    item_type_id: int,
+    station_id: int,
+    quantity: int,
+    version: int,
+) -> str:
+    return checksum(
+        [
+            "item_stack",
+            item_stack_id,
+            str(owner_id),
+            str(item_type_id),
+            str(station_id),
+            str(quantity),
+            str(version),
+        ]
+    )
 
 
 def message_value(message) -> str:
@@ -192,6 +232,83 @@ def assert_value_conservation(db, ids, world) -> None:
         source_quantity + buyer_quantity + escrow_quantity
         == world.initial_source_quantity
     )
+    assert_ledger_reconciles_for_scenario(db, ids)
+
+
+def assert_ledger_reconciles_for_scenario(db, ids) -> None:
+    wallet_ids = [ids.issuer_wallet_id, ids.buyer_wallet_id]
+    wallets = db.fetch_all(
+        """
+        SELECT wallet_id, capsuleer_id, isk_amount, wallet_version, wallet_checksum,
+               checksum_algorithm
+        FROM wallet
+        WHERE wallet_id = ANY(%s::uuid[])
+        ORDER BY wallet_id
+        """,
+        (wallet_ids,),
+    )
+    for wallet in wallets:
+        assert wallet["checksum_algorithm"] in {"seed", "sha256-v1"}
+        if wallet["checksum_algorithm"] == "sha256-v1":
+            assert wallet["wallet_checksum"] == wallet_checksum(
+                str(wallet["wallet_id"]),
+                wallet["capsuleer_id"],
+                major_to_minor(Decimal(wallet["isk_amount"])),
+                wallet["wallet_version"],
+            )
+        last_ledger = db.fetch_one(
+            """
+            SELECT isk_amount_after, wallet_version_after, wallet_checksum_after
+            FROM wallet_ledger
+            WHERE wallet_id = %s
+            ORDER BY created_at DESC, wallet_ledger_id DESC
+            LIMIT 1
+            """,
+            (wallet["wallet_id"],),
+        )
+        if last_ledger is not None:
+            assert Decimal(last_ledger["isk_amount_after"]) == Decimal(
+                wallet["isk_amount"]
+            )
+            assert last_ledger["wallet_version_after"] == wallet["wallet_version"]
+            assert last_ledger["wallet_checksum_after"] == wallet["wallet_checksum"]
+
+    stack_ids = [ids.issuer_item_stack_id, ids.buyer_destination_stack_id]
+    stacks = db.fetch_all(
+        """
+        SELECT item_stack_id, owner_id, item_type_id, station_id, quantity,
+               stack_version, stack_checksum, checksum_algorithm
+        FROM item_stack
+        WHERE item_stack_id = ANY(%s::uuid[])
+        ORDER BY item_stack_id
+        """,
+        (stack_ids,),
+    )
+    for stack in stacks:
+        assert stack["checksum_algorithm"] in {"seed", "sha256-v1"}
+        if stack["checksum_algorithm"] == "sha256-v1":
+            assert stack["stack_checksum"] == item_stack_checksum(
+                str(stack["item_stack_id"]),
+                stack["owner_id"],
+                stack["item_type_id"],
+                stack["station_id"],
+                stack["quantity"],
+                stack["stack_version"],
+            )
+        last_ledger = db.fetch_one(
+            """
+            SELECT quantity_after, stack_version_after, stack_checksum_after
+            FROM item_stack_ledger
+            WHERE item_stack_id = %s
+            ORDER BY created_at DESC, item_stack_ledger_id DESC
+            LIMIT 1
+            """,
+            (stack["item_stack_id"],),
+        )
+        if last_ledger is not None:
+            assert last_ledger["quantity_after"] == stack["quantity"]
+            assert last_ledger["stack_version_after"] == stack["stack_version"]
+            assert last_ledger["stack_checksum_after"] == stack["stack_checksum"]
 
 
 def assert_issued_trade_visible_state(
@@ -384,7 +501,8 @@ def assert_issue_audit_complete(db, ids, command, *, quantity: int) -> None:
         db.fetch_all(
             """
             SELECT item_stack_id, entry_kind, quantity_delta, quantity_before,
-                   quantity_after, stack_version_after, stack_checksum_after
+                   quantity_after, owner_id, item_type_id, station_id,
+                   stack_version_after, stack_checksum_after
             FROM item_stack_ledger
             WHERE item_stack_operation_id = %s
             """,
@@ -397,7 +515,14 @@ def assert_issue_audit_complete(db, ids, command, *, quantity: int) -> None:
     assert ledger["quantity_before"] >= quantity
     assert ledger["quantity_after"] == ledger["quantity_before"] - quantity
     assert ledger["stack_version_after"] == 1
-    assert ledger["stack_checksum_after"]
+    assert ledger["stack_checksum_after"] == item_stack_checksum(
+        ids.issuer_item_stack_id,
+        ledger["owner_id"],
+        ledger["item_type_id"],
+        ledger["station_id"],
+        ledger["quantity_after"],
+        ledger["stack_version_after"],
+    )
 
     state_change = _single_row(
         db.fetch_all(
@@ -514,7 +639,8 @@ def assert_settlement_audit_complete(
     wallet_ledgers = db.fetch_all(
         """
         SELECT wallet_id, entry_kind, isk_amount_delta, isk_amount_before,
-               isk_amount_after, wallet_version_after, wallet_checksum_after
+               isk_amount_after, capsuleer_id, wallet_version_after,
+               wallet_checksum_after
         FROM wallet_ledger
         WHERE wallet_operation_id = %s
         ORDER BY entry_kind
@@ -533,7 +659,12 @@ def assert_settlement_audit_complete(
     assert str(deltas["trade_sale_credit"]["wallet_id"]) == ids.issuer_wallet_id
     for row in wallet_ledgers:
         assert row["wallet_version_after"] >= 1
-        assert row["wallet_checksum_after"]
+        assert row["wallet_checksum_after"] == wallet_checksum(
+            str(row["wallet_id"]),
+            row["capsuleer_id"],
+            major_to_minor(Decimal(row["isk_amount_after"])),
+            row["wallet_version_after"],
+        )
 
     item_op = _single_row(
         db.fetch_all(
@@ -551,7 +682,8 @@ def assert_settlement_audit_complete(
         db.fetch_all(
             """
             SELECT item_stack_id, entry_kind, quantity_delta, quantity_before,
-                   quantity_after, stack_version_after, stack_checksum_after
+                   quantity_after, owner_id, item_type_id, station_id,
+                   stack_version_after, stack_checksum_after
             FROM item_stack_ledger
             WHERE item_stack_operation_id = %s
             """,
@@ -563,7 +695,14 @@ def assert_settlement_audit_complete(
     assert item_ledger["quantity_delta"] == quantity
     assert item_ledger["quantity_after"] == item_ledger["quantity_before"] + quantity
     assert item_ledger["stack_version_after"] >= 1
-    assert item_ledger["stack_checksum_after"]
+    assert item_ledger["stack_checksum_after"] == item_stack_checksum(
+        ids.buyer_destination_stack_id,
+        item_ledger["owner_id"],
+        item_ledger["item_type_id"],
+        item_ledger["station_id"],
+        item_ledger["quantity_after"],
+        item_ledger["stack_version_after"],
+    )
 
     claims = db.fetch_all(
         """
@@ -685,7 +824,8 @@ def assert_terminal_audit_complete(
         db.fetch_all(
             """
             SELECT item_stack_id, entry_kind, quantity_delta, quantity_before,
-                   quantity_after, stack_version_after, stack_checksum_after
+                   quantity_after, owner_id, item_type_id, station_id,
+                   stack_version_after, stack_checksum_after
             FROM item_stack_ledger
             WHERE item_stack_operation_id = %s
             """,
@@ -700,7 +840,14 @@ def assert_terminal_audit_complete(
         == release_ledger["quantity_before"] + release_ledger["quantity_delta"]
     )
     assert release_ledger["stack_version_after"] >= 1
-    assert release_ledger["stack_checksum_after"]
+    assert release_ledger["stack_checksum_after"] == item_stack_checksum(
+        ids.issuer_item_stack_id,
+        release_ledger["owner_id"],
+        release_ledger["item_type_id"],
+        release_ledger["station_id"],
+        release_ledger["quantity_after"],
+        release_ledger["stack_version_after"],
+    )
 
 
 def assert_domain_event(
