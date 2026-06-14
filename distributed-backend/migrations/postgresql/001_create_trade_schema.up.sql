@@ -306,7 +306,7 @@ CREATE TABLE item_stack_escrow (
     escrow_state TEXT NOT NULL,
     release_reason TEXT,
     source_item_stack_id UUID NOT NULL REFERENCES item_stack(item_stack_id),
-    CONSTRAINT ck_item_stack_escrow_quantity_positive CHECK (quantity > 0),
+    CONSTRAINT ck_item_stack_escrow_quantity_positive CHECK (quantity >= 0),
     CONSTRAINT ck_item_stack_escrow_state_not_blank CHECK (btrim(escrow_state) <> ''),
     CONSTRAINT ck_item_stack_escrow_release_reason_not_blank CHECK (release_reason IS NULL OR btrim(release_reason) <> '')
 );
