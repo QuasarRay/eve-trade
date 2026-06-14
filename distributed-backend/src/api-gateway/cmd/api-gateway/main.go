@@ -36,7 +36,7 @@ func main() {
 		connect.WithInterceptors(clientInterceptor),
 	)
 
-	path, handler := gatewayv1connect.NewApiGatewayTradeServiceHandler(
+	path, handler := gatewayv1connect.NewGameTradeGatewayServiceHandler(
 		gateway.NewService(marketClient),
 		connect.WithInterceptors(serverInterceptor),
 	)
@@ -53,6 +53,11 @@ func main() {
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		slog.Error("api-gateway server failed", "error", err)
+
+		if shutdownErr := shutdownTelemetry(ctx); shutdownErr != nil {
+			slog.Error("failed to shutdown telemetry", "error", shutdownErr)
+		}
+
 		os.Exit(1)
 	}
 }
