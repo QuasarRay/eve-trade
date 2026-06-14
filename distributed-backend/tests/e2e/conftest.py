@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from helpers.db import TradeDatabase
+from helpers.db import TradeDatabase, env_flag
 from helpers.proto import compile_proto_stubs, load_proto_modules
 from helpers.services import require_tcp_service, service_target
 
@@ -20,15 +20,24 @@ def proto_modules(pytestconfig):
 def database_url() -> str:
     return os.environ.get(
         "EVE_TRADE_DATABASE_URL",
-        "postgres://postgres:postgres@localhost:5432/eve_trade",
+        "postgres://postgres:postgres@localhost:5432/eve_trade_e2e",
     )
 
 
+@pytest.fixture(scope="session")
+def database_preflight(database_url) -> None:
+    db = TradeDatabase.connect(database_url)
+    try:
+        db.assert_schema_ready()
+        if env_flag("EVE_TRADE_RESET_DATABASE"):
+            db.reset_mutable_state()
+    finally:
+        db.close()
+
+
 @pytest.fixture
-def trade_db(database_url):
-    db = TradeDatabase.connect_or_skip(database_url)
-    db.assert_schema_ready()
-    db.reset_mutable_state()
+def trade_db(database_url, database_preflight):
+    db = TradeDatabase.connect(database_url)
     yield db
     db.close()
 

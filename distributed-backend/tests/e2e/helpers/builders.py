@@ -60,6 +60,7 @@ def issue_command(
     *,
     total_quantity: int = 5,
     unit_price_minor: int = 10_000,
+    expires_at_unix_millis: int | None = None,
     metadata=None,
 ):
     identity = proto.identity
@@ -85,7 +86,11 @@ def issue_command(
         terms=proto.issue.IssueTradeInstanceTerms(
             total_quantity=proto.quantity.ItemQuantity(units=total_quantity),
             unit_price_isk=proto.money.IskAmount(minor_units=unit_price_minor),
-            expires_at_unix_millis=now_millis() + 3_600_000,
+            expires_at_unix_millis=(
+                expires_at_unix_millis
+                if expires_at_unix_millis is not None
+                else now_millis() + 3_600_000
+            ),
         ),
     )
     return proto.settlement_command.TradeSettlementCommand(
@@ -102,23 +107,38 @@ def settle_command(
     *,
     quantity: int,
     unit_price_minor: int = 10_000,
+    total_price_minor: int | None = None,
+    seller_capsuleer_id: int | None = None,
+    seller_wallet_id: str | None = None,
+    buyer_capsuleer_id: int | None = None,
+    buyer_wallet_id: str | None = None,
+    destination_item_stack_id: str | None = None,
     metadata=None,
 ):
     identity = proto.identity
+    seller_capsuleer_id = seller_capsuleer_id or world.issuer_id
+    seller_wallet_id = seller_wallet_id or ids.issuer_wallet_id
+    buyer_capsuleer_id = buyer_capsuleer_id or world.buyer_id
+    buyer_wallet_id = buyer_wallet_id or ids.buyer_wallet_id
+    destination_item_stack_id = (
+        destination_item_stack_id or ids.buyer_destination_stack_id
+    )
     metadata = metadata or operation_metadata(
         proto,
-        caused_by_capsuleer_id=world.buyer_id,
+        caused_by_capsuleer_id=buyer_capsuleer_id,
         purpose="settle-trade-instance",
     )
-    total_price_minor = quantity * unit_price_minor
+    total_price_minor = (
+        total_price_minor if total_price_minor is not None else quantity * unit_price_minor
+    )
     accepted = proto.accept.AcceptTradeInstanceCommand(
         metadata=metadata,
         row_ids=proto.accept.AcceptTradeInstanceRowIds(
             trade_instance_id=identity.TradeInstanceId(value=ids.trade_instance_id),
-            buyer_capsuleer_id=identity.CapsuleerId(value=world.buyer_id),
-            buyer_wallet_id=identity.WalletId(value=ids.buyer_wallet_id),
+            buyer_capsuleer_id=identity.CapsuleerId(value=buyer_capsuleer_id),
+            buyer_wallet_id=identity.WalletId(value=buyer_wallet_id),
             destination_item_stack_id=identity.ItemStackId(
-                value=ids.buyer_destination_stack_id
+                value=destination_item_stack_id
             ),
         ),
         terms=proto.accept.AcceptTradeInstanceTerms(
@@ -141,12 +161,12 @@ def settle_command(
             ),
             trade_transaction_id=identity.TradeTransactionId(value=ids.transaction_id),
             settlement_id=identity.SettlementId(value=ids.settlement_id),
-            seller_capsuleer_id=identity.CapsuleerId(value=world.issuer_id),
-            seller_wallet_id=identity.WalletId(value=ids.issuer_wallet_id),
-            buyer_capsuleer_id=identity.CapsuleerId(value=world.buyer_id),
-            buyer_wallet_id=identity.WalletId(value=ids.buyer_wallet_id),
+            seller_capsuleer_id=identity.CapsuleerId(value=seller_capsuleer_id),
+            seller_wallet_id=identity.WalletId(value=seller_wallet_id),
+            buyer_capsuleer_id=identity.CapsuleerId(value=buyer_capsuleer_id),
+            buyer_wallet_id=identity.WalletId(value=buyer_wallet_id),
             destination_item_stack_id=identity.ItemStackId(
-                value=ids.buyer_destination_stack_id
+                value=destination_item_stack_id
             ),
         ),
         terms=proto.settle.SettleTradeInstanceTerms(
@@ -164,18 +184,26 @@ def settle_command(
     )
 
 
-def cancel_command(proto, ids: TradeScenarioIds, world, *, metadata=None):
+def cancel_command(
+    proto,
+    ids: TradeScenarioIds,
+    world,
+    *,
+    requesting_capsuleer_id: int | None = None,
+    metadata=None,
+):
     identity = proto.identity
+    requesting_capsuleer_id = requesting_capsuleer_id or world.issuer_id
     metadata = metadata or operation_metadata(
         proto,
-        caused_by_capsuleer_id=world.issuer_id,
+        caused_by_capsuleer_id=requesting_capsuleer_id,
         purpose="cancel-trade-instance",
     )
     cancel = proto.cancel.CancelTradeInstanceCommand(
         metadata=metadata,
         row_ids=proto.cancel.CancelTradeInstanceRowIds(
             trade_instance_id=identity.TradeInstanceId(value=ids.trade_instance_id),
-            requesting_capsuleer_id=identity.CapsuleerId(value=world.issuer_id),
+            requesting_capsuleer_id=identity.CapsuleerId(value=requesting_capsuleer_id),
         ),
         reason="e2e cancellation",
     )
@@ -186,7 +214,14 @@ def cancel_command(proto, ids: TradeScenarioIds, world, *, metadata=None):
     )
 
 
-def expire_command(proto, ids: TradeScenarioIds, world, *, metadata=None):
+def expire_command(
+    proto,
+    ids: TradeScenarioIds,
+    world,
+    *,
+    evaluated_at_unix_millis: int | None = None,
+    metadata=None,
+):
     identity = proto.identity
     metadata = metadata or operation_metadata(
         proto,
@@ -198,7 +233,7 @@ def expire_command(proto, ids: TradeScenarioIds, world, *, metadata=None):
         row_ids=proto.expire.ExpireTradeInstanceRowIds(
             trade_instance_id=identity.TradeInstanceId(value=ids.trade_instance_id),
         ),
-        evaluated_at_unix_millis=now_millis(),
+        evaluated_at_unix_millis=evaluated_at_unix_millis or now_millis(),
     )
     return proto.settlement_command.TradeSettlementCommand(
         metadata=metadata,
@@ -253,7 +288,8 @@ def game_trade_ui_activity(proto, world, *, selected_quantity: int = 5):
         ("item_stack_id", world.issuer_item_stack_id),
         ("item_type_id", str(world.item_type_id)),
         ("quantity", str(selected_quantity)),
-        ("unit_price_minor_units", "10000"),
+        ("unit_price_isk", "10000"),
+        ("total_price_isk", str(selected_quantity * 10_000)),
     ]
     return proto.gateway_activity.GameTradeUiActivity(
         activity_id=identity.GameUiActivityId(value=new_uuid()),

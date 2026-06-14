@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from helpers.assertions import assert_issued_trade_visible_state
 from helpers.builders import TradeScenarioIds, game_trade_ui_activity
 from helpers.grpc_clients import single_gateway_response
 
@@ -24,9 +25,16 @@ def test_gateway_translates_game_ui_activity_and_returns_player_safe_result(
     result = single_gateway_response(proto, gateway_target, activity)
 
     assert result.activity_id.value == activity.activity_id.value
-    assert result.result_status in {
-        proto.gateway_activity.GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_ACCEPTED,
-        proto.gateway_activity.GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_REJECTED,
-        proto.gateway_activity.GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_RESULT_UNKNOWN,
-    }
+    assert (
+        result.result_status
+        == proto.gateway_activity.GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_ACCEPTED
+    )
     assert result.player_safe_message
+    assert result.player_safe_trade_reference.value
+    assert_issued_trade_visible_state(
+        trade_db,
+        result.player_safe_trade_reference.value,
+        world,
+        quantity=5,
+        unit_price_minor=10_000,
+    )

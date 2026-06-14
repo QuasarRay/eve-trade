@@ -655,15 +655,15 @@ fi
             .from_(POSTGRES_IMAGE)
             .with_env_variable("POSTGRES_USER", "postgres")
             .with_env_variable("POSTGRES_PASSWORD", "postgres")
-            .with_env_variable("POSTGRES_DB", "eve_trade")
+            .with_env_variable("POSTGRES_DB", "eve_trade_e2e")
             .with_exposed_port(5432)
             .as_service()
         )
 
         migrate_script = r"""
 set -euo pipefail
-until pg_isready -h postgres -U postgres -d eve_trade; do sleep 1; done
-psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 \
+until pg_isready -h postgres -U postgres -d eve_trade_e2e; do sleep 1; done
+psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
   -f distributed-backend/migrations/postgresql/001_create_trade_schema.up.sql
 """
         migrator = (
@@ -682,7 +682,7 @@ psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 \
             .with_service_binding("postgres", postgres)
             .with_env_variable(
                 "DATABASE_URL",
-                "postgres://postgres:postgres@postgres:5432/eve_trade",
+                "postgres://postgres:postgres@postgres:5432/eve_trade_e2e",
             )
             .as_service()
         )
@@ -734,7 +734,7 @@ pytest distributed-backend/tests/e2e -q
             .with_service_binding("api-gateway", gateway)
             .with_env_variable(
                 "EVE_TRADE_DATABASE_URL",
-                "postgres://postgres:postgres@postgres:5432/eve_trade",
+                "postgres://postgres:postgres@postgres:5432/eve_trade_e2e",
             )
             .with_env_variable("EVE_TRADE_SETTLEMENT_GRPC", "trade-settlement:9092")
             .with_env_variable("EVE_TRADE_MARKET_GRPC", "market:8081")

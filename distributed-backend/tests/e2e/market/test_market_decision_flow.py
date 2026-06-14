@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from helpers.assertions import assert_issued_trade_visible_state, assert_result_committed
 from helpers.builders import TradeScenarioIds, project_trade_interaction
 from helpers.grpc_clients import single_market_response
 
@@ -28,8 +29,20 @@ def test_market_projects_issue_interaction_into_settlement_decision(
         proto.operation_kind.TRADE_OPERATION_KIND_ISSUE_TRADE_INSTANCE
     )
     assert result.decision.WhichOneof("required_operation") == "issue_trade_instance"
-    assert result.settlement_result.attempt_status in {
-        proto.settlement_result.TRANSACTION_ATTEMPT_STATUS_COMMITTED,
-        proto.settlement_result.TRANSACTION_ATTEMPT_STATUS_REJECTED,
-        proto.settlement_result.TRANSACTION_ATTEMPT_STATUS_RESULT_UNKNOWN,
-    }
+    assert_result_committed(
+        proto,
+        result.settlement_result,
+        expected_oneof="issue_trade_instance",
+    )
+    assert result.error.code == proto.errors.ERROR_CODE_UNSPECIFIED
+    assert (
+        result.decision.issue_trade_instance.row_ids.trade_instance_id.value
+        == result.settlement_result.trade_instance_id.value
+    )
+    assert_issued_trade_visible_state(
+        trade_db,
+        result.settlement_result.trade_instance_id.value,
+        world,
+        quantity=5,
+        unit_price_minor=10_000,
+    )
