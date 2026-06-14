@@ -6,6 +6,15 @@ data:
   ENVIRONMENT: production
   API_GATEWAY_ADDR: ":8080"
   MARKET_URL: "http://market.eve-trade.svc.cluster.local:8081"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.eve-trade-observability.svc.cluster.local:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_LOGS_EXPORTER: "otlp"
+  OTEL_PROPAGATORS: "tracecontext,baggage"
+  DEPLOYMENT_ENVIRONMENT: "production"
+  OTEL_SERVICE_NAME: "api-gateway"
+  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -15,6 +24,15 @@ data:
   ENVIRONMENT: production
   MARKET_ADDR: ":8081"
   SETTLEMENT_URL: "http://trade-settlement.eve-trade.svc.cluster.local:9092"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.eve-trade-observability.svc.cluster.local:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_LOGS_EXPORTER: "otlp"
+  OTEL_PROPAGATORS: "tracecontext,baggage"
+  DEPLOYMENT_ENVIRONMENT: "production"
+  OTEL_SERVICE_NAME: "market"
+  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -22,10 +40,15 @@ metadata:
   name: trade-settlement-config
 data:
   ENVIRONMENT: production
-  OTEL_EXPORTER_OTLP_ENDPOINT: "https://api.honeycomb.io/v1/traces"
-  OTEL_SERVICE_NAME: "trade-settlement"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.eve-trade-observability.svc.cluster.local:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
   OTEL_TRACES_EXPORTER: "otlp"
-  HONEYCOMB_DATASET: "eve-trade-prod"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_LOGS_EXPORTER: "otlp"
+  OTEL_PROPAGATORS: "tracecontext,baggage"
+  DEPLOYMENT_ENVIRONMENT: "production"
+  OTEL_SERVICE_NAME: "trade-settlement"
   RUST_LOG: "info,sqlx=info,tonic=info,h2=warn,hyper=warn,trade_settlement=debug"
   RUST_BACKTRACE: "0"
   TRACING_JSON: "true"
+  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
