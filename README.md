@@ -1,16 +1,37 @@
 # eve-trade
 
-eve-trade is a modular MMORPG trade-system in development, which integrates into a game-server, receives trade requests from that game-server, performs them, and returns a response.
+`eve-trade` is a modular MMORPG trade system in development. It is designed to integrate with a game server, receive trade requests from that game server, process them through distributed backend services, perform durable settlement operations, and return a result.
 
 ## Goal
 
-incrementally grow into a production ready trade-system that is compatible with the trade system of EVE Online
+The goal of `eve-trade` is to incrementally grow into a production-ready MMORPG trade system inspired by EVE Online-style market and trade mechanics.
+
+The project focuses on the backend and platform engineering problems behind player trading: service boundaries, settlement reliability, database-backed ownership transfer, message-driven workflows, observability, chaos testing, CI/CD automation, Kubernetes orchestration, and cloud deployment infrastructure.
 
 ## Current Status
 
-This project is currently capable of performing a trade request lifecycle starting from api-gateway receiving requests from game server, and translating it to a language that this system can understand by using proto file convention as reference. api-gateway sends the requests to market microservice, which defines the trade mechanics, and makes decisions and sends them to trade settlemenmt. trade-settlement is a separate microservice that is entirely decoupled from trade logic and is responsible for ensuring the reliability of database transactions, transferring item ownership from one capsuleer to another, transferring ISK from one wallet to another, escrowing items and ISK.
+`eve-trade` is currently capable of performing a trade request lifecycle starting from the API Gateway receiving a request from a game server.
 
-This project users Kubernetes to orchestrate containers. It uses Kustomize to organize the manifests into separate categories for observability, chaos engineering, network, and production overlay. This project uses Honeycomb and OpenTelemetry for obserability, Litmus for Chaos engineering to ensure the system can perform despite individual component failure. eve-trade uses Dagger to enable CI/CD pipelines to be written using Python to give the developer more freedom and flexibility to implement complex operations and leverages GitLab to unify the entire continuous integration and deployment of the project. It also uses Rabbitmq as the primary message broker for this project.
+The API Gateway translates the request into the internal protocol convention defined by the project’s protobuf contracts, then forwards it to the Market service. The Market service owns trade-mechanic decisions and sends settlement requests to `trade-settlement`.
 
+`trade-settlement` is a separate microservice decoupled from market trade logic. Its responsibility is to protect correctness-critical persistence: reliable database transactions, item ownership transfer, ISK wallet transfer, escrow handling, and settlement state management.
 
-# The Project contains Terraform manifests to setup an AWS EKS cluster and deploy eve-trade on AWS Cloud to perform MMORPG Trades on large scale.
+## Platform Capabilities
+
+The project uses Kubernetes to orchestrate containers and Kustomize to organize manifests across application deployment, networking, observability, chaos engineering, and production overlays.
+
+The platform side currently includes:
+
+* Kubernetes manifests for service orchestration
+* Kustomize-based manifest organization
+* RabbitMQ as the primary message broker
+* Honeycomb and OpenTelemetry for observability and tracing
+* Litmus for chaos engineering experiments
+* Dagger-based CI/CD pipeline logic written in Python
+* GitLab CI/CD integration for pipeline execution
+* Terraform manifests for provisioning AWS infrastructure
+* EKS deployment foundation for running the system on AWS
+
+## AWS / EKS Infrastructure
+
+The project includes Terraform manifests for provisioning AWS infrastructure required to deploy `eve-trade` on AWS, including an EKS-based Kubernetes environment. This gives the project a cloud deployment path instead of limiting it to local Docker or static Kubernetes manifests.
