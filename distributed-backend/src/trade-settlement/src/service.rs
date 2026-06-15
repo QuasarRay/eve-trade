@@ -53,10 +53,9 @@ impl TradeSettlementService for TradeSettlementGrpc {
                         db::execute_trade_settlement_command(&pool, command.clone())
                             .instrument(span.clone())
                             .await
-                            .map(|result| {
-                                record_result(&span, &result);
+                            .inspect(|result| {
+                                record_result(&span, result);
                                 tracing::info!(parent: &span, "settlement command completed");
-                                result
                             })
                             .unwrap_or_else(|err| {
                                 span.record("error", true);

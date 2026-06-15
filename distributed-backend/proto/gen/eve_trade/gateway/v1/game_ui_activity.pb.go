@@ -8,6 +8,7 @@ package gatewayv1
 
 import (
 	v1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/common/v1"
+	v11 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/domain/trade/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -74,28 +75,89 @@ func (GameTradeUiActivityKind) EnumDescriptor() ([]byte, []int) {
 	return file_eve_trade_gateway_v1_game_ui_activity_proto_rawDescGZIP(), []int{0}
 }
 
+type GameTradeCommandKind int32
+
+const (
+	GameTradeCommandKind_GAME_TRADE_COMMAND_KIND_UNSPECIFIED  GameTradeCommandKind = 0
+	GameTradeCommandKind_GAME_TRADE_COMMAND_KIND_ISSUE_TRADE  GameTradeCommandKind = 1
+	GameTradeCommandKind_GAME_TRADE_COMMAND_KIND_ACCEPT_TRADE GameTradeCommandKind = 2
+	GameTradeCommandKind_GAME_TRADE_COMMAND_KIND_CANCEL_TRADE GameTradeCommandKind = 3
+)
+
+// Enum value maps for GameTradeCommandKind.
+var (
+	GameTradeCommandKind_name = map[int32]string{
+		0: "GAME_TRADE_COMMAND_KIND_UNSPECIFIED",
+		1: "GAME_TRADE_COMMAND_KIND_ISSUE_TRADE",
+		2: "GAME_TRADE_COMMAND_KIND_ACCEPT_TRADE",
+		3: "GAME_TRADE_COMMAND_KIND_CANCEL_TRADE",
+	}
+	GameTradeCommandKind_value = map[string]int32{
+		"GAME_TRADE_COMMAND_KIND_UNSPECIFIED":  0,
+		"GAME_TRADE_COMMAND_KIND_ISSUE_TRADE":  1,
+		"GAME_TRADE_COMMAND_KIND_ACCEPT_TRADE": 2,
+		"GAME_TRADE_COMMAND_KIND_CANCEL_TRADE": 3,
+	}
+)
+
+func (x GameTradeCommandKind) Enum() *GameTradeCommandKind {
+	p := new(GameTradeCommandKind)
+	*p = x
+	return p
+}
+
+func (x GameTradeCommandKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (GameTradeCommandKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_eve_trade_gateway_v1_game_ui_activity_proto_enumTypes[1].Descriptor()
+}
+
+func (GameTradeCommandKind) Type() protoreflect.EnumType {
+	return &file_eve_trade_gateway_v1_game_ui_activity_proto_enumTypes[1]
+}
+
+func (x GameTradeCommandKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use GameTradeCommandKind.Descriptor instead.
+func (GameTradeCommandKind) EnumDescriptor() ([]byte, []int) {
+	return file_eve_trade_gateway_v1_game_ui_activity_proto_rawDescGZIP(), []int{1}
+}
+
 type GameTradeUiActivityResultStatus int32
 
 const (
-	GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_UNSPECIFIED    GameTradeUiActivityResultStatus = 0
-	GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_ACCEPTED       GameTradeUiActivityResultStatus = 1
-	GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_REJECTED       GameTradeUiActivityResultStatus = 2
+	GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_UNSPECIFIED GameTradeUiActivityResultStatus = 0
+	// The gateway, market, and settlement path produced a definite committed result.
+	GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_APPLIED GameTradeUiActivityResultStatus = 1
+	// The activity was understood, but rejected by validation, market rules,
+	// settlement rules, permissions, or lifecycle constraints.
+	GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_REJECTED GameTradeUiActivityResultStatus = 2
+	// The gateway cannot safely tell whether the command was applied.
+	// The game server should reconcile by idempotency key or trade instance ID.
 	GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_RESULT_UNKNOWN GameTradeUiActivityResultStatus = 3
+	// The gateway definitely failed before producing a domain result.
+	GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_FAILED GameTradeUiActivityResultStatus = 4
 )
 
 // Enum value maps for GameTradeUiActivityResultStatus.
 var (
 	GameTradeUiActivityResultStatus_name = map[int32]string{
 		0: "GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_UNSPECIFIED",
-		1: "GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_ACCEPTED",
+		1: "GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_APPLIED",
 		2: "GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_REJECTED",
 		3: "GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_RESULT_UNKNOWN",
+		4: "GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_FAILED",
 	}
 	GameTradeUiActivityResultStatus_value = map[string]int32{
 		"GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_UNSPECIFIED":    0,
-		"GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_ACCEPTED":       1,
+		"GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_APPLIED":        1,
 		"GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_REJECTED":       2,
 		"GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_RESULT_UNKNOWN": 3,
+		"GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_FAILED":         4,
 	}
 )
 
@@ -110,11 +172,11 @@ func (x GameTradeUiActivityResultStatus) String() string {
 }
 
 func (GameTradeUiActivityResultStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_eve_trade_gateway_v1_game_ui_activity_proto_enumTypes[1].Descriptor()
+	return file_eve_trade_gateway_v1_game_ui_activity_proto_enumTypes[2].Descriptor()
 }
 
 func (GameTradeUiActivityResultStatus) Type() protoreflect.EnumType {
-	return &file_eve_trade_gateway_v1_game_ui_activity_proto_enumTypes[1]
+	return &file_eve_trade_gateway_v1_game_ui_activity_proto_enumTypes[2]
 }
 
 func (x GameTradeUiActivityResultStatus) Number() protoreflect.EnumNumber {
@@ -123,7 +185,132 @@ func (x GameTradeUiActivityResultStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GameTradeUiActivityResultStatus.Descriptor instead.
 func (GameTradeUiActivityResultStatus) EnumDescriptor() ([]byte, []int) {
-	return file_eve_trade_gateway_v1_game_ui_activity_proto_rawDescGZIP(), []int{1}
+	return file_eve_trade_gateway_v1_game_ui_activity_proto_rawDescGZIP(), []int{2}
+}
+
+type GameTradeRejectionCode int32
+
+const (
+	GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_UNSPECIFIED               GameTradeRejectionCode = 0
+	GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_UNSUPPORTED_ACTIVITY_KIND GameTradeRejectionCode = 1
+	GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_MALFORMED_ACTIVITY        GameTradeRejectionCode = 2
+	GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_MISSING_REQUIRED_FIELD    GameTradeRejectionCode = 3
+	GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_MARKET_RULE_REJECTED      GameTradeRejectionCode = 4
+	GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_SETTLEMENT_REJECTED       GameTradeRejectionCode = 5
+	GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_TRADE_NOT_FOUND           GameTradeRejectionCode = 6
+	GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_TRADE_NOT_OUTSTANDING     GameTradeRejectionCode = 7
+	GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_CAPSULEER_NOT_ALLOWED     GameTradeRejectionCode = 8
+	GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_IDEMPOTENCY_CONFLICT      GameTradeRejectionCode = 9
+)
+
+// Enum value maps for GameTradeRejectionCode.
+var (
+	GameTradeRejectionCode_name = map[int32]string{
+		0: "GAME_TRADE_REJECTION_CODE_UNSPECIFIED",
+		1: "GAME_TRADE_REJECTION_CODE_UNSUPPORTED_ACTIVITY_KIND",
+		2: "GAME_TRADE_REJECTION_CODE_MALFORMED_ACTIVITY",
+		3: "GAME_TRADE_REJECTION_CODE_MISSING_REQUIRED_FIELD",
+		4: "GAME_TRADE_REJECTION_CODE_MARKET_RULE_REJECTED",
+		5: "GAME_TRADE_REJECTION_CODE_SETTLEMENT_REJECTED",
+		6: "GAME_TRADE_REJECTION_CODE_TRADE_NOT_FOUND",
+		7: "GAME_TRADE_REJECTION_CODE_TRADE_NOT_OUTSTANDING",
+		8: "GAME_TRADE_REJECTION_CODE_CAPSULEER_NOT_ALLOWED",
+		9: "GAME_TRADE_REJECTION_CODE_IDEMPOTENCY_CONFLICT",
+	}
+	GameTradeRejectionCode_value = map[string]int32{
+		"GAME_TRADE_REJECTION_CODE_UNSPECIFIED":               0,
+		"GAME_TRADE_REJECTION_CODE_UNSUPPORTED_ACTIVITY_KIND": 1,
+		"GAME_TRADE_REJECTION_CODE_MALFORMED_ACTIVITY":        2,
+		"GAME_TRADE_REJECTION_CODE_MISSING_REQUIRED_FIELD":    3,
+		"GAME_TRADE_REJECTION_CODE_MARKET_RULE_REJECTED":      4,
+		"GAME_TRADE_REJECTION_CODE_SETTLEMENT_REJECTED":       5,
+		"GAME_TRADE_REJECTION_CODE_TRADE_NOT_FOUND":           6,
+		"GAME_TRADE_REJECTION_CODE_TRADE_NOT_OUTSTANDING":     7,
+		"GAME_TRADE_REJECTION_CODE_CAPSULEER_NOT_ALLOWED":     8,
+		"GAME_TRADE_REJECTION_CODE_IDEMPOTENCY_CONFLICT":      9,
+	}
+)
+
+func (x GameTradeRejectionCode) Enum() *GameTradeRejectionCode {
+	p := new(GameTradeRejectionCode)
+	*p = x
+	return p
+}
+
+func (x GameTradeRejectionCode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (GameTradeRejectionCode) Descriptor() protoreflect.EnumDescriptor {
+	return file_eve_trade_gateway_v1_game_ui_activity_proto_enumTypes[3].Descriptor()
+}
+
+func (GameTradeRejectionCode) Type() protoreflect.EnumType {
+	return &file_eve_trade_gateway_v1_game_ui_activity_proto_enumTypes[3]
+}
+
+func (x GameTradeRejectionCode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use GameTradeRejectionCode.Descriptor instead.
+func (GameTradeRejectionCode) EnumDescriptor() ([]byte, []int) {
+	return file_eve_trade_gateway_v1_game_ui_activity_proto_rawDescGZIP(), []int{3}
+}
+
+type GameTradeResultUnknownReason int32
+
+const (
+	GameTradeResultUnknownReason_GAME_TRADE_RESULT_UNKNOWN_REASON_UNSPECIFIED                  GameTradeResultUnknownReason = 0
+	GameTradeResultUnknownReason_GAME_TRADE_RESULT_UNKNOWN_REASON_MARKET_TIMEOUT               GameTradeResultUnknownReason = 1
+	GameTradeResultUnknownReason_GAME_TRADE_RESULT_UNKNOWN_REASON_SETTLEMENT_TIMEOUT           GameTradeResultUnknownReason = 2
+	GameTradeResultUnknownReason_GAME_TRADE_RESULT_UNKNOWN_REASON_TRANSPORT_ERROR_AFTER_SUBMIT GameTradeResultUnknownReason = 3
+	GameTradeResultUnknownReason_GAME_TRADE_RESULT_UNKNOWN_REASON_CONSISTENCY_CHECK_FAILED     GameTradeResultUnknownReason = 4
+)
+
+// Enum value maps for GameTradeResultUnknownReason.
+var (
+	GameTradeResultUnknownReason_name = map[int32]string{
+		0: "GAME_TRADE_RESULT_UNKNOWN_REASON_UNSPECIFIED",
+		1: "GAME_TRADE_RESULT_UNKNOWN_REASON_MARKET_TIMEOUT",
+		2: "GAME_TRADE_RESULT_UNKNOWN_REASON_SETTLEMENT_TIMEOUT",
+		3: "GAME_TRADE_RESULT_UNKNOWN_REASON_TRANSPORT_ERROR_AFTER_SUBMIT",
+		4: "GAME_TRADE_RESULT_UNKNOWN_REASON_CONSISTENCY_CHECK_FAILED",
+	}
+	GameTradeResultUnknownReason_value = map[string]int32{
+		"GAME_TRADE_RESULT_UNKNOWN_REASON_UNSPECIFIED":                  0,
+		"GAME_TRADE_RESULT_UNKNOWN_REASON_MARKET_TIMEOUT":               1,
+		"GAME_TRADE_RESULT_UNKNOWN_REASON_SETTLEMENT_TIMEOUT":           2,
+		"GAME_TRADE_RESULT_UNKNOWN_REASON_TRANSPORT_ERROR_AFTER_SUBMIT": 3,
+		"GAME_TRADE_RESULT_UNKNOWN_REASON_CONSISTENCY_CHECK_FAILED":     4,
+	}
+)
+
+func (x GameTradeResultUnknownReason) Enum() *GameTradeResultUnknownReason {
+	p := new(GameTradeResultUnknownReason)
+	*p = x
+	return p
+}
+
+func (x GameTradeResultUnknownReason) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (GameTradeResultUnknownReason) Descriptor() protoreflect.EnumDescriptor {
+	return file_eve_trade_gateway_v1_game_ui_activity_proto_enumTypes[4].Descriptor()
+}
+
+func (GameTradeResultUnknownReason) Type() protoreflect.EnumType {
+	return &file_eve_trade_gateway_v1_game_ui_activity_proto_enumTypes[4]
+}
+
+func (x GameTradeResultUnknownReason) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use GameTradeResultUnknownReason.Descriptor instead.
+func (GameTradeResultUnknownReason) EnumDescriptor() ([]byte, []int) {
+	return file_eve_trade_gateway_v1_game_ui_activity_proto_rawDescGZIP(), []int{4}
 }
 
 type GameTradeUiField struct {
@@ -190,8 +377,13 @@ type GameTradeUiActivity struct {
 	RawGameButtonName    string                  `protobuf:"bytes,8,opt,name=raw_game_button_name,json=rawGameButtonName,proto3" json:"raw_game_button_name,omitempty"`
 	VisibleFields        []*GameTradeUiField     `protobuf:"bytes,9,rep,name=visible_fields,json=visibleFields,proto3" json:"visible_fields,omitempty"`
 	OccurredAtUnixMillis int64                   `protobuf:"varint,10,opt,name=occurred_at_unix_millis,json=occurredAtUnixMillis,proto3" json:"occurred_at_unix_millis,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// Supplied by the game server so repeated button submissions can be handled safely.
+	IdempotencyKey *v1.IdempotencyKey `protobuf:"bytes,11,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	// Optional deterministic fingerprint of the activity payload.
+	// Use SHA-256 bytes, not display text.
+	ActivityFingerprintSha256 []byte `protobuf:"bytes,12,opt,name=activity_fingerprint_sha256,json=activityFingerprintSha256,proto3" json:"activity_fingerprint_sha256,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *GameTradeUiActivity) Reset() {
@@ -294,20 +486,112 @@ func (x *GameTradeUiActivity) GetOccurredAtUnixMillis() int64 {
 	return 0
 }
 
+func (x *GameTradeUiActivity) GetIdempotencyKey() *v1.IdempotencyKey {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return nil
+}
+
+func (x *GameTradeUiActivity) GetActivityFingerprintSha256() []byte {
+	if x != nil {
+		return x.ActivityFingerprintSha256
+	}
+	return nil
+}
+
+type GameTradeInstanceResultSnapshot struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	TradeInstanceId *v1.TradeInstanceId    `protobuf:"bytes,1,opt,name=trade_instance_id,json=tradeInstanceId,proto3" json:"trade_instance_id,omitempty"`
+	TradeState      v11.TradeState         `protobuf:"varint,2,opt,name=trade_state,json=tradeState,proto3,enum=eve_trade.domain.trade.v1.TradeState" json:"trade_state,omitempty"`
+	// Optional if you later add optimistic concurrency / event sequencing.
+	TradeStateVersion uint64 `protobuf:"varint,3,opt,name=trade_state_version,json=tradeStateVersion,proto3" json:"trade_state_version,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *GameTradeInstanceResultSnapshot) Reset() {
+	*x = GameTradeInstanceResultSnapshot{}
+	mi := &file_eve_trade_gateway_v1_game_ui_activity_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GameTradeInstanceResultSnapshot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GameTradeInstanceResultSnapshot) ProtoMessage() {}
+
+func (x *GameTradeInstanceResultSnapshot) ProtoReflect() protoreflect.Message {
+	mi := &file_eve_trade_gateway_v1_game_ui_activity_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GameTradeInstanceResultSnapshot.ProtoReflect.Descriptor instead.
+func (*GameTradeInstanceResultSnapshot) Descriptor() ([]byte, []int) {
+	return file_eve_trade_gateway_v1_game_ui_activity_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GameTradeInstanceResultSnapshot) GetTradeInstanceId() *v1.TradeInstanceId {
+	if x != nil {
+		return x.TradeInstanceId
+	}
+	return nil
+}
+
+func (x *GameTradeInstanceResultSnapshot) GetTradeState() v11.TradeState {
+	if x != nil {
+		return x.TradeState
+	}
+	return v11.TradeState(0)
+}
+
+func (x *GameTradeInstanceResultSnapshot) GetTradeStateVersion() uint64 {
+	if x != nil {
+		return x.TradeStateVersion
+	}
+	return 0
+}
+
 type GameTradeUiActivityResult struct {
-	state                    protoimpl.MessageState          `protogen:"open.v1"`
-	ActivityId               *v1.GameUiActivityId            `protobuf:"bytes,1,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`
-	CorrelationId            *v1.CorrelationId               `protobuf:"bytes,2,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
-	ResultStatus             GameTradeUiActivityResultStatus `protobuf:"varint,3,opt,name=result_status,json=resultStatus,proto3,enum=eve_trade.gateway.v1.GameTradeUiActivityResultStatus" json:"result_status,omitempty"`
-	PlayerSafeMessage        string                          `protobuf:"bytes,4,opt,name=player_safe_message,json=playerSafeMessage,proto3" json:"player_safe_message,omitempty"`
-	PlayerSafeTradeReference *v1.TradeInstanceId             `protobuf:"bytes,5,opt,name=player_safe_trade_reference,json=playerSafeTradeReference,proto3" json:"player_safe_trade_reference,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Echoes the activity being answered.
+	ActivityId *v1.GameUiActivityId `protobuf:"bytes,1,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`
+	// Correlates logs/traces across gateway, market, and settlement.
+	CorrelationId *v1.CorrelationId `protobuf:"bytes,2,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
+	// Echoes the idempotency key used for this command.
+	IdempotencyKey *v1.IdempotencyKey `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	// Tells the game server what UI activity this result corresponds to.
+	SourceActivityKind GameTradeUiActivityKind `protobuf:"varint,4,opt,name=source_activity_kind,json=sourceActivityKind,proto3,enum=eve_trade.gateway.v1.GameTradeUiActivityKind" json:"source_activity_kind,omitempty"`
+	// Tells the game server how the gateway interpreted the UI activity.
+	InterpretedCommandKind GameTradeCommandKind `protobuf:"varint,5,opt,name=interpreted_command_kind,json=interpretedCommandKind,proto3,enum=eve_trade.gateway.v1.GameTradeCommandKind" json:"interpreted_command_kind,omitempty"`
+	// Tells the game server whether the interpreted command was applied,
+	// rejected, failed, or became unknown.
+	ResultStatus GameTradeUiActivityResultStatus `protobuf:"varint,6,opt,name=result_status,json=resultStatus,proto3,enum=eve_trade.gateway.v1.GameTradeUiActivityResultStatus" json:"result_status,omitempty"`
+	// Present when the gateway can identify the affected trade instance.
+	TradeSnapshot *GameTradeInstanceResultSnapshot `protobuf:"bytes,7,opt,name=trade_snapshot,json=tradeSnapshot,proto3" json:"trade_snapshot,omitempty"`
+	// Meaningful only when result_status == REJECTED.
+	RejectionCode GameTradeRejectionCode `protobuf:"varint,8,opt,name=rejection_code,json=rejectionCode,proto3,enum=eve_trade.gateway.v1.GameTradeRejectionCode" json:"rejection_code,omitempty"`
+	// Meaningful only when result_status == RESULT_UNKNOWN.
+	ResultUnknownReason GameTradeResultUnknownReason `protobuf:"varint,9,opt,name=result_unknown_reason,json=resultUnknownReason,proto3,enum=eve_trade.gateway.v1.GameTradeResultUnknownReason" json:"result_unknown_reason,omitempty"`
+	// Deterministic fingerprint of the result payload for audit/reconciliation.
+	ResultFingerprintSha256 []byte `protobuf:"bytes,10,opt,name=result_fingerprint_sha256,json=resultFingerprintSha256,proto3" json:"result_fingerprint_sha256,omitempty"`
+	ProcessedAtUnixMillis   int64  `protobuf:"varint,11,opt,name=processed_at_unix_millis,json=processedAtUnixMillis,proto3" json:"processed_at_unix_millis,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *GameTradeUiActivityResult) Reset() {
 	*x = GameTradeUiActivityResult{}
-	mi := &file_eve_trade_gateway_v1_game_ui_activity_proto_msgTypes[2]
+	mi := &file_eve_trade_gateway_v1_game_ui_activity_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -319,7 +603,7 @@ func (x *GameTradeUiActivityResult) String() string {
 func (*GameTradeUiActivityResult) ProtoMessage() {}
 
 func (x *GameTradeUiActivityResult) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_gateway_v1_game_ui_activity_proto_msgTypes[2]
+	mi := &file_eve_trade_gateway_v1_game_ui_activity_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -332,7 +616,7 @@ func (x *GameTradeUiActivityResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GameTradeUiActivityResult.ProtoReflect.Descriptor instead.
 func (*GameTradeUiActivityResult) Descriptor() ([]byte, []int) {
-	return file_eve_trade_gateway_v1_game_ui_activity_proto_rawDescGZIP(), []int{2}
+	return file_eve_trade_gateway_v1_game_ui_activity_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GameTradeUiActivityResult) GetActivityId() *v1.GameUiActivityId {
@@ -349,6 +633,27 @@ func (x *GameTradeUiActivityResult) GetCorrelationId() *v1.CorrelationId {
 	return nil
 }
 
+func (x *GameTradeUiActivityResult) GetIdempotencyKey() *v1.IdempotencyKey {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return nil
+}
+
+func (x *GameTradeUiActivityResult) GetSourceActivityKind() GameTradeUiActivityKind {
+	if x != nil {
+		return x.SourceActivityKind
+	}
+	return GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_UNSPECIFIED
+}
+
+func (x *GameTradeUiActivityResult) GetInterpretedCommandKind() GameTradeCommandKind {
+	if x != nil {
+		return x.InterpretedCommandKind
+	}
+	return GameTradeCommandKind_GAME_TRADE_COMMAND_KIND_UNSPECIFIED
+}
+
 func (x *GameTradeUiActivityResult) GetResultStatus() GameTradeUiActivityResultStatus {
 	if x != nil {
 		return x.ResultStatus
@@ -356,28 +661,49 @@ func (x *GameTradeUiActivityResult) GetResultStatus() GameTradeUiActivityResultS
 	return GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_UNSPECIFIED
 }
 
-func (x *GameTradeUiActivityResult) GetPlayerSafeMessage() string {
+func (x *GameTradeUiActivityResult) GetTradeSnapshot() *GameTradeInstanceResultSnapshot {
 	if x != nil {
-		return x.PlayerSafeMessage
-	}
-	return ""
-}
-
-func (x *GameTradeUiActivityResult) GetPlayerSafeTradeReference() *v1.TradeInstanceId {
-	if x != nil {
-		return x.PlayerSafeTradeReference
+		return x.TradeSnapshot
 	}
 	return nil
+}
+
+func (x *GameTradeUiActivityResult) GetRejectionCode() GameTradeRejectionCode {
+	if x != nil {
+		return x.RejectionCode
+	}
+	return GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_UNSPECIFIED
+}
+
+func (x *GameTradeUiActivityResult) GetResultUnknownReason() GameTradeResultUnknownReason {
+	if x != nil {
+		return x.ResultUnknownReason
+	}
+	return GameTradeResultUnknownReason_GAME_TRADE_RESULT_UNKNOWN_REASON_UNSPECIFIED
+}
+
+func (x *GameTradeUiActivityResult) GetResultFingerprintSha256() []byte {
+	if x != nil {
+		return x.ResultFingerprintSha256
+	}
+	return nil
+}
+
+func (x *GameTradeUiActivityResult) GetProcessedAtUnixMillis() int64 {
+	if x != nil {
+		return x.ProcessedAtUnixMillis
+	}
+	return 0
 }
 
 var File_eve_trade_gateway_v1_game_ui_activity_proto protoreflect.FileDescriptor
 
 const file_eve_trade_gateway_v1_game_ui_activity_proto_rawDesc = "" +
 	"\n" +
-	"+eve_trade/gateway/v1/game_ui_activity.proto\x12\x14eve_trade.gateway.v1\x1a\"eve_trade/common/v1/identity.proto\"r\n" +
+	"+eve_trade/gateway/v1/game_ui_activity.proto\x12\x14eve_trade.gateway.v1\x1a\"eve_trade/common/v1/identity.proto\x1a%eve_trade/common/v1/idempotency.proto\x1a+eve_trade/domain/trade/v1/trade_state.proto\"r\n" +
 	"\x10GameTradeUiField\x12-\n" +
 	"\x13raw_game_field_name\x18\x01 \x01(\tR\x10rawGameFieldName\x12/\n" +
-	"\x14raw_game_field_value\x18\x02 \x01(\tR\x11rawGameFieldValue\"\xbf\x05\n" +
+	"\x14raw_game_field_value\x18\x02 \x01(\tR\x11rawGameFieldValue\"\xcd\x06\n" +
 	"\x13GameTradeUiActivity\x12F\n" +
 	"\vactivity_id\x18\x01 \x01(\v2%.eve_trade.common.v1.GameUiActivityIdR\n" +
 	"activityId\x12G\n" +
@@ -390,24 +716,61 @@ const file_eve_trade_gateway_v1_game_ui_activity_proto_rawDesc = "" +
 	"\x14raw_game_button_name\x18\b \x01(\tR\x11rawGameButtonName\x12M\n" +
 	"\x0evisible_fields\x18\t \x03(\v2&.eve_trade.gateway.v1.GameTradeUiFieldR\rvisibleFields\x125\n" +
 	"\x17occurred_at_unix_millis\x18\n" +
-	" \x01(\x03R\x14occurredAtUnixMillis\"\x9f\x03\n" +
+	" \x01(\x03R\x14occurredAtUnixMillis\x12L\n" +
+	"\x0fidempotency_key\x18\v \x01(\v2#.eve_trade.common.v1.IdempotencyKeyR\x0eidempotencyKey\x12>\n" +
+	"\x1bactivity_fingerprint_sha256\x18\f \x01(\fR\x19activityFingerprintSha256\"\xeb\x01\n" +
+	"\x1fGameTradeInstanceResultSnapshot\x12P\n" +
+	"\x11trade_instance_id\x18\x01 \x01(\v2$.eve_trade.common.v1.TradeInstanceIdR\x0ftradeInstanceId\x12F\n" +
+	"\vtrade_state\x18\x02 \x01(\x0e2%.eve_trade.domain.trade.v1.TradeStateR\n" +
+	"tradeState\x12.\n" +
+	"\x13trade_state_version\x18\x03 \x01(\x04R\x11tradeStateVersion\"\xaf\a\n" +
 	"\x19GameTradeUiActivityResult\x12F\n" +
 	"\vactivity_id\x18\x01 \x01(\v2%.eve_trade.common.v1.GameUiActivityIdR\n" +
 	"activityId\x12I\n" +
-	"\x0ecorrelation_id\x18\x02 \x01(\v2\".eve_trade.common.v1.CorrelationIdR\rcorrelationId\x12Z\n" +
-	"\rresult_status\x18\x03 \x01(\x0e25.eve_trade.gateway.v1.GameTradeUiActivityResultStatusR\fresultStatus\x12.\n" +
-	"\x13player_safe_message\x18\x04 \x01(\tR\x11playerSafeMessage\x12c\n" +
-	"\x1bplayer_safe_trade_reference\x18\x05 \x01(\v2$.eve_trade.common.v1.TradeInstanceIdR\x18playerSafeTradeReference*\xea\x01\n" +
+	"\x0ecorrelation_id\x18\x02 \x01(\v2\".eve_trade.common.v1.CorrelationIdR\rcorrelationId\x12L\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\v2#.eve_trade.common.v1.IdempotencyKeyR\x0eidempotencyKey\x12_\n" +
+	"\x14source_activity_kind\x18\x04 \x01(\x0e2-.eve_trade.gateway.v1.GameTradeUiActivityKindR\x12sourceActivityKind\x12d\n" +
+	"\x18interpreted_command_kind\x18\x05 \x01(\x0e2*.eve_trade.gateway.v1.GameTradeCommandKindR\x16interpretedCommandKind\x12Z\n" +
+	"\rresult_status\x18\x06 \x01(\x0e25.eve_trade.gateway.v1.GameTradeUiActivityResultStatusR\fresultStatus\x12\\\n" +
+	"\x0etrade_snapshot\x18\a \x01(\v25.eve_trade.gateway.v1.GameTradeInstanceResultSnapshotR\rtradeSnapshot\x12S\n" +
+	"\x0erejection_code\x18\b \x01(\x0e2,.eve_trade.gateway.v1.GameTradeRejectionCodeR\rrejectionCode\x12f\n" +
+	"\x15result_unknown_reason\x18\t \x01(\x0e22.eve_trade.gateway.v1.GameTradeResultUnknownReasonR\x13resultUnknownReason\x12:\n" +
+	"\x19result_fingerprint_sha256\x18\n" +
+	" \x01(\fR\x17resultFingerprintSha256\x127\n" +
+	"\x18processed_at_unix_millis\x18\v \x01(\x03R\x15processedAtUnixMillis*\xea\x01\n" +
 	"\x17GameTradeUiActivityKind\x12+\n" +
 	"'GAME_TRADE_UI_ACTIVITY_KIND_UNSPECIFIED\x10\x00\x124\n" +
 	"0GAME_TRADE_UI_ACTIVITY_KIND_ISSUE_BUTTON_PRESSED\x10\x01\x125\n" +
 	"1GAME_TRADE_UI_ACTIVITY_KIND_ACCEPT_BUTTON_PRESSED\x10\x02\x125\n" +
-	"1GAME_TRADE_UI_ACTIVITY_KIND_CANCEL_BUTTON_PRESSED\x10\x03*\xf6\x01\n" +
+	"1GAME_TRADE_UI_ACTIVITY_KIND_CANCEL_BUTTON_PRESSED\x10\x03*\xbc\x01\n" +
+	"\x14GameTradeCommandKind\x12'\n" +
+	"#GAME_TRADE_COMMAND_KIND_UNSPECIFIED\x10\x00\x12'\n" +
+	"#GAME_TRADE_COMMAND_KIND_ISSUE_TRADE\x10\x01\x12(\n" +
+	"$GAME_TRADE_COMMAND_KIND_ACCEPT_TRADE\x10\x02\x12(\n" +
+	"$GAME_TRADE_COMMAND_KIND_CANCEL_TRADE\x10\x03*\xa6\x02\n" +
 	"\x1fGameTradeUiActivityResultStatus\x124\n" +
-	"0GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_UNSPECIFIED\x10\x00\x121\n" +
-	"-GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_ACCEPTED\x10\x01\x121\n" +
+	"0GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_UNSPECIFIED\x10\x00\x120\n" +
+	",GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_APPLIED\x10\x01\x121\n" +
 	"-GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_REJECTED\x10\x02\x127\n" +
-	"3GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_RESULT_UNKNOWN\x10\x03B\xfa\x01\n" +
+	"3GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_RESULT_UNKNOWN\x10\x03\x12/\n" +
+	"+GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_FAILED\x10\x04*\x98\x04\n" +
+	"\x16GameTradeRejectionCode\x12)\n" +
+	"%GAME_TRADE_REJECTION_CODE_UNSPECIFIED\x10\x00\x127\n" +
+	"3GAME_TRADE_REJECTION_CODE_UNSUPPORTED_ACTIVITY_KIND\x10\x01\x120\n" +
+	",GAME_TRADE_REJECTION_CODE_MALFORMED_ACTIVITY\x10\x02\x124\n" +
+	"0GAME_TRADE_REJECTION_CODE_MISSING_REQUIRED_FIELD\x10\x03\x122\n" +
+	".GAME_TRADE_REJECTION_CODE_MARKET_RULE_REJECTED\x10\x04\x121\n" +
+	"-GAME_TRADE_REJECTION_CODE_SETTLEMENT_REJECTED\x10\x05\x12-\n" +
+	")GAME_TRADE_REJECTION_CODE_TRADE_NOT_FOUND\x10\x06\x123\n" +
+	"/GAME_TRADE_REJECTION_CODE_TRADE_NOT_OUTSTANDING\x10\a\x123\n" +
+	"/GAME_TRADE_REJECTION_CODE_CAPSULEER_NOT_ALLOWED\x10\b\x122\n" +
+	".GAME_TRADE_REJECTION_CODE_IDEMPOTENCY_CONFLICT\x10\t*\xc0\x02\n" +
+	"\x1cGameTradeResultUnknownReason\x120\n" +
+	",GAME_TRADE_RESULT_UNKNOWN_REASON_UNSPECIFIED\x10\x00\x123\n" +
+	"/GAME_TRADE_RESULT_UNKNOWN_REASON_MARKET_TIMEOUT\x10\x01\x127\n" +
+	"3GAME_TRADE_RESULT_UNKNOWN_REASON_SETTLEMENT_TIMEOUT\x10\x02\x12A\n" +
+	"=GAME_TRADE_RESULT_UNKNOWN_REASON_TRANSPORT_ERROR_AFTER_SUBMIT\x10\x03\x12=\n" +
+	"9GAME_TRADE_RESULT_UNKNOWN_REASON_CONSISTENCY_CHECK_FAILED\x10\x04B\xfa\x01\n" +
 	"\x18com.eve_trade.gateway.v1B\x13GameUiActivityProtoP\x01Z[github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/gateway/v1;gatewayv1\xa2\x02\x03EGX\xaa\x02\x13EveTrade.Gateway.V1\xca\x02\x13EveTrade\\Gateway\\V1\xe2\x02\x1fEveTrade\\Gateway\\V1\\GPBMetadata\xea\x02\x15EveTrade::Gateway::V1b\x06proto3"
 
 var (
@@ -422,39 +785,53 @@ func file_eve_trade_gateway_v1_game_ui_activity_proto_rawDescGZIP() []byte {
 	return file_eve_trade_gateway_v1_game_ui_activity_proto_rawDescData
 }
 
-var file_eve_trade_gateway_v1_game_ui_activity_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_eve_trade_gateway_v1_game_ui_activity_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_eve_trade_gateway_v1_game_ui_activity_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_eve_trade_gateway_v1_game_ui_activity_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_eve_trade_gateway_v1_game_ui_activity_proto_goTypes = []any{
-	(GameTradeUiActivityKind)(0),         // 0: eve_trade.gateway.v1.GameTradeUiActivityKind
-	(GameTradeUiActivityResultStatus)(0), // 1: eve_trade.gateway.v1.GameTradeUiActivityResultStatus
-	(*GameTradeUiField)(nil),             // 2: eve_trade.gateway.v1.GameTradeUiField
-	(*GameTradeUiActivity)(nil),          // 3: eve_trade.gateway.v1.GameTradeUiActivity
-	(*GameTradeUiActivityResult)(nil),    // 4: eve_trade.gateway.v1.GameTradeUiActivityResult
-	(*v1.GameUiActivityId)(nil),          // 5: eve_trade.common.v1.GameUiActivityId
-	(*v1.GameServerId)(nil),              // 6: eve_trade.common.v1.GameServerId
-	(*v1.GameSessionId)(nil),             // 7: eve_trade.common.v1.GameSessionId
-	(*v1.CapsuleerId)(nil),               // 8: eve_trade.common.v1.CapsuleerId
-	(*v1.GameUiVersion)(nil),             // 9: eve_trade.common.v1.GameUiVersion
-	(*v1.CorrelationId)(nil),             // 10: eve_trade.common.v1.CorrelationId
-	(*v1.TradeInstanceId)(nil),           // 11: eve_trade.common.v1.TradeInstanceId
+	(GameTradeUiActivityKind)(0),            // 0: eve_trade.gateway.v1.GameTradeUiActivityKind
+	(GameTradeCommandKind)(0),               // 1: eve_trade.gateway.v1.GameTradeCommandKind
+	(GameTradeUiActivityResultStatus)(0),    // 2: eve_trade.gateway.v1.GameTradeUiActivityResultStatus
+	(GameTradeRejectionCode)(0),             // 3: eve_trade.gateway.v1.GameTradeRejectionCode
+	(GameTradeResultUnknownReason)(0),       // 4: eve_trade.gateway.v1.GameTradeResultUnknownReason
+	(*GameTradeUiField)(nil),                // 5: eve_trade.gateway.v1.GameTradeUiField
+	(*GameTradeUiActivity)(nil),             // 6: eve_trade.gateway.v1.GameTradeUiActivity
+	(*GameTradeInstanceResultSnapshot)(nil), // 7: eve_trade.gateway.v1.GameTradeInstanceResultSnapshot
+	(*GameTradeUiActivityResult)(nil),       // 8: eve_trade.gateway.v1.GameTradeUiActivityResult
+	(*v1.GameUiActivityId)(nil),             // 9: eve_trade.common.v1.GameUiActivityId
+	(*v1.GameServerId)(nil),                 // 10: eve_trade.common.v1.GameServerId
+	(*v1.GameSessionId)(nil),                // 11: eve_trade.common.v1.GameSessionId
+	(*v1.CapsuleerId)(nil),                  // 12: eve_trade.common.v1.CapsuleerId
+	(*v1.GameUiVersion)(nil),                // 13: eve_trade.common.v1.GameUiVersion
+	(*v1.IdempotencyKey)(nil),               // 14: eve_trade.common.v1.IdempotencyKey
+	(*v1.TradeInstanceId)(nil),              // 15: eve_trade.common.v1.TradeInstanceId
+	(v11.TradeState)(0),                     // 16: eve_trade.domain.trade.v1.TradeState
+	(*v1.CorrelationId)(nil),                // 17: eve_trade.common.v1.CorrelationId
 }
 var file_eve_trade_gateway_v1_game_ui_activity_proto_depIdxs = []int32{
-	5,  // 0: eve_trade.gateway.v1.GameTradeUiActivity.activity_id:type_name -> eve_trade.common.v1.GameUiActivityId
-	6,  // 1: eve_trade.gateway.v1.GameTradeUiActivity.game_server_id:type_name -> eve_trade.common.v1.GameServerId
-	7,  // 2: eve_trade.gateway.v1.GameTradeUiActivity.game_session_id:type_name -> eve_trade.common.v1.GameSessionId
-	8,  // 3: eve_trade.gateway.v1.GameTradeUiActivity.capsuleer_id:type_name -> eve_trade.common.v1.CapsuleerId
-	9,  // 4: eve_trade.gateway.v1.GameTradeUiActivity.game_ui_version:type_name -> eve_trade.common.v1.GameUiVersion
+	9,  // 0: eve_trade.gateway.v1.GameTradeUiActivity.activity_id:type_name -> eve_trade.common.v1.GameUiActivityId
+	10, // 1: eve_trade.gateway.v1.GameTradeUiActivity.game_server_id:type_name -> eve_trade.common.v1.GameServerId
+	11, // 2: eve_trade.gateway.v1.GameTradeUiActivity.game_session_id:type_name -> eve_trade.common.v1.GameSessionId
+	12, // 3: eve_trade.gateway.v1.GameTradeUiActivity.capsuleer_id:type_name -> eve_trade.common.v1.CapsuleerId
+	13, // 4: eve_trade.gateway.v1.GameTradeUiActivity.game_ui_version:type_name -> eve_trade.common.v1.GameUiVersion
 	0,  // 5: eve_trade.gateway.v1.GameTradeUiActivity.activity_kind:type_name -> eve_trade.gateway.v1.GameTradeUiActivityKind
-	2,  // 6: eve_trade.gateway.v1.GameTradeUiActivity.visible_fields:type_name -> eve_trade.gateway.v1.GameTradeUiField
-	5,  // 7: eve_trade.gateway.v1.GameTradeUiActivityResult.activity_id:type_name -> eve_trade.common.v1.GameUiActivityId
-	10, // 8: eve_trade.gateway.v1.GameTradeUiActivityResult.correlation_id:type_name -> eve_trade.common.v1.CorrelationId
-	1,  // 9: eve_trade.gateway.v1.GameTradeUiActivityResult.result_status:type_name -> eve_trade.gateway.v1.GameTradeUiActivityResultStatus
-	11, // 10: eve_trade.gateway.v1.GameTradeUiActivityResult.player_safe_trade_reference:type_name -> eve_trade.common.v1.TradeInstanceId
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	5,  // 6: eve_trade.gateway.v1.GameTradeUiActivity.visible_fields:type_name -> eve_trade.gateway.v1.GameTradeUiField
+	14, // 7: eve_trade.gateway.v1.GameTradeUiActivity.idempotency_key:type_name -> eve_trade.common.v1.IdempotencyKey
+	15, // 8: eve_trade.gateway.v1.GameTradeInstanceResultSnapshot.trade_instance_id:type_name -> eve_trade.common.v1.TradeInstanceId
+	16, // 9: eve_trade.gateway.v1.GameTradeInstanceResultSnapshot.trade_state:type_name -> eve_trade.domain.trade.v1.TradeState
+	9,  // 10: eve_trade.gateway.v1.GameTradeUiActivityResult.activity_id:type_name -> eve_trade.common.v1.GameUiActivityId
+	17, // 11: eve_trade.gateway.v1.GameTradeUiActivityResult.correlation_id:type_name -> eve_trade.common.v1.CorrelationId
+	14, // 12: eve_trade.gateway.v1.GameTradeUiActivityResult.idempotency_key:type_name -> eve_trade.common.v1.IdempotencyKey
+	0,  // 13: eve_trade.gateway.v1.GameTradeUiActivityResult.source_activity_kind:type_name -> eve_trade.gateway.v1.GameTradeUiActivityKind
+	1,  // 14: eve_trade.gateway.v1.GameTradeUiActivityResult.interpreted_command_kind:type_name -> eve_trade.gateway.v1.GameTradeCommandKind
+	2,  // 15: eve_trade.gateway.v1.GameTradeUiActivityResult.result_status:type_name -> eve_trade.gateway.v1.GameTradeUiActivityResultStatus
+	7,  // 16: eve_trade.gateway.v1.GameTradeUiActivityResult.trade_snapshot:type_name -> eve_trade.gateway.v1.GameTradeInstanceResultSnapshot
+	3,  // 17: eve_trade.gateway.v1.GameTradeUiActivityResult.rejection_code:type_name -> eve_trade.gateway.v1.GameTradeRejectionCode
+	4,  // 18: eve_trade.gateway.v1.GameTradeUiActivityResult.result_unknown_reason:type_name -> eve_trade.gateway.v1.GameTradeResultUnknownReason
+	19, // [19:19] is the sub-list for method output_type
+	19, // [19:19] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_eve_trade_gateway_v1_game_ui_activity_proto_init() }
@@ -467,8 +844,8 @@ func file_eve_trade_gateway_v1_game_ui_activity_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_eve_trade_gateway_v1_game_ui_activity_proto_rawDesc), len(file_eve_trade_gateway_v1_game_ui_activity_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   3,
+			NumEnums:      5,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

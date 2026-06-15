@@ -8,6 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 	commonv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/common/v1"
+	tradev1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/domain/trade/v1"
 	gatewayv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/gateway/v1"
 	marketv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/market/v1"
 	"github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/market/v1/marketv1connect"
@@ -132,10 +133,72 @@ func playerSafeTradeReference(result *MarketInteractionResult) *commonv1.TradeIn
 func playerSafeGatewayStatus(result *MarketInteractionResult) gatewayv1.GameTradeUiActivityResultStatus {
 	switch playerSafeStatus(result) {
 	case "committed", "idempotent_replay":
-		return gatewayv1.GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_ACCEPTED
-	case "rejected":
+		return gatewayv1.GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_APPLIED
+	case "rejected", "rolled_back":
 		return gatewayv1.GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_REJECTED
 	default:
 		return gatewayv1.GameTradeUiActivityResultStatus_GAME_TRADE_UI_ACTIVITY_RESULT_STATUS_RESULT_UNKNOWN
+	}
+}
+
+func playerSafeRejectionCode(result *MarketInteractionResult) gatewayv1.GameTradeRejectionCode {
+	if result == nil {
+		return gatewayv1.GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_UNSPECIFIED
+	}
+	if result.GetError() != nil {
+		return gatewayv1.GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_MARKET_RULE_REJECTED
+	}
+
+	settlementResult := result.GetSettlementResult()
+	if settlementResult == nil {
+		return gatewayv1.GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_UNSPECIFIED
+	}
+	if settlementResult.GetRejected() != nil || settlementResult.GetRolledBack() != nil {
+		return gatewayv1.GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_SETTLEMENT_REJECTED
+	}
+
+	return gatewayv1.GameTradeRejectionCode_GAME_TRADE_REJECTION_CODE_UNSPECIFIED
+}
+
+func playerSafeResultUnknownReason(result *MarketInteractionResult) gatewayv1.GameTradeResultUnknownReason {
+	if result == nil {
+		return gatewayv1.GameTradeResultUnknownReason_GAME_TRADE_RESULT_UNKNOWN_REASON_MARKET_TIMEOUT
+	}
+	if result.GetSettlementResult() == nil {
+		return gatewayv1.GameTradeResultUnknownReason_GAME_TRADE_RESULT_UNKNOWN_REASON_TRANSPORT_ERROR_AFTER_SUBMIT
+	}
+	if result.GetSettlementResult().GetResultUnknown() != nil {
+		return gatewayv1.GameTradeResultUnknownReason_GAME_TRADE_RESULT_UNKNOWN_REASON_SETTLEMENT_TIMEOUT
+	}
+
+	return gatewayv1.GameTradeResultUnknownReason_GAME_TRADE_RESULT_UNKNOWN_REASON_UNSPECIFIED
+}
+
+func playerSafeTradeSnapshot(result *MarketInteractionResult) *gatewayv1.GameTradeInstanceResultSnapshot {
+	if result == nil || result.GetSettlementResult() == nil {
+		return nil
+	}
+
+	settlementResult := result.GetSettlementResult()
+	if settlementResult.GetTradeInstanceId() == nil {
+		return nil
+	}
+
+	return &gatewayv1.GameTradeInstanceResultSnapshot{
+		TradeInstanceId: settlementResult.GetTradeInstanceId(),
+		TradeState:      tradev1.TradeState(settlementResult.GetResultingTradeState()),
+	}
+}
+
+func gameTradeCommandKind(kind gatewayv1.GameTradeUiActivityKind) gatewayv1.GameTradeCommandKind {
+	switch kind {
+	case gatewayv1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_ISSUE_BUTTON_PRESSED:
+		return gatewayv1.GameTradeCommandKind_GAME_TRADE_COMMAND_KIND_ISSUE_TRADE
+	case gatewayv1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_ACCEPT_BUTTON_PRESSED:
+		return gatewayv1.GameTradeCommandKind_GAME_TRADE_COMMAND_KIND_ACCEPT_TRADE
+	case gatewayv1.GameTradeUiActivityKind_GAME_TRADE_UI_ACTIVITY_KIND_CANCEL_BUTTON_PRESSED:
+		return gatewayv1.GameTradeCommandKind_GAME_TRADE_COMMAND_KIND_CANCEL_TRADE
+	default:
+		return gatewayv1.GameTradeCommandKind_GAME_TRADE_COMMAND_KIND_UNSPECIFIED
 	}
 }

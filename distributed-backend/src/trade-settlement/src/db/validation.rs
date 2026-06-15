@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use chrono::{DateTime, Utc};
 use prost::Message;
 use sha2::{Digest, Sha256};

@@ -2,13 +2,16 @@ package gateway
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"io"
+	"time"
 
 	"connectrpc.com/connect"
 	commonv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/common/v1"
 	gatewayv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/gateway/v1"
 	marketv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/market/v1"
+	"google.golang.org/protobuf/proto"
 )
 
 type Service struct {
@@ -97,11 +100,36 @@ func (s *Service) APIGatewaySendsProjectProtoInteractionsToMarketMicroservice(ct
 }
 
 func gameTradeUIActivityResultFromMarketResult(activity *gatewayv1.GameTradeUiActivity, marketResult *MarketInteractionResult) *gatewayv1.GameTradeUiActivityResult {
-	return &gatewayv1.GameTradeUiActivityResult{
-		ActivityId:               activity.GetActivityId(),
-		CorrelationId:            marketResult.GetCorrelationId(),
-		ResultStatus:             playerSafeGatewayStatus(marketResult),
-		PlayerSafeMessage:        playerSafeMessage(marketResult),
-		PlayerSafeTradeReference: playerSafeTradeReference(marketResult),
+	result := &gatewayv1.GameTradeUiActivityResult{
+		ActivityId:             activity.GetActivityId(),
+		CorrelationId:          marketCorrelationId(marketResult),
+		IdempotencyKey:         activity.GetIdempotencyKey(),
+		SourceActivityKind:     activity.GetActivityKind(),
+		InterpretedCommandKind: gameTradeCommandKind(activity.GetActivityKind()),
+		ResultStatus:           playerSafeGatewayStatus(marketResult),
+		TradeSnapshot:          playerSafeTradeSnapshot(marketResult),
+		RejectionCode:          playerSafeRejectionCode(marketResult),
+		ResultUnknownReason:    playerSafeResultUnknownReason(marketResult),
+		ProcessedAtUnixMillis:  time.Now().UnixMilli(),
 	}
+	result.ResultFingerprintSha256 = gameTradeResultFingerprint(result)
+	return result
+}
+
+func marketCorrelationId(result *MarketInteractionResult) *commonv1.CorrelationId {
+	if result == nil {
+		return nil
+	}
+	return result.GetCorrelationId()
+}
+
+func gameTradeResultFingerprint(result *gatewayv1.GameTradeUiActivityResult) []byte {
+	clone := proto.Clone(result).(*gatewayv1.GameTradeUiActivityResult)
+	clone.ResultFingerprintSha256 = nil
+	bytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(clone)
+	if err != nil {
+		bytes = []byte(clone.String())
+	}
+	sum := sha256.Sum256(bytes)
+	return sum[:]
 }

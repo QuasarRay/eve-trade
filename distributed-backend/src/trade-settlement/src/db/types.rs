@@ -208,6 +208,7 @@ pub(crate) struct TradeClaimItemStackRow {
     pub(crate) quantity: i64,
 }
 
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum BeginCommand {
     Started,
     Replay(TradeSettlementResult),
