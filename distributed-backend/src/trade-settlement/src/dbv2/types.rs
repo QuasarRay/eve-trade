@@ -150,7 +150,7 @@ pub(crate) struct MergeItemStacksWithIdenticalItemTypeAndIdenticalOwnerInput {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct CreateNewEmptyWallerEscrowInput {
+pub(crate) struct CreateNewEmptyWalletEscrowInput {
     pub(crate) operation_id: Uuid,
     pub(crate) operation_kind: String,
     pub(crate) wallet_operation_id: Uuid,

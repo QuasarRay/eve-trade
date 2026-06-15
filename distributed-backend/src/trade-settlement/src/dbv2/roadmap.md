@@ -2,7 +2,7 @@
 
 #
 
-# Arcitecture:
+# Architecture:
 
 # Canonical SQLx Low Level Operation Design Reference:
 
@@ -26,7 +26,7 @@
 
 #
 
-@ create_new_empty_waller_escrow
+@ create_new_empty_wallet_escrow
 
 @ transfer_isk_amount_from_wallet_to_wallet_escrow
 

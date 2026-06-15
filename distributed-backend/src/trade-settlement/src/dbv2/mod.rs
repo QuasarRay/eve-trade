@@ -15,7 +15,7 @@ pub(crate) use item_stacks::{
 pub(crate) use trade::{create_new_trade_instance_row, modify_trade_instance_state};
 pub(crate) use types::*;
 pub(crate) use wallets::{
-    create_new_empty_waller_escrow,
+    create_new_empty_wallet_escrow,
     transfer_isk_amount_from_wallet_escrow_to_wallet_with_new_owner,
     transfer_isk_amount_from_wallet_escrow_to_wallet_with_previous_owner,
     transfer_isk_amount_from_wallet_to_wallet_escrow,

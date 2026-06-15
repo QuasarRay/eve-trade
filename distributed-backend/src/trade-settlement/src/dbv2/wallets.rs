@@ -9,7 +9,7 @@ use super::{
         ensure_not_blank, ensure_positive, tx_conn, wallet_checksum, DbTx, CHECKSUM_ALGORITHM,
     },
     types::{
-        CreateNewEmptyWallerEscrowInput,
+        CreateNewEmptyWalletEscrowInput,
         TransferIskAmountFromWalletEscrowToWalletWithNewOwnerInput,
         TransferIskAmountFromWalletEscrowToWalletWithPreviousOwnerInput,
         TransferIskAmountFromWalletToWalletEscrowInput, WalletEscrowRow,
@@ -17,9 +17,9 @@ use super::{
     },
 };
 
-pub(crate) async fn create_new_empty_waller_escrow(
+pub(crate) async fn create_new_empty_wallet_escrow(
     pool: &PgPool,
-    input: CreateNewEmptyWallerEscrowInput,
+    input: CreateNewEmptyWalletEscrowInput,
 ) -> Result<WalletEscrowRow, SettlementError> {
     let mut tx = pool.begin().await?;
     insert_wallet_operation(
