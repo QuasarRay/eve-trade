@@ -6,6 +6,7 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import quote
 
 import dagger
 
@@ -15,6 +16,7 @@ RUST_IMAGE = "rust:1-bookworm"
 PYTHON_IMAGE = "python:3.12-slim-bookworm"
 DEBIAN_IMAGE = "debian:bookworm-slim"
 POSTGRES_IMAGE = "postgres:16"
+RABBITMQ_IMAGE = "rabbitmq:3.13-management"
 KUSTOMIZE_IMAGE = "alpine/k8s:1.33.1"
 GITLEAKS_IMAGE = "zricethezav/gitleaks:v8.27.2"
 TRIVY_IMAGE = "aquasec/trivy:0.64.1"
@@ -23,7 +25,21 @@ BUF_VERSION = "1.53.0"
 PROTOC_GEN_GO_VERSION = "1.36.11"
 PROTOC_GEN_CONNECT_GO_VERSION = "1.20.0"
 
-SERVICE_IMAGE_NAMES = ("api-gateway", "market", "trade-settlement")
+KUBERNETES_NAMESPACE = "eve-trade"
+SERVICE_IMAGE_NAMES = (
+    "api-gateway",
+    "market",
+    "settlement-worker",
+    "trade-settlement",
+)
+DEPLOYMENT_NAMES = (
+    "rabbitmq",
+    "trade-settlement",
+    "settlement-worker",
+    "market",
+    "api-gateway",
+)
+RABBITMQ_DEFAULT_USER = "eve_trade"
 
 SOURCE_EXCLUDES = [
     ".git",
@@ -44,7 +60,7 @@ class GoService:
     name: str
     binary: str
     package: str
-    port: int
+    port: int | None = None
 
 
 GO_SERVICES = {
@@ -59,6 +75,11 @@ GO_SERVICES = {
         binary="market",
         package="./distributed-backend/src/market/cmd/market",
         port=8081,
+    ),
+    "settlement-worker": GoService(
+        name="settlement-worker",
+        binary="settlement-worker",
+        package="./distributed-backend/src/settlement-worker/cmd/settlement-worker",
     ),
 }
 
@@ -93,6 +114,43 @@ def revision() -> str:
 
 def source_url() -> str:
     return env("CI_PROJECT_URL", "https://example.invalid/eve-trade")
+
+
+def deployment_names_shell() -> str:
+    return " ".join(DEPLOYMENT_NAMES)
+
+
+def rabbitmq_deploy_secret_values() -> tuple[str, str, str] | None:
+    configured = any(
+        env(name)
+        for name in (
+            "RABBITMQ_DEFAULT_USER",
+            "RABBITMQ_USERNAME",
+            "RABBITMQ_DEFAULT_PASS",
+            "RABBITMQ_PASSWORD",
+            "RABBITMQ_URL",
+        )
+    )
+    password = env("RABBITMQ_DEFAULT_PASS") or env("RABBITMQ_PASSWORD")
+    if not password:
+        if configured:
+            raise RuntimeError(
+                "RABBITMQ_DEFAULT_PASS or RABBITMQ_PASSWORD is required when "
+                "deploying the RabbitMQ secret from CI variables"
+            )
+        return None
+
+    username = (
+        env("RABBITMQ_DEFAULT_USER")
+        or env("RABBITMQ_USERNAME")
+        or RABBITMQ_DEFAULT_USER
+    )
+    rabbitmq_url = env("RABBITMQ_URL") or (
+        "amqp://"
+        f"{quote(username, safe='')}:{quote(password, safe='')}"
+        f"@rabbitmq.{KUBERNETES_NAMESPACE}.svc.cluster.local:5672/"
+    )
+    return username, password, rabbitmq_url
 
 
 class EveTradePipeline:
@@ -295,7 +353,7 @@ go test ./...
                 spec.package,
             ]
         )
-        return (
+        container = (
             self.client.container()
             .from_(DEBIAN_IMAGE)
             .with_exec(
@@ -315,12 +373,14 @@ go test ./...
                 owner="appuser:appuser",
             )
             .with_user("appuser")
-            .with_exposed_port(spec.port)
             .with_entrypoint([f"/app/{spec.binary}"])
             .with_label("org.opencontainers.image.title", spec.name)
             .with_label("org.opencontainers.image.source", source_url())
             .with_label("org.opencontainers.image.revision", revision())
         )
+        if spec.port is not None:
+            container = container.with_exposed_port(spec.port)
+        return container
 
     def trade_settlement_image(self) -> dagger.Container:
         build = self.rust_base().with_exec(["cargo", "build", "--locked", "--release"])
@@ -460,28 +520,62 @@ kustomize build . > /out/chaos-litmus.yaml
         if not kubeconfig:
             raise RuntimeError("KUBE_CONFIG_B64 is required for deploy")
         kubeconfig_secret = self.client.set_secret("kubeconfig-b64", kubeconfig)
+        rabbitmq_values = rabbitmq_deploy_secret_values()
         image_commands = " && ".join(
             f"kustomize edit set image eve-trade/{name}={registry}/{name}:{tag}"
             for name in SERVICE_IMAGE_NAMES
         )
+        deployments = deployment_names_shell()
         script = f"""
 set -eu
 rm -rf /tmp/kubernetes
 cp -R distributed-backend/orchestration/kubernetes /tmp/kubernetes
 printf '%s' "$KUBE_CONFIG_B64" | base64 -d > /tmp/kubeconfig
 chmod 600 /tmp/kubeconfig
+KUBECTL="kubectl --kubeconfig /tmp/kubeconfig"
+
+if [ -n "${{RABBITMQ_DEFAULT_PASS:-}}" ]; then
+  $KUBECTL create namespace {KUBERNETES_NAMESPACE} --dry-run=client -o yaml | $KUBECTL apply -f -
+  $KUBECTL -n {KUBERNETES_NAMESPACE} create secret generic rabbitmq \\
+    --from-literal=RABBITMQ_DEFAULT_USER="$RABBITMQ_DEFAULT_USER" \\
+    --from-literal=RABBITMQ_DEFAULT_PASS="$RABBITMQ_DEFAULT_PASS" \\
+    --from-literal=RABBITMQ_URL="$RABBITMQ_URL" \\
+    --dry-run=client -o yaml | $KUBECTL apply -f -
+else
+  echo "RABBITMQ_DEFAULT_PASS is not set; expecting an existing rabbitmq secret"
+fi
+
 cd /tmp/kubernetes/overlay/prod
 {image_commands}
-kubectl --kubeconfig /tmp/kubeconfig apply -k .
+$KUBECTL apply -k .
+
+for deploy in {deployments}; do
+  $KUBECTL -n {KUBERNETES_NAMESPACE} rollout status "deployment/$deploy" --timeout=240s
+done
 """
-        await self.run_container(
-            "deploy Kubernetes manifests",
+        container = (
             self.client.container()
             .from_(KUSTOMIZE_IMAGE)
             .with_directory("/workspace", self.source)
             .with_workdir("/workspace")
             .with_secret_variable("KUBE_CONFIG_B64", kubeconfig_secret)
-            .with_exec(["sh", "-c", script]),
+        )
+        if rabbitmq_values is not None:
+            username, password, rabbitmq_url = rabbitmq_values
+            container = (
+                container.with_env_variable("RABBITMQ_DEFAULT_USER", username)
+                .with_secret_variable(
+                    "RABBITMQ_DEFAULT_PASS",
+                    self.client.set_secret("rabbitmq-default-pass", password),
+                )
+                .with_secret_variable(
+                    "RABBITMQ_URL",
+                    self.client.set_secret("rabbitmq-url", rabbitmq_url),
+                )
+            )
+        await self.run_container(
+            "deploy Kubernetes manifests",
+            container.with_exec(["sh", "-c", script]),
         )
 
     async def chaos(
@@ -517,7 +611,7 @@ for crd in chaosengines.litmuschaos.io chaosresults.litmuschaos.io chaosexperime
 done
 
 echo "Checking steady state before chaos"
-for deploy in api-gateway market trade-settlement; do
+for deploy in $DEPLOYMENT_NAMES; do
   $KUBECTL -n "$CHAOS_NAMESPACE" rollout status "deployment/$deploy" --timeout=180s
 done
 
@@ -622,7 +716,7 @@ done
 
 echo "Litmus chaos verdicts passed; stopping engines and checking recovery"
 stop_engines
-for deploy in api-gateway market trade-settlement; do
+for deploy in $DEPLOYMENT_NAMES; do
   $KUBECTL -n "$CHAOS_NAMESPACE" rollout status "deployment/$deploy" --timeout=240s
 done
 print_results
@@ -646,10 +740,20 @@ fi
             .with_env_variable("CHAOS_SELECTOR", selector)
             .with_env_variable("CHAOS_TIMEOUT_SECONDS", str(timeout_seconds))
             .with_env_variable("CHAOS_CLEANUP", cleanup_value)
+            .with_env_variable("DEPLOYMENT_NAMES", deployment_names_shell())
             .with_exec(["sh", "-c", script]),
         )
 
     async def integration(self) -> None:
+        rabbitmq_url = "amqp://eve_trade:eve_trade@rabbitmq:5672/"
+        rabbitmq = (
+            self.client.container()
+            .from_(RABBITMQ_IMAGE)
+            .with_env_variable("RABBITMQ_DEFAULT_USER", "eve_trade")
+            .with_env_variable("RABBITMQ_DEFAULT_PASS", "eve_trade")
+            .with_exposed_port(5672)
+            .as_service()
+        )
         postgres = (
             self.client.container()
             .from_(POSTGRES_IMAGE)
@@ -686,11 +790,34 @@ psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
             )
             .as_service()
         )
+        settlement_worker = (
+            self.go_runtime_image(GO_SERVICES["settlement-worker"])
+            .with_service_binding("rabbitmq", rabbitmq)
+            .with_service_binding("trade-settlement", settlement)
+            .with_env_variable("SETTLEMENT_URL", "http://trade-settlement:9092")
+            .with_env_variable("RABBITMQ_URL", rabbitmq_url)
+            .with_env_variable("RABBITMQ_SETTLEMENT_EXCHANGE", "eve_trade.settlement")
+            .with_env_variable(
+                "RABBITMQ_SETTLEMENT_COMMAND_QUEUE",
+                "eve_trade.settlement.commands",
+            )
+            .with_env_variable("RABBITMQ_SETTLEMENT_ROUTING_KEY", "settlement.command")
+            .with_env_variable("RABBITMQ_SETTLEMENT_PREFETCH", "8")
+            .as_service()
+        )
         market = (
             self.go_runtime_image(GO_SERVICES["market"])
-            .with_service_binding("trade-settlement", settlement)
+            .with_service_binding("rabbitmq", rabbitmq)
             .with_env_variable("MARKET_ADDR", ":8081")
             .with_env_variable("SETTLEMENT_URL", "http://trade-settlement:9092")
+            .with_env_variable("SETTLEMENT_TRANSPORT", "rabbitmq")
+            .with_env_variable("RABBITMQ_URL", rabbitmq_url)
+            .with_env_variable("RABBITMQ_SETTLEMENT_EXCHANGE", "eve_trade.settlement")
+            .with_env_variable(
+                "RABBITMQ_SETTLEMENT_COMMAND_QUEUE",
+                "eve_trade.settlement.commands",
+            )
+            .with_env_variable("RABBITMQ_SETTLEMENT_ROUTING_KEY", "settlement.command")
             .as_service()
         )
         gateway = (
@@ -709,6 +836,7 @@ import time
 
 targets = [
     ("postgres", 5432),
+    ("rabbitmq", 5672),
     ("trade-settlement", 9092),
     ("market", 8081),
     ("api-gateway", 8080),
@@ -729,7 +857,9 @@ pytest distributed-backend/tests/e2e -q
         tests = (
             self.python_e2e_base()
             .with_service_binding("postgres", postgres)
+            .with_service_binding("rabbitmq", rabbitmq)
             .with_service_binding("trade-settlement", settlement)
+            .with_service_binding("settlement-worker", settlement_worker)
             .with_service_binding("market", market)
             .with_service_binding("api-gateway", gateway)
             .with_env_variable(

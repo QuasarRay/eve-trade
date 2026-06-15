@@ -60,6 +60,12 @@ Optional variables:
 - `IMAGE_REGISTRY`: overrides `CI_REGISTRY_IMAGE`.
 - `KUBE_CONFIG_B64`: base64-encoded kubeconfig for the manual deploy job.
 - `DEPLOY_ENVIRONMENT`: GitLab environment name, default `production`.
+- `RABBITMQ_DEFAULT_PASS` or `RABBITMQ_PASSWORD`: when set, the deploy job
+  creates or updates the production `rabbitmq` Secret before applying manifests.
+- `RABBITMQ_DEFAULT_USER` or `RABBITMQ_USERNAME`: optional RabbitMQ user for the
+  deploy-managed `rabbitmq` Secret, default `eve_trade`.
+- `RABBITMQ_URL`: optional AMQP URL for the deploy-managed `rabbitmq` Secret. If
+  omitted, the deploy job builds an in-cluster URL for the `rabbitmq` Service.
 - `CHAOS_NAMESPACE`: target namespace for production chaos, default `eve-trade`.
 - `CHAOS_SELECTOR`: label selector for Litmus `ChaosEngine` resources, default
   `chaos.eve-trade.io/suite=pod-resilience`.
@@ -75,10 +81,13 @@ Optional variables:
 - `check` validates protobuf contracts, generated proto drift, Kubernetes
   rendering, and secret/filesystem scanning.
 - `test` runs Go, Rust, and Python contract tests.
-- `integration` starts PostgreSQL plus all three services inside Dagger and runs
-  the Python e2e suite.
+- `integration` starts PostgreSQL, RabbitMQ, the settlement worker, and the
+  public services inside Dagger and runs the Python e2e suite through the AMQP
+  settlement path.
 - `publish` publishes service images to the GitLab registry.
-- `deploy` applies the rendered kustomize tree after image tags are injected.
+- `deploy` optionally applies the RabbitMQ Secret from CI variables, applies the
+  rendered kustomize tree after image tags are injected, and waits for RabbitMQ,
+  the settlement worker, and public service deployments to roll out.
 - `chaos` applies stopped Litmus engines, activates the selected suite, waits for
   all `ChaosResult` verdicts to pass, stops engines on failure or timeout, and
   verifies deployments recover.

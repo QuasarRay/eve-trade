@@ -28,8 +28,9 @@ Before deployment, patch these production values:
 The base placeholder database and RabbitMQ secrets are intentionally deleted by
 this overlay. Create `trade-settlement-database` with a `DATABASE_URL` key and
 `rabbitmq` with `RABBITMQ_DEFAULT_USER`, `RABBITMQ_DEFAULT_PASS`, and
-`RABBITMQ_URL` keys using Terraform, your production secret manager, External
-Secrets, Sealed Secrets, or another approved mechanism.
+`RABBITMQ_URL` keys using Terraform, the GitLab deploy job's RabbitMQ variables,
+your production secret manager, External Secrets, Sealed Secrets, or another
+approved mechanism.
 
 Create `trade-settlement-observability` out of band with a `HONEYCOMB_API_KEY`
 key to export Rust settlement traces to Honeycomb. The deployment still starts
