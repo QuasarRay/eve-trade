@@ -1,0 +1,35 @@
+### This directory is dedicated to implement a separate SQLx design based on the Canonical SQLx design in Archiecture documents without intefering with current SQLx implementation, to replace current implementation once stability is ensured.
+
+#
+
+# Arcitecture:
+
+# Canonical SQLx Low Level Operation Design Reference:
+
+#
+
+@ create_new_trade_instance_row
+
+@ modify_trade_instance_state
+
+#
+
+@ create_new_empty_item_stack
+
+@ transfer_quantity_from_item_stack_to_item_stack_escrow
+
+@ transfer_quantity_from_item_stack_escrow_to_item_stack_with_new_owner
+
+@ transfer_quantity_from_item_stack_escrow_to_item_stack_with_previous_owner
+
+@ merge_item_stacks_with_identical_item_type_and_identical_owner
+
+#
+
+@ create_new_empty_waller_escrow
+
+@ transfer_isk_amount_from_wallet_to_wallet_escrow
+
+@ transfer_isk_amount_from_wallet_escrow_to_wallet_with_new_owner
+
+@ transfer_isk_amount_from_wallet_escrow_to_wallet_with_previous_owner
