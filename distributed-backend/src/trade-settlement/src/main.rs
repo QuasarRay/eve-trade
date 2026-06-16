@@ -1,5 +1,4 @@
 mod db;
-mod dbv2;
 mod error;
 mod generated;
 mod service;
