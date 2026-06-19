@@ -2,12 +2,17 @@ FROM golang:1.26-bookworm AS build
 
 WORKDIR /workspace
 
-COPY go.mod go.sum ./
-RUN go mod download
+COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
+COPY distributed-backend/src/market/go.mod distributed-backend/src/market/go.sum ./distributed-backend/src/market/
+COPY distributed-backend/src/api-gateway/go.mod distributed-backend/src/api-gateway/go.sum ./distributed-backend/src/api-gateway/
+RUN cd distributed-backend/src/api-gateway && go mod download
 
-COPY . .
+COPY distributed-backend/src/observability ./distributed-backend/src/observability
+COPY distributed-backend/src/market ./distributed-backend/src/market
+COPY distributed-backend/src/api-gateway ./distributed-backend/src/api-gateway
 
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api-gateway ./distributed-backend/src/api-gateway/cmd/api-gateway
+RUN cd distributed-backend/src/api-gateway \
+    && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api-gateway ./cmd/api-gateway
 
 FROM debian:bookworm-slim AS runtime
 

@@ -25,7 +25,7 @@ The platform side currently includes:
 * Kubernetes manifests for service orchestration
 * Kustomize-based manifest organization
 * RabbitMQ as the primary message broker
-* Honeycomb and OpenTelemetry for observability and tracing
+* OpenTelemetry-based observability with Honeycomb, Sentry, and Prometheus
 * Litmus for chaos engineering experiments
 * Dagger-based CI/CD pipeline logic written in Python
 * GitLab CI/CD integration for pipeline execution

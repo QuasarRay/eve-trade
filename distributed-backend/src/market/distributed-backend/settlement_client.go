@@ -22,12 +22,13 @@ type ConnectSettlementExecutor struct {
 	timeout time.Duration
 }
 
-func NewConnectSettlementExecutor(baseURL string, timeout time.Duration) *ConnectSettlementExecutor {
+func NewConnectSettlementExecutor(baseURL string, timeout time.Duration, options ...connect.ClientOption) *ConnectSettlementExecutor {
+	clientOptions := append([]connect.ClientOption{connect.WithGRPC()}, options...)
 	return &ConnectSettlementExecutor{
 		client: tradesettlementv1connect.NewTradeSettlementServiceClient(
 			h2cClient(),
 			baseURL,
-			connect.WithGRPC(),
+			clientOptions...,
 		),
 		timeout: timeout,
 	}

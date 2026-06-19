@@ -10,17 +10,36 @@ import (
 	"syscall"
 	"time"
 
+	"connectrpc.com/connect"
 	distributedbackend "github.com/astral/eve-trade/market/distributed-backend"
+	"github.com/astral/eve-trade/observability"
 )
 
 func main() {
-	config := distributedbackend.LoadConfig()
-	settlement := distributedbackend.NewConnectSettlementExecutor(config.TradeSettlementURL, config.SettlementRequestTimeout)
-	handler := distributedbackend.NewMarketHandler(settlement)
-	server := distributedbackend.NewHTTPServer(config, handler)
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	shutdownTelemetry := observability.Init(ctx)
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := shutdownTelemetry(shutdownCtx); err != nil {
+			slog.Error("market telemetry shutdown failed", "error", err)
+		}
+	}()
+
+	config := distributedbackend.LoadConfig()
+	settlement := distributedbackend.NewConnectSettlementExecutor(
+		config.TradeSettlementURL,
+		config.SettlementRequestTimeout,
+		connect.WithInterceptors(observability.NewClientInterceptor()),
+	)
+	handler := distributedbackend.NewMarketHandler(settlement)
+	server := distributedbackend.NewHTTPServer(
+		config,
+		handler,
+		connect.WithInterceptors(observability.NewInternalServerInterceptor()),
+	)
 
 	errs := make(chan error, 1)
 	go func() {

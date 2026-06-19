@@ -13,6 +13,7 @@ Apply the shared Gateway API platform first when using the included
 
 ```powershell
 kubectl apply -k distributed-backend\orchestration\kubernetes\platform\gateway\prod
+kubectl apply -k distributed-backend\orchestration\kubernetes\base\observability
 kubectl apply -k distributed-backend\orchestration\kubernetes\overlay\prod
 ```
 
@@ -22,8 +23,8 @@ Before deployment, patch these production values:
 - `api.eve-trade.example.com` in `httproute.yaml` and the platform Gateway.
 - The ACME email in `platform/gateway/prod/clusterissuer-letsencrypt-prod.yaml`.
 - The `trade-settlement-database` and `rabbitmq` secrets.
-- The optional `trade-settlement-observability` secret with a `HONEYCOMB_API_KEY`
-  key when Honeycomb trace export is enabled.
+- The `observability-backends` secret in the `eve-trade-observability` namespace
+  with Honeycomb and Sentry credentials.
 
 The base placeholder database and RabbitMQ secrets are intentionally deleted by
 this overlay. Create `trade-settlement-database` with a `DATABASE_URL` key and
@@ -32,7 +33,7 @@ this overlay. Create `trade-settlement-database` with a `DATABASE_URL` key and
 your production secret manager, External Secrets, Sealed Secrets, or another
 approved mechanism.
 
-Create `trade-settlement-observability` out of band with a `HONEYCOMB_API_KEY`
-key to export Rust settlement traces to Honeycomb. The deployment still starts
-without that secret, and falls back to structured JSON logs only when no key is
-present.
+Create `observability-backends` out of band with `HONEYCOMB_API_KEY`,
+`SENTRY_AUTH_TOKEN`, `SENTRY_ORG_SLUG`, and `SENTRY_URL` keys. Application pods
+send OTLP telemetry only to the OpenTelemetry Collector; Honeycomb, Sentry, and
+Prometheus routing is handled by the collector. See `distributed-backend/OBSERVABILITY.md`.

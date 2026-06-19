@@ -24,9 +24,10 @@ type ConnectMarketClient struct {
 	timeout time.Duration
 }
 
-func NewConnectMarketClient(baseURL string, timeout time.Duration) *ConnectMarketClient {
+func NewConnectMarketClient(baseURL string, timeout time.Duration, options ...connect.ClientOption) *ConnectMarketClient {
+	clientOptions := append([]connect.ClientOption{connect.WithGRPC()}, options...)
 	return &ConnectMarketClient{
-		client:  marketv1connect.NewMarketServiceClient(h2cClient(), baseURL, connect.WithGRPC()),
+		client:  marketv1connect.NewMarketServiceClient(h2cClient(), baseURL, clientOptions...),
 		timeout: timeout,
 	}
 }
