@@ -8,10 +8,6 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/environment: production
-      annotations:
-        prometheus.io/path: /metrics
-        prometheus.io/port: "8080"
-        prometheus.io/scrape: "true"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -75,10 +71,6 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/environment: production
-      annotations:
-        prometheus.io/path: /metrics
-        prometheus.io/port: "8081"
-        prometheus.io/scrape: "true"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -142,10 +134,6 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/environment: production
-      annotations:
-        prometheus.io/path: /metrics
-        prometheus.io/port: "9092"
-        prometheus.io/scrape: "true"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -182,13 +170,6 @@ spec:
       containers:
         - name: trade-settlement
           imagePullPolicy: Always
-          env:
-            - name: HONEYCOMB_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: trade-settlement-observability
-                  key: HONEYCOMB_API_KEY
-                  optional: true
           resources:
             requests:
               cpu: 250m

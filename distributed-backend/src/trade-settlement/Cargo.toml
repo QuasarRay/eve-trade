@@ -14,6 +14,7 @@ sha2 = "0.10"
 sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json"] }
 summer = "0.7.1"
 summer-grpc = "0.7.1"
+summer-opentelemetry = { version = "0.7.1", default-features = false, features = ["http", "more-resource"] }
 summer-sqlx = { version = "0.7.1", default-features = false, features = ["postgres", "runtime-tokio-rustls", "with-uuid", "with-json", "with-chrono"] }
 thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
@@ -25,4 +26,3 @@ uuid = { version = "1", features = ["serde", "v4"] }
 [build-dependencies]
 protoc-bin-vendored = "3"
 tonic-prost-build = "0.14.6"
-

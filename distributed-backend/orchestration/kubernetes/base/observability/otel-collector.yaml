@@ -1,11 +1,14 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: honeycomb-api-key
+  name: observability-backends
   namespace: eve-trade-observability
 type: Opaque
 stringData:
-  HONEYCOMB_API_KEY: "REPLACE_ME"
+  HONEYCOMB_API_KEY: "REPLACE_WITH_HONEYCOMB_INGEST_API_KEY"
+  SENTRY_AUTH_TOKEN: "REPLACE_WITH_SENTRY_AUTH_TOKEN"
+  SENTRY_ORG_SLUG: "REPLACE_WITH_SENTRY_ORG_SLUG"
+  SENTRY_URL: "https://sentry.io"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -21,6 +24,10 @@ data:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
+
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
 
     processors:
       memory_limiter:
@@ -43,32 +50,47 @@ data:
 
     exporters:
       otlphttp/honeycomb:
-        endpoint: https://api.honeycomb.io
+        endpoint: https://api.honeycomb.io:443
         headers:
           x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
 
+      sentry:
+        url: ${env:SENTRY_URL:-https://sentry.io}
+        org_slug: ${env:SENTRY_ORG_SLUG}
+        auth_token: ${env:SENTRY_AUTH_TOKEN}
+        routing:
+          project_from_attribute: service.name
+
+      prometheus:
+        endpoint: 0.0.0.0:9464
+        namespace: eve_trade
+
     service:
+      extensions: [health_check]
       pipelines:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, resource, batch]
-          exporters: [otlphttp/honeycomb]
+          exporters: [otlphttp/honeycomb, sentry]
 
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, resource, batch]
-          exporters: [otlphttp/honeycomb]
+          exporters: [otlphttp/honeycomb, prometheus]
 
         logs:
           receivers: [otlp]
           processors: [memory_limiter, resource, batch]
-          exporters: [otlphttp/honeycomb]
+          exporters: [otlphttp/honeycomb, sentry]
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: otel-collector
   namespace: eve-trade-observability
+  labels:
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/component: observability
 spec:
   replicas: 2
   selector:
@@ -78,18 +100,20 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: otel-collector
+        app.kubernetes.io/component: observability
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9464"
+        prometheus.io/scrape: "true"
     spec:
       containers:
         - name: otel-collector
           image: otel/opentelemetry-collector-contrib:latest
           args:
             - "--config=/etc/otelcol/collector.yaml"
-          env:
-            - name: HONEYCOMB_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: honeycomb-api-key
-                  key: HONEYCOMB_API_KEY
+          envFrom:
+            - secretRef:
+                name: observability-backends
           ports:
             - name: otlp-grpc
               containerPort: 4317
@@ -97,6 +121,23 @@ spec:
               containerPort: 4318
             - name: health
               containerPort: 13133
+            - name: metrics
+              containerPort: 9464
+          readinessProbe:
+            httpGet:
+              path: /
+              port: health
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
           volumeMounts:
             - name: config
               mountPath: /etc/otelcol
@@ -117,6 +158,9 @@ kind: Service
 metadata:
   name: otel-collector
   namespace: eve-trade-observability
+  labels:
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/component: observability
 spec:
   type: ClusterIP
   selector:
@@ -128,3 +172,9 @@ spec:
     - name: otlp-http
       port: 4318
       targetPort: otlp-http
+    - name: health
+      port: 13133
+      targetPort: health
+    - name: metrics
+      port: 9464
+      targetPort: metrics

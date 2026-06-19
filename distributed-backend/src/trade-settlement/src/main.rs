@@ -8,7 +8,8 @@ async fn main() {
         .expect("failed to set trade-settlement working directory");
     trade_settlement::service::ensure_linked();
 
-    App::new()
+    let mut app = App::new();
+    trade_settlement::observability::configure(&mut app)
         .add_plugin(SqlxPlugin)
         .add_plugin(GrpcPlugin)
         .run()

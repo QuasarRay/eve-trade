@@ -12,8 +12,10 @@ data:
   OTEL_METRICS_EXPORTER: "otlp"
   OTEL_LOGS_EXPORTER: "otlp"
   OTEL_PROPAGATORS: "tracecontext,baggage"
+  OTEL_METRIC_EXPORT_INTERVAL: "15000"
   DEPLOYMENT_ENVIRONMENT: "production"
   OTEL_SERVICE_NAME: "api-gateway"
+  OTEL_SERVICE_NAMESPACE: "eve-trade"
   OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
 ---
 apiVersion: v1
@@ -35,8 +37,10 @@ data:
   OTEL_METRICS_EXPORTER: "otlp"
   OTEL_LOGS_EXPORTER: "otlp"
   OTEL_PROPAGATORS: "tracecontext,baggage"
+  OTEL_METRIC_EXPORT_INTERVAL: "15000"
   DEPLOYMENT_ENVIRONMENT: "production"
   OTEL_SERVICE_NAME: "market"
+  OTEL_SERVICE_NAMESPACE: "eve-trade"
   OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
 ---
 apiVersion: v1
@@ -57,8 +61,10 @@ data:
   OTEL_METRICS_EXPORTER: "otlp"
   OTEL_LOGS_EXPORTER: "otlp"
   OTEL_PROPAGATORS: "tracecontext,baggage"
+  OTEL_METRIC_EXPORT_INTERVAL: "15000"
   DEPLOYMENT_ENVIRONMENT: "production"
   OTEL_SERVICE_NAME: "settlement-worker"
+  OTEL_SERVICE_NAMESPACE: "eve-trade"
   OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
 ---
 apiVersion: v1
@@ -73,8 +79,10 @@ data:
   OTEL_METRICS_EXPORTER: "otlp"
   OTEL_LOGS_EXPORTER: "otlp"
   OTEL_PROPAGATORS: "tracecontext,baggage"
+  OTEL_METRIC_EXPORT_INTERVAL: "15000"
   DEPLOYMENT_ENVIRONMENT: "production"
   OTEL_SERVICE_NAME: "trade-settlement"
+  OTEL_SERVICE_NAMESPACE: "eve-trade"
   RUST_LOG: "info,sqlx=info,tonic=info,h2=warn,hyper=warn,trade_settlement=debug"
   RUST_BACKTRACE: "0"
   TRACING_JSON: "true"

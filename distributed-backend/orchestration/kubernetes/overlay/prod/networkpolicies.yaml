@@ -26,6 +26,34 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: application-telemetry-egress
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - api-gateway
+          - market
+          - settlement-worker
+          - trade-settlement
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: eve-trade-observability
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-collector
+      ports:
+        - protocol: TCP
+          port: 4318
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: api-gateway-ingress
 spec:
   podSelector:
@@ -153,11 +181,6 @@ spec:
       ports:
         - protocol: TCP
           port: 9092
-    - ports:
-        - protocol: TCP
-          port: 4318
-        - protocol: TCP
-          port: 443
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -195,18 +218,3 @@ spec:
     - ports:
         - protocol: TCP
           port: 5432
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: trade-settlement-telemetry-egress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: trade-settlement
-  policyTypes:
-    - Egress
-  egress:
-    - ports:
-        - protocol: TCP
-          port: 443

@@ -3,6 +3,9 @@ binding = "0.0.0.0"
 port = 9090
 graceful = true
 
+[opentelemetry]
+enable = true
+
 [sqlx]
 uri = "postgres://postgres:postgres@localhost:5432/eve_trade"
 min_connections = 1
@@ -10,4 +13,3 @@ max_connections = 10
 acquire_timeout = 30000
 idle_timeout = 600000
 connect_timeout = 1800000
-
