@@ -1,48 +1,51 @@
+use tonic::Status;
+
 #[derive(Debug, thiserror::Error)]
 pub enum SettlementError {
-    #[error("invalid request: {0}")]
-    InvalidRequest(String),
-
-    #[error("idempotency key or request id was reused with different request content")]
-    RequestIdConflict,
-
-    #[error("invalid transition from {from} using {action}")]
-    InvalidTransition { from: String, action: &'static str },
-
-    #[error("request does not match durable trade instance {trade_instance_id}")]
-    TradeMismatch { trade_instance_id: String },
-
-    #[error("wallet {wallet_id} has insufficient ISK")]
-    InsufficientIsk { wallet_id: String },
-
-    #[error("item stack {item_stack_id} has insufficient quantity")]
-    InsufficientItems { item_stack_id: String },
-
-    #[error("database conflict: {0}")]
-    DatabaseConflict(String),
-
-    #[error(transparent)]
+    #[error("invalid argument: {0}")]
+    InvalidArgument(String),
+    #[error("not found: {0}")]
+    NotFound(String),
+    #[error("conflict: {0}")]
+    Conflict(String),
+    #[error("failed precondition: {0}")]
+    FailedPrecondition(String),
+    #[error("insufficient funds: {0}")]
+    InsufficientFunds(String),
+    #[error("insufficient quantity: {0}")]
+    InsufficientQuantity(String),
+    #[error("database error: {0}")]
     Database(#[from] sqlx::Error),
+    #[error("serialization error: {0}")]
+    Serialization(#[from] serde_json::Error),
 }
 
+pub type Result<T> = std::result::Result<T, SettlementError>;
+
 impl SettlementError {
-    pub fn error_code(&self) -> i32 {
+    pub fn code(&self) -> &'static str {
         match self {
-            Self::InvalidRequest(_) => 1,
-            Self::RequestIdConflict | Self::DatabaseConflict(_) => 6,
-            Self::InvalidTransition { .. }
-            | Self::TradeMismatch { .. }
-            | Self::InsufficientIsk { .. }
-            | Self::InsufficientItems { .. } => 4,
-            Self::Database(sqlx::Error::RowNotFound) => 2,
-            Self::Database(_) => 7,
+            SettlementError::InvalidArgument(_) => "INVALID_ARGUMENT",
+            SettlementError::NotFound(_) => "NOT_FOUND",
+            SettlementError::Conflict(_) => "CONFLICT",
+            SettlementError::FailedPrecondition(_) => "FAILED_PRECONDITION",
+            SettlementError::InsufficientFunds(_) => "INSUFFICIENT_FUNDS",
+            SettlementError::InsufficientQuantity(_) => "INSUFFICIENT_QUANTITY",
+            SettlementError::Database(_) => "DATABASE_ERROR",
+            SettlementError::Serialization(_) => "SERIALIZATION_ERROR",
         }
     }
 
-    pub fn retryable(&self) -> bool {
-        matches!(
-            self,
-            Self::Database(sqlx::Error::PoolTimedOut | sqlx::Error::Io(_))
-        )
+    pub fn into_status(self) -> Status {
+        match self {
+            SettlementError::InvalidArgument(message) => Status::invalid_argument(message),
+            SettlementError::NotFound(message) => Status::not_found(message),
+            SettlementError::Conflict(message) => Status::aborted(message),
+            SettlementError::FailedPrecondition(message) => Status::failed_precondition(message),
+            SettlementError::InsufficientFunds(message) => Status::failed_precondition(message),
+            SettlementError::InsufficientQuantity(message) => Status::failed_precondition(message),
+            SettlementError::Database(error) => Status::internal(error.to_string()),
+            SettlementError::Serialization(error) => Status::internal(error.to_string()),
+        }
     }
 }

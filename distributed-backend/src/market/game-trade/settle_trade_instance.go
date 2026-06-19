@@ -1,0 +1,84 @@
+package gametrade
+
+import (
+	"crypto/rand"
+	"fmt"
+
+	tradesettlementv1 "github.com/astral/eve-trade/market/distributed-backend/gen/trade_settlement/v1"
+)
+
+const (
+	CreatedByService = "market"
+
+	TradeKindSell = "SELL"
+
+	TradeStateOpen      = "OPEN"
+	TradeStateCancelled = "CANCELLED"
+	TradeStateCompleted = "COMPLETED"
+
+	TradeStateChangeIssued    = "ISSUED"
+	TradeStateChangeCancelled = "CANCELLED_BY_ISSUER"
+	TradeStateChangeAccepted  = "ACCEPTED_BY_BUYER"
+)
+
+type ItemStackRow struct {
+	ItemStackID string
+	OwnerID     int64
+	ItemTypeID  int64
+	StationID   int64
+	Quantity    int64
+}
+
+type SettlementPlan struct {
+	IdempotencyKey         string
+	ExternalRequestID      string
+	CausedByCapsuleerID    int64
+	Operations             []*tradesettlementv1.SettlementOperation
+	TradeInstanceID        string
+	ItemStackEscrowID      string
+	WalletEscrowID         string
+	DestinationItemStackID string
+}
+
+func SettleTradeInstance(plan SettlementPlan) (*tradesettlementv1.ExecuteSettlementBatchRequest, error) {
+	if plan.IdempotencyKey == "" {
+		return nil, fmt.Errorf("idempotency key is required")
+	}
+	if len(plan.Operations) == 0 {
+		return nil, fmt.Errorf("settlement plan must contain at least one operation")
+	}
+
+	return &tradesettlementv1.ExecuteSettlementBatchRequest{
+		IdempotencyKey:      plan.IdempotencyKey,
+		ExternalRequestId:   plan.ExternalRequestID,
+		CausedByCapsuleerId: &plan.CausedByCapsuleerID,
+		Operations:          plan.Operations,
+		CreatedByService:    CreatedByService,
+		RequestFingerprint:  "",
+		RequestId:           "",
+	}, nil
+}
+
+func newID() (string, error) {
+	var b [16]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return "", fmt.Errorf("generate uuid: %w", err)
+	}
+	b[6] = (b[6] & 0x0f) | 0x40
+	b[8] = (b[8] & 0x3f) | 0x80
+	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16]), nil
+}
+
+func validatePositive(name string, value int64) error {
+	if value <= 0 {
+		return fmt.Errorf("%s must be greater than zero", name)
+	}
+	return nil
+}
+
+func validateRequired(name string, value string) error {
+	if value == "" {
+		return fmt.Errorf("%s is required", name)
+	}
+	return nil
+}

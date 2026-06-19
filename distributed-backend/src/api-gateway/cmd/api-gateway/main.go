@@ -2,70 +2,45 @@ package main
 
 import (
 	"context"
-	"log"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"connectrpc.com/connect"
-	"github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/gateway/v1/gatewayv1connect"
-	gateway "github.com/QuasarRay/eve-trade/distributed-backend/src/api-gateway"
-	"github.com/QuasarRay/eve-trade/distributed-backend/src/internal/observability"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
+	distributedbackend "github.com/astral/eve-trade/api-gateway/distributed-backend"
 )
 
 func main() {
-	ctx := context.Background()
+	config := distributedbackend.LoadConfig()
+	market := distributedbackend.NewConnectMarketClient(config.MarketURL, config.DownstreamTimeout)
+	handler := distributedbackend.NewGatewayHandler(market)
+	server := distributedbackend.NewHTTPServer(config, handler)
 
-	shutdownTelemetry := observability.Init(ctx)
-	defer func() {
-		if err := shutdownTelemetry(ctx); err != nil {
-			slog.Error("failed to shutdown telemetry", "error", err)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	errs := make(chan error, 1)
+	go func() {
+		slog.Info("api-gateway listening", "addr", config.HTTPAddr, "market_url", config.MarketURL)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errs <- err
 		}
 	}()
 
-	marketURL := getenv("MARKET_URL", "http://localhost:8081")
-	listenAddr := getenv("API_GATEWAY_ADDR", ":8080")
-
-	serverInterceptor := observability.NewExternalServerInterceptor()
-	clientInterceptor := observability.NewClientInterceptor()
-
-	marketClient := gateway.NewMarketClient(
-		marketURL,
-		connect.WithInterceptors(clientInterceptor),
-	)
-
-	path, handler := gatewayv1connect.NewGameTradeGatewayServiceHandler(
-		gateway.NewService(marketClient),
-		connect.WithInterceptors(serverInterceptor),
-	)
-
-	mux := http.NewServeMux()
-	mux.Handle(path, handler)
-
-	server := &http.Server{
-		Addr:    listenAddr,
-		Handler: h2c.NewHandler(mux, &http2.Server{}),
-	}
-
-	log.Printf("api-gateway listening on %s", listenAddr)
-
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		slog.Error("api-gateway server failed", "error", err)
-
-		if shutdownErr := shutdownTelemetry(ctx); shutdownErr != nil {
-			slog.Error("failed to shutdown telemetry", "error", shutdownErr)
-		}
-
+	select {
+	case <-ctx.Done():
+	case err := <-errs:
+		slog.Error("api-gateway failed", "error", err)
 		os.Exit(1)
 	}
-}
 
-func getenv(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		slog.Error("api-gateway shutdown failed", "error", err)
+		os.Exit(1)
 	}
-
-	return fallback
 }

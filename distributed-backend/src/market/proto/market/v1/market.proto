@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package eve.market.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/astral/eve-trade/market/distributed-backend/gen/market/v1;marketv1";
+
+service MarketService {
+  rpc IssueTradeInstance(IssueTradeInstanceRequest) returns (IssueTradeInstanceResponse);
+  rpc AcceptTradeInstance(AcceptTradeInstanceRequest) returns (AcceptTradeInstanceResponse);
+  rpc CancelTradeInstance(CancelTradeInstanceRequest) returns (CancelTradeInstanceResponse);
+}
+
+message ItemStackRow {
+  string item_stack_id = 1;
+  int64 owner_id = 2;
+  int64 item_type_id = 3;
+  int64 station_id = 4;
+  int64 quantity = 5;
+}
+
+message IssueTradeInstanceRequest {
+  string idempotency_key = 1;
+  string external_request_id = 2;
+  int64 issued_by_capsuleer_id = 3;
+  ItemStackRow item_stack = 4;
+  int64 quantity = 5;
+  int64 unit_price_isk = 6;
+  google.protobuf.Timestamp expires_at = 7;
+}
+
+message IssueTradeInstanceResponse {
+  string trade_instance_id = 1;
+  string item_stack_escrow_id = 2;
+  string settlement_batch_id = 3;
+}
+
+message AcceptTradeInstanceRequest {
+  string idempotency_key = 1;
+  string external_request_id = 2;
+  string trade_instance_id = 3;
+  int64 buyer_capsuleer_id = 4;
+  int64 seller_capsuleer_id = 5;
+  int64 item_type_id = 6;
+  int64 station_id = 7;
+  int64 quantity_requested = 8;
+  int64 isk_amount_paid = 9;
+  string buyer_wallet_id = 10;
+  string seller_wallet_id = 11;
+  string item_stack_escrow_id = 12;
+  string buyer_destination_item_stack_id = 13;
+  bool create_buyer_destination_item_stack = 14;
+}
+
+message AcceptTradeInstanceResponse {
+  string wallet_escrow_id = 1;
+  string buyer_destination_item_stack_id = 2;
+  string settlement_batch_id = 3;
+}
+
+message CancelTradeInstanceRequest {
+  string idempotency_key = 1;
+  string external_request_id = 2;
+  string trade_instance_id = 3;
+  int64 cancelled_by_capsuleer_id = 4;
+  string item_stack_escrow_id = 5;
+  string return_item_stack_id = 6;
+  int64 return_quantity = 7;
+  string wallet_escrow_id = 8;
+  string return_wallet_id = 9;
+  int64 return_isk_amount = 10;
+}
+
+message CancelTradeInstanceResponse {
+  string settlement_batch_id = 1;
+}
+

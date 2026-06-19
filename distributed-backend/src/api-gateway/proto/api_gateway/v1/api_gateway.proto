@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package eve.api_gateway.v1;
+
+import "market/v1/market.proto";
+
+option go_package = "github.com/astral/eve-trade/api-gateway/distributed-backend/gen/api_gateway/v1;apigatewayv1";
+
+service GameTradeGatewayService {
+  rpc IssueTradeInstance(eve.market.v1.IssueTradeInstanceRequest) returns (eve.market.v1.IssueTradeInstanceResponse);
+  rpc AcceptTradeInstance(eve.market.v1.AcceptTradeInstanceRequest) returns (eve.market.v1.AcceptTradeInstanceResponse);
+  rpc CancelTradeInstance(eve.market.v1.CancelTradeInstanceRequest) returns (eve.market.v1.CancelTradeInstanceResponse);
+}
+
