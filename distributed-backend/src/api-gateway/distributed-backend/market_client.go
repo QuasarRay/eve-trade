@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	marketv1 "github.com/astral/eve-trade/proto/gen/eve/market/v1"
-	marketv1connect "github.com/astral/eve-trade/proto/gen/eve/market/v1/marketv1connect"
+	marketv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1"
+	marketv1connect "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1/marketv1connect"
 	"golang.org/x/net/http2"
 )
 

@@ -1,11 +1,11 @@
-module github.com/astral/eve-trade/market
+module github.com/QuasarRay/eve-trade/market
 
 go 1.26
 
 require (
 	connectrpc.com/connect v1.20.0
-	github.com/astral/eve-trade/observability v0.0.0
-	github.com/astral/eve-trade/proto v0.0.0
+	github.com/QuasarRay/eve-trade/observability v0.0.0
+	github.com/QuasarRay/eve-trade/proto v0.0.0
 	github.com/jackc/pgx/v5 v5.7.6
 	golang.org/x/net v0.55.0
 	google.golang.org/protobuf v1.36.11
@@ -55,6 +55,6 @@ require (
 	google.golang.org/grpc v1.81.1 // indirect
 )
 
-replace github.com/astral/eve-trade/observability => ../observability
+replace github.com/QuasarRay/eve-trade/observability => ../observability
 
-replace github.com/astral/eve-trade/proto => ../../proto
+replace github.com/QuasarRay/eve-trade/proto => ../../proto

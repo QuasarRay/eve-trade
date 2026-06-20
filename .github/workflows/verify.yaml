@@ -47,6 +47,15 @@ jobs:
       - name: Check protobuf module builds
         run: buf build --error-format github-actions
 
+      - name: Reject service-local protobuf sources
+        shell: bash
+        run: |
+          stale_proto="$(find distributed-backend/src -path '*/proto/*.proto' -print -quit)"
+          if [ -n "$stale_proto" ]; then
+            echo "Only distributed-backend/proto may contain protobuf sources; found: $stale_proto"
+            exit 1
+          fi
+
       - name: Lint protobuf contracts
         run: buf lint --error-format github-actions
 
@@ -69,15 +78,23 @@ jobs:
           - name: proto
             module: distributed-backend/proto
             build_package: ""
+            build_tags: ""
           - name: observability
             module: distributed-backend/src/observability
             build_package: ""
+            build_tags: ""
           - name: market
             module: distributed-backend/src/market
             build_package: ./cmd/market
+            build_tags: ""
           - name: api-gateway
             module: distributed-backend/src/api-gateway
             build_package: ./cmd/api-gateway
+            build_tags: ""
+          - name: settlement-worker
+            module: distributed-backend/src/settlement-worker
+            build_package: ./cmd/settlement-worker
+            build_tags: legacy_rabbitmq
 
     steps:
       - name: Checkout
@@ -108,12 +125,24 @@ jobs:
 
       - name: Test Go packages
         working-directory: ${{ matrix.module }}
-        run: go test ./...
+        shell: bash
+        run: |
+          if [ -n "${{ matrix.build_tags }}" ]; then
+            go test -tags "${{ matrix.build_tags }}" ./...
+          else
+            go test ./...
+          fi
 
       - name: Build service
         if: matrix.build_package != ''
         working-directory: ${{ matrix.module }}
-        run: go build -o /tmp/eve-trade-${{ matrix.name }} ${{ matrix.build_package }}
+        shell: bash
+        run: |
+          if [ -n "${{ matrix.build_tags }}" ]; then
+            go build -tags "${{ matrix.build_tags }}" -o /tmp/eve-trade-${{ matrix.name }} ${{ matrix.build_package }}
+          else
+            go build -o /tmp/eve-trade-${{ matrix.name }} ${{ matrix.build_package }}
+          fi
 
   rust-trade-settlement:
     name: rust / trade-settlement
@@ -146,3 +175,19 @@ jobs:
 
       - name: Lint Rust crate
         run: cargo clippy --locked --all-targets -- -D warnings
+
+  e2e:
+    name: e2e / compose
+    runs-on: ubuntu-latest
+    needs: [proto, go, rust-trade-settlement]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run live Python e2e tests
+        run: docker compose -f docker-compose.integration.yml --profile test up --build --abort-on-container-exit --exit-code-from e2e-tests
+
+      - name: Clean up compose resources
+        if: always()
+        run: docker compose -f docker-compose.integration.yml --profile test down -v --remove-orphans

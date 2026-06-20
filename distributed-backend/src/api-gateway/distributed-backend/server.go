@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	api_gatewayv1connect "github.com/astral/eve-trade/proto/gen/eve/api_gateway/v1/api_gatewayv1connect"
+	api_gatewayv1connect "github.com/QuasarRay/eve-trade/proto/gen/eve/api_gateway/v1/api_gatewayv1connect"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )

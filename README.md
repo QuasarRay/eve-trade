@@ -2,6 +2,37 @@
 
 `eve-trade` is a modular MMORPG trade system in development. It is designed to integrate with a game server, receive trade requests from that game server, process them through distributed backend services, perform durable settlement operations, and return a result.
 
+## Run Locally
+
+Prerequisite: install Docker Desktop and make sure it is allowed to run Linux containers.
+
+One command from the repository root:
+
+```bash
+docker compose up --build
+```
+
+No CLI on Windows:
+
+1. Double-click `run-eve-trade.cmd`.
+2. Wait for Docker images to build and services to start.
+3. Stop everything by closing the launcher window with `Ctrl+C`, or double-click `stop-eve-trade.cmd`.
+
+VS Code button path:
+
+1. Open the repository in VS Code.
+2. Run `Terminal: Run Build Task`.
+3. Choose `Run eve-trade` if VS Code asks.
+
+The local stack starts:
+
+* API Gateway: `http://localhost:8080`
+* Market service: `http://localhost:8081`
+* Trade settlement gRPC: `localhost:9092`
+* PostgreSQL: `localhost:5432`
+
+The startup migration recreates the local database schema so each run starts from a clean backend state. This project currently exposes backend services, not a browser UI.
+
 ## Goal
 
 The goal of `eve-trade` is to incrementally grow into a production-ready MMORPG trade system inspired by EVE Online-style market and trade mechanics.

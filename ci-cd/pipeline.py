@@ -29,11 +29,13 @@ KUBERNETES_NAMESPACE = "eve-trade"
 SERVICE_IMAGE_NAMES = (
     "api-gateway",
     "market",
+    "settlement-worker",
     "trade-settlement",
 )
 DEPLOYMENT_NAMES = (
     "rabbitmq",
     "trade-settlement",
+    "settlement-worker",
     "market",
     "api-gateway",
 )
@@ -59,6 +61,7 @@ class GoService:
     binary: str
     module_dir: str
     package: str
+    build_tags: str = ""
     port: int | None = None
 
 
@@ -76,6 +79,13 @@ GO_SERVICES = {
         module_dir="distributed-backend/src/market",
         package="./cmd/market",
         port=8081,
+    ),
+    "settlement-worker": GoService(
+        name="settlement-worker",
+        binary="settlement-worker",
+        module_dir="distributed-backend/src/settlement-worker",
+        package="./cmd/settlement-worker",
+        build_tags="legacy_rabbitmq",
     ),
 }
 
@@ -266,7 +276,7 @@ fi
     async def go_checks(self) -> None:
         script = r"""
 set -euo pipefail
-unformatted="$(gofmt -l distributed-backend/src/api-gateway distributed-backend/src/market distributed-backend/proto/gen)"
+unformatted="$(gofmt -l distributed-backend/src/api-gateway distributed-backend/src/market distributed-backend/src/settlement-worker distributed-backend/proto/gen)"
 if [ -n "$unformatted" ]; then
   echo "Go files need gofmt:"
   echo "$unformatted"
@@ -275,6 +285,7 @@ fi
 for module in distributed-backend/proto distributed-backend/src/observability distributed-backend/src/market distributed-backend/src/api-gateway; do
   (cd "$module" && go test ./...)
 done
+(cd distributed-backend/src/settlement-worker && go test -tags legacy_rabbitmq ./...)
 """
         await self.run_container(
             "Go format and tests",
@@ -299,7 +310,14 @@ done
         await self.run_container(
             "Python e2e collection tests",
             self.python_e2e_base().with_exec(
-                ["pytest", "distributed-backend/tests/e2e", "--collect-only", "-q"]
+                [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "distributed-backend/tests/e2e",
+                    "--collect-only",
+                    "-q",
+                ]
             ),
         )
 
@@ -340,20 +358,22 @@ done
         await self.run_container("dependency and filesystem vulnerability scan", trivy)
 
     def go_runtime_image(self, spec: GoService) -> dagger.Container:
+        build_command = ["go", "build"]
+        if spec.build_tags:
+            build_command.extend(["-tags", spec.build_tags])
+        build_command.extend(
+            [
+                "-trimpath",
+                "-ldflags=-s -w",
+                "-o",
+                f"/out/{spec.binary}",
+                spec.package,
+            ]
+        )
         build = (
             self.go_base()
             .with_workdir(f"/workspace/{spec.module_dir}")
-            .with_exec(
-                [
-                    "go",
-                    "build",
-                    "-trimpath",
-                    "-ldflags=-s -w",
-                    "-o",
-                    f"/out/{spec.binary}",
-                    spec.package,
-                ]
-            )
+            .with_exec(build_command)
         )
         container = (
             self.client.container()
@@ -827,7 +847,23 @@ for host, port in targets:
                 raise
             time.sleep(1)
 PY
-pytest distributed-backend/tests/e2e -q
+python - <<'PY'
+import re
+import subprocess
+import sys
+
+result = subprocess.run(
+    [sys.executable, "-m", "pytest", "distributed-backend/tests/e2e", "-q", "-rA"],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
+    text=True,
+)
+print(result.stdout, end="")
+if re.search(r"(?m)^[0-9]+ skipped in ", result.stdout):
+    print("all e2e tests were skipped", file=sys.stderr)
+    raise SystemExit(1)
+raise SystemExit(result.returncode)
+PY
 """
         tests = (
             self.python_e2e_base()

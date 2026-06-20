@@ -9,8 +9,10 @@ from helpers import (
     cancel_payload,
     cancel_trade,
     create_trade,
+    expect_grpc_error,
     expect_rpc_error,
     fresh_key,
+    idempotency_record_row,
     insert_item_stack,
     issue_payload,
     item_escrow_row,
@@ -19,6 +21,8 @@ from helpers import (
     open_trade_count,
     seed_world,
     settlement_batch_count,
+    settlement_batch_row,
+    settlement_step_rows,
     table_count,
     total_isk_amount,
     total_item_quantity,
@@ -207,6 +211,24 @@ def test_accepting_partial_trade_reduces_available_trade_quantity(db, gateway):
     assert item_escrow_row(db, trade)["quantity"] == 6
 
 
+def test_accepting_partial_trade_updates_visible_available_quantity(db, gateway):
+    world = seed_world(db, seller_quantity=10)
+    trade = create_trade(gateway, world, quantity=10)
+
+    accept_trade(gateway, world, trade, quantity=4)
+
+    assert trade_row(db, trade)["remaining_quantity"] == 6
+
+
+def test_accepting_partial_trade_keeps_database_available_quantity_consistent(db, gateway):
+    world = seed_world(db, seller_quantity=10)
+    trade = create_trade(gateway, world, quantity=10)
+
+    accept_trade(gateway, world, trade, quantity=4)
+
+    assert trade_row(db, trade)["remaining_quantity"] == item_escrow_row(db, trade)["quantity"]
+
+
 def test_accepting_full_remaining_trade_quantity_marks_trade_completed(db, gateway):
     world = seed_world(db)
     trade = create_trade(gateway, world, quantity=4)
@@ -234,6 +256,16 @@ def test_accepting_trade_completes_trade_when_item_escrow_quantity_becomes_zero(
 
     assert item_escrow_row(db, trade)["quantity"] == 0
     assert trade_row(db, trade)["trade_state"] == "COMPLETED"
+
+
+def test_accepting_full_remaining_trade_leaves_zero_available_quantity(db, gateway):
+    world = seed_world(db)
+    trade = create_trade(gateway, world, quantity=4)
+
+    accept_trade(gateway, world, trade)
+
+    assert item_escrow_row(db, trade)["quantity"] == 0
+    assert trade_row(db, trade)["remaining_quantity"] == 0
 
 
 def test_accepting_trade_rejects_quantity_above_available_trade_quantity(db, gateway):
@@ -601,6 +633,77 @@ def test_failed_accept_trade_does_not_complete_trade(db, gateway):
     assert trade_row(db, trade)["trade_state"] == "OPEN"
 
 
+def test_failed_accept_rolls_back_wallet_and_item_changes(db, gateway):
+    world = seed_world(db, buyer_isk=50)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+
+    expect_rpc_error(lambda: accept_trade(gateway, world, trade))
+
+    assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 50
+    assert wallet_row(db, world.seller_wallet_id)["isk_amount"] == 100
+    assert item_escrow_row(db, trade)["quantity"] == 4
+    assert trade_row(db, trade)["remaining_quantity"] == 4
+
+
+def test_failed_accept_records_failed_batch_after_rollback(db, gateway):
+    world = seed_world(db, buyer_isk=50, buyer_stack_quantity=0)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+    key = fresh_key("accept-failed-diagnostics")
+
+    expect_rpc_error(
+        lambda: accept_trade(
+            gateway,
+            world,
+            trade,
+            idempotency_key=key,
+            buyer_destination_item_stack_id=world.buyer_stack_id,
+        )
+    )
+
+    batch = settlement_batch_row(db, key)
+    assert batch["batch_state"] == "FAILED"
+    assert batch["failure_code"] == "INSUFFICIENT_FUNDS"
+
+
+def test_failed_accept_records_failed_step_after_rollback(db, gateway):
+    world = seed_world(db, buyer_isk=50, buyer_stack_quantity=0)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+    key = fresh_key("accept-failed-step")
+
+    expect_rpc_error(
+        lambda: accept_trade(
+            gateway,
+            world,
+            trade,
+            idempotency_key=key,
+            buyer_destination_item_stack_id=world.buyer_stack_id,
+        )
+    )
+
+    steps = settlement_step_rows(db, settlement_batch_row(db, key)["settlement_batch_id"])
+    assert any(step["step_state"] == "FAILED" for step in steps)
+    assert all(step["step_state"] != "COMPLETED" for step in steps)
+
+
+def test_failed_accept_keeps_original_error_code_for_diagnostics(db, gateway):
+    world = seed_world(db, buyer_isk=50, buyer_stack_quantity=0)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+    key = fresh_key("accept-failed-error-code")
+
+    expect_rpc_error(
+        lambda: accept_trade(
+            gateway,
+            world,
+            trade,
+            idempotency_key=key,
+            buyer_destination_item_stack_id=world.buyer_stack_id,
+        )
+    )
+
+    assert settlement_batch_row(db, key)["failure_code"] == "INSUFFICIENT_FUNDS"
+    assert idempotency_record_row(db, key)["failure_code"] == "INSUFFICIENT_FUNDS"
+
+
 def test_failed_cancel_trade_does_not_refund_partial_item_quantity(db, gateway):
     world = seed_world(db, seller_quantity=10)
     trade = create_trade(gateway, world, quantity=4)
@@ -788,6 +891,26 @@ def test_completed_trade_has_zero_available_item_quantity(db, gateway):
 
     assert trade_row(db, trade)["trade_state"] == "COMPLETED"
     assert item_escrow_row(db, trade)["quantity"] == 0
+    assert trade_row(db, trade)["remaining_quantity"] == 0
+
+
+def test_completed_trade_cannot_have_positive_available_quantity(db, gateway):
+    world = seed_world(db)
+    trade = create_trade(gateway, world, quantity=4)
+
+    accept_trade(gateway, world, trade)
+
+    assert (
+        db.scalar(
+            """
+            SELECT count(*)
+            FROM trade_instance
+            WHERE trade_state = 'COMPLETED'
+              AND remaining_quantity > 0
+            """
+        )
+        == 0
+    )
 
 
 def test_outstanding_trade_can_have_positive_available_item_quantity(db, gateway):
@@ -1099,3 +1222,154 @@ def test_gateway_rejects_invalid_cancel_trade_without_changing_state_end_to_end(
     assert item_stack_row(db, world.seller_stack_id)["quantity"] == 6
     assert item_escrow_row(db, trade)["quantity"] == 4
     assert trade_row(db, trade)["trade_state"] == "OPEN"
+
+
+def test_settlement_rejects_completing_trade_while_item_escrow_quantity_remains_positive(db, gateway, settlement):
+    world = seed_world(db)
+    trade = create_trade(gateway, world, quantity=4)
+    pb = settlement.pb
+
+    expect_grpc_error(
+        lambda: settlement.execute_settlement_batch(
+            pb.ExecuteSettlementBatchRequest(
+                idempotency_key=fresh_key("settlement-complete-positive-escrow"),
+                external_request_id="settlement-complete-positive-escrow",
+                caused_by_capsuleer_id=world.buyer_id,
+                created_by_service="settlement-e2e",
+                operations=[
+                    pb.SettlementOperation(
+                        modify_trade_instance_state=pb.ModifyTradeInstanceState(
+                            trade_instance_id=trade.trade_instance_id,
+                            to_trade_state="COMPLETED",
+                            trade_state_change_kind="ACCEPTED_BY_BUYER",
+                            changed_by_service="settlement-e2e",
+                        )
+                    )
+                ],
+            )
+        ),
+        code="FAILED_PRECONDITION",
+        contains="remaining item escrow",
+    )
+
+    assert trade_row(db, trade)["trade_state"] == "OPEN"
+    assert item_escrow_row(db, trade)["quantity"] == 4
+
+
+def test_settlement_rejects_releasing_more_item_quantity_than_escrow_contains(db, gateway, settlement):
+    world = seed_world(db, buyer_isk=1_000, buyer_stack_quantity=0)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+    pb = settlement.pb
+
+    expect_grpc_error(
+        lambda: settlement.execute_settlement_batch(
+            _settlement_accept_request(pb, world, trade, quantity=5, isk_amount=125)
+        ),
+        code="FAILED_PRECONDITION",
+        contains="requested 5",
+    )
+
+    assert item_escrow_row(db, trade)["quantity"] == 4
+    assert trade_row(db, trade)["remaining_quantity"] == 4
+
+
+def test_settlement_rejects_releasing_same_item_escrow_twice(db, gateway, settlement):
+    world = seed_world(db, buyer_isk=1_000, buyer_stack_quantity=0)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+    pb = settlement.pb
+
+    settlement.execute_settlement_batch(
+        _settlement_accept_request(pb, world, trade, quantity=4, isk_amount=100, complete=True)
+    )
+
+    expect_grpc_error(
+        lambda: settlement.execute_settlement_batch(
+            _settlement_accept_request(pb, world, trade, quantity=4, isk_amount=100)
+        ),
+        code="FAILED_PRECONDITION",
+        contains="already released",
+    )
+
+
+def test_settlement_rejects_wallet_payment_that_does_not_match_trade_price(db, gateway, settlement):
+    world = seed_world(db, buyer_isk=1_000, buyer_stack_quantity=0)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+    pb = settlement.pb
+
+    expect_grpc_error(
+        lambda: settlement.execute_settlement_batch(
+            _settlement_accept_request(pb, world, trade, quantity=2, isk_amount=1)
+        ),
+        code="FAILED_PRECONDITION",
+        contains="does not match trade price",
+    )
+
+    assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 1_000
+    assert item_escrow_row(db, trade)["quantity"] == 4
+
+
+def test_settlement_rejects_acceptance_that_would_make_remaining_quantity_drift(db, gateway, settlement):
+    world = seed_world(db, buyer_isk=1_000, buyer_stack_quantity=0)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+    pb = settlement.pb
+    db.execute(
+        "UPDATE trade_instance SET remaining_quantity = 99 WHERE trade_instance_id = %s",
+        (trade.trade_instance_id,),
+    )
+
+    expect_grpc_error(
+        lambda: settlement.execute_settlement_batch(
+            _settlement_accept_request(pb, world, trade, quantity=2, isk_amount=50)
+        ),
+        code="FAILED_PRECONDITION",
+        contains="remaining_quantity",
+    )
+
+    assert item_escrow_row(db, trade)["quantity"] == 4
+
+
+def _settlement_accept_request(pb, world, trade, *, quantity: int, isk_amount: int, complete: bool = False):
+    wallet_escrow_id = uuid_str()
+    operations = [
+        pb.SettlementOperation(
+            transfer_isk_amount_from_wallet_to_wallet_escrow=pb.TransferIskAmountFromWalletToWalletEscrow(
+                source_wallet_id=world.buyer_wallet_id,
+                wallet_escrow_id=wallet_escrow_id,
+                trade_instance_id=trade.trade_instance_id,
+                isk_amount=isk_amount,
+            )
+        ),
+        pb.SettlementOperation(
+            transfer_quantity_from_item_stack_escrow_to_item_stack_with_new_owner=pb.TransferQuantityFromItemStackEscrowToItemStackWithNewOwner(
+                item_stack_escrow_id=trade.item_stack_escrow_id,
+                destination_item_stack_id=world.buyer_stack_id,
+                quantity=quantity,
+            )
+        ),
+        pb.SettlementOperation(
+            transfer_isk_amount_from_wallet_escrow_to_wallet_with_new_owner=pb.TransferIskAmountFromWalletEscrowToWalletWithNewOwner(
+                wallet_escrow_id=wallet_escrow_id,
+                destination_wallet_id=world.seller_wallet_id,
+                isk_amount=isk_amount,
+            )
+        ),
+    ]
+    if complete:
+        operations.append(
+            pb.SettlementOperation(
+                modify_trade_instance_state=pb.ModifyTradeInstanceState(
+                    trade_instance_id=trade.trade_instance_id,
+                    to_trade_state="COMPLETED",
+                    trade_state_change_kind="ACCEPTED_BY_BUYER",
+                    changed_by_service="settlement-e2e",
+                )
+            )
+        )
+    key = fresh_key("settlement-accept")
+    return pb.ExecuteSettlementBatchRequest(
+        idempotency_key=key,
+        external_request_id=f"external-{key}",
+        caused_by_capsuleer_id=world.buyer_id,
+        created_by_service="settlement-e2e",
+        operations=operations,
+    )

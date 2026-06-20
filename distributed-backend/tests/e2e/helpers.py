@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
+import sys
+import tempfile
 import time
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable
 
 import httpx
@@ -24,6 +28,8 @@ OTHER_ITEM_TYPE_ID = 35
 CHECKSUM_ALGORITHM = "sha256-v1"
 
 GATEWAY_SERVICE_PATH = "/eve.api_gateway.v1.GameTradeGatewayService"
+_SETTLEMENT_PROTO_CACHE: tuple[Any, Any] | None = None
+_SETTLEMENT_PROTO_TMPDIR: tempfile.TemporaryDirectory[str] | None = None
 
 
 class RpcFailure(Exception):
@@ -103,6 +109,81 @@ class GatewayClient:
                 message = str(body)
             raise RpcFailure(response.status_code, code, message, body)
         return response.json()
+
+
+class SettlementClient:
+    def __init__(self, endpoint: str):
+        grpc, pb, pb_grpc = settlement_proto_modules()
+        self.grpc = grpc
+        self.pb = pb
+        self.channel = grpc.insecure_channel(endpoint)
+        self.stub = pb_grpc.TradeSettlementServiceStub(self.channel)
+
+    def close(self) -> None:
+        self.channel.close()
+
+    def execute_settlement_batch(self, request: Any) -> Any:
+        return self.stub.ExecuteSettlementBatch(request, timeout=20)
+
+
+class GrpcFailure(Exception):
+    def __init__(self, code: str, message: str):
+        super().__init__(f"{code}: {message}")
+        self.code = code
+        self.message = message
+
+
+def settlement_proto_modules() -> tuple[Any, Any, Any]:
+    global _SETTLEMENT_PROTO_CACHE, _SETTLEMENT_PROTO_TMPDIR
+    if _SETTLEMENT_PROTO_CACHE is not None:
+        return _SETTLEMENT_PROTO_CACHE
+
+    import grpc
+    import grpc_tools
+    from grpc_tools import protoc
+
+    repo_root = Path(__file__).resolve().parents[3]
+    proto_root = repo_root / "distributed-backend" / "proto"
+    proto_file = proto_root / "eve" / "trade_settlement" / "v1" / "trade_settlement.proto"
+    _SETTLEMENT_PROTO_TMPDIR = tempfile.TemporaryDirectory(prefix="eve-trade-proto-")
+    out_dir = Path(_SETTLEMENT_PROTO_TMPDIR.name)
+    include_google = Path(grpc_tools.__file__).resolve().parent / "_proto"
+
+    result = protoc.main(
+        [
+            "grpc_tools.protoc",
+            f"-I{proto_root}",
+            f"-I{include_google}",
+            f"--python_out={out_dir}",
+            f"--grpc_python_out={out_dir}",
+            str(proto_file),
+        ]
+    )
+    if result != 0:
+        raise RuntimeError(f"protoc failed with exit code {result}")
+
+    sys.path.insert(0, str(out_dir))
+    importlib.invalidate_caches()
+    pb = importlib.import_module("eve.trade_settlement.v1.trade_settlement_pb2")
+    pb_grpc = importlib.import_module("eve.trade_settlement.v1.trade_settlement_pb2_grpc")
+    _SETTLEMENT_PROTO_CACHE = (grpc, pb, pb_grpc)
+    return _SETTLEMENT_PROTO_CACHE
+
+
+def expect_grpc_error(call: Callable[[], Any], *, code: str, contains: str | None = None) -> GrpcFailure:
+    grpc, _, _ = settlement_proto_modules()
+    try:
+        call()
+    except grpc.RpcError as exc:
+        failure = GrpcFailure(exc.code().name, exc.details() or "")
+        if failure.code != code:
+            raise AssertionError(f"gRPC code {failure.code!r}, expected {code!r}") from exc
+        if contains is not None and contains.lower() not in failure.message.lower():
+            raise AssertionError(
+                f"gRPC message {failure.message!r} did not contain {contains!r}"
+            ) from exc
+        return failure
+    raise AssertionError("expected gRPC request to fail")
 
 
 class Database:
@@ -634,4 +715,34 @@ def settlement_batch_count(db: Database, idempotency_key: str) -> int:
             "SELECT count(*) FROM settlement_batch WHERE idempotency_key = %s",
             (idempotency_key,),
         )
+    )
+
+
+def idempotency_record_row(db: Database, idempotency_key: str) -> dict[str, Any]:
+    row = db.fetchone(
+        "SELECT * FROM idempotency_record WHERE idempotency_key = %s",
+        (idempotency_key,),
+    )
+    assert row is not None, f"missing idempotency_record {idempotency_key}"
+    return row
+
+
+def settlement_batch_row(db: Database, idempotency_key: str) -> dict[str, Any]:
+    row = db.fetchone(
+        "SELECT * FROM settlement_batch WHERE idempotency_key = %s",
+        (idempotency_key,),
+    )
+    assert row is not None, f"missing settlement_batch for {idempotency_key}"
+    return row
+
+
+def settlement_step_rows(db: Database, settlement_batch_id: str) -> list[dict[str, Any]]:
+    return db.fetchall(
+        """
+        SELECT *
+        FROM settlement_step
+        WHERE settlement_batch_id = %s
+        ORDER BY step_index
+        """,
+        (settlement_batch_id,),
     )

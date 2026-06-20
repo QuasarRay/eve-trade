@@ -4,7 +4,7 @@ package eve.api_gateway.v1;
 
 import "eve/market/v1/market.proto";
 
-option go_package = "github.com/astral/eve-trade/proto/gen/eve/api_gateway/v1;api_gatewayv1";
+option go_package = "github.com/QuasarRay/eve-trade/proto/gen/eve/api_gateway/v1;api_gatewayv1";
 
 service GameTradeGatewayService {
   rpc IssueTradeInstance(eve.market.v1.IssueTradeInstanceRequest) returns (eve.market.v1.IssueTradeInstanceResponse);

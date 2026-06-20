@@ -1486,8 +1486,8 @@ const file_eve_trade_settlement_v1_trade_settlement_proto_rawDesc = "" +
 	"\x12b\n" +
 	"^SETTLEMENT_OPERATION_KIND_TRANSFER_ISK_AMOUNT_FROM_WALLET_ESCROW_TO_WALLET_WITH_PREVIOUS_OWNER\x10\v2\xa4\x01\n" +
 	"\x16TradeSettlementService\x12\x89\x01\n" +
-	"\x16ExecuteSettlementBatch\x126.eve.trade_settlement.v1.ExecuteSettlementBatchRequest\x1a7.eve.trade_settlement.v1.ExecuteSettlementBatchResponseB\xff\x01\n" +
-	"\x1bcom.eve.trade_settlement.v1B\x14TradeSettlementProtoP\x01ZPgithub.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1;trade_settlementv1\xa2\x02\x03ETX\xaa\x02\x16Eve.TradeSettlement.V1\xca\x02\x16Eve\\TradeSettlement\\V1\xe2\x02\"Eve\\TradeSettlement\\V1\\GPBMetadata\xea\x02\x18Eve::TradeSettlement::V1b\x06proto3"
+	"\x16ExecuteSettlementBatch\x126.eve.trade_settlement.v1.ExecuteSettlementBatchRequest\x1a7.eve.trade_settlement.v1.ExecuteSettlementBatchResponseB\x82\x02\n" +
+	"\x1bcom.eve.trade_settlement.v1B\x14TradeSettlementProtoP\x01ZSgithub.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1;trade_settlementv1\xa2\x02\x03ETX\xaa\x02\x16Eve.TradeSettlement.V1\xca\x02\x16Eve\\TradeSettlement\\V1\xe2\x02\"Eve\\TradeSettlement\\V1\\GPBMetadata\xea\x02\x18Eve::TradeSettlement::V1b\x06proto3"
 
 var (
 	file_eve_trade_settlement_v1_trade_settlement_proto_rawDescOnce sync.Once

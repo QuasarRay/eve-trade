@@ -1,4 +1,4 @@
-module github.com/astral/eve-trade/proto
+module github.com/QuasarRay/eve-trade/proto
 
 go 1.26
 

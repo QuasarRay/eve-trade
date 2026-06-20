@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	"connectrpc.com/connect"
-	gametrade "github.com/astral/eve-trade/market/game-trade"
-	marketv1 "github.com/astral/eve-trade/proto/gen/eve/market/v1"
-	marketv1connect "github.com/astral/eve-trade/proto/gen/eve/market/v1/marketv1connect"
-	tradesettlementv1 "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1"
+	gametrade "github.com/QuasarRay/eve-trade/market/game-trade"
+	marketv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1"
+	marketv1connect "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1/marketv1connect"
+	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 )
 
 var _ marketv1connect.MarketServiceHandler = (*MarketHandler)(nil)

@@ -226,6 +226,10 @@ pub async fn modify_trade_instance_state(
         ))
     })?;
 
+    if payload.to_trade_state == "COMPLETED" {
+        ensure_no_remaining_item_escrow(tx, payload.trade_instance_id).await?;
+    }
+
     sqlx::query(
         r#"
         UPDATE trade_instance
@@ -561,6 +565,8 @@ pub async fn transfer_isk_amount_from_wallet_to_wallet_escrow(
 
     let source = lock_wallet(tx, payload.source_wallet_id).await?;
     ensure_wallet_active(&source)?;
+    ensure_wallet_payment_matches_trade_price(tx, payload.trade_instance_id, payload.isk_amount)
+        .await?;
     if source.isk_amount < payload.isk_amount {
         return Err(SettlementError::InsufficientFunds(format!(
             "wallet {} has {}, requested {}",
@@ -720,6 +726,10 @@ async fn transfer_quantity_from_item_stack_escrow_to_item_stack(
         destination.owner_id,
         "destination item stack",
     )?;
+    if matches!(owner_rule, EscrowOwnerRule::NewOwner) {
+        ensure_active_wallet_escrow_matches_item_release(tx, escrow.trade_instance_id, quantity)
+            .await?;
+    }
 
     let destination_quantity_after = checked_add(
         destination.quantity,
@@ -753,7 +763,13 @@ async fn transfer_quantity_from_item_stack_escrow_to_item_stack(
         settlement_step_id,
     )
     .await?;
-    update_trade_remaining_quantity(tx, escrow.trade_instance_id, escrow_quantity_after).await?;
+    update_trade_remaining_quantity(
+        tx,
+        escrow.trade_instance_id,
+        escrow.quantity,
+        escrow_quantity_after,
+    )
+    .await?;
 
     Ok(OperationOutput::many(vec![
         EntityReferenceOutput {
@@ -770,20 +786,127 @@ async fn transfer_quantity_from_item_stack_escrow_to_item_stack(
 async fn update_trade_remaining_quantity(
     tx: &mut Transaction<'_, Postgres>,
     trade_instance_id: Uuid,
+    remaining_quantity_before: i64,
     remaining_quantity: i64,
 ) -> Result<()> {
-    sqlx::query(
+    let result = sqlx::query(
         r#"
         UPDATE trade_instance
         SET remaining_quantity = $2,
             updated_at = now()
         WHERE trade_instance_id = $1
+          AND remaining_quantity = $3
         "#,
     )
     .bind(trade_instance_id)
     .bind(remaining_quantity)
+    .bind(remaining_quantity_before)
     .execute(&mut **tx)
     .await?;
+
+    if result.rows_affected() != 1 {
+        return Err(SettlementError::FailedPrecondition(format!(
+            "trade_instance {trade_instance_id} remaining_quantity is inconsistent with item_stack_escrow quantity"
+        )));
+    }
+
+    Ok(())
+}
+
+async fn ensure_no_remaining_item_escrow(
+    tx: &mut Transaction<'_, Postgres>,
+    trade_instance_id: Uuid,
+) -> Result<()> {
+    let remaining = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COALESCE(SUM(quantity), 0)::BIGINT
+        FROM item_stack_escrow
+        WHERE trade_instance_id = $1
+          AND is_released = false
+        "#,
+    )
+    .bind(trade_instance_id)
+    .fetch_one(&mut **tx)
+    .await?;
+
+    if remaining > 0 {
+        return Err(SettlementError::FailedPrecondition(format!(
+            "cannot complete trade_instance {trade_instance_id} while remaining item escrow quantity is {remaining}"
+        )));
+    }
+
+    Ok(())
+}
+
+async fn ensure_wallet_payment_matches_trade_price(
+    tx: &mut Transaction<'_, Postgres>,
+    trade_instance_id: Uuid,
+    isk_amount: i64,
+) -> Result<()> {
+    let unit_price_isk = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT unit_price_isk
+        FROM trade_instance
+        WHERE trade_instance_id = $1
+        FOR UPDATE
+        "#,
+    )
+    .bind(trade_instance_id)
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or_else(|| {
+        SettlementError::NotFound(format!("trade_instance {trade_instance_id} does not exist"))
+    })?;
+
+    if unit_price_isk <= 0 || isk_amount % unit_price_isk != 0 {
+        return Err(SettlementError::FailedPrecondition(format!(
+            "wallet payment {isk_amount} does not match trade price {unit_price_isk}"
+        )));
+    }
+
+    Ok(())
+}
+
+async fn ensure_active_wallet_escrow_matches_item_release(
+    tx: &mut Transaction<'_, Postgres>,
+    trade_instance_id: Uuid,
+    quantity: i64,
+) -> Result<()> {
+    let unit_price_isk = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT unit_price_isk
+        FROM trade_instance t
+        WHERE trade_instance_id = $1
+        FOR UPDATE
+        "#,
+    )
+    .bind(trade_instance_id)
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or_else(|| {
+        SettlementError::NotFound(format!("trade_instance {trade_instance_id} does not exist"))
+    })?;
+    let active_wallet_escrow_isk = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COALESCE(SUM(isk_amount), 0)::BIGINT
+        FROM wallet_escrow
+        WHERE trade_instance_id = $1
+          AND is_released = false
+        "#,
+    )
+    .bind(trade_instance_id)
+    .fetch_one(&mut **tx)
+    .await?;
+
+    let expected_payment = unit_price_isk
+        .checked_mul(quantity)
+        .ok_or_else(|| SettlementError::FailedPrecondition("trade price overflow".to_string()))?;
+    if active_wallet_escrow_isk != expected_payment {
+        return Err(SettlementError::FailedPrecondition(format!(
+            "active wallet escrow payment {} does not match trade price {} for quantity {}",
+            active_wallet_escrow_isk, unit_price_isk, quantity
+        )));
+    }
 
     Ok(())
 }

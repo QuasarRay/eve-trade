@@ -3,7 +3,7 @@ package gametrade
 import (
 	"testing"
 
-	tradesettlementv1 "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1"
+	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 )
 
 func TestIssueTradeInstanceBuildsTradeAndItemEscrowOperations(t *testing.T) {

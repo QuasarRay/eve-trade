@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
-	api_gatewayv1connect "github.com/astral/eve-trade/proto/gen/eve/api_gateway/v1/api_gatewayv1connect"
-	marketv1 "github.com/astral/eve-trade/proto/gen/eve/market/v1"
+	api_gatewayv1connect "github.com/QuasarRay/eve-trade/proto/gen/eve/api_gateway/v1/api_gatewayv1connect"
+	marketv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1"
 )
 
 var _ api_gatewayv1connect.GameTradeGatewayServiceHandler = (*GatewayHandler)(nil)

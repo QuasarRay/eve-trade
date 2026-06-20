@@ -4,7 +4,7 @@ package eve.market.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/astral/eve-trade/proto/gen/eve/market/v1;marketv1";
+option go_package = "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1;marketv1";
 
 service MarketService {
   rpc IssueTradeInstance(IssueTradeInstanceRequest) returns (IssueTradeInstanceResponse);

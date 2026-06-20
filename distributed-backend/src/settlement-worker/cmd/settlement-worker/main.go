@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/astral/eve-trade/distributed-backend/src/internal/observability"
-	"github.com/astral/eve-trade/distributed-backend/src/internal/rabbitmq"
-	market "github.com/astral/eve-trade/distributed-backend/src/market"
+	distributedbackend "github.com/QuasarRay/eve-trade/market/distributed-backend"
+	"github.com/QuasarRay/eve-trade/observability"
+	"github.com/QuasarRay/eve-trade/settlement-worker/internal/rabbitmq"
 )
 
 func main() {
@@ -29,8 +29,9 @@ func main() {
 		}
 	}()
 
-	settlementClient := market.NewSettlementClient(
+	settlementClient := distributedbackend.NewConnectSettlementExecutor(
 		getenv("SETTLEMENT_URL", "http://localhost:9092"),
+		getenvDuration("SETTLEMENT_REQUEST_TIMEOUT", 30*time.Second),
 		connect.WithInterceptors(observability.NewClientInterceptor()),
 	)
 

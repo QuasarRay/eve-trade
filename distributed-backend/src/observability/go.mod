@@ -1,4 +1,4 @@
-module github.com/astral/eve-trade/observability
+module github.com/QuasarRay/eve-trade/observability
 
 go 1.26
 

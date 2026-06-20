@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	tradesettlementv1 "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1"
-	trade_settlementv1connect "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1/trade_settlementv1connect"
+	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
+	trade_settlementv1connect "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1/trade_settlementv1connect"
 	"golang.org/x/net/http2"
 )
 

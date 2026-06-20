@@ -39,7 +39,7 @@ The Go services are independent modules, so they depend on the adapter with a
 local replace:
 
 ```text
-github.com/astral/eve-trade/observability => ../observability
+github.com/QuasarRay/eve-trade/observability => ../observability
 ```
 
 ## Rust Service

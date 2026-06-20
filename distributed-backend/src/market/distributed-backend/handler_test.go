@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
-	marketv1 "github.com/astral/eve-trade/proto/gen/eve/market/v1"
-	tradesettlementv1 "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1"
+	marketv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1"
+	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 )
 
 type fakeSettlementExecutor struct {

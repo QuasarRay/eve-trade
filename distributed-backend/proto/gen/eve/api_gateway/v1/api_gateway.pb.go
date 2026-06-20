@@ -7,7 +7,7 @@
 package api_gatewayv1
 
 import (
-	v1 "github.com/astral/eve-trade/proto/gen/eve/market/v1"
+	v1 "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -29,8 +29,8 @@ const file_eve_api_gateway_v1_api_gateway_proto_rawDesc = "" +
 	"\x17GameTradeGatewayService\x12i\n" +
 	"\x12IssueTradeInstance\x12(.eve.market.v1.IssueTradeInstanceRequest\x1a).eve.market.v1.IssueTradeInstanceResponse\x12l\n" +
 	"\x13AcceptTradeInstance\x12).eve.market.v1.AcceptTradeInstanceRequest\x1a*.eve.market.v1.AcceptTradeInstanceResponse\x12l\n" +
-	"\x13CancelTradeInstance\x12).eve.market.v1.CancelTradeInstanceRequest\x1a*.eve.market.v1.CancelTradeInstanceResponseB\xd7\x01\n" +
-	"\x16com.eve.api_gateway.v1B\x0fApiGatewayProtoP\x01ZFgithub.com/astral/eve-trade/proto/gen/eve/api_gateway/v1;api_gatewayv1\xa2\x02\x03EAX\xaa\x02\x11Eve.ApiGateway.V1\xca\x02\x11Eve\\ApiGateway\\V1\xe2\x02\x1dEve\\ApiGateway\\V1\\GPBMetadata\xea\x02\x13Eve::ApiGateway::V1b\x06proto3"
+	"\x13CancelTradeInstance\x12).eve.market.v1.CancelTradeInstanceRequest\x1a*.eve.market.v1.CancelTradeInstanceResponseB\xda\x01\n" +
+	"\x16com.eve.api_gateway.v1B\x0fApiGatewayProtoP\x01ZIgithub.com/QuasarRay/eve-trade/proto/gen/eve/api_gateway/v1;api_gatewayv1\xa2\x02\x03EAX\xaa\x02\x11Eve.ApiGateway.V1\xca\x02\x11Eve\\ApiGateway\\V1\xe2\x02\x1dEve\\ApiGateway\\V1\\GPBMetadata\xea\x02\x13Eve::ApiGateway::V1b\x06proto3"
 
 var file_eve_api_gateway_v1_api_gateway_proto_goTypes = []any{
 	(*v1.IssueTradeInstanceRequest)(nil),   // 0: eve.market.v1.IssueTradeInstanceRequest

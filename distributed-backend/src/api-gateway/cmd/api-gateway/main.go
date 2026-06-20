@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	distributedbackend "github.com/astral/eve-trade/api-gateway/distributed-backend"
-	"github.com/astral/eve-trade/observability"
+	distributedbackend "github.com/QuasarRay/eve-trade/api-gateway/distributed-backend"
+	"github.com/QuasarRay/eve-trade/observability"
 )
 
 func main() {

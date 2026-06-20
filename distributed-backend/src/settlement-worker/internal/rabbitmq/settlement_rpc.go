@@ -11,8 +11,7 @@ import (
 	"sync"
 	"time"
 
-	commonv1 "github.com/astral/eve-trade/distributed-backend/proto/gen/eve_trade/common/v1"
-	settlementv1 "github.com/astral/eve-trade/distributed-backend/proto/gen/eve_trade/settlement/v1"
+	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/protobuf/proto"
 )
@@ -24,8 +23,8 @@ const (
 	DefaultSettlementRoutingKey   = "settlement.command"
 
 	settlementCommandContentType = "application/protobuf"
-	settlementCommandType        = "eve_trade.settlement.v1.TradeSettlementCommand"
-	settlementResultType         = "eve_trade.settlement.v1.TradeSettlementResult"
+	settlementCommandType        = "eve.trade_settlement.v1.ExecuteSettlementBatchRequest"
+	settlementResultType         = "eve.trade_settlement.v1.ExecuteSettlementBatchResponse"
 )
 
 type SettlementConfig struct {
@@ -38,7 +37,7 @@ type SettlementConfig struct {
 }
 
 type SettlementBackend interface {
-	SendTradeSettlementCommand(context.Context, *settlementv1.TradeSettlementCommand) (*settlementv1.TradeSettlementResult, error)
+	ExecuteSettlementBatch(context.Context, *tradesettlementv1.ExecuteSettlementBatchRequest) (*tradesettlementv1.ExecuteSettlementBatchResponse, error)
 }
 
 type SettlementClient struct {
@@ -113,9 +112,9 @@ func NewSettlementClient(config SettlementConfig) (*SettlementClient, error) {
 	return client, nil
 }
 
-func (c *SettlementClient) SendTradeSettlementCommand(ctx context.Context, command *settlementv1.TradeSettlementCommand) (*settlementv1.TradeSettlementResult, error) {
-	if command == nil {
-		return nil, errors.New("settlement command is required")
+func (c *SettlementClient) ExecuteSettlementBatch(ctx context.Context, request *tradesettlementv1.ExecuteSettlementBatchRequest) (*tradesettlementv1.ExecuteSettlementBatchResponse, error) {
+	if request == nil {
+		return nil, errors.New("settlement request is required")
 	}
 	if c.timeout > 0 {
 		var cancel context.CancelFunc
@@ -123,12 +122,12 @@ func (c *SettlementClient) SendTradeSettlementCommand(ctx context.Context, comma
 		defer cancel()
 	}
 
-	body, err := proto.Marshal(command)
+	body, err := proto.Marshal(request)
 	if err != nil {
-		return nil, fmt.Errorf("marshal settlement command: %w", err)
+		return nil, fmt.Errorf("marshal settlement request: %w", err)
 	}
 
-	correlationID := replyCorrelationID(command)
+	correlationID := replyCorrelationID(request)
 	reply := make(chan amqp.Delivery, 1)
 	c.pendingMu.Lock()
 	c.pending[correlationID] = reply
@@ -140,7 +139,7 @@ func (c *SettlementClient) SendTradeSettlementCommand(ctx context.Context, comma
 		ContentType:   settlementCommandContentType,
 		Type:          settlementCommandType,
 		DeliveryMode:  amqp.Persistent,
-		MessageId:     messageID(command),
+		MessageId:     messageID(request),
 		CorrelationId: correlationID,
 		ReplyTo:       c.replyQueue,
 		Timestamp:     time.Now(),
@@ -155,11 +154,11 @@ func (c *SettlementClient) SendTradeSettlementCommand(ctx context.Context, comma
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	case delivery := <-reply:
-		var result settlementv1.TradeSettlementResult
-		if err := proto.Unmarshal(delivery.Body, &result); err != nil {
-			return nil, fmt.Errorf("unmarshal settlement result: %w", err)
+		var response tradesettlementv1.ExecuteSettlementBatchResponse
+		if err := proto.Unmarshal(delivery.Body, &response); err != nil {
+			return nil, fmt.Errorf("unmarshal settlement response: %w", err)
 		}
-		return &result, nil
+		return &response, nil
 	}
 }
 
@@ -259,22 +258,22 @@ func RunSettlementWorker(ctx context.Context, config SettlementConfig, backend S
 }
 
 func handleSettlementDelivery(ctx context.Context, ch *amqp.Channel, backend SettlementBackend, delivery amqp.Delivery) error {
-	var command settlementv1.TradeSettlementCommand
-	if err := proto.Unmarshal(delivery.Body, &command); err != nil {
+	var request tradesettlementv1.ExecuteSettlementBatchRequest
+	if err := proto.Unmarshal(delivery.Body, &request); err != nil {
 		_ = delivery.Reject(false)
 		return nil
 	}
 
-	result, err := backend.SendTradeSettlementCommand(ctx, &command)
+	response, err := backend.ExecuteSettlementBatch(ctx, &request)
 	if err != nil {
-		result = settlementTransportErrorResult(&command, err)
+		response = settlementTransportErrorResponse(&request, err)
 	}
-	if result == nil {
-		result = settlementTransportErrorResult(&command, errors.New("settlement returned nil result"))
+	if response == nil {
+		response = settlementTransportErrorResponse(&request, errors.New("settlement returned nil response"))
 	}
 
 	if delivery.ReplyTo != "" {
-		body, err := proto.Marshal(result)
+		body, err := proto.Marshal(response)
 		if err != nil {
 			_ = delivery.Nack(false, true)
 			return nil
@@ -283,7 +282,7 @@ func handleSettlementDelivery(ctx context.Context, ch *amqp.Channel, backend Set
 			ContentType:   settlementCommandContentType,
 			Type:          settlementResultType,
 			DeliveryMode:  amqp.Transient,
-			MessageId:     messageID(&command) + ".result",
+			MessageId:     messageID(&request) + ".response",
 			CorrelationId: delivery.CorrelationId,
 			Timestamp:     time.Now(),
 			Body:          body,
@@ -309,19 +308,10 @@ func declareSettlementTopology(ch *amqp.Channel, config SettlementConfig) error 
 	return nil
 }
 
-func settlementTransportErrorResult(command *settlementv1.TradeSettlementCommand, err error) *settlementv1.TradeSettlementResult {
-	return &settlementv1.TradeSettlementResult{
-		Metadata:      command.GetMetadata(),
-		OperationKind: command.GetOperationKind(),
-		AttemptStatus: settlementv1.TransactionAttemptStatus_TRANSACTION_ATTEMPT_STATUS_RESULT_UNKNOWN,
-		Result: &settlementv1.TradeSettlementResult_ResultUnknown{
-			ResultUnknown: &settlementv1.TradeSettlementResultUnknown{
-				Error: &commonv1.ErrorDetail{
-					Code:    commonv1.ErrorCode_ERROR_CODE_UNAVAILABLE,
-					Message: err.Error(),
-				},
-			},
-		},
+func settlementTransportErrorResponse(request *tradesettlementv1.ExecuteSettlementBatchRequest, _ error) *tradesettlementv1.ExecuteSettlementBatchResponse {
+	return &tradesettlementv1.ExecuteSettlementBatchResponse{
+		IdempotencyKey: request.GetIdempotencyKey(),
+		BatchState:     "FAILED",
 	}
 }
 
@@ -347,27 +337,27 @@ func (c SettlementConfig) withDefaults() SettlementConfig {
 	return c
 }
 
-func replyCorrelationID(command *settlementv1.TradeSettlementCommand) string {
-	if value := command.GetMetadata().GetRequestId().GetValue(); value != "" {
+func replyCorrelationID(request *tradesettlementv1.ExecuteSettlementBatchRequest) string {
+	if value := request.GetRequestId(); value != "" {
 		return value
 	}
-	if value := command.GetMetadata().GetOperationId().GetValue(); value != "" {
+	if value := request.GetExternalRequestId(); value != "" {
 		return value
 	}
-	if value := command.GetMetadata().GetCorrelationId().GetValue(); value != "" {
+	if value := request.GetIdempotencyKey(); value != "" {
 		return value
 	}
 	return randomHex(16)
 }
 
-func messageID(command *settlementv1.TradeSettlementCommand) string {
-	if value := command.GetMetadata().GetOperationId().GetValue(); value != "" {
+func messageID(request *tradesettlementv1.ExecuteSettlementBatchRequest) string {
+	if value := request.GetRequestId(); value != "" {
 		return value
 	}
-	if value := command.GetMetadata().GetRequestId().GetValue(); value != "" {
+	if value := request.GetExternalRequestId(); value != "" {
 		return value
 	}
-	return replyCorrelationID(command)
+	return replyCorrelationID(request)
 }
 
 func randomHex(size int) string {

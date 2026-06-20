@@ -563,8 +563,8 @@ const file_eve_market_v1_market_proto_rawDesc = "" +
 	"\rMarketService\x12i\n" +
 	"\x12IssueTradeInstance\x12(.eve.market.v1.IssueTradeInstanceRequest\x1a).eve.market.v1.IssueTradeInstanceResponse\x12l\n" +
 	"\x13AcceptTradeInstance\x12).eve.market.v1.AcceptTradeInstanceRequest\x1a*.eve.market.v1.AcceptTradeInstanceResponse\x12l\n" +
-	"\x13CancelTradeInstance\x12).eve.market.v1.CancelTradeInstanceRequest\x1a*.eve.market.v1.CancelTradeInstanceResponseB\xb4\x01\n" +
-	"\x11com.eve.market.v1B\vMarketProtoP\x01Z<github.com/astral/eve-trade/proto/gen/eve/market/v1;marketv1\xa2\x02\x03EMX\xaa\x02\rEve.Market.V1\xca\x02\rEve\\Market\\V1\xe2\x02\x19Eve\\Market\\V1\\GPBMetadata\xea\x02\x0fEve::Market::V1b\x06proto3"
+	"\x13CancelTradeInstance\x12).eve.market.v1.CancelTradeInstanceRequest\x1a*.eve.market.v1.CancelTradeInstanceResponseB\xb7\x01\n" +
+	"\x11com.eve.market.v1B\vMarketProtoP\x01Z?github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1;marketv1\xa2\x02\x03EMX\xaa\x02\rEve.Market.V1\xca\x02\rEve\\Market\\V1\xe2\x02\x19Eve\\Market\\V1\\GPBMetadata\xea\x02\x0fEve::Market::V1b\x06proto3"
 
 var (
 	file_eve_market_v1_market_proto_rawDescOnce sync.Once

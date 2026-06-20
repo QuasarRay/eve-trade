@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	tradesettlementv1 "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1"
+	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 )
 
 const (

@@ -30,7 +30,7 @@ import (
 const (
 	defaultServiceName      = "eve-trade-service"
 	defaultServiceNamespace = "eve-trade"
-	defaultLogHandlerName   = "github.com/astral/eve-trade/observability/slog"
+	defaultLogHandlerName   = "github.com/QuasarRay/eve-trade/observability/slog"
 )
 
 type ShutdownFunc func(context.Context) error

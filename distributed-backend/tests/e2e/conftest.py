@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from helpers import Database, GatewayClient, wait_for_database, wait_for_gateway
+from helpers import Database, GatewayClient, SettlementClient, wait_for_database, wait_for_gateway
 
 
 @pytest.fixture(scope="session")
@@ -38,3 +38,15 @@ def db(service_urls, services_ready):
 def gateway(service_urls, services_ready):
     api_gateway_url, _ = service_urls
     return GatewayClient(api_gateway_url)
+
+
+@pytest.fixture
+def settlement(service_urls, services_ready):
+    endpoint = os.environ.get("EVE_TRADE_SETTLEMENT_GRPC")
+    if not endpoint:
+        pytest.skip("set EVE_TRADE_SETTLEMENT_GRPC to run settlement contract tests")
+    client = SettlementClient(endpoint)
+    try:
+        yield client
+    finally:
+        client.close()

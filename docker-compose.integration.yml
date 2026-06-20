@@ -99,10 +99,15 @@ services:
       - pip_cache:/root/.cache/pip
     environment:
       EVE_TRADE_API_GATEWAY_URL: http://api-gateway:8080
+      EVE_TRADE_SETTLEMENT_GRPC: trade-settlement:9092
       EVE_TRADE_GATEWAY_GRPC: api-gateway:8080
       EVE_TRADE_DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
     command: >
-      sh -c "python -m pip install -r distributed-backend/tests/e2e/requirements.txt && pytest distributed-backend/tests/e2e -q"
+      sh -c "python -m pip install -r distributed-backend/tests/e2e/requirements.txt &&
+      python -c \"import re, subprocess, sys;
+      proc = subprocess.run([sys.executable, '-m', 'pytest', 'distributed-backend/tests/e2e', '-q', '-rA'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True);
+      print(proc.stdout, end='');
+      sys.exit(1 if re.search(r'(?m)^[0-9]+ skipped in ', proc.stdout) else proc.returncode)\""
 
 # This block stores PostgreSQL state between container restarts while still allowing full cleanup via `down -v`.
 # It exists so local runs are fast, but deterministic reset is still handled by the migrate service.
