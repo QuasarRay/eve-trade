@@ -745,15 +745,6 @@ fi
         )
 
     async def integration(self) -> None:
-        rabbitmq_url = "amqp://eve_trade:eve_trade@rabbitmq:5672/"
-        rabbitmq = (
-            self.client.container()
-            .from_(RABBITMQ_IMAGE)
-            .with_env_variable("RABBITMQ_DEFAULT_USER", "eve_trade")
-            .with_env_variable("RABBITMQ_DEFAULT_PASS", "eve_trade")
-            .with_exposed_port(5672)
-            .as_service()
-        )
         postgres = (
             self.client.container()
             .from_(POSTGRES_IMAGE)
@@ -768,7 +759,9 @@ fi
 set -euo pipefail
 until pg_isready -h postgres -U postgres -d eve_trade_e2e; do sleep 1; done
 psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
-  -f distributed-backend/migrations/postgresql/001_create_trade_schema.up.sql
+  -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
+  -f distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql
 """
         migrator = (
             self.client.container()
@@ -790,40 +783,17 @@ psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
             )
             .as_service()
         )
-        settlement_worker = (
-            self.go_runtime_image(GO_SERVICES["settlement-worker"])
-            .with_service_binding("rabbitmq", rabbitmq)
-            .with_service_binding("trade-settlement", settlement)
-            .with_env_variable("SETTLEMENT_URL", "http://trade-settlement:9092")
-            .with_env_variable("RABBITMQ_URL", rabbitmq_url)
-            .with_env_variable("RABBITMQ_SETTLEMENT_EXCHANGE", "eve_trade.settlement")
-            .with_env_variable(
-                "RABBITMQ_SETTLEMENT_COMMAND_QUEUE",
-                "eve_trade.settlement.commands",
-            )
-            .with_env_variable("RABBITMQ_SETTLEMENT_ROUTING_KEY", "settlement.command")
-            .with_env_variable("RABBITMQ_SETTLEMENT_PREFETCH", "8")
-            .as_service()
-        )
         market = (
             self.go_runtime_image(GO_SERVICES["market"])
-            .with_service_binding("rabbitmq", rabbitmq)
-            .with_env_variable("MARKET_ADDR", ":8081")
-            .with_env_variable("SETTLEMENT_URL", "http://trade-settlement:9092")
-            .with_env_variable("SETTLEMENT_TRANSPORT", "rabbitmq")
-            .with_env_variable("RABBITMQ_URL", rabbitmq_url)
-            .with_env_variable("RABBITMQ_SETTLEMENT_EXCHANGE", "eve_trade.settlement")
-            .with_env_variable(
-                "RABBITMQ_SETTLEMENT_COMMAND_QUEUE",
-                "eve_trade.settlement.commands",
-            )
-            .with_env_variable("RABBITMQ_SETTLEMENT_ROUTING_KEY", "settlement.command")
+            .with_service_binding("trade-settlement", settlement)
+            .with_env_variable("MARKET_HTTP_ADDR", ":8081")
+            .with_env_variable("TRADE_SETTLEMENT_URL", "http://trade-settlement:9092")
             .as_service()
         )
         gateway = (
             self.go_runtime_image(GO_SERVICES["api-gateway"])
             .with_service_binding("market", market)
-            .with_env_variable("API_GATEWAY_ADDR", ":8080")
+            .with_env_variable("API_GATEWAY_HTTP_ADDR", ":8080")
             .with_env_variable("MARKET_URL", "http://market:8081")
             .as_service()
         )
@@ -836,7 +806,6 @@ import time
 
 targets = [
     ("postgres", 5432),
-    ("rabbitmq", 5672),
     ("trade-settlement", 9092),
     ("market", 8081),
     ("api-gateway", 8080),
@@ -857,9 +826,7 @@ pytest distributed-backend/tests/e2e -q
         tests = (
             self.python_e2e_base()
             .with_service_binding("postgres", postgres)
-            .with_service_binding("rabbitmq", rabbitmq)
             .with_service_binding("trade-settlement", settlement)
-            .with_service_binding("settlement-worker", settlement_worker)
             .with_service_binding("market", market)
             .with_service_binding("api-gateway", gateway)
             .with_env_variable(

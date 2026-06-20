@@ -7,16 +7,11 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 Set-Location $RepoRoot
 
-# This block refreshes the Go module metadata for the PostgreSQL driver used by the e2e tests.
-# It exists because the existing module only had protobuf/connect dependencies before DB-backed integration tests.
-go get github.com/jackc/pgx/v5@v5.7.6
-go mod tidy
-
 # This block destroys old integration containers and volumes before a new run.
 # It exists so stale database state cannot make a broken test look correct.
 docker compose -f docker-compose.integration.yml --profile test down -v --remove-orphans
 
-# This block builds and runs the full -service harness including the e2e test container.
+# This block builds and runs the full service harness including the Python e2e test container.
 # It exists so one command proves market talks to  settlement and settlement writes  PostgreSQL rows.
 docker compose -f docker-compose.integration.yml --profile test up --build --abort-on-container-exit --exit-code-from e2e-tests
 
