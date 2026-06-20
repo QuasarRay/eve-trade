@@ -2,7 +2,6 @@ locals {
   service_names = toset([
     "api-gateway",
     "market",
-    "settlement-worker",
     "trade-settlement",
   ])
 }

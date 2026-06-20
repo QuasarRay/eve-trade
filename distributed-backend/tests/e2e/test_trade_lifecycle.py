@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import psycopg
+import pytest
+
 from helpers import (
     OTHER_STATION_ID,
     accept_payload,
@@ -1308,23 +1311,17 @@ def test_settlement_rejects_wallet_payment_that_does_not_match_trade_price(db, g
     assert item_escrow_row(db, trade)["quantity"] == 4
 
 
-def test_settlement_rejects_acceptance_that_would_make_remaining_quantity_drift(db, gateway, settlement):
+def test_database_rejects_remaining_quantity_drift(db, gateway):
     world = seed_world(db, buyer_isk=1_000, buyer_stack_quantity=0)
     trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
-    pb = settlement.pb
-    db.execute(
-        "UPDATE trade_instance SET remaining_quantity = 99 WHERE trade_instance_id = %s",
-        (trade.trade_instance_id,),
-    )
 
-    expect_grpc_error(
-        lambda: settlement.execute_settlement_batch(
-            _settlement_accept_request(pb, world, trade, quantity=2, isk_amount=50)
-        ),
-        code="FAILED_PRECONDITION",
-        contains="remaining_quantity",
-    )
+    with pytest.raises(psycopg.errors.CheckViolation, match="remaining_quantity"):
+        db.execute(
+            "UPDATE trade_instance SET remaining_quantity = 99 WHERE trade_instance_id = %s",
+            (trade.trade_instance_id,),
+        )
 
+    assert trade_row(db, trade)["remaining_quantity"] == 4
     assert item_escrow_row(db, trade)["quantity"] == 4
 
 

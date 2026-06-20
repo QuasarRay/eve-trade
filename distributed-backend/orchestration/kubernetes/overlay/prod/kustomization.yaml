@@ -29,9 +29,6 @@ images:
   - name: eve-trade/market
     newName: registry.example.com/eve-trade/market
     newTag: prod
-  - name: eve-trade/settlement-worker
-    newName: registry.example.com/eve-trade/settlement-worker
-    newTag: prod
   - name: eve-trade/trade-settlement
     newName: registry.example.com/eve-trade/trade-settlement
     newTag: prod

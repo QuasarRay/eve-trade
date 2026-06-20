@@ -22,14 +22,12 @@ Before deployment, patch these production values:
 - Images in `kustomization.yaml`, usually by CI with `kustomize edit set image`.
 - `api.eve-trade.example.com` in `httproute.yaml` and the platform Gateway.
 - The ACME email in `platform/gateway/prod/clusterissuer-letsencrypt-prod.yaml`.
-- The `trade-settlement-database` and `rabbitmq` secrets.
+- The `trade-settlement-database` secret.
 - The `observability-backends` secret in the `eve-trade-observability` namespace
   with Honeycomb and Sentry credentials.
 
-The base placeholder database and RabbitMQ secrets are intentionally deleted by
-this overlay. Create `trade-settlement-database` with a `DATABASE_URL` key and
-`rabbitmq` with `RABBITMQ_DEFAULT_USER`, `RABBITMQ_DEFAULT_PASS`, and
-`RABBITMQ_URL` keys using Terraform, the GitLab deploy job's RabbitMQ variables,
+The base placeholder database secret is intentionally deleted by this overlay.
+Create `trade-settlement-database` with a `DATABASE_URL` key using Terraform,
 your production secret manager, External Secrets, Sealed Secrets, or another
 approved mechanism.
 

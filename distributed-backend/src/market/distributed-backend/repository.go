@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -41,6 +43,8 @@ type TradeSnapshot struct {
 	SourceItemOwnerID  int64
 	SourceItemStackQty int64
 	TotalQuantity      int64
+	ExpiresAt          time.Time
+	ExpiresAtValid     bool
 }
 
 type TradeRepository interface {
@@ -53,6 +57,7 @@ type TradeRepository interface {
 
 type IdempotencyReplay struct {
 	SettlementBatchID   string
+	ExternalRequestID   string
 	CausedByCapsuleerID int64
 	Steps               []ReplayStep
 }
@@ -165,6 +170,7 @@ func (r *PostgresTradeRepository) LoadPrimaryWallet(ctx context.Context, capsule
 
 func (r *PostgresTradeRepository) LoadTrade(ctx context.Context, tradeInstanceID string) (TradeSnapshot, error) {
 	var row TradeSnapshot
+	var expiresAt pgtype.Timestamptz
 	err := r.pool.QueryRow(ctx, `
 		SELECT t.trade_instance_id::text,
 		       t.trade_state,
@@ -174,6 +180,7 @@ func (r *PostgresTradeRepository) LoadTrade(ctx context.Context, tradeInstanceID
 		       t.total_quantity,
 		       t.remaining_quantity,
 		       t.unit_price_isk,
+		       t.expires_at,
 		       e.item_stack_escrow_id::text,
 		       e.quantity,
 		       e.is_released,
@@ -195,6 +202,7 @@ func (r *PostgresTradeRepository) LoadTrade(ctx context.Context, tradeInstanceID
 		&row.TotalQuantity,
 		&row.RemainingQuantity,
 		&row.UnitPriceISK,
+		&expiresAt,
 		&row.ItemStackEscrowID,
 		&row.EscrowQuantity,
 		&row.EscrowReleased,
@@ -208,6 +216,10 @@ func (r *PostgresTradeRepository) LoadTrade(ctx context.Context, tradeInstanceID
 	if err != nil {
 		return TradeSnapshot{}, fmt.Errorf("load trade_instance %s: %w", tradeInstanceID, err)
 	}
+	if expiresAt.Valid {
+		row.ExpiresAt = expiresAt.Time
+		row.ExpiresAtValid = true
+	}
 	return row, nil
 }
 
@@ -215,12 +227,13 @@ func (r *PostgresTradeRepository) LoadCompletedIdempotencyReplay(ctx context.Con
 	var replay IdempotencyReplay
 	err := r.pool.QueryRow(ctx, `
 		SELECT ir.result_settlement_batch_id::text,
+		       COALESCE(sb.external_request_id, ''),
 		       COALESCE(sb.caused_by_capsuleer_id, 0)
 		FROM idempotency_record ir
 		JOIN settlement_batch sb ON sb.settlement_batch_id = ir.result_settlement_batch_id
 		WHERE ir.idempotency_key = $1
 		  AND ir.idempotency_state = 'COMPLETED'
-	`, idempotencyKey).Scan(&replay.SettlementBatchID, &replay.CausedByCapsuleerID)
+	`, idempotencyKey).Scan(&replay.SettlementBatchID, &replay.ExternalRequestID, &replay.CausedByCapsuleerID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}

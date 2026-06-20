@@ -35,7 +35,6 @@ spec:
         values:
           - api-gateway
           - market
-          - settlement-worker
           - trade-settlement
   policyTypes:
     - Egress
@@ -122,61 +121,6 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: rabbitmq
-      ports:
-        - protocol: TCP
-          port: 5672
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: trade-settlement
-      ports:
-        - protocol: TCP
-          port: 9092
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: rabbitmq-ingress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: rabbitmq
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: market
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: settlement-worker
-      ports:
-        - protocol: TCP
-          port: 5672
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: settlement-worker-egress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: settlement-worker
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: rabbitmq
-      ports:
-        - protocol: TCP
-          port: 5672
-    - to:
-        - podSelector:
-            matchLabels:
               app.kubernetes.io/name: trade-settlement
       ports:
         - protocol: TCP
@@ -197,9 +141,6 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: market
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: settlement-worker
       ports:
         - protocol: TCP
           port: 9092

@@ -38,16 +38,16 @@ spec:
           envFrom:
             - configMapRef:
                 name: market-config
-            - secretRef:
-                name: rabbitmq
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /readyz
               port: http
             periodSeconds: 5
             timeoutSeconds: 2
             failureThreshold: 3
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /healthz
               port: http
             initialDelaySeconds: 10
             periodSeconds: 20

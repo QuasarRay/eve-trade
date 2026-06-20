@@ -259,11 +259,11 @@ def wait_for_database(database_url: str, timeout_seconds: float = 60.0) -> None:
 def wait_for_gateway(api_gateway_url: str, timeout_seconds: float = 60.0) -> None:
     deadline = time.monotonic() + timeout_seconds
     last_error: Exception | None = None
-    url = api_gateway_url.rstrip("/") + "/__e2e_ready_probe"
+    url = api_gateway_url.rstrip("/") + "/healthz"
     while time.monotonic() < deadline:
         try:
             response = httpx.get(url, timeout=2.0)
-            if response.status_code >= 400:
+            if response.status_code == 200:
                 return
         except Exception as exc:  # noqa: BLE001 - preserve final connection error.
             last_error = exc

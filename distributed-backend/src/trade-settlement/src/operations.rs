@@ -1,3 +1,4 @@
+use chrono::Utc;
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
@@ -13,6 +14,13 @@ use crate::commands::{
     TransferQuantityFromItemStackToItemStackEscrow,
 };
 use crate::error::{Result, SettlementError};
+
+const TRADE_KIND_SELL: &str = "SELL";
+const TRADE_STATE_OPEN: &str = "OPEN";
+const TRADE_STATE_CANCELLED: &str = "CANCELLED";
+const TRADE_STATE_COMPLETED: &str = "COMPLETED";
+const TRADE_STATE_CHANGE_CANCELLED: &str = "CANCELLED_BY_ISSUER";
+const TRADE_STATE_CHANGE_ACCEPTED: &str = "ACCEPTED_BY_BUYER";
 
 #[derive(Debug, Clone)]
 pub struct EntityReferenceOutput {
@@ -55,6 +63,7 @@ struct ItemStackRow {
     stack_state: String,
     stack_version: i64,
     stack_checksum: String,
+    checksum_algorithm: String,
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -77,6 +86,7 @@ struct WalletRow {
     wallet_state: String,
     wallet_version: i64,
     wallet_checksum: String,
+    checksum_algorithm: String,
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -165,7 +175,10 @@ pub async fn create_new_trade_instance_row(
     payload: &CreateNewTradeInstanceRow,
 ) -> Result<OperationOutput> {
     ensure_positive(payload.total_quantity, "total_quantity")?;
-    ensure_non_negative(payload.unit_price_isk, "unit_price_isk")?;
+    ensure_positive(payload.unit_price_isk, "unit_price_isk")?;
+    ensure_trade_kind(&payload.trade_kind)?;
+    ensure_new_trade_state(&payload.trade_state)?;
+    ensure_future_expiration(payload.expires_at.as_ref())?;
 
     let trade_instance_id = payload.trade_instance_id.unwrap_or_else(Uuid::new_v4);
 
@@ -208,6 +221,9 @@ pub async fn modify_trade_instance_state(
     settlement_step_id: Uuid,
     payload: &ModifyTradeInstanceState,
 ) -> Result<OperationOutput> {
+    ensure_trade_state(&payload.to_trade_state, "to_trade_state")?;
+    ensure_trade_state_change_kind(&payload.trade_state_change_kind)?;
+
     let current = sqlx::query_as::<_, TradeInstanceStateRow>(
         r#"
         SELECT trade_state
@@ -225,6 +241,7 @@ pub async fn modify_trade_instance_state(
             payload.trade_instance_id
         ))
     })?;
+    ensure_trade_transition(&current.trade_state, &payload.to_trade_state)?;
 
     if payload.to_trade_state == "COMPLETED" {
         ensure_no_remaining_item_escrow(tx, payload.trade_instance_id).await?;
@@ -997,7 +1014,8 @@ async fn lock_item_stack(
                quantity,
                stack_state,
                stack_version,
-               stack_checksum
+               stack_checksum,
+               checksum_algorithm
         FROM item_stack
         WHERE item_stack_id = $1
         FOR UPDATE
@@ -1054,7 +1072,8 @@ async fn lock_wallet(tx: &mut Transaction<'_, Postgres>, wallet_id: Uuid) -> Res
                isk_amount,
                wallet_state,
                wallet_version,
-               wallet_checksum
+               wallet_checksum,
+               checksum_algorithm
         FROM wallet
         WHERE wallet_id = $1
         FOR UPDATE
@@ -1105,6 +1124,8 @@ async fn update_item_stack(
     quantity_after: i64,
     stack_state_after: &str,
 ) -> Result<(i64, String)> {
+    ensure_item_stack_checksum_valid(stack)?;
+
     let version_after = checked_add(stack.stack_version, 1, "item_stack stack_version")?;
     let checksum_after = item_stack_checksum(stack.item_stack_id, quantity_after, version_after);
 
@@ -1187,6 +1208,8 @@ async fn update_wallet(
     wallet: &WalletRow,
     isk_amount_after: i64,
 ) -> Result<(i64, String)> {
+    ensure_wallet_checksum_valid(wallet)?;
+
     let version_after = checked_add(wallet.wallet_version, 1, "wallet wallet_version")?;
     let checksum_after = wallet_checksum(wallet.wallet_id, isk_amount_after, version_after);
 
@@ -1360,6 +1383,100 @@ fn ensure_wallet_active(wallet: &WalletRow) -> Result<()> {
     }
 }
 
+fn ensure_trade_kind(trade_kind: &str) -> Result<()> {
+    if trade_kind == TRADE_KIND_SELL {
+        Ok(())
+    } else {
+        Err(SettlementError::InvalidArgument(format!(
+            "trade_kind {trade_kind} is not supported"
+        )))
+    }
+}
+
+fn ensure_trade_state(trade_state: &str, field_name: &str) -> Result<()> {
+    match trade_state {
+        TRADE_STATE_OPEN | TRADE_STATE_CANCELLED | TRADE_STATE_COMPLETED => Ok(()),
+        _ => Err(SettlementError::InvalidArgument(format!(
+            "{field_name} {trade_state} is not supported"
+        ))),
+    }
+}
+
+fn ensure_new_trade_state(trade_state: &str) -> Result<()> {
+    if trade_state == TRADE_STATE_OPEN {
+        Ok(())
+    } else {
+        Err(SettlementError::InvalidArgument(format!(
+            "new trade_state must be {TRADE_STATE_OPEN}"
+        )))
+    }
+}
+
+fn ensure_future_expiration(expires_at: Option<&chrono::DateTime<Utc>>) -> Result<()> {
+    if let Some(expires_at) = expires_at {
+        if *expires_at <= Utc::now() {
+            return Err(SettlementError::InvalidArgument(
+                "expires_at must be in the future".to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn ensure_trade_transition(from: &str, to: &str) -> Result<()> {
+    match (from, to) {
+        (TRADE_STATE_OPEN, TRADE_STATE_CANCELLED | TRADE_STATE_COMPLETED) => Ok(()),
+        _ => Err(SettlementError::FailedPrecondition(format!(
+            "trade_state transition {from} -> {to} is not allowed"
+        ))),
+    }
+}
+
+fn ensure_trade_state_change_kind(kind: &str) -> Result<()> {
+    match kind {
+        TRADE_STATE_CHANGE_CANCELLED | TRADE_STATE_CHANGE_ACCEPTED => Ok(()),
+        _ => Err(SettlementError::InvalidArgument(format!(
+            "trade_state_change_kind {kind} is not supported"
+        ))),
+    }
+}
+
+fn ensure_item_stack_checksum_valid(stack: &ItemStackRow) -> Result<()> {
+    if stack.checksum_algorithm != CHECKSUM_ALGORITHM {
+        return Err(SettlementError::FailedPrecondition(format!(
+            "item_stack {} uses unsupported checksum algorithm {}",
+            stack.item_stack_id, stack.checksum_algorithm
+        )));
+    }
+    let expected = item_stack_checksum(stack.item_stack_id, stack.quantity, stack.stack_version);
+    if stack.stack_checksum == expected {
+        Ok(())
+    } else {
+        Err(SettlementError::FailedPrecondition(format!(
+            "item_stack {} checksum does not match current contents",
+            stack.item_stack_id
+        )))
+    }
+}
+
+fn ensure_wallet_checksum_valid(wallet: &WalletRow) -> Result<()> {
+    if wallet.checksum_algorithm != CHECKSUM_ALGORITHM {
+        return Err(SettlementError::FailedPrecondition(format!(
+            "wallet {} uses unsupported checksum algorithm {}",
+            wallet.wallet_id, wallet.checksum_algorithm
+        )));
+    }
+    let expected = wallet_checksum(wallet.wallet_id, wallet.isk_amount, wallet.wallet_version);
+    if wallet.wallet_checksum == expected {
+        Ok(())
+    } else {
+        Err(SettlementError::FailedPrecondition(format!(
+            "wallet {} checksum does not match current contents",
+            wallet.wallet_id
+        )))
+    }
+}
+
 fn ensure_escrow_not_released(entity_kind: &str, is_released: bool, entity_id: Uuid) -> Result<()> {
     if is_released {
         Err(SettlementError::FailedPrecondition(format!(
@@ -1397,16 +1514,6 @@ fn ensure_positive(value: i64, field_name: &str) -> Result<()> {
     } else {
         Err(SettlementError::InvalidArgument(format!(
             "{field_name} must be greater than zero"
-        )))
-    }
-}
-
-fn ensure_non_negative(value: i64, field_name: &str) -> Result<()> {
-    if value >= 0 {
-        Ok(())
-    } else {
-        Err(SettlementError::InvalidArgument(format!(
-            "{field_name} must be non-negative"
         )))
     }
 }

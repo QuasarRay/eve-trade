@@ -6,7 +6,6 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from urllib.parse import quote
 
 import dagger
 
@@ -16,7 +15,6 @@ RUST_IMAGE = "rust:1-bookworm"
 PYTHON_IMAGE = "python:3.13-slim-bookworm"
 DEBIAN_IMAGE = "debian:bookworm-slim"
 POSTGRES_IMAGE = "postgres:16"
-RABBITMQ_IMAGE = "rabbitmq:3.13-management"
 KUSTOMIZE_IMAGE = "alpine/k8s:1.33.1"
 GITLEAKS_IMAGE = "zricethezav/gitleaks:v8.27.2"
 TRIVY_IMAGE = "aquasec/trivy:0.64.1"
@@ -29,17 +27,13 @@ KUBERNETES_NAMESPACE = "eve-trade"
 SERVICE_IMAGE_NAMES = (
     "api-gateway",
     "market",
-    "settlement-worker",
     "trade-settlement",
 )
 DEPLOYMENT_NAMES = (
-    "rabbitmq",
     "trade-settlement",
-    "settlement-worker",
     "market",
     "api-gateway",
 )
-RABBITMQ_DEFAULT_USER = "eve_trade"
 
 SOURCE_EXCLUDES = [
     ".git",
@@ -80,13 +74,6 @@ GO_SERVICES = {
         package="./cmd/market",
         port=8081,
     ),
-    "settlement-worker": GoService(
-        name="settlement-worker",
-        binary="settlement-worker",
-        module_dir="distributed-backend/src/settlement-worker",
-        package="./cmd/settlement-worker",
-        build_tags="legacy_rabbitmq",
-    ),
 }
 
 
@@ -124,39 +111,6 @@ def source_url() -> str:
 
 def deployment_names_shell() -> str:
     return " ".join(DEPLOYMENT_NAMES)
-
-
-def rabbitmq_deploy_secret_values() -> tuple[str, str, str] | None:
-    configured = any(
-        env(name)
-        for name in (
-            "RABBITMQ_DEFAULT_USER",
-            "RABBITMQ_USERNAME",
-            "RABBITMQ_DEFAULT_PASS",
-            "RABBITMQ_PASSWORD",
-            "RABBITMQ_URL",
-        )
-    )
-    password = env("RABBITMQ_DEFAULT_PASS") or env("RABBITMQ_PASSWORD")
-    if not password:
-        if configured:
-            raise RuntimeError(
-                "RABBITMQ_DEFAULT_PASS or RABBITMQ_PASSWORD is required when "
-                "deploying the RabbitMQ secret from CI variables"
-            )
-        return None
-
-    username = (
-        env("RABBITMQ_DEFAULT_USER")
-        or env("RABBITMQ_USERNAME")
-        or RABBITMQ_DEFAULT_USER
-    )
-    rabbitmq_url = env("RABBITMQ_URL") or (
-        "amqp://"
-        f"{quote(username, safe='')}:{quote(password, safe='')}"
-        f"@rabbitmq.{KUBERNETES_NAMESPACE}.svc.cluster.local:5672/"
-    )
-    return username, password, rabbitmq_url
 
 
 class EveTradePipeline:
@@ -276,7 +230,7 @@ fi
     async def go_checks(self) -> None:
         script = r"""
 set -euo pipefail
-unformatted="$(gofmt -l distributed-backend/src/api-gateway distributed-backend/src/market distributed-backend/src/settlement-worker distributed-backend/proto/gen)"
+unformatted="$(gofmt -l distributed-backend/src/api-gateway distributed-backend/src/market distributed-backend/proto/gen)"
 if [ -n "$unformatted" ]; then
   echo "Go files need gofmt:"
   echo "$unformatted"
@@ -285,7 +239,6 @@ fi
 for module in distributed-backend/proto distributed-backend/src/observability distributed-backend/src/market distributed-backend/src/api-gateway; do
   (cd "$module" && go test ./...)
 done
-(cd distributed-backend/src/settlement-worker && go test -tags legacy_rabbitmq ./...)
 """
         await self.run_container(
             "Go format and tests",
@@ -542,7 +495,6 @@ kustomize build . > /out/chaos-litmus.yaml
         if not kubeconfig:
             raise RuntimeError("KUBE_CONFIG_B64 is required for deploy")
         kubeconfig_secret = self.client.set_secret("kubeconfig-b64", kubeconfig)
-        rabbitmq_values = rabbitmq_deploy_secret_values()
         image_commands = " && ".join(
             f"kustomize edit set image eve-trade/{name}={registry}/{name}:{tag}"
             for name in SERVICE_IMAGE_NAMES
@@ -556,16 +508,7 @@ printf '%s' "$KUBE_CONFIG_B64" | base64 -d > /tmp/kubeconfig
 chmod 600 /tmp/kubeconfig
 KUBECTL="kubectl --kubeconfig /tmp/kubeconfig"
 
-if [ -n "${{RABBITMQ_DEFAULT_PASS:-}}" ]; then
-  $KUBECTL create namespace {KUBERNETES_NAMESPACE} --dry-run=client -o yaml | $KUBECTL apply -f -
-  $KUBECTL -n {KUBERNETES_NAMESPACE} create secret generic rabbitmq \\
-    --from-literal=RABBITMQ_DEFAULT_USER="$RABBITMQ_DEFAULT_USER" \\
-    --from-literal=RABBITMQ_DEFAULT_PASS="$RABBITMQ_DEFAULT_PASS" \\
-    --from-literal=RABBITMQ_URL="$RABBITMQ_URL" \\
-    --dry-run=client -o yaml | $KUBECTL apply -f -
-else
-  echo "RABBITMQ_DEFAULT_PASS is not set; expecting an existing rabbitmq secret"
-fi
+$KUBECTL create namespace {KUBERNETES_NAMESPACE} --dry-run=client -o yaml | $KUBECTL apply -f -
 
 cd /tmp/kubernetes/overlay/prod
 {image_commands}
@@ -582,19 +525,6 @@ done
             .with_workdir("/workspace")
             .with_secret_variable("KUBE_CONFIG_B64", kubeconfig_secret)
         )
-        if rabbitmq_values is not None:
-            username, password, rabbitmq_url = rabbitmq_values
-            container = (
-                container.with_env_variable("RABBITMQ_DEFAULT_USER", username)
-                .with_secret_variable(
-                    "RABBITMQ_DEFAULT_PASS",
-                    self.client.set_secret("rabbitmq-default-pass", password),
-                )
-                .with_secret_variable(
-                    "RABBITMQ_URL",
-                    self.client.set_secret("rabbitmq-url", rabbitmq_url),
-                )
-            )
         await self.run_container(
             "deploy Kubernetes manifests",
             container.with_exec(["sh", "-c", script]),
@@ -799,6 +729,7 @@ psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
         settlement = (
             self.trade_settlement_image()
             .with_service_binding("postgres", postgres)
+            .with_env_variable("SUMMER_ENV", "prod")
             .with_env_variable(
                 "DATABASE_URL",
                 "postgres://postgres:postgres@postgres:5432/eve_trade_e2e",

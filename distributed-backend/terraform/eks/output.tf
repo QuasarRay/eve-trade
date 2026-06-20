@@ -22,8 +22,3 @@ output "database_secret_name" {
   description = "Kubernetes secret containing DATABASE_URL for trade-settlement."
   value       = try(kubernetes_secret_v1.trade_settlement_database[0].metadata[0].name, null)
 }
-
-output "rabbitmq_secret_name" {
-  description = "Kubernetes secret containing RabbitMQ credentials."
-  value       = kubernetes_secret_v1.rabbitmq.metadata[0].name
-}

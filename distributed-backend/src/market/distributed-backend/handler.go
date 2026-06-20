@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"connectrpc.com/connect"
 	gametrade "github.com/QuasarRay/eve-trade/market/game-trade"
@@ -217,7 +218,8 @@ func (h *MarketHandler) replayIssueTradeInstance(ctx context.Context, message *m
 	if createTrade == nil || itemEscrow == nil {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
-	if int64Field(createTrade, "issuer_id") != message.IssuedByCapsuleerId ||
+	if replay.ExternalRequestID != message.ExternalRequestId ||
+		int64Field(createTrade, "issuer_id") != message.IssuedByCapsuleerId ||
 		int64Field(createTrade, "total_quantity") != message.Quantity ||
 		int64Field(createTrade, "unit_price_isk") != message.UnitPriceIsk ||
 		stringField(itemEscrow, "source_item_stack_id") != message.ItemStack.ItemStackId {
@@ -246,7 +248,8 @@ func (h *MarketHandler) replayAcceptTradeInstance(ctx context.Context, message *
 	if walletEscrow == nil || itemTransfer == nil {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
-	if replay.CausedByCapsuleerID != message.BuyerCapsuleerId ||
+	if replay.ExternalRequestID != message.ExternalRequestId ||
+		replay.CausedByCapsuleerID != message.BuyerCapsuleerId ||
 		stringField(walletEscrow, "source_wallet_id") != message.BuyerWalletId ||
 		stringField(walletEscrow, "trade_instance_id") != message.TradeInstanceId ||
 		int64Field(itemTransfer, "quantity") != message.QuantityRequested {
@@ -272,7 +275,8 @@ func (h *MarketHandler) replayCancelTradeInstance(ctx context.Context, message *
 	if stateChange == nil {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
-	if replay.CausedByCapsuleerID != message.CancelledByCapsuleerId ||
+	if replay.ExternalRequestID != message.ExternalRequestId ||
+		replay.CausedByCapsuleerID != message.CancelledByCapsuleerId ||
 		stringField(stateChange, "trade_instance_id") != message.TradeInstanceId {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
@@ -344,6 +348,9 @@ func (h *MarketHandler) loadAcceptableTrade(ctx context.Context, tradeInstanceID
 	}
 	if trade.EscrowReleased {
 		return TradeSnapshot{}, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("item_stack_escrow %s is already released", trade.ItemStackEscrowID))
+	}
+	if trade.ExpiresAtValid && !trade.ExpiresAt.After(time.Now()) {
+		return TradeSnapshot{}, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("trade is expired"))
 	}
 	if requestedQuantity > trade.EscrowQuantity {
 		return TradeSnapshot{}, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("item_stack_escrow %s has %d, requested %d", trade.ItemStackEscrowID, trade.EscrowQuantity, requestedQuantity))

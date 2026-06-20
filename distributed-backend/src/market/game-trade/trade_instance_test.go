@@ -1,9 +1,12 @@
 package gametrade
 
 import (
+	"strings"
 	"testing"
+	"time"
 
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestIssueTradeInstanceBuildsTradeAndItemEscrowOperations(t *testing.T) {
@@ -39,6 +42,30 @@ func TestIssueTradeInstanceBuildsTradeAndItemEscrowOperations(t *testing.T) {
 	}
 	if escrowOp.TransferQuantityFromItemStackToItemStackEscrow.Quantity != 4 {
 		t.Fatalf("escrow quantity = %d, want 4", escrowOp.TransferQuantityFromItemStackToItemStackEscrow.Quantity)
+	}
+}
+
+func TestIssueTradeInstanceRejectsExpiredTrade(t *testing.T) {
+	_, err := IssueTradeInstance(IssueTradeInstanceInput{
+		IdempotencyKey:      "issue-expired",
+		ExternalRequestID:   "external-expired",
+		IssuedByCapsuleerID: 1001,
+		ItemStack: ItemStackRow{
+			ItemStackID: "11111111-1111-4111-8111-111111111111",
+			OwnerID:     1001,
+			ItemTypeID:  34,
+			StationID:   60003760,
+			Quantity:    10,
+		},
+		Quantity:     4,
+		UnitPriceISK: 25,
+		ExpiresAt:    timestamppb.New(time.Now().Add(-time.Minute)),
+	})
+	if err == nil {
+		t.Fatal("expected expired trade to be rejected")
+	}
+	if !strings.Contains(err.Error(), "expires_at") {
+		t.Fatalf("error = %v, want expires_at", err)
 	}
 }
 

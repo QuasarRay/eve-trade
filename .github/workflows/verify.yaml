@@ -91,10 +91,6 @@ jobs:
             module: distributed-backend/src/api-gateway
             build_package: ./cmd/api-gateway
             build_tags: ""
-          - name: settlement-worker
-            module: distributed-backend/src/settlement-worker
-            build_package: ./cmd/settlement-worker
-            build_tags: legacy_rabbitmq
 
     steps:
       - name: Checkout

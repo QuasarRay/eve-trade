@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/name: api-gateway
     app.kubernetes.io/component: gateway
 data:
-  API_GATEWAY_ADDR: ":8080"
+  API_GATEWAY_HTTP_ADDR: ":8080"
   MARKET_URL: "http://market:8081"
 
   OTEL_SERVICE_NAME: "api-gateway"
@@ -28,41 +28,10 @@ metadata:
     app.kubernetes.io/name: market
     app.kubernetes.io/component: market
 data:
-  MARKET_ADDR: ":8081"
-  SETTLEMENT_URL: "http://trade-settlement:9092"
-  SETTLEMENT_TRANSPORT: "rabbitmq"
-  RABBITMQ_SETTLEMENT_EXCHANGE: "eve_trade.settlement"
-  RABBITMQ_SETTLEMENT_COMMAND_QUEUE: "eve_trade.settlement.commands"
-  RABBITMQ_SETTLEMENT_ROUTING_KEY: "settlement.command"
-  RABBITMQ_SETTLEMENT_REQUEST_TIMEOUT: "30s"
+  MARKET_HTTP_ADDR: ":8081"
+  TRADE_SETTLEMENT_URL: "http://trade-settlement:9092"
 
   OTEL_SERVICE_NAME: "market"
-  OTEL_SERVICE_NAMESPACE: "eve-trade"
-  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.eve-trade-observability.svc.cluster.local:4318"
-  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
-  OTEL_TRACES_EXPORTER: "otlp"
-  OTEL_METRICS_EXPORTER: "otlp"
-  OTEL_LOGS_EXPORTER: "otlp"
-  OTEL_PROPAGATORS: "tracecontext,baggage"
-  OTEL_METRIC_EXPORT_INTERVAL: "15000"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: settlement-worker-config
-  labels:
-    app.kubernetes.io/name: settlement-worker
-    app.kubernetes.io/component: settlement-worker
-data:
-  SETTLEMENT_URL: "http://trade-settlement:9092"
-  RABBITMQ_SETTLEMENT_EXCHANGE: "eve_trade.settlement"
-  RABBITMQ_SETTLEMENT_COMMAND_QUEUE: "eve_trade.settlement.commands"
-  RABBITMQ_SETTLEMENT_ROUTING_KEY: "settlement.command"
-  RABBITMQ_SETTLEMENT_REQUEST_TIMEOUT: "30s"
-  RABBITMQ_SETTLEMENT_PREFETCH: "8"
-
-  OTEL_SERVICE_NAME: "settlement-worker"
   OTEL_SERVICE_NAMESPACE: "eve-trade"
   OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.eve-trade-observability.svc.cluster.local:4318"
@@ -81,6 +50,7 @@ metadata:
     app.kubernetes.io/name: trade-settlement
     app.kubernetes.io/component: settlement
 data:
+  SUMMER_ENV: "prod"
   OTEL_SERVICE_NAME: "trade-settlement"
   OTEL_SERVICE_NAMESPACE: "eve-trade"
   OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"

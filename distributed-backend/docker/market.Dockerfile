@@ -19,7 +19,7 @@ RUN cd distributed-backend/src/market \
 FROM debian:bookworm-slim AS runtime
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates passwd \
+    && apt-get install -y --no-install-recommends ca-certificates curl passwd \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

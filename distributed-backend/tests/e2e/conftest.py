@@ -5,6 +5,19 @@ import pytest
 from helpers import Database, GatewayClient, SettlementClient, wait_for_database, wait_for_gateway
 
 
+def pytest_sessionfinish(session, exitstatus):
+    if os.environ.get("EVE_TRADE_E2E_ALLOW_ALL_SKIPPED") == "true":
+        return
+    if session.testscollected == 0 or exitstatus != pytest.ExitCode.OK:
+        return
+    reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+    if reporter is None:
+        return
+    skipped = len(reporter.stats.get("skipped", []))
+    if skipped == session.testscollected:
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
+
 @pytest.fixture(scope="session")
 def service_urls():
     api_gateway_url = os.environ.get("EVE_TRADE_API_GATEWAY_URL")

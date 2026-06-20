@@ -17,7 +17,7 @@ variable "cluster_version" {
 }
 
 variable "container_image_overrides" {
-  description = "Optional per-service image overrides keyed by api-gateway, market, settlement-worker, or trade-settlement. Each value may include repository and tag."
+  description = "Optional per-service image overrides keyed by api-gateway, market, or trade-settlement. Each value may include repository and tag."
   type        = map(any)
   default     = {}
 }
@@ -76,10 +76,3 @@ variable "database_deletion_protection" {
   type        = bool
   default     = false
 }
-
-variable "rabbitmq_username" {
-  description = "RabbitMQ application username."
-  type        = string
-  default     = "eve_trade"
-}
-

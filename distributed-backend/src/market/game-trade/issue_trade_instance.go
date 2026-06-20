@@ -2,6 +2,7 @@ package gametrade
 
 import (
 	"fmt"
+	"time"
 
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -40,6 +41,9 @@ func IssueTradeInstance(input IssueTradeInstanceInput) (SettlementPlan, error) {
 	}
 	if err := validatePositive("unit_price_isk", input.UnitPriceISK); err != nil {
 		return SettlementPlan{}, err
+	}
+	if input.ExpiresAt != nil && !input.ExpiresAt.AsTime().After(time.Now()) {
+		return SettlementPlan{}, fmt.Errorf("expires_at must be in the future")
 	}
 
 	tradeInstanceID := input.TradeInstanceID

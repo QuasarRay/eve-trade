@@ -39,13 +39,15 @@ spec:
             - configMapRef:
                 name: api-gateway-config
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /readyz
               port: http
             periodSeconds: 5
             timeoutSeconds: 2
             failureThreshold: 3
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /healthz
               port: http
             initialDelaySeconds: 10
             periodSeconds: 20

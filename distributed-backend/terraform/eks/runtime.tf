@@ -3,17 +3,11 @@ locals {
   database_port = 5432
 
   database_url = var.database_enabled ? "postgres://${var.database_username}:${random_password.database[0].result}@${aws_db_instance.trade_settlement[0].address}:${local.database_port}/${var.database_name}" : var.external_database_url
-  rabbitmq_url = "amqp://${var.rabbitmq_username}:${random_password.rabbitmq.result}@rabbitmq.${local.app_namespace}.svc.cluster.local:5672/"
 }
 
 resource "random_password" "database" {
   count = var.database_enabled ? 1 : 0
 
-  length  = 32
-  special = false
-}
-
-resource "random_password" "rabbitmq" {
   length  = 32
   special = false
 }
@@ -110,27 +104,6 @@ resource "kubernetes_secret_v1" "trade_settlement_database" {
 
   data = {
     DATABASE_URL = local.database_url
-  }
-
-  type = "Opaque"
-}
-
-resource "kubernetes_secret_v1" "rabbitmq" {
-  metadata {
-    name      = "rabbitmq"
-    namespace = kubernetes_namespace_v1.app.metadata[0].name
-
-    labels = {
-      "app.kubernetes.io/name"       = "rabbitmq"
-      "app.kubernetes.io/component"  = "messaging"
-      "app.kubernetes.io/managed-by" = "terraform"
-    }
-  }
-
-  data = {
-    RABBITMQ_DEFAULT_USER = var.rabbitmq_username
-    RABBITMQ_DEFAULT_PASS = random_password.rabbitmq.result
-    RABBITMQ_URL          = local.rabbitmq_url
   }
 
   type = "Opaque"
