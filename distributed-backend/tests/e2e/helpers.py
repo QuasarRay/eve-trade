@@ -461,39 +461,22 @@ def accept_payload(
     trade: Trade,
     *,
     quantity: int | None = None,
-    isk_amount_paid: int | None = None,
     idempotency_key: str | None = None,
     buyer_capsuleer_id: int | None = None,
-    seller_capsuleer_id: int | None = None,
-    item_type_id: int | None = None,
-    station_id: int | None = None,
     buyer_wallet_id: str | None = None,
-    seller_wallet_id: str | None = None,
-    item_stack_escrow_id: str | None = None,
     buyer_destination_item_stack_id: str | None = None,
-    create_buyer_destination_item_stack: bool | None = None,
+    **_ignored_client_facts: Any,
 ) -> dict[str, Any]:
     requested = trade.quantity if quantity is None else quantity
     key = idempotency_key or fresh_key("accept")
-    if create_buyer_destination_item_stack is None:
-        create_buyer_destination_item_stack = buyer_destination_item_stack_id is None
     return {
         "idempotencyKey": key,
         "externalRequestId": f"external-{key}",
         "tradeInstanceId": trade.trade_instance_id,
         "buyerCapsuleerId": buyer_capsuleer_id or world.buyer_id,
-        "sellerCapsuleerId": seller_capsuleer_id or world.seller_id,
-        "itemTypeId": item_type_id if item_type_id is not None else world.item_type_id,
-        "stationId": station_id if station_id is not None else world.station_id,
         "quantityRequested": requested,
-        "iskAmountPaid": isk_amount_paid
-        if isk_amount_paid is not None
-        else requested * trade.unit_price_isk,
         "buyerWalletId": buyer_wallet_id or world.buyer_wallet_id,
-        "sellerWalletId": seller_wallet_id or world.seller_wallet_id,
-        "itemStackEscrowId": item_stack_escrow_id or trade.item_stack_escrow_id,
         "buyerDestinationItemStackId": buyer_destination_item_stack_id or "",
-        "createBuyerDestinationItemStack": create_buyer_destination_item_stack,
     }
 
 
@@ -512,31 +495,14 @@ def cancel_payload(
     *,
     idempotency_key: str | None = None,
     cancelled_by_capsuleer_id: int | None = None,
-    item_stack_escrow_id: str | None = None,
-    return_item_stack_id: str | None = None,
-    return_quantity: int | None = None,
-    wallet_escrow_id: str = "",
-    return_wallet_id: str = "",
-    return_isk_amount: int = 0,
+    **_ignored_client_facts: Any,
 ) -> dict[str, Any]:
     key = idempotency_key or fresh_key("cancel")
-    quantity = trade.quantity if return_quantity is None else return_quantity
-    has_item_return = quantity != 0 or item_stack_escrow_id is not None or return_item_stack_id is not None
     return {
         "idempotencyKey": key,
         "externalRequestId": f"external-{key}",
         "tradeInstanceId": trade.trade_instance_id,
         "cancelledByCapsuleerId": cancelled_by_capsuleer_id or world.seller_id,
-        "itemStackEscrowId": (item_stack_escrow_id or trade.item_stack_escrow_id)
-        if has_item_return
-        else "",
-        "returnItemStackId": (return_item_stack_id or trade.seller_stack_id)
-        if has_item_return
-        else "",
-        "returnQuantity": quantity,
-        "walletEscrowId": wallet_escrow_id,
-        "returnWalletId": return_wallet_id,
-        "returnIskAmount": return_isk_amount,
     }
 
 
@@ -669,4 +635,3 @@ def settlement_batch_count(db: Database, idempotency_key: str) -> int:
             (idempotency_key,),
         )
     )
-

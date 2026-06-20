@@ -11,14 +11,17 @@ use crate::proto::trade_settlement::SettlementOperationKind;
 const REQUEST_KIND: &str = "trade_settlement.execute_settlement_batch";
 const BATCH_STATE_IN_PROGRESS: &str = "IN_PROGRESS";
 const BATCH_STATE_COMPLETED: &str = "COMPLETED";
+const BATCH_STATE_FAILED: &str = "FAILED";
 const IDEMPOTENCY_STATE_IN_PROGRESS: &str = "IN_PROGRESS";
 const IDEMPOTENCY_STATE_COMPLETED: &str = "COMPLETED";
 const IDEMPOTENCY_STATE_FAILED: &str = "FAILED";
 const STEP_STATE_PENDING: &str = "PENDING";
 const STEP_STATE_RUNNING: &str = "RUNNING";
 const STEP_STATE_COMPLETED: &str = "COMPLETED";
+const STEP_STATE_FAILED: &str = "FAILED";
 const ATTEMPT_STATE_IN_PROGRESS: &str = "IN_PROGRESS";
 const ATTEMPT_STATE_COMPLETED: &str = "COMPLETED";
+const ATTEMPT_STATE_FAILED: &str = "FAILED";
 
 #[derive(Debug, Clone)]
 pub struct SettlementExecutor {
@@ -47,6 +50,16 @@ struct StepRecord {
     step_index: i32,
     settlement_step_id: Uuid,
     step_kind: SettlementOperationKind,
+}
+
+struct FailedExecution<'a> {
+    settlement_batch_id: Uuid,
+    request_id: Uuid,
+    idempotency_key: &'a str,
+    step_records: &'a [StepRecord],
+    attempted_steps: usize,
+    failure_code: &'a str,
+    failure_message: &'a str,
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -83,9 +96,11 @@ impl SettlementExecutor {
             None => build_request_fingerprint(&command)?,
         };
 
-        let mut tx = self.db.begin().await?;
+        let mut metadata_tx = self.db.begin().await?;
 
-        if let Some(existing) = lock_idempotency_record(&mut tx, &command.idempotency_key).await? {
+        if let Some(existing) =
+            lock_idempotency_record(&mut metadata_tx, &command.idempotency_key).await?
+        {
             if existing.request_fingerprint != request_fingerprint {
                 return Err(SettlementError::Conflict(format!(
                     "idempotency_key {} was already used with a different request fingerprint",
@@ -95,7 +110,7 @@ impl SettlementExecutor {
 
             match existing.idempotency_state.as_str() {
                 IDEMPOTENCY_STATE_COMPLETED => {
-                    tx.rollback().await?;
+                    metadata_tx.rollback().await?;
                     let batch_id = existing.result_settlement_batch_id.ok_or_else(|| {
                         SettlementError::FailedPrecondition(format!(
                             "idempotency_key {} completed without a result batch",
@@ -118,7 +133,8 @@ impl SettlementExecutor {
                     )));
                 }
                 IDEMPOTENCY_STATE_FAILED => {
-                    reset_failed_idempotency_record(&mut tx, &command.idempotency_key).await?;
+                    reset_failed_idempotency_record(&mut metadata_tx, &command.idempotency_key)
+                        .await?;
                 }
                 other => {
                     return Err(SettlementError::FailedPrecondition(format!(
@@ -129,7 +145,7 @@ impl SettlementExecutor {
             }
         } else {
             insert_idempotency_record(
-                &mut tx,
+                &mut metadata_tx,
                 &command.idempotency_key,
                 &request_fingerprint,
                 &command.created_by_service,
@@ -138,9 +154,10 @@ impl SettlementExecutor {
         }
 
         let request_id = command.request_id.unwrap_or_else(Uuid::new_v4);
-        let attempt_number = next_attempt_number(&mut tx, &command.idempotency_key).await?;
+        let attempt_number =
+            next_attempt_number(&mut metadata_tx, &command.idempotency_key).await?;
         insert_request_attempt(
-            &mut tx,
+            &mut metadata_tx,
             request_id,
             &command.idempotency_key,
             attempt_number,
@@ -149,17 +166,44 @@ impl SettlementExecutor {
         .await?;
 
         let settlement_batch_id = Uuid::new_v4();
-        insert_settlement_batch(&mut tx, settlement_batch_id, request_id, &command).await?;
+        insert_settlement_batch(&mut metadata_tx, settlement_batch_id, request_id, &command)
+            .await?;
 
         let step_records =
-            insert_settlement_steps(&mut tx, settlement_batch_id, &command.operations).await?;
+            insert_settlement_steps(&mut metadata_tx, settlement_batch_id, &command.operations)
+                .await?;
+        metadata_tx.commit().await?;
 
+        let mut business_tx = self.db.begin().await?;
         let mut step_results = Vec::with_capacity(command.operations.len());
-        for (command, step) in command.operations.iter().zip(step_records.iter()) {
-            mark_step_running(&mut tx, step.settlement_step_id).await?;
-            let output =
-                execute_settlement_command(&mut tx, step.settlement_step_id, command).await?;
-            mark_step_completed(&mut tx, step.settlement_step_id).await?;
+        for (operation, step) in command.operations.iter().zip(step_records.iter()) {
+            mark_step_running_pool(&self.db, step.settlement_step_id).await?;
+            let output = match execute_settlement_command(
+                &mut business_tx,
+                step.settlement_step_id,
+                operation,
+            )
+            .await
+            {
+                Ok(output) => output,
+                Err(error) => {
+                    let failure_code = error.code().to_string();
+                    let failure_message = error.to_string();
+                    let attempted_steps = step_results.len() + 1;
+                    let _ = business_tx.rollback().await;
+                    self.fail_execution(FailedExecution {
+                        settlement_batch_id,
+                        request_id,
+                        idempotency_key: &command.idempotency_key,
+                        step_records: &step_records,
+                        attempted_steps,
+                        failure_code: &failure_code,
+                        failure_message: &failure_message,
+                    })
+                    .await?;
+                    return Err(error);
+                }
+            };
             step_results.push(StepExecutionResult {
                 step_index: step.step_index as u32,
                 settlement_step_id: step.settlement_step_id,
@@ -168,11 +212,14 @@ impl SettlementExecutor {
             });
         }
 
-        complete_batch(&mut tx, settlement_batch_id).await?;
-        complete_request_attempt(&mut tx, request_id).await?;
-        complete_idempotency_record(&mut tx, &command.idempotency_key, settlement_batch_id).await?;
-
-        tx.commit().await?;
+        business_tx.commit().await?;
+        self.complete_execution(
+            settlement_batch_id,
+            request_id,
+            &command.idempotency_key,
+            &step_records,
+        )
+        .await?;
 
         Ok(BatchExecutionResult {
             settlement_batch_id,
@@ -210,6 +257,70 @@ impl SettlementExecutor {
                 output: OperationOutput::default(),
             })
             .collect())
+    }
+
+    async fn complete_execution(
+        &self,
+        settlement_batch_id: Uuid,
+        request_id: Uuid,
+        idempotency_key: &str,
+        step_records: &[StepRecord],
+    ) -> Result<()> {
+        let mut tx = self.db.begin().await?;
+        for step in step_records {
+            mark_step_completed(&mut tx, step.settlement_step_id).await?;
+        }
+        complete_batch(&mut tx, settlement_batch_id).await?;
+        complete_request_attempt(&mut tx, request_id).await?;
+        complete_idempotency_record(&mut tx, idempotency_key, settlement_batch_id).await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn fail_execution(&self, failure: FailedExecution<'_>) -> Result<()> {
+        let mut tx = self.db.begin().await?;
+        for (index, step) in failure.step_records.iter().enumerate() {
+            if index < failure.attempted_steps {
+                let message = if index + 1 == failure.attempted_steps {
+                    failure.failure_message.to_string()
+                } else {
+                    format!(
+                        "rolled back after later step failed: {}",
+                        failure.failure_message
+                    )
+                };
+                mark_step_failed(
+                    &mut tx,
+                    step.settlement_step_id,
+                    failure.failure_code,
+                    &message,
+                )
+                .await?;
+            }
+        }
+        fail_batch(
+            &mut tx,
+            failure.settlement_batch_id,
+            failure.failure_code,
+            failure.failure_message,
+        )
+        .await?;
+        fail_request_attempt(
+            &mut tx,
+            failure.request_id,
+            failure.failure_code,
+            failure.failure_message,
+        )
+        .await?;
+        fail_idempotency_record(
+            &mut tx,
+            failure.idempotency_key,
+            failure.failure_code,
+            failure.failure_message,
+        )
+        .await?;
+        tx.commit().await?;
+        Ok(())
     }
 }
 
@@ -414,21 +525,18 @@ async fn insert_settlement_steps(
     Ok(records)
 }
 
-async fn mark_step_running(
-    tx: &mut Transaction<'_, Postgres>,
-    settlement_step_id: Uuid,
-) -> Result<()> {
+async fn mark_step_running_pool(db: &PgPool, settlement_step_id: Uuid) -> Result<()> {
     sqlx::query(
         r#"
         UPDATE settlement_step
         SET step_state = $2,
-            started_at = now()
+            started_at = COALESCE(started_at, now())
         WHERE settlement_step_id = $1
         "#,
     )
     .bind(settlement_step_id)
     .bind(STEP_STATE_RUNNING)
-    .execute(&mut **tx)
+    .execute(db)
     .await?;
 
     Ok(())
@@ -448,6 +556,32 @@ async fn mark_step_completed(
     )
     .bind(settlement_step_id)
     .bind(STEP_STATE_COMPLETED)
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
+}
+
+async fn mark_step_failed(
+    tx: &mut Transaction<'_, Postgres>,
+    settlement_step_id: Uuid,
+    failure_code: &str,
+    failure_message: &str,
+) -> Result<()> {
+    sqlx::query(
+        r#"
+        UPDATE settlement_step
+        SET step_state = $2,
+            completed_at = now(),
+            failure_code = $3,
+            failure_message = $4
+        WHERE settlement_step_id = $1
+        "#,
+    )
+    .bind(settlement_step_id)
+    .bind(STEP_STATE_FAILED)
+    .bind(failure_code)
+    .bind(failure_message)
     .execute(&mut **tx)
     .await?;
 
@@ -474,6 +608,32 @@ async fn complete_batch(
     Ok(())
 }
 
+async fn fail_batch(
+    tx: &mut Transaction<'_, Postgres>,
+    settlement_batch_id: Uuid,
+    failure_code: &str,
+    failure_message: &str,
+) -> Result<()> {
+    sqlx::query(
+        r#"
+        UPDATE settlement_batch
+        SET batch_state = $2,
+            completed_at = now(),
+            failure_code = $3,
+            failure_message = $4
+        WHERE settlement_batch_id = $1
+        "#,
+    )
+    .bind(settlement_batch_id)
+    .bind(BATCH_STATE_FAILED)
+    .bind(failure_code)
+    .bind(failure_message)
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
+}
+
 async fn complete_request_attempt(
     tx: &mut Transaction<'_, Postgres>,
     request_id: Uuid,
@@ -488,6 +648,32 @@ async fn complete_request_attempt(
     )
     .bind(request_id)
     .bind(ATTEMPT_STATE_COMPLETED)
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
+}
+
+async fn fail_request_attempt(
+    tx: &mut Transaction<'_, Postgres>,
+    request_id: Uuid,
+    failure_code: &str,
+    failure_message: &str,
+) -> Result<()> {
+    sqlx::query(
+        r#"
+        UPDATE request_attempt
+        SET attempt_state = $2,
+            completed_at = now(),
+            failure_code = $3,
+            failure_message = $4
+        WHERE request_id = $1
+        "#,
+    )
+    .bind(request_id)
+    .bind(ATTEMPT_STATE_FAILED)
+    .bind(failure_code)
+    .bind(failure_message)
     .execute(&mut **tx)
     .await?;
 
@@ -511,6 +697,33 @@ async fn complete_idempotency_record(
     .bind(idempotency_key)
     .bind(IDEMPOTENCY_STATE_COMPLETED)
     .bind(settlement_batch_id)
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
+}
+
+async fn fail_idempotency_record(
+    tx: &mut Transaction<'_, Postgres>,
+    idempotency_key: &str,
+    failure_code: &str,
+    failure_message: &str,
+) -> Result<()> {
+    sqlx::query(
+        r#"
+        UPDATE idempotency_record
+        SET idempotency_state = $2,
+            completed_at = now(),
+            failure_code = $3,
+            failure_message = $4,
+            result_settlement_batch_id = NULL
+        WHERE idempotency_key = $1
+        "#,
+    )
+    .bind(idempotency_key)
+    .bind(IDEMPOTENCY_STATE_FAILED)
+    .bind(failure_code)
+    .bind(failure_message)
     .execute(&mut **tx)
     .await?;
 

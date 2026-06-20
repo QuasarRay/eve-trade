@@ -3,7 +3,7 @@ package gametrade
 import (
 	"fmt"
 
-	tradesettlementv1 "github.com/astral/eve-trade/market/distributed-backend/gen/trade_settlement/v1"
+	tradesettlementv1 "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -15,9 +15,14 @@ type IssueTradeInstanceInput struct {
 	Quantity            int64
 	UnitPriceISK        int64
 	ExpiresAt           *timestamppb.Timestamp
+	TradeInstanceID     string
+	ItemStackEscrowID   string
 }
 
 func IssueTradeInstance(input IssueTradeInstanceInput) (SettlementPlan, error) {
+	if err := validateRequired("idempotency_key", input.IdempotencyKey); err != nil {
+		return SettlementPlan{}, err
+	}
 	if err := validateRequired("item_stack_id", input.ItemStack.ItemStackID); err != nil {
 		return SettlementPlan{}, err
 	}
@@ -33,17 +38,25 @@ func IssueTradeInstance(input IssueTradeInstanceInput) (SettlementPlan, error) {
 	if input.ItemStack.Quantity < input.Quantity {
 		return SettlementPlan{}, fmt.Errorf("item stack quantity is lower than requested issue quantity")
 	}
-	if input.UnitPriceISK < 0 {
-		return SettlementPlan{}, fmt.Errorf("unit_price_isk must be non-negative")
+	if err := validatePositive("unit_price_isk", input.UnitPriceISK); err != nil {
+		return SettlementPlan{}, err
 	}
 
-	tradeInstanceID, err := newID()
-	if err != nil {
-		return SettlementPlan{}, err
+	tradeInstanceID := input.TradeInstanceID
+	if tradeInstanceID == "" {
+		var err error
+		tradeInstanceID, err = deterministicID(input.IdempotencyKey, "trade-instance")
+		if err != nil {
+			return SettlementPlan{}, err
+		}
 	}
-	itemStackEscrowID, err := newID()
-	if err != nil {
-		return SettlementPlan{}, err
+	itemStackEscrowID := input.ItemStackEscrowID
+	if itemStackEscrowID == "" {
+		var err error
+		itemStackEscrowID, err = deterministicID(input.IdempotencyKey, "item-stack-escrow")
+		if err != nil {
+			return SettlementPlan{}, err
+		}
 	}
 
 	ops := []*tradesettlementv1.SettlementOperation{

@@ -13,7 +13,7 @@ stages:
   - chaos
 
 variables:
-  DAGGER_VERSION: "0.21.6"
+  DAGGER_VERSION: "0.21.7"
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
   CHAOS_NAMESPACE: eve-trade
@@ -25,9 +25,9 @@ variables:
   _EXPERIMENTAL_DAGGER_CLI_BIN: /usr/local/bin/dagger
 
 .dagger:
-  image: docker:27.2.0-cli
+  image: docker:29.5.2-cli
   services:
-    - name: docker:27.2.0-dind
+    - name: docker:29.5.2-dind
       command: ["--tls=false"]
   cache:
     key: "$CI_COMMIT_REF_SLUG"

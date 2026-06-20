@@ -29,12 +29,19 @@ func main() {
 	}()
 
 	config := distributedbackend.LoadConfig()
+	repository, err := distributedbackend.NewPostgresTradeRepository(ctx, config.DatabaseURL)
+	if err != nil {
+		slog.Error("market repository initialization failed", "error", err)
+		os.Exit(1)
+	}
+	defer repository.Close()
+
 	settlement := distributedbackend.NewConnectSettlementExecutor(
 		config.TradeSettlementURL,
 		config.SettlementRequestTimeout,
 		connect.WithInterceptors(observability.NewClientInterceptor()),
 	)
-	handler := distributedbackend.NewMarketHandler(settlement)
+	handler := distributedbackend.NewMarketHandler(settlement, repository)
 	server := distributedbackend.NewHTTPServer(
 		config,
 		handler,

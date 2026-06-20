@@ -13,7 +13,7 @@ import dagger
 
 GO_IMAGE = "golang:1.26-bookworm"
 RUST_IMAGE = "rust:1-bookworm"
-PYTHON_IMAGE = "python:3.12-slim-bookworm"
+PYTHON_IMAGE = "python:3.13-slim-bookworm"
 DEBIAN_IMAGE = "debian:bookworm-slim"
 POSTGRES_IMAGE = "postgres:16"
 RABBITMQ_IMAGE = "rabbitmq:3.13-management"
@@ -21,7 +21,7 @@ KUSTOMIZE_IMAGE = "alpine/k8s:1.33.1"
 GITLEAKS_IMAGE = "zricethezav/gitleaks:v8.27.2"
 TRIVY_IMAGE = "aquasec/trivy:0.64.1"
 
-BUF_VERSION = "1.53.0"
+BUF_VERSION = "1.70.0"
 PROTOC_GEN_GO_VERSION = "1.36.11"
 PROTOC_GEN_CONNECT_GO_VERSION = "1.20.0"
 
@@ -29,13 +29,11 @@ KUBERNETES_NAMESPACE = "eve-trade"
 SERVICE_IMAGE_NAMES = (
     "api-gateway",
     "market",
-    "settlement-worker",
     "trade-settlement",
 )
 DEPLOYMENT_NAMES = (
     "rabbitmq",
     "trade-settlement",
-    "settlement-worker",
     "market",
     "api-gateway",
 )
@@ -59,6 +57,7 @@ SOURCE_EXCLUDES = [
 class GoService:
     name: str
     binary: str
+    module_dir: str
     package: str
     port: int | None = None
 
@@ -67,19 +66,16 @@ GO_SERVICES = {
     "api-gateway": GoService(
         name="api-gateway",
         binary="api-gateway",
-        package="./distributed-backend/src/api-gateway/cmd/api-gateway",
+        module_dir="distributed-backend/src/api-gateway",
+        package="./cmd/api-gateway",
         port=8080,
     ),
     "market": GoService(
         name="market",
         binary="market",
-        package="./distributed-backend/src/market/cmd/market",
+        module_dir="distributed-backend/src/market",
+        package="./cmd/market",
         port=8081,
-    ),
-    "settlement-worker": GoService(
-        name="settlement-worker",
-        binary="settlement-worker",
-        package="./distributed-backend/src/settlement-worker/cmd/settlement-worker",
     ),
 }
 
@@ -276,7 +272,9 @@ if [ -n "$unformatted" ]; then
   echo "$unformatted"
   exit 1
 fi
-go test ./...
+for module in distributed-backend/proto distributed-backend/src/observability distributed-backend/src/market distributed-backend/src/api-gateway; do
+  (cd "$module" && go test ./...)
+done
 """
         await self.run_container(
             "Go format and tests",
@@ -297,11 +295,11 @@ go test ./...
             ),
         )
 
-    async def python_contract_tests(self) -> None:
+    async def python_static_tests(self) -> None:
         await self.run_container(
-            "Python e2e contract tests",
+            "Python e2e collection tests",
             self.python_e2e_base().with_exec(
-                ["pytest", "distributed-backend/tests/e2e/contracts", "-q"]
+                ["pytest", "distributed-backend/tests/e2e", "--collect-only", "-q"]
             ),
         )
 
@@ -342,16 +340,20 @@ go test ./...
         await self.run_container("dependency and filesystem vulnerability scan", trivy)
 
     def go_runtime_image(self, spec: GoService) -> dagger.Container:
-        build = self.go_base().with_exec(
-            [
-                "go",
-                "build",
-                "-trimpath",
-                "-ldflags=-s -w",
-                "-o",
-                f"/out/{spec.binary}",
-                spec.package,
-            ]
+        build = (
+            self.go_base()
+            .with_workdir(f"/workspace/{spec.module_dir}")
+            .with_exec(
+                [
+                    "go",
+                    "build",
+                    "-trimpath",
+                    "-ldflags=-s -w",
+                    "-o",
+                    f"/out/{spec.binary}",
+                    spec.package,
+                ]
+            )
         )
         container = (
             self.client.container()
@@ -788,6 +790,10 @@ psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
             .with_service_binding("trade-settlement", settlement)
             .with_env_variable("MARKET_HTTP_ADDR", ":8081")
             .with_env_variable("TRADE_SETTLEMENT_URL", "http://trade-settlement:9092")
+            .with_env_variable(
+                "DATABASE_URL",
+                "postgres://postgres:postgres@postgres:5432/eve_trade_e2e",
+            )
             .as_service()
         )
         gateway = (
@@ -836,6 +842,7 @@ pytest distributed-backend/tests/e2e -q
             .with_env_variable("EVE_TRADE_SETTLEMENT_GRPC", "trade-settlement:9092")
             .with_env_variable("EVE_TRADE_MARKET_GRPC", "market:8081")
             .with_env_variable("EVE_TRADE_GATEWAY_GRPC", "api-gateway:8080")
+            .with_env_variable("EVE_TRADE_API_GATEWAY_URL", "http://api-gateway:8080")
             .with_env_variable("EVE_TRADE_E2E_PRODUCTION_GATE", "true")
             .with_env_variable(
                 "EVE_TRADE_E2E_ARTIFACT_DIR",
@@ -855,7 +862,7 @@ pytest distributed-backend/tests/e2e -q
     async def test(self) -> None:
         await self.go_checks()
         await self.rust_checks()
-        await self.python_contract_tests()
+        await self.python_static_tests()
 
 
 def parse_args() -> argparse.Namespace:

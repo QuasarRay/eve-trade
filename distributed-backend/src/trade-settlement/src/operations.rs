@@ -753,6 +753,7 @@ async fn transfer_quantity_from_item_stack_escrow_to_item_stack(
         settlement_step_id,
     )
     .await?;
+    update_trade_remaining_quantity(tx, escrow.trade_instance_id, escrow_quantity_after).await?;
 
     Ok(OperationOutput::many(vec![
         EntityReferenceOutput {
@@ -764,6 +765,27 @@ async fn transfer_quantity_from_item_stack_escrow_to_item_stack(
             entity_id: item_stack_escrow_id,
         },
     ]))
+}
+
+async fn update_trade_remaining_quantity(
+    tx: &mut Transaction<'_, Postgres>,
+    trade_instance_id: Uuid,
+    remaining_quantity: i64,
+) -> Result<()> {
+    sqlx::query(
+        r#"
+        UPDATE trade_instance
+        SET remaining_quantity = $2,
+            updated_at = now()
+        WHERE trade_instance_id = $1
+        "#,
+    )
+    .bind(trade_instance_id)
+    .bind(remaining_quantity)
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
 }
 
 async fn transfer_isk_amount_from_wallet_escrow_to_wallet(
@@ -987,6 +1009,7 @@ async fn update_item_stack(
     Ok((version_after, checksum_after))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn insert_item_stack_ledger(
     tx: &mut Transaction<'_, Postgres>,
     settlement_step_id: Uuid,
@@ -1066,6 +1089,7 @@ async fn update_wallet(
     Ok((version_after, checksum_after))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn insert_wallet_ledger(
     tx: &mut Transaction<'_, Postgres>,
     settlement_step_id: Uuid,

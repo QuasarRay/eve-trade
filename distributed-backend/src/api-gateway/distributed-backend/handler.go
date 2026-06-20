@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"connectrpc.com/connect"
-	apigatewayv1connect "github.com/astral/eve-trade/api-gateway/distributed-backend/gen/api_gateway/v1/apigatewayv1connect"
-	marketv1 "github.com/astral/eve-trade/market/distributed-backend/gen/market/v1"
+	api_gatewayv1connect "github.com/astral/eve-trade/proto/gen/eve/api_gateway/v1/api_gatewayv1connect"
+	marketv1 "github.com/astral/eve-trade/proto/gen/eve/market/v1"
 )
 
-var _ apigatewayv1connect.GameTradeGatewayServiceHandler = (*GatewayHandler)(nil)
+var _ api_gatewayv1connect.GameTradeGatewayServiceHandler = (*GatewayHandler)(nil)
 
 type GatewayHandler struct {
 	market MarketClient

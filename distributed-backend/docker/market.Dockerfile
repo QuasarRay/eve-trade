@@ -5,10 +5,12 @@ FROM golang:1.26-bookworm AS build
 WORKDIR /workspace
 
 COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
+COPY distributed-backend/proto/go.mod distributed-backend/proto/go.sum ./distributed-backend/proto/
 COPY distributed-backend/src/market/go.mod distributed-backend/src/market/go.sum ./distributed-backend/src/market/
 RUN cd distributed-backend/src/market && go mod download
 
 COPY distributed-backend/src/observability ./distributed-backend/src/observability
+COPY distributed-backend/proto ./distributed-backend/proto
 COPY distributed-backend/src/market ./distributed-backend/src/market
 
 RUN cd distributed-backend/src/market \

@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	apigatewayv1connect "github.com/astral/eve-trade/api-gateway/distributed-backend/gen/api_gateway/v1/apigatewayv1connect"
+	api_gatewayv1connect "github.com/astral/eve-trade/proto/gen/eve/api_gateway/v1/api_gatewayv1connect"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
 
 func NewHTTPServer(config Config, handler *GatewayHandler, handlerOptions ...connect.HandlerOption) *http.Server {
 	mux := http.NewServeMux()
-	path, serviceHandler := apigatewayv1connect.NewGameTradeGatewayServiceHandler(handler, handlerOptions...)
+	path, serviceHandler := api_gatewayv1connect.NewGameTradeGatewayServiceHandler(handler, handlerOptions...)
 	mux.Handle(path, serviceHandler)
 
 	return &http.Server{

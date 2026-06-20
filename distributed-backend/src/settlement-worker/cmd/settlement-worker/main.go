@@ -1,3 +1,5 @@
+//go:build legacy_rabbitmq
+
 package main
 
 import (
@@ -11,9 +13,9 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/QuasarRay/eve-trade/distributed-backend/src/internal/observability"
-	"github.com/QuasarRay/eve-trade/distributed-backend/src/internal/rabbitmq"
-	market "github.com/QuasarRay/eve-trade/distributed-backend/src/market"
+	"github.com/astral/eve-trade/distributed-backend/src/internal/observability"
+	"github.com/astral/eve-trade/distributed-backend/src/internal/rabbitmq"
+	market "github.com/astral/eve-trade/distributed-backend/src/market"
 )
 
 func main() {

@@ -6,7 +6,7 @@ managed:
   enabled: true
   override:
     - file_option: go_package_prefix
-      value: github.com/QuasarRay/eve-trade/distributed-backend/proto/gen
+      value: github.com/astral/eve-trade/proto/gen
 
 plugins:
   - local: protoc-gen-go

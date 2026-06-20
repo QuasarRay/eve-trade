@@ -2,9 +2,10 @@ package gametrade
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
 
-	tradesettlementv1 "github.com/astral/eve-trade/market/distributed-backend/gen/trade_settlement/v1"
+	tradesettlementv1 "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1"
 )
 
 const (
@@ -67,6 +68,16 @@ func newID() (string, error) {
 	b[6] = (b[6] & 0x0f) | 0x40
 	b[8] = (b[8] & 0x3f) | 0x80
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16]), nil
+}
+
+func deterministicID(idempotencyKey string, purpose string) (string, error) {
+	if idempotencyKey == "" {
+		return "", fmt.Errorf("idempotency_key is required")
+	}
+	sum := sha256.Sum256([]byte("eve-trade:" + idempotencyKey + ":" + purpose))
+	sum[6] = (sum[6] & 0x0f) | 0x40
+	sum[8] = (sum[8] & 0x3f) | 0x80
+	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", sum[0:4], sum[4:6], sum[6:8], sum[8:10], sum[10:16]), nil
 }
 
 func validatePositive(name string, value int64) error {

@@ -4,7 +4,7 @@ package eve.market.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/astral/eve-trade/market/distributed-backend/gen/market/v1;marketv1";
+option go_package = "github.com/astral/eve-trade/proto/gen/eve/market/v1;marketv1";
 
 service MarketService {
   rpc IssueTradeInstance(IssueTradeInstanceRequest) returns (IssueTradeInstanceResponse);
@@ -41,16 +41,9 @@ message AcceptTradeInstanceRequest {
   string external_request_id = 2;
   string trade_instance_id = 3;
   int64 buyer_capsuleer_id = 4;
-  int64 seller_capsuleer_id = 5;
-  int64 item_type_id = 6;
-  int64 station_id = 7;
-  int64 quantity_requested = 8;
-  int64 isk_amount_paid = 9;
-  string buyer_wallet_id = 10;
-  string seller_wallet_id = 11;
-  string item_stack_escrow_id = 12;
-  string buyer_destination_item_stack_id = 13;
-  bool create_buyer_destination_item_stack = 14;
+  int64 quantity_requested = 5;
+  string buyer_wallet_id = 6;
+  string buyer_destination_item_stack_id = 7;
 }
 
 message AcceptTradeInstanceResponse {
@@ -64,15 +57,8 @@ message CancelTradeInstanceRequest {
   string external_request_id = 2;
   string trade_instance_id = 3;
   int64 cancelled_by_capsuleer_id = 4;
-  string item_stack_escrow_id = 5;
-  string return_item_stack_id = 6;
-  int64 return_quantity = 7;
-  string wallet_escrow_id = 8;
-  string return_wallet_id = 9;
-  int64 return_isk_amount = 10;
 }
 
 message CancelTradeInstanceResponse {
   string settlement_batch_id = 1;
 }
-

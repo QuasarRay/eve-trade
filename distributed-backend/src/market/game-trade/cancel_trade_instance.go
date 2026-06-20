@@ -3,7 +3,7 @@ package gametrade
 import (
 	"fmt"
 
-	tradesettlementv1 "github.com/astral/eve-trade/market/distributed-backend/gen/trade_settlement/v1"
+	tradesettlementv1 "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1"
 )
 
 type CancelTradeInstanceInput struct {
@@ -20,6 +20,9 @@ type CancelTradeInstanceInput struct {
 }
 
 func CancelTradeInstance(input CancelTradeInstanceInput) (SettlementPlan, error) {
+	if err := validateRequired("idempotency_key", input.IdempotencyKey); err != nil {
+		return SettlementPlan{}, err
+	}
 	if err := validateRequired("trade_instance_id", input.TradeInstanceID); err != nil {
 		return SettlementPlan{}, err
 	}

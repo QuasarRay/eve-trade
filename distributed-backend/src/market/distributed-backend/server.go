@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	marketv1connect "github.com/astral/eve-trade/market/distributed-backend/gen/market/v1/marketv1connect"
+	marketv1connect "github.com/astral/eve-trade/proto/gen/eve/market/v1/marketv1connect"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )

@@ -4,7 +4,7 @@ package eve.trade_settlement.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/astral/eve-trade/market/distributed-backend/gen/trade_settlement/v1;tradesettlementv1";
+option go_package = "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1;tradesettlementv1";
 
 service TradeSettlementService {
   rpc ExecuteSettlementBatch(ExecuteSettlementBatchRequest) returns (ExecuteSettlementBatchResponse);

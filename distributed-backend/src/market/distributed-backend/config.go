@@ -9,6 +9,7 @@ import (
 type Config struct {
 	HTTPAddr                 string
 	TradeSettlementURL       string
+	DatabaseURL              string
 	SettlementRequestTimeout time.Duration
 }
 
@@ -16,6 +17,7 @@ func LoadConfig() Config {
 	return Config{
 		HTTPAddr:                 envOr("MARKET_HTTP_ADDR", ":8081"),
 		TradeSettlementURL:       trimRightSlash(envOr("TRADE_SETTLEMENT_URL", "http://localhost:9090")),
+		DatabaseURL:              envOr("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/eve_trade"),
 		SettlementRequestTimeout: durationEnvOr("MARKET_SETTLEMENT_REQUEST_TIMEOUT", 10*time.Second),
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
-	marketv1 "github.com/astral/eve-trade/market/distributed-backend/gen/market/v1"
+	marketv1 "github.com/astral/eve-trade/proto/gen/eve/market/v1"
 )
 
 type fakeMarketClient struct {
@@ -70,7 +70,6 @@ func TestGatewayHandlerForwardsAcceptTradeInstance(t *testing.T) {
 		IdempotencyKey:    "accept-key",
 		BuyerCapsuleerId:  2002,
 		QuantityRequested: 3,
-		IskAmountPaid:     60,
 	}))
 	if err != nil {
 		t.Fatalf("AcceptTradeInstance returned error: %v", err)

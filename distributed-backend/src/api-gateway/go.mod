@@ -4,10 +4,9 @@ go 1.26
 
 require (
 	connectrpc.com/connect v1.20.0
-	github.com/astral/eve-trade/market v0.0.0
 	github.com/astral/eve-trade/observability v0.0.0
+	github.com/astral/eve-trade/proto v0.0.0
 	golang.org/x/net v0.55.0
-	google.golang.org/protobuf v1.36.11
 )
 
 require (
@@ -47,8 +46,9 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/grpc v1.81.1 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 )
 
 replace github.com/astral/eve-trade/observability => ../observability
 
-replace github.com/astral/eve-trade/market => ../market
+replace github.com/astral/eve-trade/proto => ../../proto

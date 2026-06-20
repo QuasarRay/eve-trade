@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import pytest
-
 from helpers import (
     OTHER_STATION_ID,
     accept_payload,
@@ -27,20 +25,6 @@ from helpers import (
     trade_row,
     uuid_str,
     wallet_row,
-)
-
-
-xfail_partial_state = pytest.mark.xfail(
-    reason="accept currently marks every accepted trade COMPLETED and does not decrement trade_instance.remaining_quantity"
-)
-xfail_client_trust = pytest.mark.xfail(
-    reason="market currently trusts client-supplied trade facts instead of loading the canonical trade"
-)
-xfail_retry_idempotency = pytest.mark.xfail(
-    reason="market generates new operation UUIDs before settlement computes the idempotency fingerprint"
-)
-xfail_caller_authz = pytest.mark.xfail(
-    reason="cancel currently validates settlement ownership but not the caller's authority"
 )
 
 
@@ -116,7 +100,6 @@ def test_creating_trade_offer_rejects_item_stack_not_owned_by_seller(db, gateway
     assert table_count(db, "trade_instance") == 0
 
 
-@xfail_client_trust
 def test_creating_trade_offer_rejects_item_stack_in_wrong_station(db, gateway):
     world = seed_world(db)
 
@@ -201,13 +184,11 @@ def test_accepting_trade_merges_items_into_existing_buyer_stack_when_matching_st
         world,
         trade,
         buyer_destination_item_stack_id=world.buyer_stack_id,
-        create_buyer_destination_item_stack=False,
     )
 
     assert item_stack_row(db, world.buyer_stack_id)["quantity"] == 7
 
 
-@xfail_partial_state
 def test_accepting_partial_trade_keeps_trade_outstanding(db, gateway):
     world = seed_world(db, seller_quantity=10)
     trade = create_trade(gateway, world, quantity=10)
@@ -235,7 +216,6 @@ def test_accepting_full_remaining_trade_quantity_marks_trade_completed(db, gatew
     assert trade_row(db, trade)["trade_state"] == "COMPLETED"
 
 
-@xfail_partial_state
 def test_accepting_trade_does_not_complete_trade_while_item_escrow_quantity_remains_positive(db, gateway):
     world = seed_world(db, seller_quantity=10)
     trade = create_trade(gateway, world, quantity=10)
@@ -310,7 +290,7 @@ def test_accepting_trade_rejects_when_trade_is_cancelled(db, gateway):
     expect_rpc_error(
         lambda: accept_trade(gateway, world, trade),
         code="failed_precondition",
-        contains="already released",
+        contains="cancelled",
     )
 
 
@@ -322,7 +302,7 @@ def test_accepting_trade_rejects_when_trade_is_already_completed(db, gateway):
     expect_rpc_error(
         lambda: accept_trade(gateway, world, trade, idempotency_key=fresh_key("accept-again")),
         code="failed_precondition",
-        contains="already released",
+        contains="completed",
     )
 
 
@@ -336,7 +316,6 @@ def test_accepting_trade_rejects_when_buyer_is_seller_if_self_purchase_is_disall
             world,
             trade,
             buyer_capsuleer_id=world.seller_id,
-            seller_capsuleer_id=world.seller_id,
         ),
         code="invalid_argument",
         contains="buyer and seller must differ",
@@ -377,7 +356,7 @@ def test_cancelling_partially_accepted_trade_refunds_only_remaining_item_quantit
     trade = create_trade(gateway, world, quantity=10)
     accept_trade(gateway, world, trade, quantity=4)
 
-    cancel_trade(gateway, world, trade, return_quantity=6)
+    cancel_trade(gateway, world, trade)
 
     assert item_stack_row(db, world.seller_stack_id)["quantity"] == 6
 
@@ -387,12 +366,11 @@ def test_cancelling_partially_accepted_trade_does_not_reverse_already_completed_
     trade = create_trade(gateway, world, quantity=10)
     response = accept_trade(gateway, world, trade, quantity=4)
 
-    cancel_trade(gateway, world, trade, return_quantity=6)
+    cancel_trade(gateway, world, trade)
 
     assert item_stack_row(db, response["buyerDestinationItemStackId"])["quantity"] == 4
 
 
-@xfail_caller_authz
 def test_cancelling_trade_rejects_non_seller_caller(db, gateway):
     world = seed_world(db)
     trade = create_trade(gateway, world, quantity=4)
@@ -416,7 +394,7 @@ def test_cancelling_trade_rejects_already_completed_trade(db, gateway):
     expect_rpc_error(
         lambda: cancel_trade(gateway, world, trade),
         code="failed_precondition",
-        contains="already released",
+        contains="completed",
     )
 
 
@@ -428,7 +406,7 @@ def test_cancelling_trade_rejects_already_cancelled_trade(db, gateway):
     expect_rpc_error(
         lambda: cancel_trade(gateway, world, trade, idempotency_key=fresh_key("cancel-again")),
         code="failed_precondition",
-        contains="already released",
+        contains="cancelled",
     )
 
 
@@ -444,7 +422,6 @@ def test_cancelling_trade_does_not_change_wallet_balances(db, gateway):
     assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == buyer_before
 
 
-@xfail_retry_idempotency
 def test_retrying_create_trade_offer_does_not_duplicate_trade(db, gateway):
     world = seed_world(db)
     key = fresh_key("issue-retry")
@@ -457,7 +434,6 @@ def test_retrying_create_trade_offer_does_not_duplicate_trade(db, gateway):
     assert table_count(db, "trade_instance") == 1
 
 
-@xfail_retry_idempotency
 def test_retrying_create_trade_offer_does_not_duplicate_item_escrow(db, gateway):
     world = seed_world(db)
     key = fresh_key("issue-retry")
@@ -469,7 +445,6 @@ def test_retrying_create_trade_offer_does_not_duplicate_item_escrow(db, gateway)
     assert table_count(db, "item_stack_escrow") == 1
 
 
-@xfail_retry_idempotency
 def test_retrying_accept_trade_does_not_transfer_items_twice(db, gateway):
     world = seed_world(db)
     trade = create_trade(gateway, world, quantity=4)
@@ -482,7 +457,6 @@ def test_retrying_accept_trade_does_not_transfer_items_twice(db, gateway):
     assert item_stack_row(db, first["buyerDestinationItemStackId"])["quantity"] == 4
 
 
-@xfail_retry_idempotency
 def test_retrying_accept_trade_does_not_transfer_isk_twice(db, gateway):
     world = seed_world(db, seller_isk=100, buyer_isk=1_000)
     trade = create_trade(gateway, world, quantity=4)
@@ -496,7 +470,6 @@ def test_retrying_accept_trade_does_not_transfer_isk_twice(db, gateway):
     assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 900
 
 
-@xfail_retry_idempotency
 def test_retrying_cancel_trade_does_not_refund_items_twice(db, gateway):
     world = seed_world(db, seller_quantity=10)
     trade = create_trade(gateway, world, quantity=4)
@@ -540,16 +513,21 @@ def test_same_idempotency_key_with_different_cancel_trade_payload_is_rejected(db
     world = seed_world(db, seller_quantity=10)
     trade = create_trade(gateway, world, quantity=10)
     key = fresh_key("cancel-conflict")
-    cancel_trade(gateway, world, trade, idempotency_key=key, return_quantity=4)
+    cancel_trade(gateway, world, trade, idempotency_key=key)
 
     expect_rpc_error(
-        lambda: cancel_trade(gateway, world, trade, idempotency_key=key, return_quantity=5),
+        lambda: cancel_trade(
+            gateway,
+            world,
+            trade,
+            idempotency_key=key,
+            cancelled_by_capsuleer_id=world.other_id,
+        ),
         code="aborted",
         contains="different request fingerprint",
     )
 
 
-@xfail_retry_idempotency
 def test_retried_successful_request_returns_same_business_outcome(db, gateway):
     world = seed_world(db)
     key = fresh_key("issue-retry")
@@ -627,7 +605,14 @@ def test_failed_cancel_trade_does_not_refund_partial_item_quantity(db, gateway):
     world = seed_world(db, seller_quantity=10)
     trade = create_trade(gateway, world, quantity=4)
 
-    expect_rpc_error(lambda: cancel_trade(gateway, world, trade, return_quantity=5))
+    expect_rpc_error(
+        lambda: cancel_trade(
+            gateway,
+            world,
+            trade,
+            cancelled_by_capsuleer_id=world.other_id,
+        )
+    )
 
     assert item_stack_row(db, world.seller_stack_id)["quantity"] == 6
     assert item_escrow_row(db, trade)["quantity"] == 4
@@ -637,7 +622,14 @@ def test_failed_cancel_trade_does_not_hide_trade_from_buyers_unless_refund_succe
     world = seed_world(db, seller_quantity=10)
     trade = create_trade(gateway, world, quantity=4)
 
-    expect_rpc_error(lambda: cancel_trade(gateway, world, trade, return_quantity=5))
+    expect_rpc_error(
+        lambda: cancel_trade(
+            gateway,
+            world,
+            trade,
+            cancelled_by_capsuleer_id=world.other_id,
+        )
+    )
 
     assert trade_row(db, trade)["trade_state"] == "OPEN"
 
@@ -692,7 +684,7 @@ def test_concurrent_accepts_cannot_sell_more_than_available_quantity(db, gateway
 
 
 def test_concurrent_accepts_cannot_make_buyer_wallet_negative(db, gateway):
-    world = seed_world(db, seller_quantity=10, buyer_isk=100)
+    world = seed_world(db, seller_quantity=10, buyer_isk=70)
     trade = create_trade(gateway, world, quantity=10, unit_price_isk=10)
 
     def accept_with_overlapping_wallet():
@@ -701,7 +693,6 @@ def test_concurrent_accepts_cannot_make_buyer_wallet_negative(db, gateway):
                 world,
                 trade,
                 quantity=5,
-                isk_amount_paid=70,
                 idempotency_key=fresh_key("accept-wallet-concurrent"),
             )
         )
@@ -817,7 +808,6 @@ def test_cancelled_trade_has_no_available_quantity_for_buyers(db, gateway):
     assert item_escrow_row(db, trade)["quantity"] == 0
 
 
-@xfail_client_trust
 def test_player_cannot_offer_item_stack_owned_by_another_player(db, gateway):
     world = seed_world(db)
 
@@ -833,7 +823,6 @@ def test_player_cannot_offer_item_stack_owned_by_another_player(db, gateway):
     )
 
 
-@xfail_caller_authz
 def test_player_cannot_cancel_trade_created_by_another_player(db, gateway):
     world = seed_world(db)
     trade = create_trade(gateway, world, quantity=4)
@@ -858,61 +847,48 @@ def test_buyer_cannot_receive_more_items_than_requested(db, gateway):
     assert item_stack_row(db, response["buyerDestinationItemStackId"])["quantity"] == 3
 
 
-@xfail_client_trust
 def test_seller_cannot_receive_more_isk_than_trade_price_requires(db, gateway):
     world = seed_world(db, seller_isk=100, buyer_isk=1_000)
     trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
 
-    expect_rpc_error(
-        lambda: accept_trade(gateway, world, trade, isk_amount_paid=101),
-        contains="price",
-    )
-    assert wallet_row(db, world.seller_wallet_id)["isk_amount"] == 100
+    accept_trade(gateway, world, trade)
+
+    assert wallet_row(db, world.seller_wallet_id)["isk_amount"] == 200
 
 
-@xfail_client_trust
 def test_trade_acceptance_uses_trade_price_not_client_supplied_price(db, gateway):
     world = seed_world(db, seller_isk=100, buyer_isk=1_000)
     trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
 
-    accept_trade(gateway, world, trade, isk_amount_paid=1)
+    accept_trade(gateway, world, trade)
 
     assert wallet_row(db, world.seller_wallet_id)["isk_amount"] == 200
     assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 900
 
 
-@xfail_client_trust
 def test_trade_acceptance_uses_trade_item_type_not_client_supplied_item_type(db, gateway):
     world = seed_world(db)
     trade = create_trade(gateway, world, quantity=4)
 
-    response = accept_trade(gateway, world, trade, item_type_id=world.other_item_type_id)
+    response = accept_trade(gateway, world, trade)
 
     assert item_stack_row(db, response["buyerDestinationItemStackId"])["item_type_id"] == world.item_type_id
 
 
-@xfail_client_trust
 def test_trade_acceptance_uses_trade_station_not_client_supplied_station(db, gateway):
     world = seed_world(db)
     trade = create_trade(gateway, world, quantity=4)
 
-    response = accept_trade(gateway, world, trade, station_id=world.other_station_id)
+    response = accept_trade(gateway, world, trade)
 
     assert item_stack_row(db, response["buyerDestinationItemStackId"])["station_id"] == world.station_id
 
 
-@xfail_client_trust
 def test_trade_acceptance_uses_trade_seller_not_client_supplied_seller(db, gateway):
     world = seed_world(db, seller_isk=100)
     trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
 
-    accept_trade(
-        gateway,
-        world,
-        trade,
-        seller_capsuleer_id=world.other_id,
-        seller_wallet_id=world.other_wallet_id,
-    )
+    accept_trade(gateway, world, trade)
 
     assert wallet_row(db, world.seller_wallet_id)["isk_amount"] == 200
     assert wallet_row(db, world.other_wallet_id)["isk_amount"] == 1_000
@@ -972,10 +948,9 @@ def test_accept_trade_returns_clear_error_for_cancelled_trade(db, gateway):
     error = expect_rpc_error(lambda: accept_trade(gateway, world, trade))
 
     assert error.code == "failed_precondition"
-    assert "already released" in error.message
+    assert "cancelled" in error.message
 
 
-@xfail_partial_state
 def test_accept_trade_returns_clear_error_for_completed_trade(db, gateway):
     world = seed_world(db)
     trade = create_trade(gateway, world, quantity=4)
@@ -987,7 +962,6 @@ def test_accept_trade_returns_clear_error_for_completed_trade(db, gateway):
     assert "completed" in error.message.lower()
 
 
-@xfail_caller_authz
 def test_cancel_trade_returns_clear_error_for_non_seller_caller(db, gateway):
     world = seed_world(db)
     trade = create_trade(gateway, world, quantity=4)
@@ -1022,7 +996,6 @@ def test_gateway_create_trade_offer_makes_trade_available_end_to_end(db, gateway
     assert item_escrow_row(db, trade)["quantity"] == 4
 
 
-@xfail_partial_state
 def test_gateway_accept_partial_trade_keeps_trade_outstanding_end_to_end(db, gateway):
     world = seed_world(db, seller_quantity=10)
     trade = create_trade(gateway, world, quantity=10)
@@ -1052,7 +1025,6 @@ def test_gateway_cancel_trade_returns_remaining_items_end_to_end(db, gateway):
     assert trade_row(db, trade)["trade_state"] == "CANCELLED"
 
 
-@xfail_retry_idempotency
 def test_gateway_retry_create_trade_offer_is_idempotent_end_to_end(db, gateway):
     world = seed_world(db)
     key = fresh_key("gateway-issue-retry")
@@ -1065,7 +1037,6 @@ def test_gateway_retry_create_trade_offer_is_idempotent_end_to_end(db, gateway):
     assert settlement_batch_count(db, key) == 1
 
 
-@xfail_retry_idempotency
 def test_gateway_retry_accept_trade_is_idempotent_end_to_end(db, gateway):
     world = seed_world(db)
     trade = create_trade(gateway, world, quantity=4)
@@ -1079,7 +1050,6 @@ def test_gateway_retry_accept_trade_is_idempotent_end_to_end(db, gateway):
     assert settlement_batch_count(db, key) == 1
 
 
-@xfail_retry_idempotency
 def test_gateway_retry_cancel_trade_is_idempotent_end_to_end(db, gateway):
     world = seed_world(db, seller_quantity=10)
     trade = create_trade(gateway, world, quantity=4)
@@ -1117,7 +1087,14 @@ def test_gateway_rejects_invalid_cancel_trade_without_changing_state_end_to_end(
     world = seed_world(db, seller_quantity=10)
     trade = create_trade(gateway, world, quantity=4)
 
-    expect_rpc_error(lambda: cancel_trade(gateway, world, trade, return_quantity=5))
+    expect_rpc_error(
+        lambda: cancel_trade(
+            gateway,
+            world,
+            trade,
+            cancelled_by_capsuleer_id=world.other_id,
+        )
+    )
 
     assert item_stack_row(db, world.seller_stack_id)["quantity"] == 6
     assert item_escrow_row(db, trade)["quantity"] == 4

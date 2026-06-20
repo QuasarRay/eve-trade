@@ -1,3 +1,5 @@
+//go:build legacy_rabbitmq
+
 package rabbitmq
 
 import (
@@ -9,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	commonv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/common/v1"
-	settlementv1 "github.com/QuasarRay/eve-trade/distributed-backend/proto/gen/eve_trade/settlement/v1"
+	commonv1 "github.com/astral/eve-trade/distributed-backend/proto/gen/eve_trade/common/v1"
+	settlementv1 "github.com/astral/eve-trade/distributed-backend/proto/gen/eve_trade/settlement/v1"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/protobuf/proto"
 )

@@ -30,7 +30,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v6
         with:
-          go-version-file: go.mod
+          go-version-file: distributed-backend/proto/go.mod
           cache: true
 
       - name: Install Buf
@@ -42,30 +42,42 @@ jobs:
       - name: Install local protobuf plugins
         run: |
           go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
-          go install connectrpc.com/connect/cmd/protoc-gen-connect-go@v1.18.1
+          go install connectrpc.com/connect/cmd/protoc-gen-connect-go@v1.20.0
 
       - name: Check protobuf module builds
-        working-directory: distributed-backend
         run: buf build --error-format github-actions
 
       - name: Lint protobuf contracts
-        working-directory: distributed-backend
         run: buf lint --error-format github-actions
 
       - name: Check protobuf formatting
-        working-directory: distributed-backend
         run: buf format --diff --exit-code
 
       - name: Regenerate protobuf output
-        working-directory: distributed-backend
         run: buf generate
 
       - name: Fail if generated protobuf code is stale
         run: git diff --exit-code -- distributed-backend/proto/gen
 
-  go-market:
-    name: go / market
+  go:
+    name: go / ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: proto
+            module: distributed-backend/proto
+            build_package: ""
+          - name: observability
+            module: distributed-backend/src/observability
+            build_package: ""
+          - name: market
+            module: distributed-backend/src/market
+            build_package: ./cmd/market
+          - name: api-gateway
+            module: distributed-backend/src/api-gateway
+            build_package: ./cmd/api-gateway
 
     steps:
       - name: Checkout
@@ -74,18 +86,20 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v6
         with:
-          go-version-file: go.mod
+          go-version-file: ${{ matrix.module }}/go.mod
           cache: true
 
       - name: Check Go module metadata
+        working-directory: ${{ matrix.module }}
         run: |
           go mod tidy
           git diff --exit-code -- go.mod go.sum
 
       - name: Check Go formatting
+        working-directory: ${{ matrix.module }}
         shell: bash
         run: |
-          files="$(gofmt -l distributed-backend/src/market distributed-backend/proto/gen)"
+          files="$(gofmt -l .)"
           if [ -n "$files" ]; then
             echo "Go files are not formatted:"
             echo "$files"
@@ -93,10 +107,13 @@ jobs:
           fi
 
       - name: Test Go packages
+        working-directory: ${{ matrix.module }}
         run: go test ./...
 
-      - name: Build market service
-        run: go build -o /tmp/eve-trade-market ./distributed-backend/src/market/cmd/market
+      - name: Build service
+        if: matrix.build_package != ''
+        working-directory: ${{ matrix.module }}
+        run: go build -o /tmp/eve-trade-${{ matrix.name }} ${{ matrix.build_package }}
 
   rust-trade-settlement:
     name: rust / trade-settlement

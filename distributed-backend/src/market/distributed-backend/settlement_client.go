@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	tradesettlementv1 "github.com/astral/eve-trade/market/distributed-backend/gen/trade_settlement/v1"
-	tradesettlementv1connect "github.com/astral/eve-trade/market/distributed-backend/gen/trade_settlement/v1/tradesettlementv1connect"
+	tradesettlementv1 "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1"
+	trade_settlementv1connect "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1/trade_settlementv1connect"
 	"golang.org/x/net/http2"
 )
 
@@ -18,14 +18,14 @@ type SettlementExecutor interface {
 }
 
 type ConnectSettlementExecutor struct {
-	client  tradesettlementv1connect.TradeSettlementServiceClient
+	client  trade_settlementv1connect.TradeSettlementServiceClient
 	timeout time.Duration
 }
 
 func NewConnectSettlementExecutor(baseURL string, timeout time.Duration, options ...connect.ClientOption) *ConnectSettlementExecutor {
 	clientOptions := append([]connect.ClientOption{connect.WithGRPC()}, options...)
 	return &ConnectSettlementExecutor{
-		client: tradesettlementv1connect.NewTradeSettlementServiceClient(
+		client: trade_settlementv1connect.NewTradeSettlementServiceClient(
 			h2cClient(),
 			baseURL,
 			clientOptions...,

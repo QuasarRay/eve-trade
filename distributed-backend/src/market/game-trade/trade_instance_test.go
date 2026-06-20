@@ -3,7 +3,7 @@ package gametrade
 import (
 	"testing"
 
-	tradesettlementv1 "github.com/astral/eve-trade/market/distributed-backend/gen/trade_settlement/v1"
+	tradesettlementv1 "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1"
 )
 
 func TestIssueTradeInstanceBuildsTradeAndItemEscrowOperations(t *testing.T) {
@@ -57,6 +57,7 @@ func TestAcceptTradeInstancePaysSellerAsNewWalletOwner(t *testing.T) {
 		SellerWalletID:                  "44444444-4444-4444-8444-444444444444",
 		ItemStackEscrowID:               "55555555-5555-4555-8555-555555555555",
 		CreateBuyerDestinationItemStack: true,
+		CompleteTrade:                   true,
 	})
 	if err != nil {
 		t.Fatalf("AcceptTradeInstance returned error: %v", err)

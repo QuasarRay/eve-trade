@@ -3,7 +3,7 @@ package gametrade
 import (
 	"fmt"
 
-	tradesettlementv1 "github.com/astral/eve-trade/market/distributed-backend/gen/trade_settlement/v1"
+	tradesettlementv1 "github.com/astral/eve-trade/proto/gen/eve/trade_settlement/v1"
 )
 
 type AcceptTradeInstanceInput struct {
@@ -21,9 +21,14 @@ type AcceptTradeInstanceInput struct {
 	ItemStackEscrowID               string
 	BuyerDestinationItemStackID     string
 	CreateBuyerDestinationItemStack bool
+	WalletEscrowID                  string
+	CompleteTrade                   bool
 }
 
 func AcceptTradeInstance(input AcceptTradeInstanceInput) (SettlementPlan, error) {
+	if err := validateRequired("idempotency_key", input.IdempotencyKey); err != nil {
+		return SettlementPlan{}, err
+	}
 	for name, value := range map[string]string{
 		"trade_instance_id":    input.TradeInstanceID,
 		"buyer_wallet_id":      input.BuyerWalletID,
@@ -50,15 +55,19 @@ func AcceptTradeInstance(input AcceptTradeInstanceInput) (SettlementPlan, error)
 	destinationItemStackID := input.BuyerDestinationItemStackID
 	if destinationItemStackID == "" {
 		var err error
-		destinationItemStackID, err = newID()
+		destinationItemStackID, err = deterministicID(input.IdempotencyKey, "buyer-destination-item-stack")
 		if err != nil {
 			return SettlementPlan{}, err
 		}
 	}
 
-	walletEscrowID, err := newID()
-	if err != nil {
-		return SettlementPlan{}, err
+	walletEscrowID := input.WalletEscrowID
+	if walletEscrowID == "" {
+		var err error
+		walletEscrowID, err = deterministicID(input.IdempotencyKey, "wallet-escrow")
+		if err != nil {
+			return SettlementPlan{}, err
+		}
 	}
 	ops := make([]*tradesettlementv1.SettlementOperation, 0, 5)
 	if input.CreateBuyerDestinationItemStack || input.BuyerDestinationItemStackID == "" {
@@ -103,7 +112,9 @@ func AcceptTradeInstance(input AcceptTradeInstanceInput) (SettlementPlan, error)
 				},
 			},
 		},
-		&tradesettlementv1.SettlementOperation{
+	)
+	if input.CompleteTrade {
+		ops = append(ops, &tradesettlementv1.SettlementOperation{
 			Operation: &tradesettlementv1.SettlementOperation_ModifyTradeInstanceState{
 				ModifyTradeInstanceState: &tradesettlementv1.ModifyTradeInstanceState{
 					TradeInstanceId:      input.TradeInstanceID,
@@ -112,8 +123,8 @@ func AcceptTradeInstance(input AcceptTradeInstanceInput) (SettlementPlan, error)
 					ChangedByService:     CreatedByService,
 				},
 			},
-		},
-	)
+		})
+	}
 
 	return SettlementPlan{
 		IdempotencyKey:         input.IdempotencyKey,
