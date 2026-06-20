@@ -26,6 +26,15 @@ data:
   ENVIRONMENT: production
   MARKET_HTTP_ADDR: ":8081"
   TRADE_SETTLEMENT_URL: "http://trade-settlement.eve-trade.svc.cluster.local:9092"
+  SETTLEMENT_TRANSPORT: "rabbitmq"
+  RABBITMQ_SETTLEMENT_EXCHANGE: "eve.trade.settlement"
+  RABBITMQ_SETTLEMENT_COMMAND_QUEUE: "eve.trade.settlement.commands"
+  RABBITMQ_SETTLEMENT_ROUTING_KEY: "settlement.execute"
+  RABBITMQ_SETTLEMENT_DLX: "eve.trade.settlement.dlx"
+  RABBITMQ_SETTLEMENT_DEAD_QUEUE: "eve.trade.settlement.dead"
+  RABBITMQ_SETTLEMENT_DEAD_ROUTING_KEY: "settlement.dead"
+  RABBITMQ_SETTLEMENT_PREFETCH: "8"
+  RABBITMQ_PUBLISH_TIMEOUT: "5s"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.eve-trade-observability.svc.cluster.local:4318"
   OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
   OTEL_TRACES_EXPORTER: "otlp"
@@ -35,6 +44,35 @@ data:
   OTEL_METRIC_EXPORT_INTERVAL: "15000"
   DEPLOYMENT_ENVIRONMENT: "production"
   OTEL_SERVICE_NAME: "market"
+  OTEL_SERVICE_NAMESPACE: "eve-trade"
+  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: settlement-worker-config
+data:
+  ENVIRONMENT: production
+  SETTLEMENT_WORKER_HEALTH_HTTP_ADDR: ":8082"
+  TRADE_SETTLEMENT_URL: "http://trade-settlement.eve-trade.svc.cluster.local:9092"
+  SETTLEMENT_WORKER_REQUEST_TIMEOUT: "30s"
+  RABBITMQ_SETTLEMENT_EXCHANGE: "eve.trade.settlement"
+  RABBITMQ_SETTLEMENT_COMMAND_QUEUE: "eve.trade.settlement.commands"
+  RABBITMQ_SETTLEMENT_ROUTING_KEY: "settlement.execute"
+  RABBITMQ_SETTLEMENT_DLX: "eve.trade.settlement.dlx"
+  RABBITMQ_SETTLEMENT_DEAD_QUEUE: "eve.trade.settlement.dead"
+  RABBITMQ_SETTLEMENT_DEAD_ROUTING_KEY: "settlement.dead"
+  RABBITMQ_SETTLEMENT_PREFETCH: "8"
+  RABBITMQ_PUBLISH_TIMEOUT: "5s"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.eve-trade-observability.svc.cluster.local:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_LOGS_EXPORTER: "otlp"
+  OTEL_PROPAGATORS: "tracecontext,baggage"
+  OTEL_METRIC_EXPORT_INTERVAL: "15000"
+  DEPLOYMENT_ENVIRONMENT: "production"
+  OTEL_SERVICE_NAME: "settlement-worker"
   OTEL_SERVICE_NAMESPACE: "eve-trade"
   OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
 ---

@@ -12,6 +12,7 @@ import (
 
 	"connectrpc.com/connect"
 	distributedbackend "github.com/QuasarRay/eve-trade/market/distributed-backend"
+	"github.com/QuasarRay/eve-trade/messaging/rabbitmqsettlement"
 	"github.com/QuasarRay/eve-trade/observability"
 )
 
@@ -36,11 +37,13 @@ func main() {
 	}
 	defer repository.Close()
 
-	settlement := distributedbackend.NewConnectSettlementExecutor(
-		config.TradeSettlementURL,
-		config.SettlementRequestTimeout,
-		connect.WithInterceptors(observability.NewClientInterceptor()),
-	)
+	settlement, closeSettlement, err := newSettlementExecutor(ctx, config)
+	if err != nil {
+		slog.Error("market settlement transport initialization failed", "transport", config.SettlementTransport, "error", err)
+		os.Exit(1)
+	}
+	defer closeSettlement()
+
 	handler := distributedbackend.NewMarketHandler(settlement, repository)
 	server := distributedbackend.NewHTTPServer(
 		config,
@@ -50,7 +53,7 @@ func main() {
 
 	errs := make(chan error, 1)
 	go func() {
-		slog.Info("market service listening", "addr", config.HTTPAddr, "trade_settlement_url", config.TradeSettlementURL)
+		slog.Info("market service listening", "addr", config.HTTPAddr, "settlement_transport", config.SettlementTransport, "trade_settlement_url", config.TradeSettlementURL)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errs <- err
 		}
@@ -68,5 +71,28 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		slog.Error("market service shutdown failed", "error", err)
 		os.Exit(1)
+	}
+}
+
+func newSettlementExecutor(ctx context.Context, config distributedbackend.Config) (distributedbackend.SettlementExecutor, func(), error) {
+	switch rabbitmqsettlement.NormalizeTransport(config.SettlementTransport) {
+	case "", "connect", "grpc", "direct":
+		return distributedbackend.NewConnectSettlementExecutor(
+			config.TradeSettlementURL,
+			config.SettlementRequestTimeout,
+			connect.WithInterceptors(observability.NewClientInterceptor()),
+		), func() {}, nil
+	case "rabbitmq", "amqp":
+		client, err := rabbitmqsettlement.NewRPCClient(ctx, config.RabbitMQ)
+		if err != nil {
+			return nil, func() {}, err
+		}
+		return client, func() {
+			if err := client.Close(); err != nil {
+				slog.Warn("rabbitmq settlement client shutdown failed", "error", err)
+			}
+		}, nil
+	default:
+		return nil, func() {}, errors.New("SETTLEMENT_TRANSPORT must be connect or rabbitmq")
 	}
 }

@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: market
+  name: settlement-worker
   labels:
-    app.kubernetes.io/name: market
-    app.kubernetes.io/component: market
+    app.kubernetes.io/name: settlement-worker
+    app.kubernetes.io/component: settlement-worker
 spec:
   replicas: 2
   revisionHistoryLimit: 3
   selector:
     matchLabels:
-      app.kubernetes.io/name: market
+      app.kubernetes.io/name: settlement-worker
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -19,25 +19,25 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: market
-        app.kubernetes.io/component: market
+        app.kubernetes.io/name: settlement-worker
+        app.kubernetes.io/component: settlement-worker
     spec:
-      serviceAccountName: market
+      serviceAccountName: settlement-worker
       terminationGracePeriodSeconds: 30
       securityContext:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: market
-          image: eve-trade/market:latest
+        - name: settlement-worker
+          image: eve-trade/settlement-worker:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
-              containerPort: 8081
+              containerPort: 8082
           envFrom:
             - configMapRef:
-                name: market-config
+                name: settlement-worker-config
             - secretRef:
                 name: rabbitmq
           readinessProbe:
@@ -72,15 +72,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: market
+  name: settlement-worker
   labels:
-    app.kubernetes.io/name: market
-    app.kubernetes.io/component: market
+    app.kubernetes.io/name: settlement-worker
+    app.kubernetes.io/component: settlement-worker
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: market
+    app.kubernetes.io/name: settlement-worker
   ports:
     - name: http
-      port: 8081
+      port: 8082
       targetPort: http

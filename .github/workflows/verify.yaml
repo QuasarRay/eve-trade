@@ -83,9 +83,17 @@ jobs:
             module: distributed-backend/src/observability
             build_package: ""
             build_tags: ""
+          - name: messaging
+            module: distributed-backend/src/messaging
+            build_package: ""
+            build_tags: ""
           - name: market
             module: distributed-backend/src/market
             build_package: ./cmd/market
+            build_tags: ""
+          - name: settlement-worker
+            module: distributed-backend/src/settlement-worker
+            build_package: ./cmd/settlement-worker
             build_tags: ""
           - name: api-gateway
             module: distributed-backend/src/api-gateway
@@ -172,10 +180,30 @@ jobs:
       - name: Lint Rust crate
         run: cargo clippy --locked --all-targets -- -D warnings
 
+  kubernetes:
+    name: kubernetes / render
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.33.0
+
+      - name: Render Kubernetes manifests
+        run: |
+          kubectl kustomize distributed-backend/orchestration/kubernetes/platform/istio/prod >/tmp/eve-trade-istio.yaml
+          kubectl kustomize distributed-backend/orchestration/kubernetes/platform/gateway/prod >/tmp/eve-trade-gateway.yaml
+          kubectl kustomize distributed-backend/orchestration/kubernetes/base/observability >/tmp/eve-trade-observability.yaml
+          kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/prod >/tmp/eve-trade-prod.yaml
+
   e2e:
     name: e2e / compose
     runs-on: ubuntu-latest
-    needs: [proto, go, rust-trade-settlement]
+    needs: [proto, go, rust-trade-settlement, kubernetes]
 
     steps:
       - name: Checkout

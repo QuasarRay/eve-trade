@@ -3,4 +3,4 @@ kind: GatewayClass
 metadata:
   name: internet
 spec:
-  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  controllerName: istio.io/gateway-controller

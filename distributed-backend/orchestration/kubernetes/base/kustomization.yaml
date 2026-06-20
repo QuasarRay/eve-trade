@@ -14,14 +14,19 @@ resources:
   - serviceaccounts.yaml
   - configmaps.yaml
   - secret.database.yaml
+  - secret.rabbitmq.yaml
+  - rabbitmq.yaml
   - api-gateway.yaml
   - market.yaml
+  - settlement-worker.yaml
   - trade-settlement.yaml
 
 images:
   - name: eve-trade/api-gateway
     newTag: latest
   - name: eve-trade/market
+    newTag: latest
+  - name: eve-trade/settlement-worker
     newTag: latest
   - name: eve-trade/trade-settlement
     newTag: latest

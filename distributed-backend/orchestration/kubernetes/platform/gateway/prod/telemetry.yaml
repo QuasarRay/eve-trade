@@ -1,0 +1,17 @@
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: public-web
+  namespace: eve-trade-gateway
+spec:
+  accessLogging:
+    - providers:
+        - name: envoy
+  metrics:
+    - providers:
+        - name: prometheus
+  tracing:
+    - providers:
+        - name: otel
+      randomSamplingPercentage: 25
+

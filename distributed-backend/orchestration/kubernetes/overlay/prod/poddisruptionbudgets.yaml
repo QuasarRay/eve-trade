@@ -27,6 +27,19 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
+  name: settlement-worker
+  labels:
+    app.kubernetes.io/name: settlement-worker
+    app.kubernetes.io/component: settlement-worker
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: settlement-worker
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
   name: trade-settlement
   labels:
     app.kubernetes.io/name: trade-settlement
@@ -36,3 +49,16 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: trade-settlement
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: rabbitmq
+  labels:
+    app.kubernetes.io/name: rabbitmq
+    app.kubernetes.io/component: messaging
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rabbitmq

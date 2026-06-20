@@ -15,6 +15,7 @@ RUST_IMAGE = "rust:1-bookworm"
 PYTHON_IMAGE = "python:3.13-slim-bookworm"
 DEBIAN_IMAGE = "debian:bookworm-slim"
 POSTGRES_IMAGE = "postgres:16"
+RABBITMQ_IMAGE = "rabbitmq:3.13-management"
 KUSTOMIZE_IMAGE = "alpine/k8s:1.33.1"
 GITLEAKS_IMAGE = "zricethezav/gitleaks:v8.27.2"
 TRIVY_IMAGE = "aquasec/trivy:0.64.1"
@@ -27,13 +28,16 @@ KUBERNETES_NAMESPACE = "eve-trade"
 SERVICE_IMAGE_NAMES = (
     "api-gateway",
     "market",
+    "settlement-worker",
     "trade-settlement",
 )
 DEPLOYMENT_NAMES = (
     "trade-settlement",
+    "settlement-worker",
     "market",
     "api-gateway",
 )
+STATEFULSET_NAMES = ("rabbitmq",)
 
 SOURCE_EXCLUDES = [
     ".git",
@@ -74,6 +78,13 @@ GO_SERVICES = {
         package="./cmd/market",
         port=8081,
     ),
+    "settlement-worker": GoService(
+        name="settlement-worker",
+        binary="settlement-worker",
+        module_dir="distributed-backend/src/settlement-worker",
+        package="./cmd/settlement-worker",
+        port=8082,
+    ),
 }
 
 
@@ -111,6 +122,10 @@ def source_url() -> str:
 
 def deployment_names_shell() -> str:
     return " ".join(DEPLOYMENT_NAMES)
+
+
+def statefulset_names_shell() -> str:
+    return " ".join(STATEFULSET_NAMES)
 
 
 class EveTradePipeline:
@@ -230,13 +245,13 @@ fi
     async def go_checks(self) -> None:
         script = r"""
 set -euo pipefail
-unformatted="$(gofmt -l distributed-backend/src/api-gateway distributed-backend/src/market distributed-backend/proto/gen)"
+unformatted="$(gofmt -l distributed-backend/src/api-gateway distributed-backend/src/market distributed-backend/src/messaging distributed-backend/src/settlement-worker distributed-backend/proto/gen)"
 if [ -n "$unformatted" ]; then
   echo "Go files need gofmt:"
   echo "$unformatted"
   exit 1
 fi
-for module in distributed-backend/proto distributed-backend/src/observability distributed-backend/src/market distributed-backend/src/api-gateway; do
+for module in distributed-backend/proto distributed-backend/src/observability distributed-backend/src/messaging distributed-backend/src/market distributed-backend/src/settlement-worker distributed-backend/src/api-gateway; do
   (cd "$module" && go test ./...)
 done
 """
@@ -500,6 +515,7 @@ kustomize build . > /out/chaos-litmus.yaml
             for name in SERVICE_IMAGE_NAMES
         )
         deployments = deployment_names_shell()
+        statefulsets = statefulset_names_shell()
         script = f"""
 set -eu
 rm -rf /tmp/kubernetes
@@ -514,6 +530,9 @@ cd /tmp/kubernetes/overlay/prod
 {image_commands}
 $KUBECTL apply -k .
 
+for statefulset in {statefulsets}; do
+  $KUBECTL -n {KUBERNETES_NAMESPACE} rollout status "statefulset/$statefulset" --timeout=240s
+done
 for deploy in {deployments}; do
   $KUBECTL -n {KUBERNETES_NAMESPACE} rollout status "deployment/$deploy" --timeout=240s
 done
@@ -726,6 +745,35 @@ psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
         )
         await self.run_container("apply PostgreSQL migrations", migrator)
 
+        rabbitmq = (
+            self.client.container()
+            .from_(RABBITMQ_IMAGE)
+            .with_env_variable("RABBITMQ_DEFAULT_USER", "eve_trade")
+            .with_env_variable("RABBITMQ_DEFAULT_PASS", "eve_trade")
+            .with_env_variable("RABBITMQ_DEFAULT_VHOST", "/")
+            .with_exposed_port(5672)
+            .as_service()
+        )
+        await self.run_container(
+            "wait for RabbitMQ",
+            self.client.container()
+            .from_(PYTHON_IMAGE)
+            .with_service_binding("rabbitmq", rabbitmq)
+            .with_exec(
+                [
+                    "python",
+                    "-c",
+                    "import socket,time; deadline=time.time()+90\n"
+                    "while True:\n"
+                    "  try:\n"
+                    "    socket.create_connection(('rabbitmq',5672),timeout=2).close(); break\n"
+                    "  except OSError:\n"
+                    "    assert time.time() < deadline\n"
+                    "    time.sleep(1)\n",
+                ]
+            ),
+        )
+
         settlement = (
             self.trade_settlement_image()
             .with_service_binding("postgres", postgres)
@@ -736,11 +784,25 @@ psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
             )
             .as_service()
         )
+        settlement_worker = (
+            self.go_runtime_image(GO_SERVICES["settlement-worker"])
+            .with_service_binding("rabbitmq", rabbitmq)
+            .with_service_binding("trade-settlement", settlement)
+            .with_env_variable("SETTLEMENT_WORKER_HEALTH_HTTP_ADDR", ":8082")
+            .with_env_variable("TRADE_SETTLEMENT_URL", "http://trade-settlement:9092")
+            .with_env_variable("RABBITMQ_URL", "amqp://eve_trade:eve_trade@rabbitmq:5672/")
+            .with_env_variable("OTEL_SDK_DISABLED", "true")
+            .as_service()
+        )
         market = (
             self.go_runtime_image(GO_SERVICES["market"])
+            .with_service_binding("rabbitmq", rabbitmq)
+            .with_service_binding("settlement-worker", settlement_worker)
             .with_service_binding("trade-settlement", settlement)
             .with_env_variable("MARKET_HTTP_ADDR", ":8081")
+            .with_env_variable("SETTLEMENT_TRANSPORT", "rabbitmq")
             .with_env_variable("TRADE_SETTLEMENT_URL", "http://trade-settlement:9092")
+            .with_env_variable("RABBITMQ_URL", "amqp://eve_trade:eve_trade@rabbitmq:5672/")
             .with_env_variable(
                 "DATABASE_URL",
                 "postgres://postgres:postgres@postgres:5432/eve_trade_e2e",
@@ -763,7 +825,9 @@ import time
 
 targets = [
     ("postgres", 5432),
+    ("rabbitmq", 5672),
     ("trade-settlement", 9092),
+    ("settlement-worker", 8082),
     ("market", 8081),
     ("api-gateway", 8080),
 ]
@@ -799,7 +863,9 @@ PY
         tests = (
             self.python_e2e_base()
             .with_service_binding("postgres", postgres)
+            .with_service_binding("rabbitmq", rabbitmq)
             .with_service_binding("trade-settlement", settlement)
+            .with_service_binding("settlement-worker", settlement_worker)
             .with_service_binding("market", market)
             .with_service_binding("api-gateway", gateway)
             .with_env_variable(

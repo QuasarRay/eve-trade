@@ -4,11 +4,11 @@ metadata:
   name: eve-trade-prod-compute
 spec:
   hard:
-    requests.cpu: "4"
-    requests.memory: 6Gi
-    limits.cpu: "16"
-    limits.memory: 24Gi
-    pods: "40"
+    requests.cpu: "8"
+    requests.memory: 10Gi
+    limits.cpu: "24"
+    limits.memory: 40Gi
+    pods: "45"
     services: "10"
     configmaps: "20"
     secrets: "10"

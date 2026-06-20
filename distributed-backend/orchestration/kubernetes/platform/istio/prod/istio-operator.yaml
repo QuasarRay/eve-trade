@@ -1,0 +1,62 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: eve-trade-prod
+  namespace: istio-system
+spec:
+  profile: default
+  meshConfig:
+    trustDomain: cluster.local
+    enablePrometheusMerge: true
+    defaultConfig:
+      holdApplicationUntilProxyStarts: true
+    accessLogEncoding: JSON
+    accessLogFile: /dev/stdout
+    outboundTrafficPolicy:
+      mode: ALLOW_ANY
+    defaultProviders:
+      accessLogging:
+        - envoy
+      metrics:
+        - prometheus
+      tracing:
+        - otel
+    extensionProviders:
+      - name: envoy
+        envoyFileAccessLog:
+          path: /dev/stdout
+      - name: otel
+        opentelemetry:
+          service: otel-collector.eve-trade-observability.svc.cluster.local
+          port: 4317
+  values:
+    global:
+      proxy:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+  components:
+    pilot:
+      k8s:
+        replicaCount: 2
+        hpaSpec:
+          minReplicas: 2
+          maxReplicas: 5
+          metrics:
+            - type: Resource
+              resource:
+                name: cpu
+                target:
+                  type: Utilization
+                  averageUtilization: 70
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2048Mi
+          limits:
+            cpu: 2
+            memory: 4096Mi

@@ -1,0 +1,158 @@
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: api-gateway
+spec:
+  host: api-gateway.eve-trade.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    loadBalancer:
+      simple: LEAST_REQUEST
+    connectionPool:
+      tcp:
+        maxConnections: 512
+        connectTimeout: 2s
+      http:
+        http2MaxRequests: 2048
+        maxRequestsPerConnection: 1024
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: market
+spec:
+  host: market.eve-trade.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    loadBalancer:
+      simple: LEAST_REQUEST
+    connectionPool:
+      tcp:
+        maxConnections: 256
+        connectTimeout: 2s
+      http:
+        http2MaxRequests: 1024
+        maxRequestsPerConnection: 512
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: trade-settlement
+spec:
+  host: trade-settlement.eve-trade.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    loadBalancer:
+      simple: LEAST_REQUEST
+    connectionPool:
+      tcp:
+        maxConnections: 128
+        connectTimeout: 2s
+      http:
+        http2MaxRequests: 512
+        maxRequestsPerConnection: 256
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 10s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 50
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: settlement-worker
+spec:
+  host: settlement-worker.eve-trade.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    loadBalancer:
+      simple: LEAST_REQUEST
+    connectionPool:
+      tcp:
+        maxConnections: 128
+        connectTimeout: 2s
+      http:
+        http2MaxRequests: 512
+        maxRequestsPerConnection: 256
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: rabbitmq
+spec:
+  host: rabbitmq.eve-trade.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 256
+        connectTimeout: 5s
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 50
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: market
+spec:
+  hosts:
+    - market
+    - market.eve-trade.svc.cluster.local
+  http:
+    - match:
+        - port: 8081
+      timeout: 10s
+      retries:
+        attempts: 2
+        perTryTimeout: 4s
+        retryOn: connect-failure,refused-stream,unavailable
+      route:
+        - destination:
+            host: market.eve-trade.svc.cluster.local
+            port:
+              number: 8081
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: trade-settlement
+spec:
+  hosts:
+    - trade-settlement
+    - trade-settlement.eve-trade.svc.cluster.local
+  http:
+    - match:
+        - port: 9092
+      timeout: 15s
+      retries:
+        attempts: 2
+        perTryTimeout: 7s
+        retryOn: connect-failure,refused-stream,unavailable
+      route:
+        - destination:
+            host: trade-settlement.eve-trade.svc.cluster.local
+            port:
+              number: 9092

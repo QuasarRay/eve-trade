@@ -1,0 +1,160 @@
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default-strict-mtls
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: api-gateway-jwt
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+  jwtRules:
+    - issuer: https://issuer.eve-trade.example.com/
+      jwksUri: https://issuer.eve-trade.example.com/.well-known/jwks.json
+      audiences:
+        - eve-trade-api
+      forwardOriginalToken: true
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: default-deny
+spec: {}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-api-gateway
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+  rules:
+    - to:
+        - operation:
+            ports:
+              - "8080"
+            methods:
+              - GET
+            paths:
+              - /healthz
+              - /readyz
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/eve-trade-gateway/sa/public-web-istio
+            requestPrincipals:
+              - "*"
+      to:
+        - operation:
+            ports:
+              - "8080"
+            methods:
+              - POST
+            paths:
+              - /eve.api_gateway.v1.GameTradeGatewayService/IssueTradeInstance
+              - /eve.api_gateway.v1.GameTradeGatewayService/AcceptTradeInstance
+              - /eve.api_gateway.v1.GameTradeGatewayService/CancelTradeInstance
+      when:
+        - key: request.auth.audiences
+          values:
+            - eve-trade-api
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-market
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: market
+  rules:
+    - to:
+        - operation:
+            ports:
+              - "8081"
+            methods:
+              - GET
+            paths:
+              - /healthz
+              - /readyz
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/eve-trade/sa/api-gateway
+      to:
+        - operation:
+            ports:
+              - "8081"
+            methods:
+              - POST
+            paths:
+              - /eve.market.v1.MarketService/IssueTradeInstance
+              - /eve.market.v1.MarketService/AcceptTradeInstance
+              - /eve.market.v1.MarketService/CancelTradeInstance
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-trade-settlement
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: trade-settlement
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/eve-trade/sa/settlement-worker
+      to:
+        - operation:
+            ports:
+              - "9092"
+            methods:
+              - POST
+            paths:
+              - /eve.trade_settlement.v1.TradeSettlementService/ExecuteSettlementBatch
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-settlement-worker
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: settlement-worker
+  rules:
+    - to:
+        - operation:
+            ports:
+              - "8082"
+            methods:
+              - GET
+            paths:
+              - /healthz
+              - /readyz
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-rabbitmq
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rabbitmq
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/eve-trade/sa/market
+              - cluster.local/ns/eve-trade/sa/settlement-worker
+      to:
+        - operation:
+            ports:
+              - "5672"

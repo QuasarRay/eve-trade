@@ -1,4 +1,4 @@
-package distributedbackend
+package main
 
 import (
 	"os"
@@ -10,22 +10,18 @@ import (
 )
 
 type Config struct {
-	HTTPAddr                 string
+	HealthHTTPAddr           string
 	TradeSettlementURL       string
-	DatabaseURL              string
 	SettlementRequestTimeout time.Duration
-	SettlementTransport      string
 	RabbitMQ                 rabbitmqsettlement.Config
 }
 
 func LoadConfig() Config {
-	settlementTimeout := durationEnvOr("MARKET_SETTLEMENT_REQUEST_TIMEOUT", 10*time.Second)
+	settlementTimeout := durationEnvOr("SETTLEMENT_WORKER_REQUEST_TIMEOUT", 30*time.Second)
 	return Config{
-		HTTPAddr:                 envOr("MARKET_HTTP_ADDR", ":8081"),
+		HealthHTTPAddr:           envOr("SETTLEMENT_WORKER_HEALTH_HTTP_ADDR", ":8082"),
 		TradeSettlementURL:       trimRightSlash(envOr("TRADE_SETTLEMENT_URL", "http://localhost:9090")),
-		DatabaseURL:              envOr("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/eve_trade"),
 		SettlementRequestTimeout: settlementTimeout,
-		SettlementTransport:      envOr("SETTLEMENT_TRANSPORT", "connect"),
 		RabbitMQ: rabbitmqsettlement.Config{
 			URL:                  envOr("RABBITMQ_URL", rabbitmqsettlement.DefaultURL),
 			Exchange:             envOr("RABBITMQ_SETTLEMENT_EXCHANGE", rabbitmqsettlement.DefaultExchange),

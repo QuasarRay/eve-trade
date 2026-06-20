@@ -3,6 +3,9 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - serviceaccount.yaml
   - gatewayclass.yaml
   - clusterissuer-letsencrypt-prod.yaml
   - gateway.yaml
+  - networkpolicies.yaml
+  - telemetry.yaml

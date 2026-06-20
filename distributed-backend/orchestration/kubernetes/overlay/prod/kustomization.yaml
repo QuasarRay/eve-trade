@@ -12,6 +12,10 @@ resources:
   - ../../base
   - horizontalpodautoscalers.yaml
   - httproute.yaml
+  - httproute-redirect.yaml
+  - istio-security.yaml
+  - istio-telemetry.yaml
+  - istio-traffic.yaml
   - networkpolicies.yaml
   - poddisruptionbudgets.yaml
   - resource-governance.yaml
@@ -28,6 +32,9 @@ images:
     newTag: prod
   - name: eve-trade/market
     newName: registry.example.com/eve-trade/market
+    newTag: prod
+  - name: eve-trade/settlement-worker
+    newName: registry.example.com/eve-trade/settlement-worker
     newTag: prod
   - name: eve-trade/trade-settlement
     newName: registry.example.com/eve-trade/trade-settlement

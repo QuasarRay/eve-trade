@@ -16,7 +16,10 @@ spec:
     - matches:
         - path:
             type: PathPrefix
-            value: /
+            value: /eve.api_gateway.v1.GameTradeGatewayService/
+      timeouts:
+        request: 20s
+        backendRequest: 15s
       backendRefs:
         - name: api-gateway
           port: 8080

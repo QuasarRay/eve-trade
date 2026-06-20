@@ -1,0 +1,53 @@
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: eve-trade-default
+spec:
+  accessLogging:
+    - providers:
+        - name: envoy
+  metrics:
+    - providers:
+        - name: prometheus
+  tracing:
+    - providers:
+        - name: otel
+      randomSamplingPercentage: 10
+---
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: settlement-worker-high-value
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: settlement-worker
+  accessLogging:
+    - providers:
+        - name: envoy
+  metrics:
+    - providers:
+        - name: prometheus
+  tracing:
+    - providers:
+        - name: otel
+      randomSamplingPercentage: 100
+---
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: trade-settlement-high-value
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: trade-settlement
+  accessLogging:
+    - providers:
+        - name: envoy
+  metrics:
+    - providers:
+        - name: prometheus
+  tracing:
+    - providers:
+        - name: otel
+      randomSamplingPercentage: 100
