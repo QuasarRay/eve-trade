@@ -118,7 +118,7 @@ CREATE TABLE item_stack (
     item_type_id BIGINT NOT NULL REFERENCES item_type(item_type_id),
     station_id BIGINT NOT NULL REFERENCES station(station_id),
     quantity BIGINT NOT NULL CHECK (quantity >= 0),
-    stack_state TEXT NOT NULL CHECK (stack_state IN ('ACTIVE', 'LOCKED', 'DEPLETED')),
+    stack_state TEXT NOT NULL CHECK (stack_state IN ('ACTIVE', 'LOCKED', 'DEPLETED', 'MERGED')),
     stack_version BIGINT NOT NULL,
     stack_checksum TEXT NOT NULL,
     checksum_algorithm TEXT NOT NULL,
@@ -204,7 +204,9 @@ CREATE TABLE item_stack_ledger (
     entry_kind TEXT NOT NULL CHECK (entry_kind IN (
         'TRANSFER_TO_ESCROW',
         'TRANSFER_FROM_ESCROW_TO_NEW_OWNER',
-        'TRANSFER_FROM_ESCROW_TO_PREVIOUS_OWNER'
+        'TRANSFER_FROM_ESCROW_TO_PREVIOUS_OWNER',
+        'MERGE_IN',
+        'MERGE_OUT'
     )),
     quantity_delta BIGINT NOT NULL,
     quantity_before BIGINT NOT NULL,
@@ -217,6 +219,24 @@ CREATE TABLE item_stack_ledger (
     CONSTRAINT item_stack_ledger_version_increment_chk CHECK (stack_version_after = stack_version_before + 1),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE OR REPLACE FUNCTION reject_ledger_mutation()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'ledger tables are append-only; write a new ledger row instead'
+        USING ERRCODE = '23514';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER wallet_ledger_append_only_trigger
+BEFORE UPDATE OR DELETE ON wallet_ledger
+FOR EACH ROW
+EXECUTE FUNCTION reject_ledger_mutation();
+
+CREATE TRIGGER item_stack_ledger_append_only_trigger
+BEFORE UPDATE OR DELETE ON item_stack_ledger
+FOR EACH ROW
+EXECUTE FUNCTION reject_ledger_mutation();
 
 CREATE TABLE trade_state_change (
     trade_state_change_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
