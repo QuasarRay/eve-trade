@@ -77,6 +77,12 @@ variable "database_backup_retention_period" {
   default     = 7
 }
 
+variable "database_multi_az" {
+  description = "Whether to run the PostgreSQL database as a Multi-AZ RDS instance."
+  type        = bool
+  default     = true
+}
+
 variable "database_deletion_protection" {
   description = "Whether to protect the RDS instance from deletion."
   type        = bool

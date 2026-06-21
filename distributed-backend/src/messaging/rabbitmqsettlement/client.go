@@ -24,18 +24,27 @@ const (
 )
 
 type RPCClient struct {
-	config          Config
-	connection      *amqp.Connection
-	publishChannel  *amqp.Channel
-	publishConfirms publisherConfirmations
-	replyQueue      string
-	replies         <-chan amqp.Delivery
+	config Config
+
+	sessionMu sync.Mutex
+	session   *rpcSession
 
 	publishMu sync.Mutex
 	pendingMu sync.Mutex
 	pending   map[string]chan pendingResult
-	done      chan struct{}
-	closeOnce sync.Once
+
+	consumerCtx    context.Context
+	consumerCancel context.CancelFunc
+	done           chan struct{}
+	closeOnce      sync.Once
+}
+
+type rpcSession struct {
+	connection *amqp.Connection
+	channel    *amqp.Channel
+	confirms   publisherConfirmations
+	replyQueue string
+	replies    <-chan amqp.Delivery
 }
 
 type pendingResult struct {
@@ -45,7 +54,27 @@ type pendingResult struct {
 
 func NewRPCClient(ctx context.Context, config Config) (*RPCClient, error) {
 	config = config.WithDefaults()
+	consumerCtx, consumerCancel := context.WithCancel(ctx)
 
+	session, err := openRPCSession(consumerCtx, config)
+	if err != nil {
+		consumerCancel()
+		return nil, err
+	}
+
+	client := &RPCClient{
+		config:         config,
+		session:        session,
+		pending:        make(map[string]chan pendingResult),
+		consumerCtx:    consumerCtx,
+		consumerCancel: consumerCancel,
+		done:           make(chan struct{}),
+	}
+	go client.consumeReplies(session)
+	return client, nil
+}
+
+func openRPCSession(ctx context.Context, config Config) (*rpcSession, error) {
 	connection, err := amqp.DialConfig(config.URL, amqp.Config{
 		Heartbeat: 30 * time.Second,
 		Locale:    "en_US",
@@ -100,18 +129,13 @@ func NewRPCClient(ctx context.Context, config Config) (*RPCClient, error) {
 		return nil, fmt.Errorf("consume rabbitmq settlement replies: %w", err)
 	}
 
-	client := &RPCClient{
-		config:          config,
-		connection:      connection,
-		publishChannel:  channel,
-		publishConfirms: confirms,
-		replyQueue:      replyQueue.Name,
-		replies:         replies,
-		pending:         make(map[string]chan pendingResult),
-		done:            make(chan struct{}),
-	}
-	go client.consumeReplies()
-	return client, nil
+	return &rpcSession{
+		connection: connection,
+		channel:    channel,
+		confirms:   confirms,
+		replyQueue: replyQueue.Name,
+		replies:    replies,
+	}, nil
 }
 
 func (c *RPCClient) ExecuteSettlementBatch(ctx context.Context, request *tradesettlementv1.ExecuteSettlementBatchRequest) (*tradesettlementv1.ExecuteSettlementBatchResponse, error) {
@@ -127,6 +151,12 @@ func (c *RPCClient) ExecuteSettlementBatch(ctx context.Context, request *tradese
 	if err != nil {
 		return nil, fmt.Errorf("create rabbitmq correlation id: %w", err)
 	}
+
+	session, err := c.ensureSession()
+	if err != nil {
+		return nil, err
+	}
+
 	result := make(chan pendingResult, 1)
 	c.pendingMu.Lock()
 	c.pending[correlationID] = result
@@ -147,8 +177,8 @@ func (c *RPCClient) ExecuteSettlementBatch(ctx context.Context, request *tradese
 	c.publishMu.Lock()
 	err = publishConfirmed(
 		publishCtx,
-		c.publishChannel,
-		c.publishConfirms,
+		session.channel,
+		session.confirms,
 		c.config.Exchange,
 		c.config.RoutingKey,
 		true,
@@ -158,7 +188,7 @@ func (c *RPCClient) ExecuteSettlementBatch(ctx context.Context, request *tradese
 			DeliveryMode:  amqp.Persistent,
 			MessageId:     messageID,
 			CorrelationId: correlationID,
-			ReplyTo:       c.replyQueue,
+			ReplyTo:       session.replyQueue,
 			Timestamp:     time.Now().UTC(),
 			Expiration:    expirationMilliseconds(c.config.RequestTimeout),
 			Headers:       requestHeaders(request),
@@ -167,6 +197,7 @@ func (c *RPCClient) ExecuteSettlementBatch(ctx context.Context, request *tradese
 	)
 	c.publishMu.Unlock()
 	if err != nil {
+		c.invalidateSession(session, fmt.Errorf("rabbitmq settlement publish failed: %w", err))
 		return nil, fmt.Errorf("publish settlement request: %w", err)
 	}
 
@@ -185,28 +216,79 @@ func (c *RPCClient) Close() error {
 	var err error
 	c.closeOnce.Do(func() {
 		close(c.done)
-		err = errors.Join(c.publishChannel.Close(), c.connection.Close())
+		c.consumerCancel()
+		c.sessionMu.Lock()
+		session := c.session
+		c.session = nil
+		c.sessionMu.Unlock()
+		err = closeRPCSession(session)
 		c.failPending(errors.New("rabbitmq settlement client closed"))
 	})
 	return err
 }
 
-func (c *RPCClient) consumeReplies() {
-	connectionClosed := c.connection.NotifyClose(make(chan *amqp.Error, 1))
+func (c *RPCClient) ensureSession() (*rpcSession, error) {
+	select {
+	case <-c.done:
+		return nil, errors.New("rabbitmq settlement client closed")
+	default:
+	}
+	if err := c.consumerCtx.Err(); err != nil {
+		return nil, fmt.Errorf("rabbitmq settlement client context closed: %w", err)
+	}
+
+	c.sessionMu.Lock()
+	defer c.sessionMu.Unlock()
+
+	if c.session != nil {
+		return c.session, nil
+	}
+
+	session, err := openRPCSession(c.consumerCtx, c.config)
+	if err != nil {
+		return nil, err
+	}
+	c.session = session
+	go c.consumeReplies(session)
+	return session, nil
+}
+
+func (c *RPCClient) invalidateSession(session *rpcSession, err error) {
+	c.sessionMu.Lock()
+	if c.session != session {
+		c.sessionMu.Unlock()
+		return
+	}
+	c.session = nil
+	c.sessionMu.Unlock()
+
+	_ = closeRPCSession(session)
+	c.failPending(err)
+}
+
+func closeRPCSession(session *rpcSession) error {
+	if session == nil {
+		return nil
+	}
+	return errors.Join(session.channel.Close(), session.connection.Close())
+}
+
+func (c *RPCClient) consumeReplies(session *rpcSession) {
+	connectionClosed := session.connection.NotifyClose(make(chan *amqp.Error, 1))
 	for {
 		select {
-		case delivery, ok := <-c.replies:
+		case delivery, ok := <-session.replies:
 			if !ok {
-				c.failPending(errors.New("rabbitmq settlement reply consumer closed"))
+				c.invalidateSession(session, errors.New("rabbitmq settlement reply consumer closed"))
 				return
 			}
 			c.dispatchReply(delivery)
 		case rabbitErr, ok := <-connectionClosed:
 			if !ok || rabbitErr == nil {
-				c.failPending(errors.New("rabbitmq settlement connection closed"))
+				c.invalidateSession(session, errors.New("rabbitmq settlement connection closed"))
 				return
 			}
-			c.failPending(fmt.Errorf("rabbitmq settlement connection closed: %w", rabbitErr))
+			c.invalidateSession(session, fmt.Errorf("rabbitmq settlement connection closed: %w", rabbitErr))
 			return
 		case <-c.done:
 			return

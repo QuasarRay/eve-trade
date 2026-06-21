@@ -89,6 +89,13 @@ func (r *PostgresTradeRepository) Close() {
 	r.pool.Close()
 }
 
+func (r *PostgresTradeRepository) Ping(ctx context.Context) error {
+	if err := r.pool.Ping(ctx); err != nil {
+		return fmt.Errorf("ping market postgres pool: %w", err)
+	}
+	return nil
+}
+
 func (r *PostgresTradeRepository) LoadItemStack(ctx context.Context, itemStackID string) (ItemStackSnapshot, error) {
 	var row ItemStackSnapshot
 	err := r.pool.QueryRow(ctx, `

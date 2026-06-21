@@ -1,6 +1,8 @@
 package distributedbackend
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -10,10 +12,12 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
-func NewHTTPServer(config Config, handler *MarketHandler, handlerOptions ...connect.HandlerOption) *http.Server {
+type ReadinessCheck func(context.Context) error
+
+func NewHTTPServer(config Config, handler *MarketHandler, readiness ReadinessCheck, handlerOptions ...connect.HandlerOption) *http.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", healthHandler)
-	mux.HandleFunc("/readyz", healthHandler)
+	mux.HandleFunc("/readyz", readyHandler(readiness))
 
 	path, serviceHandler := marketv1connect.NewMarketServiceHandler(handler, handlerOptions...)
 	mux.Handle(path, serviceHandler)
@@ -28,15 +32,42 @@ func NewHTTPServer(config Config, handler *MarketHandler, handlerOptions ...conn
 	}
 }
 
+func readyHandler(check ReadinessCheck) http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodGet && request.Method != http.MethodHead {
+			response.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
+			http.Error(response, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if check == nil {
+			writePlainStatus(response, request, http.StatusOK, "ready\n")
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(request.Context(), 2*time.Second)
+		defer cancel()
+		if err := check(ctx); err != nil {
+			writePlainStatus(response, request, http.StatusServiceUnavailable, fmt.Sprintf("not ready: %v\n", err))
+			return
+		}
+		writePlainStatus(response, request, http.StatusOK, "ready\n")
+	}
+}
+
 func healthHandler(response http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodGet && request.Method != http.MethodHead {
 		response.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
 		http.Error(response, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	writePlainStatus(response, request, http.StatusOK, "ok\n")
+}
+
+func writePlainStatus(response http.ResponseWriter, request *http.Request, status int, body string) {
 	response.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	response.WriteHeader(http.StatusOK)
+	response.WriteHeader(status)
 	if request.Method == http.MethodGet {
-		_, _ = response.Write([]byte("ok\n"))
+		_, _ = response.Write([]byte(body))
 	}
 }

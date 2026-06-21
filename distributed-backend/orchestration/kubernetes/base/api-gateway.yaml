@@ -30,7 +30,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: api-gateway
-          image: eve-trade/api-gateway:latest
+          image: eve-trade/api-gateway:dev
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

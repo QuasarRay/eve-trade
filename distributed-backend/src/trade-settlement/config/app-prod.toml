@@ -2,4 +2,4 @@
 addr = "0.0.0.0:9092"
 
 [sqlx]
-uri = "${DATABASE_URL:postgres://postgres:postgres@localhost:5432/eve_trade}"
+uri = "${DATABASE_URL}"

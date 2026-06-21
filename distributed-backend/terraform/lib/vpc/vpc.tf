@@ -22,7 +22,7 @@ module "vpc" {
   enable_nat_gateway   = true
   create_igw           = true
   enable_dns_hostnames = true
-  single_nat_gateway   = true
+  single_nat_gateway   = false
 
   # Manage so we can name
   manage_default_network_acl    = true

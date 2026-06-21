@@ -20,7 +20,9 @@ kubectl apply -k distributed-backend\orchestration\kubernetes\overlay\prod
 
 Before deployment, patch these production values:
 
-- Images in `kustomization.yaml`, usually by CI with `kustomize edit set image`.
+- Image digests in `kustomization.yaml`. The checked-in zero digests are
+  placeholders so production renders are immutable and fail closed until CI
+  injects real `sha256:` digests for the built images.
 - `api.eve-trade.example.com` in `httproute.yaml` and the platform Gateway.
 - The ACME email in `platform/gateway/prod/clusterissuer-letsencrypt-prod.yaml`.
 - The JWT issuer, JWKS URI, and audience in `istio-security.yaml`.
@@ -35,11 +37,13 @@ service-account allow rules for the internal API Gateway -> Market -> RabbitMQ
 -> settlement-worker -> trade-settlement path. The platform Gateway uses the
 Istio Gateway API controller and redirects HTTP traffic to HTTPS.
 
-The base placeholder database and RabbitMQ secrets are intentionally deleted by
-this overlay. Create `trade-settlement-database` with a `DATABASE_URL` key and
+The base kustomization intentionally does not create database or RabbitMQ
+secrets. Create `trade-settlement-database` with a `DATABASE_URL` key and
 `rabbitmq` with `RABBITMQ_DEFAULT_USER`, `RABBITMQ_DEFAULT_PASS`, and
 `RABBITMQ_URL` keys using Terraform, your production secret manager, External
-Secrets, Sealed Secrets, or another approved mechanism.
+Secrets, Sealed Secrets, or another approved mechanism. The
+`settlement-db-migrate` Job uses the same `DATABASE_URL` secret and the
+checked-in settlement SQL migrations before the application pods become useful.
 
 Create `observability-backends` out of band with `HONEYCOMB_API_KEY`,
 `SENTRY_AUTH_TOKEN`, `SENTRY_ORG_SLUG`, and `SENTRY_URL` keys. Application pods

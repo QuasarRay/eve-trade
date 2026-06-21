@@ -3,7 +3,7 @@ package rabbitmqsettlement
 import "time"
 
 const (
-	DefaultURL                  = "amqp://guest:guest@localhost:5672/"
+	DefaultURL                  = "amqp://eve_trade:eve_trade@localhost:5672/"
 	DefaultExchange             = "eve.trade.settlement"
 	DefaultCommandQueue         = "eve.trade.settlement.commands"
 	DefaultRoutingKey           = "settlement.execute"

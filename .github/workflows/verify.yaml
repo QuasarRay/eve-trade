@@ -148,6 +148,23 @@ jobs:
             go build -o /tmp/eve-trade-${{ matrix.name }} ${{ matrix.build_package }}
           fi
 
+  go-root:
+    name: go / root workspace
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test root workspace
+        run: go test ./...
+
   rust-trade-settlement:
     name: rust / trade-settlement
     runs-on: ubuntu-latest
@@ -203,7 +220,7 @@ jobs:
   e2e:
     name: e2e / compose
     runs-on: ubuntu-latest
-    needs: [proto, go, rust-trade-settlement, kubernetes]
+    needs: [proto, go, go-root, rust-trade-settlement, kubernetes]
 
     steps:
       - name: Checkout

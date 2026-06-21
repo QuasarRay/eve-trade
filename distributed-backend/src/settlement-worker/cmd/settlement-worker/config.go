@@ -17,7 +17,7 @@ type Config struct {
 }
 
 func LoadConfig() Config {
-	settlementTimeout := durationEnvOr("SETTLEMENT_WORKER_REQUEST_TIMEOUT", 30*time.Second)
+	settlementTimeout := durationEnvOr("SETTLEMENT_WORKER_REQUEST_TIMEOUT", rabbitmqsettlement.DefaultRequestTimeout)
 	return Config{
 		HealthHTTPAddr:           envOr("SETTLEMENT_WORKER_HEALTH_HTTP_ADDR", ":8082"),
 		TradeSettlementURL:       trimRightSlash(envOr("TRADE_SETTLEMENT_URL", "http://localhost:9090")),

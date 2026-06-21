@@ -8,7 +8,35 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-var errPublishNotConfirmed = errors.New("rabbitmq publish was not confirmed")
+var (
+	errPublishNotConfirmed = errors.New("rabbitmq publish was not confirmed")
+	errPublishReturned     = errors.New("rabbitmq publish returned")
+)
+
+type publishReturnedError struct {
+	exchange   string
+	routingKey string
+	replyCode  uint16
+	replyText  string
+}
+
+func (e publishReturnedError) Error() string {
+	return fmt.Sprintf(
+		"rabbitmq publish returned: exchange=%q routing_key=%q reply_code=%d reply_text=%q",
+		e.exchange,
+		e.routingKey,
+		e.replyCode,
+		e.replyText,
+	)
+}
+
+func (e publishReturnedError) Unwrap() error {
+	return errPublishReturned
+}
+
+func isPublishReturned(err error) bool {
+	return errors.Is(err, errPublishReturned)
+}
 
 type publisherConfirmations struct {
 	confirms <-chan amqp.Confirmation
@@ -48,13 +76,12 @@ func publishConfirmed(
 				continue
 			}
 			confirmErr := waitForPublishConfirmation(ctx, confirmations.confirms)
-			returnedErr := fmt.Errorf(
-				"rabbitmq publish returned: exchange=%q routing_key=%q reply_code=%d reply_text=%q",
-				returned.Exchange,
-				returned.RoutingKey,
-				returned.ReplyCode,
-				returned.ReplyText,
-			)
+			returnedErr := publishReturnedError{
+				exchange:   returned.Exchange,
+				routingKey: returned.RoutingKey,
+				replyCode:  returned.ReplyCode,
+				replyText:  returned.ReplyText,
+			}
 			if confirmErr != nil {
 				return errors.Join(returnedErr, confirmErr)
 			}

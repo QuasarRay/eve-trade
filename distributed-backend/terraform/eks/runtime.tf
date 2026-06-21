@@ -63,6 +63,7 @@ resource "aws_db_instance" "trade_settlement" {
   db_subnet_group_name    = aws_db_subnet_group.trade_settlement[0].name
   vpc_security_group_ids  = [aws_security_group.trade_settlement_database[0].id]
   publicly_accessible     = false
+  multi_az                = var.database_multi_az
   backup_retention_period = var.database_backup_retention_period
   deletion_protection     = var.database_deletion_protection
   skip_final_snapshot     = !var.database_deletion_protection

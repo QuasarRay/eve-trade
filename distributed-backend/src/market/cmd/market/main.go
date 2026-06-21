@@ -48,6 +48,7 @@ func main() {
 	server := distributedbackend.NewHTTPServer(
 		config,
 		handler,
+		repository.Ping,
 		connect.WithInterceptors(observability.NewInternalServerInterceptor()),
 	)
 

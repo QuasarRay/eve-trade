@@ -24,18 +24,17 @@ patches:
   - path: patches/namespace.yaml
   - path: patches/configmaps.yaml
   - path: patches/deployments.yaml
-  - path: patches/delete-placeholder-secret.yaml
 
 images:
   - name: eve-trade/api-gateway
     newName: registry.example.com/eve-trade/api-gateway
-    newTag: prod
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
   - name: eve-trade/market
     newName: registry.example.com/eve-trade/market
-    newTag: prod
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
   - name: eve-trade/settlement-worker
     newName: registry.example.com/eve-trade/settlement-worker
-    newTag: prod
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
   - name: eve-trade/trade-settlement
     newName: registry.example.com/eve-trade/trade-settlement
-    newTag: prod
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000

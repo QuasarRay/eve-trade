@@ -3,8 +3,11 @@ package distributedbackend
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
+	"io"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"connectrpc.com/connect"
@@ -20,15 +23,20 @@ type MarketClient interface {
 }
 
 type ConnectMarketClient struct {
-	client  marketv1connect.MarketServiceClient
-	timeout time.Duration
+	client     marketv1connect.MarketServiceClient
+	httpClient *http.Client
+	baseURL    string
+	timeout    time.Duration
 }
 
 func NewConnectMarketClient(baseURL string, timeout time.Duration, options ...connect.ClientOption) *ConnectMarketClient {
+	httpClient := h2cClient()
 	clientOptions := append([]connect.ClientOption{connect.WithGRPC()}, options...)
 	return &ConnectMarketClient{
-		client:  marketv1connect.NewMarketServiceClient(h2cClient(), baseURL, clientOptions...),
-		timeout: timeout,
+		client:     marketv1connect.NewMarketServiceClient(httpClient, baseURL, clientOptions...),
+		httpClient: httpClient,
+		baseURL:    baseURL,
+		timeout:    timeout,
 	}
 }
 
@@ -63,6 +71,30 @@ func (c *ConnectMarketClient) CancelTradeInstance(ctx context.Context, request *
 		return nil, downstreamUnavailable("market", err)
 	}
 	return response.Msg, nil
+}
+
+func (c *ConnectMarketClient) CheckReady(ctx context.Context) error {
+	ctx, cancel := c.callContext(ctx)
+	defer cancel()
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(c.baseURL, "/")+"/readyz", nil)
+	if err != nil {
+		return fmt.Errorf("build market readiness request: %w", err)
+	}
+	response, err := c.httpClient.Do(request)
+	if err != nil {
+		return fmt.Errorf("market readiness request: %w", err)
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(response.Body)
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("market readiness returned %s", response.Status)
+	}
+	return nil
 }
 
 func (c *ConnectMarketClient) callContext(parent context.Context) (context.Context, context.CancelFunc) {

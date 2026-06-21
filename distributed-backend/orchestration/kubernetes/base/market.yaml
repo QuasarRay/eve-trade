@@ -30,7 +30,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: market
-          image: eve-trade/market:latest
+          image: eve-trade/market:dev
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -38,6 +38,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: market-config
+            - secretRef:
+                name: trade-settlement-database
             - secretRef:
                 name: rabbitmq
           readinessProbe:

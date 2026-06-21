@@ -27,14 +27,18 @@ VS Code button path:
 The local stack starts:
 
 * API Gateway: `http://localhost:8080`
-* Market service: `http://localhost:8081`
-* Settlement worker health: `http://localhost:8082`
-* Trade settlement gRPC: `localhost:9092`
 * RabbitMQ AMQP: `localhost:5672`
 * RabbitMQ management UI: `http://localhost:15672` (`eve_trade` / `eve_trade`)
 * PostgreSQL: `localhost:5432`
 
-The startup migration creates the local database schema when it is missing and leaves existing local data intact. To reset everything, run `docker compose down -v` before starting the stack again. This project currently exposes backend services, not a browser UI.
+The startup migration creates the local database schema when it is missing,
+applies compatible follow-up migrations, and seeds a small local world. The
+main sample actors are seller capsuleer `1001`, buyer capsuleer `2002`, seller
+Tritanium stack `11111111-1111-4111-8111-111111111111`, buyer wallet
+`00000000-0000-4000-8000-000000002002`, item type `34`, and station
+`60003760`. To reset everything, run `docker compose down -v` before starting
+the stack again. This project currently exposes backend services, not a browser
+UI.
 
 ## Goal
 

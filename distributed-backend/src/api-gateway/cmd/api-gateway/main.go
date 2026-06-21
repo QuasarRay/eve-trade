@@ -38,6 +38,7 @@ func main() {
 	server := distributedbackend.NewHTTPServer(
 		config,
 		handler,
+		market.CheckReady,
 		connect.WithInterceptors(observability.NewExternalServerInterceptor()),
 	)
 

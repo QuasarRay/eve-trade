@@ -30,7 +30,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: settlement-worker
-          image: eve-trade/settlement-worker:latest
+          image: eve-trade/settlement-worker:dev
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

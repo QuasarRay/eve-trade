@@ -8,6 +8,13 @@ use crate::proto::trade_settlement as pb;
 use pb::settlement_operation::Operation as ProtoOperation;
 use pb::SettlementOperationKind;
 
+const TRADE_KIND_SELL: &str = "SELL";
+const TRADE_STATE_OPEN: &str = "OPEN";
+const TRADE_STATE_CANCELLED: &str = "CANCELLED";
+const TRADE_STATE_COMPLETED: &str = "COMPLETED";
+const TRADE_STATE_CHANGE_CANCELLED: &str = "CANCELLED_BY_ISSUER";
+const TRADE_STATE_CHANGE_ACCEPTED: &str = "ACCEPTED_BY_BUYER";
+
 #[derive(Debug, Clone)]
 pub struct ExecuteBatchCommand {
     pub idempotency_key: String,
@@ -113,6 +120,78 @@ impl SettlementCommand {
             }
         }
     }
+
+    pub fn validate(&self) -> Result<()> {
+        match self {
+            SettlementCommand::CreateNewTradeInstanceRow(command) => {
+                ensure_supported("trade_kind", &command.trade_kind, &[TRADE_KIND_SELL])?;
+                ensure_supported("trade_state", &command.trade_state, &[TRADE_STATE_OPEN])?;
+                ensure_positive(command.issuer_id, "issuer_id")?;
+                ensure_positive(command.item_type_id, "item_type_id")?;
+                ensure_positive(command.station_id, "station_id")?;
+                ensure_positive(command.total_quantity, "total_quantity")?;
+                ensure_positive(command.unit_price_isk, "unit_price_isk")?;
+                ensure_future_timestamp(command.expires_at.as_ref(), "expires_at")?;
+            }
+            SettlementCommand::ModifyTradeInstanceState(command) => {
+                ensure_supported(
+                    "to_trade_state",
+                    &command.to_trade_state,
+                    &[
+                        TRADE_STATE_OPEN,
+                        TRADE_STATE_CANCELLED,
+                        TRADE_STATE_COMPLETED,
+                    ],
+                )?;
+                ensure_supported(
+                    "trade_state_change_kind",
+                    &command.trade_state_change_kind,
+                    &[TRADE_STATE_CHANGE_CANCELLED, TRADE_STATE_CHANGE_ACCEPTED],
+                )?;
+            }
+            SettlementCommand::CreateNewEmptyItemStack(command) => {
+                ensure_positive(command.owner_id, "owner_id")?;
+                ensure_positive(command.item_type_id, "item_type_id")?;
+                ensure_positive(command.station_id, "station_id")?;
+            }
+            SettlementCommand::TransferQuantityFromItemStackToItemStackEscrow(command) => {
+                ensure_positive(command.quantity, "quantity")?;
+            }
+            SettlementCommand::TransferQuantityFromItemStackEscrowToItemStackWithNewOwner(
+                command,
+            ) => {
+                ensure_positive(command.quantity, "quantity")?;
+            }
+            SettlementCommand::TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner(
+                command,
+            ) => {
+                ensure_positive(command.quantity, "quantity")?;
+            }
+            SettlementCommand::MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner(command) => {
+                if command.source_item_stack_id == command.destination_item_stack_id {
+                    return Err(SettlementError::InvalidArgument(
+                        "source_item_stack_id and destination_item_stack_id must differ"
+                            .to_string(),
+                    ));
+                }
+            }
+            SettlementCommand::CreateNewEmptyWalletEscrow(command) => {
+                ensure_positive(command.owner_id, "owner_id")?;
+            }
+            SettlementCommand::TransferIskAmountFromWalletToWalletEscrow(command) => {
+                ensure_positive(command.isk_amount, "isk_amount")?;
+            }
+            SettlementCommand::TransferIskAmountFromWalletEscrowToWalletWithNewOwner(command) => {
+                ensure_positive(command.isk_amount, "isk_amount")?;
+            }
+            SettlementCommand::TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner(
+                command,
+            ) => {
+                ensure_positive(command.isk_amount, "isk_amount")?;
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -215,6 +294,9 @@ impl TryFrom<pb::ExecuteSettlementBatchRequest> for ExecuteBatchCommand {
             .into_iter()
             .map(SettlementCommand::try_from)
             .collect::<Result<Vec<_>>>()?;
+        for operation in &operations {
+            operation.validate()?;
+        }
 
         Ok(Self {
             idempotency_key,
@@ -446,4 +528,35 @@ fn non_empty_or(value: String, fallback: &str) -> String {
     } else {
         value
     }
+}
+
+fn ensure_positive(value: i64, field_name: &str) -> Result<()> {
+    if value > 0 {
+        Ok(())
+    } else {
+        Err(SettlementError::InvalidArgument(format!(
+            "{field_name} must be greater than zero"
+        )))
+    }
+}
+
+fn ensure_supported(field_name: &str, value: &str, supported: &[&str]) -> Result<()> {
+    if supported.contains(&value) {
+        Ok(())
+    } else {
+        Err(SettlementError::InvalidArgument(format!(
+            "{field_name} {value} is not supported"
+        )))
+    }
+}
+
+fn ensure_future_timestamp(value: Option<&DateTime<Utc>>, field_name: &str) -> Result<()> {
+    if let Some(value) = value {
+        if *value <= Utc::now() {
+            return Err(SettlementError::InvalidArgument(format!(
+                "{field_name} must be in the future"
+            )));
+        }
+    }
+    Ok(())
 }

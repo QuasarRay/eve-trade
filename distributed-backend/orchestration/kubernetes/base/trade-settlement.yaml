@@ -30,7 +30,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: trade-settlement
-          image: eve-trade/trade-settlement:latest
+          image: eve-trade/trade-settlement:dev
           imagePullPolicy: IfNotPresent
           ports:
             - name: grpc

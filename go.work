@@ -1,0 +1,11 @@
+go 1.26
+
+use (
+	.
+	./distributed-backend/proto
+	./distributed-backend/src/api-gateway
+	./distributed-backend/src/market
+	./distributed-backend/src/messaging
+	./distributed-backend/src/observability
+	./distributed-backend/src/settlement-worker
+)

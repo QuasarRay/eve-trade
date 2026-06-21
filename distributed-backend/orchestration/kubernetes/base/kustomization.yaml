@@ -13,20 +13,28 @@ resources:
   - namespace.yaml
   - serviceaccounts.yaml
   - configmaps.yaml
-  - secret.database.yaml
-  - secret.rabbitmq.yaml
+  - migrate.yaml
   - rabbitmq.yaml
   - api-gateway.yaml
   - market.yaml
   - settlement-worker.yaml
   - trade-settlement.yaml
 
+configMapGenerator:
+  - name: settlement-db-migrations
+    files:
+      - 0001_settlement_schema.sql=migrations/0001_settlement_schema.sql
+      - 0002_merge_item_stack_constraints.sql=migrations/0002_merge_item_stack_constraints.sql
+
+generatorOptions:
+  disableNameSuffixHash: true
+
 images:
   - name: eve-trade/api-gateway
-    newTag: latest
+    newTag: dev
   - name: eve-trade/market
-    newTag: latest
+    newTag: dev
   - name: eve-trade/settlement-worker
-    newTag: latest
+    newTag: dev
   - name: eve-trade/trade-settlement
-    newTag: latest
+    newTag: dev

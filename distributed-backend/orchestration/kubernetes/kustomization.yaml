@@ -14,10 +14,10 @@ resources:
 
 images:
   - name: eve-trade/api-gateway
-    newTag: latest
+    newTag: dev
   - name: eve-trade/market
-    newTag: latest
+    newTag: dev
   - name: eve-trade/settlement-worker
-    newTag: latest
+    newTag: dev
   - name: eve-trade/trade-settlement
-    newTag: latest
+    newTag: dev

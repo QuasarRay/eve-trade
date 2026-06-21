@@ -108,7 +108,7 @@ spec:
     spec:
       containers:
         - name: otel-collector
-          image: otel/opentelemetry-collector-contrib:latest
+          image: otel/opentelemetry-collector-contrib@sha256:0000000000000000000000000000000000000000000000000000000000000000
           args:
             - "--config=/etc/otelcol/collector.yaml"
           envFrom:

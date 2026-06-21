@@ -50,13 +50,23 @@ func runSettlementWorkerSession(ctx context.Context, config Config, executor Set
 	if err != nil {
 		return fmt.Errorf("connect to rabbitmq: %w", err)
 	}
-	defer connection.Close()
+	defer func(connection *amqp.Connection) {
+		err := connection.Close()
+		if err != nil {
+
+		}
+	}(connection)
 
 	channel, err := connection.Channel()
 	if err != nil {
 		return fmt.Errorf("open rabbitmq channel: %w", err)
 	}
-	defer channel.Close()
+	defer func(channel *amqp.Channel) {
+		err := channel.Close()
+		if err != nil {
+
+		}
+	}(channel)
 
 	if err := setupTopology(channel, config); err != nil {
 		return err
@@ -84,7 +94,11 @@ func runSettlementWorkerSession(ctx context.Context, config Config, executor Set
 	}
 
 	connectionClosed := connection.NotifyClose(make(chan *amqp.Error, 1))
-	var publishMu sync.Mutex
+	var channelMu sync.Mutex
+	workerSlots := make(chan struct{}, config.PrefetchCount)
+	workerErrs := make(chan error, 1)
+	var workers sync.WaitGroup
+	defer workers.Wait()
 
 	slog.Info("settlement worker consuming rabbitmq commands", "queue", config.CommandQueue, "prefetch", config.PrefetchCount)
 	if reportReady != nil {
@@ -104,9 +118,26 @@ func runSettlementWorkerSession(ctx context.Context, config Config, executor Set
 			if !ok {
 				return errors.New("rabbitmq settlement command consumer closed")
 			}
-			if err := handleDelivery(ctx, config, executor, channel, confirms, &publishMu, delivery); err != nil {
+			select {
+			case workerSlots <- struct{}{}:
+			case err := <-workerErrs:
 				return err
+			case <-ctx.Done():
+				return nil
 			}
+			workers.Add(1)
+			go func(delivery amqp.Delivery) {
+				defer workers.Done()
+				defer func() { <-workerSlots }()
+				if err := handleDelivery(ctx, config, executor, channel, confirms, &channelMu, delivery); err != nil {
+					select {
+					case workerErrs <- err:
+					default:
+					}
+				}
+			}(delivery)
+		case err := <-workerErrs:
+			return err
 		}
 	}
 }
@@ -117,21 +148,24 @@ func handleDelivery(
 	executor SettlementExecutor,
 	channel *amqp.Channel,
 	confirms publisherConfirmations,
-	publishMu *sync.Mutex,
+	channelMu *sync.Mutex,
 	delivery amqp.Delivery,
 ) error {
 	if delivery.ReplyTo == "" || delivery.CorrelationId == "" {
 		slog.Warn("rejecting settlement command without reply target", "message_id", delivery.MessageId)
-		return delivery.Nack(false, false)
+		return nackDelivery(channelMu, delivery, false)
 	}
 
 	var request tradesettlementv1.ExecuteSettlementBatchRequest
 	if err := proto.Unmarshal(delivery.Body, &request); err != nil {
 		slog.Warn("rejecting malformed settlement command", "message_id", delivery.MessageId, "error", err)
-		if publishErr := publishErrorReply(ctx, config, channel, confirms, publishMu, delivery, "INVALID_ARGUMENT", err); publishErr != nil {
-			return errors.Join(publishErr, delivery.Nack(false, true))
+		if publishErr := publishErrorReply(ctx, config, channel, confirms, channelMu, delivery, "INVALID_ARGUMENT", err); publishErr != nil {
+			if isPublishReturned(publishErr) {
+				return ackUnavailableReplyTarget(channelMu, delivery, publishErr)
+			}
+			return errors.Join(publishErr, nackDelivery(channelMu, delivery, true))
 		}
-		return delivery.Ack(false)
+		return ackDelivery(channelMu, delivery)
 	}
 
 	callCtx, cancel := context.WithTimeout(ctx, config.RequestTimeout)
@@ -140,25 +174,58 @@ func handleDelivery(
 	response, err := executor.ExecuteSettlementBatch(callCtx, &request)
 	if err != nil {
 		slog.Warn("settlement command failed", "idempotency_key", request.GetIdempotencyKey(), "error", err)
-		if publishErr := publishErrorReply(ctx, config, channel, confirms, publishMu, delivery, connectCodeName(err), err); publishErr != nil {
-			return errors.Join(publishErr, delivery.Nack(false, true))
+		if publishErr := publishErrorReply(ctx, config, channel, confirms, channelMu, delivery, connectCodeName(err), err); publishErr != nil {
+			if isPublishReturned(publishErr) {
+				return ackUnavailableReplyTarget(channelMu, delivery, publishErr)
+			}
+			return errors.Join(publishErr, nackDelivery(channelMu, delivery, true))
 		}
-		return delivery.Ack(false)
+		return ackDelivery(channelMu, delivery)
 	}
 
 	responseBody, err := proto.Marshal(response)
 	if err != nil {
-		return errors.Join(fmt.Errorf("marshal settlement response: %w", err), delivery.Nack(false, true))
+		return errors.Join(fmt.Errorf("marshal settlement response: %w", err), nackDelivery(channelMu, delivery, true))
 	}
 	replyBody, err := json.Marshal(settlementReply{Success: true, Response: responseBody})
 	if err != nil {
-		return errors.Join(fmt.Errorf("marshal settlement reply envelope: %w", err), delivery.Nack(false, true))
+		return errors.Join(fmt.Errorf("marshal settlement reply envelope: %w", err), nackDelivery(channelMu, delivery, true))
 	}
-	if err := publishReply(ctx, config, channel, confirms, publishMu, delivery, replyBody); err != nil {
-		return errors.Join(err, delivery.Nack(false, true))
+	if err := publishReply(ctx, config, channel, confirms, channelMu, delivery, replyBody); err != nil {
+		if isPublishReturned(err) {
+			return ackUnavailableReplyTarget(channelMu, delivery, err)
+		}
+		return errors.Join(err, nackDelivery(channelMu, delivery, true))
 	}
 
+	return ackDelivery(channelMu, delivery)
+}
+
+func ackUnavailableReplyTarget(channelMu *sync.Mutex, delivery amqp.Delivery, err error) error {
+	slog.Warn(
+		"acknowledging settlement command because reply target is unavailable",
+		"message_id",
+		delivery.MessageId,
+		"correlation_id",
+		delivery.CorrelationId,
+		"reply_to",
+		delivery.ReplyTo,
+		"error",
+		err,
+	)
+	return ackDelivery(channelMu, delivery)
+}
+
+func ackDelivery(channelMu *sync.Mutex, delivery amqp.Delivery) error {
+	channelMu.Lock()
+	defer channelMu.Unlock()
 	return delivery.Ack(false)
+}
+
+func nackDelivery(channelMu *sync.Mutex, delivery amqp.Delivery, requeue bool) error {
+	channelMu.Lock()
+	defer channelMu.Unlock()
+	return delivery.Nack(false, requeue)
 }
 
 func publishErrorReply(
@@ -166,7 +233,7 @@ func publishErrorReply(
 	config Config,
 	channel *amqp.Channel,
 	confirms publisherConfirmations,
-	publishMu *sync.Mutex,
+	channelMu *sync.Mutex,
 	delivery amqp.Delivery,
 	code string,
 	err error,
@@ -179,7 +246,7 @@ func publishErrorReply(
 	if marshalErr != nil {
 		return fmt.Errorf("marshal settlement error reply: %w", marshalErr)
 	}
-	return publishReply(ctx, config, channel, confirms, publishMu, delivery, replyBody)
+	return publishReply(ctx, config, channel, confirms, channelMu, delivery, replyBody)
 }
 
 func publishReply(
@@ -187,14 +254,14 @@ func publishReply(
 	config Config,
 	channel *amqp.Channel,
 	confirms publisherConfirmations,
-	publishMu *sync.Mutex,
+	channelMu *sync.Mutex,
 	delivery amqp.Delivery,
 	body []byte,
 ) error {
 	publishCtx, cancel := context.WithTimeout(ctx, config.PublishTimeout)
 	defer cancel()
 
-	publishMu.Lock()
+	channelMu.Lock()
 	err := publishConfirmed(
 		publishCtx,
 		channel,
@@ -212,7 +279,7 @@ func publishReply(
 			Body:          body,
 		},
 	)
-	publishMu.Unlock()
+	channelMu.Unlock()
 	if err != nil {
 		return fmt.Errorf("publish settlement reply: %w", err)
 	}
