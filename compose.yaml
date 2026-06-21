@@ -30,14 +30,15 @@ services:
     command: >
       bash -lc "
       if psql -h postgres -U postgres -d eve_trade -tAc \"SELECT to_regclass('public.trade_instance')\" | grep -q trade_instance; then
-        echo 'Database schema already exists; leaving local data intact.';
+        echo 'Database schema already exists; applying compatible local migrations and leaving local data intact.';
+        psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/src/trade-settlement/migrations/0002_merge_item_stack_constraints.sql;
       else
         psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql;
       fi
       "
 
   rabbitmq:
-    image: rabbitmq:3.13-management
+    image: rabbitmq:3.13.7-management
     environment:
       RABBITMQ_DEFAULT_USER: eve_trade
       RABBITMQ_DEFAULT_PASS: eve_trade
@@ -81,7 +82,7 @@ services:
       RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
       OTEL_SDK_DISABLED: "true"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8082/healthz >/dev/null"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8082/readyz >/dev/null"]
       interval: 2s
       timeout: 2s
       retries: 30

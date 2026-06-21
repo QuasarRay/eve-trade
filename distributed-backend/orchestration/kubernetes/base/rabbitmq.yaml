@@ -29,13 +29,11 @@ spec:
           type: RuntimeDefault
       containers:
         - name: rabbitmq
-          image: rabbitmq:3.13-management
+          image: rabbitmq:3.13.7-management
           imagePullPolicy: IfNotPresent
           ports:
             - name: amqp
               containerPort: 5672
-            - name: management
-              containerPort: 15672
           envFrom:
             - secretRef:
                 name: rabbitmq
@@ -103,6 +101,3 @@ spec:
     - name: amqp
       port: 5672
       targetPort: amqp
-    - name: management
-      port: 15672
-      targetPort: management

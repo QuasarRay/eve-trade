@@ -28,7 +28,10 @@ The local stack starts:
 
 * API Gateway: `http://localhost:8080`
 * Market service: `http://localhost:8081`
+* Settlement worker health: `http://localhost:8082`
 * Trade settlement gRPC: `localhost:9092`
+* RabbitMQ AMQP: `localhost:5672`
+* RabbitMQ management UI: `http://localhost:15672` (`eve_trade` / `eve_trade`)
 * PostgreSQL: `localhost:5432`
 
 The startup migration creates the local database schema when it is missing and leaves existing local data intact. To reset everything, run `docker compose down -v` before starting the stack again. This project currently exposes backend services, not a browser UI.
@@ -43,7 +46,7 @@ The project focuses on the backend and platform engineering problems behind play
 
 `eve-trade` is currently capable of performing a trade request lifecycle starting from the API Gateway receiving a request from a game server.
 
-The API Gateway translates the request into the internal protocol convention defined by the project's protobuf contracts, then forwards it to the Market service. The Market service owns trade-mechanic decisions and sends settlement requests to `trade-settlement`.
+The API Gateway translates the request into the internal protocol convention defined by the project's protobuf contracts, then forwards it to the Market service. The Market service owns trade-mechanic decisions and publishes settlement commands through RabbitMQ. `settlement-worker` consumes those commands and calls `trade-settlement`.
 
 `trade-settlement` is a separate microservice decoupled from market trade logic. Its responsibility is to protect correctness-critical persistence: reliable database transactions, item ownership transfer, ISK wallet transfer, escrow handling, and settlement state management.
 
@@ -55,7 +58,7 @@ The platform side currently includes:
 
 * Kubernetes manifests for service orchestration
 * Kustomize-based manifest organization
-* Direct API Gateway -> Market -> trade-settlement service flow
+* API Gateway -> Market -> RabbitMQ -> settlement-worker -> trade-settlement service flow
 * OpenTelemetry-based observability with Honeycomb, Sentry, and Prometheus
 * Litmus for chaos engineering experiments
 * Dagger-based CI/CD pipeline logic written in Python

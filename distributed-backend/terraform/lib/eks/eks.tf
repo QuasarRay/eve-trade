@@ -8,7 +8,7 @@ module "eks_cluster" {
 
   cluster_name                   = var.environment_name
   cluster_version                = var.cluster_version
-  cluster_endpoint_public_access = true
+  cluster_endpoint_public_access = var.cluster_endpoint_public_access
 
   cluster_addons = {
     vpc-cni = {

@@ -9,6 +9,12 @@ variable "cluster_version" {
   default     = "1.31"
 }
 
+variable "cluster_endpoint_public_access" {
+  description = "Whether the EKS API endpoint should be publicly reachable."
+  type        = bool
+  default     = false
+}
+
 variable "tags" {
   description = "List of tags to be associated with resources."
   default     = {}

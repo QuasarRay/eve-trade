@@ -16,8 +16,14 @@ variable "cluster_version" {
   default     = "1.33"
 }
 
+variable "cluster_endpoint_public_access" {
+  description = "Whether the EKS API endpoint should be publicly reachable."
+  type        = bool
+  default     = false
+}
+
 variable "container_image_overrides" {
-  description = "Optional per-service image overrides keyed by api-gateway, market, or trade-settlement. Each value may include repository and tag."
+  description = "Optional per-service image overrides keyed by api-gateway, market, settlement-worker, or trade-settlement. Each value may include repository and tag."
   type        = map(any)
   default     = {}
 }
@@ -74,5 +80,5 @@ variable "database_backup_retention_period" {
 variable "database_deletion_protection" {
   description = "Whether to protect the RDS instance from deletion."
   type        = bool
-  default     = false
+  default     = true
 }

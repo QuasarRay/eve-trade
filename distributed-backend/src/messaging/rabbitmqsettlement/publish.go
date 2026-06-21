@@ -10,17 +10,25 @@ import (
 
 var errPublishNotConfirmed = errors.New("rabbitmq publish was not confirmed")
 
-func enablePublisherConfirms(channel *amqp.Channel) (<-chan amqp.Confirmation, error) {
+type publisherConfirmations struct {
+	confirms <-chan amqp.Confirmation
+	returns  <-chan amqp.Return
+}
+
+func enablePublisherConfirms(channel *amqp.Channel) (publisherConfirmations, error) {
 	if err := channel.Confirm(false); err != nil {
-		return nil, fmt.Errorf("enable publisher confirms: %w", err)
+		return publisherConfirmations{}, fmt.Errorf("enable publisher confirms: %w", err)
 	}
-	return channel.NotifyPublish(make(chan amqp.Confirmation, 64)), nil
+	return publisherConfirmations{
+		confirms: channel.NotifyPublish(make(chan amqp.Confirmation, 64)),
+		returns:  channel.NotifyReturn(make(chan amqp.Return, 64)),
+	}, nil
 }
 
 func publishConfirmed(
 	ctx context.Context,
 	channel *amqp.Channel,
-	confirms <-chan amqp.Confirmation,
+	confirmations publisherConfirmations,
 	exchange string,
 	routingKey string,
 	mandatory bool,
@@ -30,6 +38,42 @@ func publishConfirmed(
 		return err
 	}
 
+	for {
+		select {
+		case returned, ok := <-confirmations.returns:
+			if !ok {
+				return errors.New("rabbitmq publisher return channel closed")
+			}
+			if !samePublishedMessage(returned, message) {
+				continue
+			}
+			confirmErr := waitForPublishConfirmation(ctx, confirmations.confirms)
+			returnedErr := fmt.Errorf(
+				"rabbitmq publish returned: exchange=%q routing_key=%q reply_code=%d reply_text=%q",
+				returned.Exchange,
+				returned.RoutingKey,
+				returned.ReplyCode,
+				returned.ReplyText,
+			)
+			if confirmErr != nil {
+				return errors.Join(returnedErr, confirmErr)
+			}
+			return returnedErr
+		case confirmation, ok := <-confirmations.confirms:
+			if !ok {
+				return errors.New("rabbitmq publisher confirmation channel closed")
+			}
+			if !confirmation.Ack {
+				return errPublishNotConfirmed
+			}
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+func waitForPublishConfirmation(ctx context.Context, confirms <-chan amqp.Confirmation) error {
 	select {
 	case confirmation, ok := <-confirms:
 		if !ok {
@@ -42,4 +86,14 @@ func publishConfirmed(
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+func samePublishedMessage(returned amqp.Return, message amqp.Publishing) bool {
+	if message.CorrelationId != "" && returned.CorrelationId != message.CorrelationId {
+		return false
+	}
+	if message.MessageId != "" && returned.MessageId != message.MessageId {
+		return false
+	}
+	return true
 }

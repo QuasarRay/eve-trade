@@ -1311,6 +1311,73 @@ def test_settlement_rejects_wallet_payment_that_does_not_match_trade_price(db, g
     assert item_escrow_row(db, trade)["quantity"] == 4
 
 
+def test_settlement_rejects_wallet_payment_that_exceeds_remaining_trade_quantity(db, gateway, settlement):
+    world = seed_world(db, buyer_isk=1_000, buyer_stack_quantity=0)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+    pb = settlement.pb
+
+    expect_grpc_error(
+        lambda: settlement.execute_settlement_batch(
+            _settlement_accept_request(pb, world, trade, quantity=4, isk_amount=125)
+        ),
+        code="FAILED_PRECONDITION",
+        contains="remaining quantity",
+    )
+
+    assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 1_000
+    assert item_escrow_row(db, trade)["quantity"] == 4
+    assert trade_row(db, trade)["remaining_quantity"] == 4
+
+
+def test_settlement_rejects_completing_trade_while_wallet_escrow_remains_active(db, gateway, settlement):
+    world = seed_world(db, buyer_isk=1_000, buyer_stack_quantity=0)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+    pb = settlement.pb
+    wallet_escrow_id = uuid_str()
+
+    expect_grpc_error(
+        lambda: settlement.execute_settlement_batch(
+            pb.ExecuteSettlementBatchRequest(
+                idempotency_key=fresh_key("settlement-complete-wallet-escrow"),
+                external_request_id="settlement-complete-wallet-escrow",
+                caused_by_capsuleer_id=world.buyer_id,
+                created_by_service="settlement-e2e",
+                operations=[
+                    pb.SettlementOperation(
+                        transfer_isk_amount_from_wallet_to_wallet_escrow=pb.TransferIskAmountFromWalletToWalletEscrow(
+                            source_wallet_id=world.buyer_wallet_id,
+                            wallet_escrow_id=wallet_escrow_id,
+                            trade_instance_id=trade.trade_instance_id,
+                            isk_amount=100,
+                        )
+                    ),
+                    pb.SettlementOperation(
+                        transfer_quantity_from_item_stack_escrow_to_item_stack_with_new_owner=pb.TransferQuantityFromItemStackEscrowToItemStackWithNewOwner(
+                            item_stack_escrow_id=trade.item_stack_escrow_id,
+                            destination_item_stack_id=world.buyer_stack_id,
+                            quantity=4,
+                        )
+                    ),
+                    pb.SettlementOperation(
+                        modify_trade_instance_state=pb.ModifyTradeInstanceState(
+                            trade_instance_id=trade.trade_instance_id,
+                            to_trade_state="COMPLETED",
+                            trade_state_change_kind="ACCEPTED_BY_BUYER",
+                            changed_by_service="settlement-e2e",
+                        )
+                    ),
+                ],
+            )
+        ),
+        code="FAILED_PRECONDITION",
+        contains="active wallet escrow",
+    )
+
+    assert trade_row(db, trade)["trade_state"] == "OPEN"
+    assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 1_000
+    assert item_escrow_row(db, trade)["quantity"] == 4
+
+
 def test_database_rejects_remaining_quantity_drift(db, gateway):
     world = seed_world(db, buyer_isk=1_000, buyer_stack_quantity=0)
     trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
@@ -1323,6 +1390,33 @@ def test_database_rejects_remaining_quantity_drift(db, gateway):
 
     assert trade_row(db, trade)["remaining_quantity"] == 4
     assert item_escrow_row(db, trade)["quantity"] == 4
+
+
+def test_database_rejects_item_stack_ledger_updates(db, gateway):
+    world = seed_world(db)
+    create_trade(gateway, world, quantity=4)
+    ledger_id = db.scalar("SELECT item_stack_ledger_id FROM item_stack_ledger LIMIT 1")
+
+    with pytest.raises(psycopg.errors.CheckViolation, match="append-only"):
+        db.execute(
+            "UPDATE item_stack_ledger SET quantity_after = quantity_after WHERE item_stack_ledger_id = %s",
+            (ledger_id,),
+        )
+
+    assert table_count(db, "item_stack_ledger") == 1
+
+
+def test_database_rejects_wallet_ledger_deletes(db, gateway):
+    world = seed_world(db, buyer_isk=1_000, buyer_stack_quantity=0)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+    accept_trade(gateway, world, trade)
+    ledger_id = db.scalar("SELECT wallet_ledger_id FROM wallet_ledger LIMIT 1")
+    ledger_count = table_count(db, "wallet_ledger")
+
+    with pytest.raises(psycopg.errors.CheckViolation, match="append-only"):
+        db.execute("DELETE FROM wallet_ledger WHERE wallet_ledger_id = %s", (ledger_id,))
+
+    assert table_count(db, "wallet_ledger") == ledger_count
 
 
 def _settlement_accept_request(pb, world, trade, *, quantity: int, isk_amount: int, complete: bool = False):

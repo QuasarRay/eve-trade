@@ -2,6 +2,7 @@ locals {
   service_names = toset([
     "api-gateway",
     "market",
+    "settlement-worker",
     "trade-settlement",
   ])
 }
@@ -10,7 +11,7 @@ resource "aws_ecr_repository" "service" {
   for_each = local.service_names
 
   name                 = "${var.environment_name}/${each.key}"
-  image_tag_mutability = "MUTABLE"
+  image_tag_mutability = "IMMUTABLE"
 
   encryption_configuration {
     encryption_type = "AES256"

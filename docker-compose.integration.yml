@@ -42,7 +42,7 @@ services:
       "
 
   rabbitmq:
-    image: rabbitmq:3.13-management
+    image: rabbitmq:3.13.7-management
     environment:
       RABBITMQ_DEFAULT_USER: eve_trade
       RABBITMQ_DEFAULT_PASS: eve_trade
@@ -90,7 +90,7 @@ services:
       RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
       OTEL_SDK_DISABLED: "true"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8082/healthz >/dev/null"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8082/readyz >/dev/null"]
       interval: 2s
       timeout: 2s
       retries: 30

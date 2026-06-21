@@ -19,9 +19,30 @@ type SettlementExecutor interface {
 	ExecuteSettlementBatch(context.Context, *tradesettlementv1.ExecuteSettlementBatchRequest) (*tradesettlementv1.ExecuteSettlementBatchResponse, error)
 }
 
-func RunSettlementWorker(ctx context.Context, config Config, executor SettlementExecutor) error {
+func RunSettlementWorker(ctx context.Context, config Config, executor SettlementExecutor, reportReady func(bool)) error {
 	config = config.WithDefaults()
 
+	backoff := time.Second
+	for {
+		err := runSettlementWorkerSession(ctx, config, executor, reportReady)
+		if ctx.Err() != nil {
+			return nil
+		}
+		slog.Warn("settlement worker rabbitmq session ended; reconnecting", "error", err, "backoff", backoff)
+		timer := time.NewTimer(backoff)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil
+		case <-timer.C:
+		}
+		if backoff < 30*time.Second {
+			backoff *= 2
+		}
+	}
+}
+
+func runSettlementWorkerSession(ctx context.Context, config Config, executor SettlementExecutor, reportReady func(bool)) error {
 	connection, err := amqp.DialConfig(config.URL, amqp.Config{
 		Heartbeat: 30 * time.Second,
 		Locale:    "en_US",
@@ -66,6 +87,10 @@ func RunSettlementWorker(ctx context.Context, config Config, executor Settlement
 	var publishMu sync.Mutex
 
 	slog.Info("settlement worker consuming rabbitmq commands", "queue", config.CommandQueue, "prefetch", config.PrefetchCount)
+	if reportReady != nil {
+		reportReady(true)
+		defer reportReady(false)
+	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -91,7 +116,7 @@ func handleDelivery(
 	config Config,
 	executor SettlementExecutor,
 	channel *amqp.Channel,
-	confirms <-chan amqp.Confirmation,
+	confirms publisherConfirmations,
 	publishMu *sync.Mutex,
 	delivery amqp.Delivery,
 ) error {
@@ -115,7 +140,7 @@ func handleDelivery(
 	response, err := executor.ExecuteSettlementBatch(callCtx, &request)
 	if err != nil {
 		slog.Warn("settlement command failed", "idempotency_key", request.GetIdempotencyKey(), "error", err)
-		if publishErr := publishErrorReply(ctx, config, channel, confirms, publishMu, delivery, "SETTLEMENT_FAILED", err); publishErr != nil {
+		if publishErr := publishErrorReply(ctx, config, channel, confirms, publishMu, delivery, connectCodeName(err), err); publishErr != nil {
 			return errors.Join(publishErr, delivery.Nack(false, true))
 		}
 		return delivery.Ack(false)
@@ -140,7 +165,7 @@ func publishErrorReply(
 	ctx context.Context,
 	config Config,
 	channel *amqp.Channel,
-	confirms <-chan amqp.Confirmation,
+	confirms publisherConfirmations,
 	publishMu *sync.Mutex,
 	delivery amqp.Delivery,
 	code string,
@@ -161,7 +186,7 @@ func publishReply(
 	ctx context.Context,
 	config Config,
 	channel *amqp.Channel,
-	confirms <-chan amqp.Confirmation,
+	confirms publisherConfirmations,
 	publishMu *sync.Mutex,
 	delivery amqp.Delivery,
 	body []byte,

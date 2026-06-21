@@ -75,9 +75,9 @@ Optional variables:
 - `check` validates protobuf contracts, generated proto drift, Kubernetes
   rendering, and secret/filesystem scanning.
 - `test` runs Go, Rust, and Python contract tests.
-- `integration` starts PostgreSQL, trade-settlement, Market, and API Gateway
-  inside Dagger and runs the Python e2e suite through the direct settlement
-  path.
+- `integration` starts PostgreSQL, RabbitMQ, trade-settlement,
+  settlement-worker, Market, and API Gateway inside Dagger and runs the Python
+  e2e suite through the message-driven settlement path.
 - `publish` publishes service images to the GitLab registry.
 - `deploy` applies the rendered kustomize tree after image tags are injected and
   waits for the public service deployments to roll out.

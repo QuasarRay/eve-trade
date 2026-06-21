@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"connectrpc.com/connect"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/protobuf/proto"
@@ -26,7 +27,7 @@ type RPCClient struct {
 	config          Config
 	connection      *amqp.Connection
 	publishChannel  *amqp.Channel
-	publishConfirms <-chan amqp.Confirmation
+	publishConfirms publisherConfirmations
 	replyQueue      string
 	replies         <-chan amqp.Delivery
 
@@ -254,7 +255,7 @@ func decodeReply(body []byte) (*tradesettlementv1.ExecuteSettlementBatchResponse
 	}
 	if !reply.Success {
 		if reply.Code != "" {
-			return nil, fmt.Errorf("settlement worker returned %s: %s", reply.Code, reply.Error)
+			return nil, connect.NewError(connectCodeFromName(reply.Code), errors.New(reply.Error))
 		}
 		return nil, errors.New(reply.Error)
 	}

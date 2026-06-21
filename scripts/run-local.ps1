@@ -71,10 +71,13 @@ if ($Detached) {
 }
 
 Write-Host "Starting eve-trade..."
-Write-Host "API Gateway:      http://localhost:8080"
-Write-Host "Market service:   http://localhost:8081"
-Write-Host "Trade settlement: localhost:9092"
-Write-Host "PostgreSQL:        localhost:5432"
+Write-Host "API Gateway:              http://localhost:8080"
+Write-Host "Market service:           http://localhost:8081"
+Write-Host "Settlement worker health: http://localhost:8082"
+Write-Host "Trade settlement gRPC:    localhost:9092"
+Write-Host "RabbitMQ AMQP:            localhost:5672"
+Write-Host "RabbitMQ management:      http://localhost:15672 (eve_trade / eve_trade)"
+Write-Host "PostgreSQL:               localhost:5432"
 Write-Host ""
 
 & docker @composeArgs

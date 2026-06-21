@@ -34,7 +34,8 @@ func main() {
 		config.SettlementRequestTimeout,
 		connect.WithInterceptors(observability.NewClientInterceptor()),
 	)
-	healthServer := NewHealthServer(config.HealthHTTPAddr)
+	healthStatus := &HealthStatus{}
+	healthServer := NewHealthServer(config.HealthHTTPAddr, healthStatus)
 
 	errs := make(chan error, 2)
 	go func() {
@@ -44,7 +45,7 @@ func main() {
 		}
 	}()
 	go func() {
-		errs <- rabbitmqsettlement.RunSettlementWorker(ctx, config.RabbitMQ, executor)
+		errs <- rabbitmqsettlement.RunSettlementWorker(ctx, config.RabbitMQ, executor, healthStatus.SetReady)
 	}()
 
 	slog.Info("settlement-worker started", "trade_settlement_url", config.TradeSettlementURL, "rabbitmq_exchange", config.RabbitMQ.Exchange, "rabbitmq_queue", config.RabbitMQ.CommandQueue)
