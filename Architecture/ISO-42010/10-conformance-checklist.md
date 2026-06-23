@@ -47,7 +47,7 @@ This checklist does not use `Satisfied` as a broad synonym for "present."
 | Architecture rationale is recorded | Structurally represented | ADR register and rationale exist. | `09-correspondences-rationale.md` | ADRs need future expansion as full decision records during normal governance. |
 | Known limitations and risks are recorded | Evidence-backed | Limitations, production gates, and expanded risk register exist. | `00-architecture-description.md`, `15-risk-register.md`, `19-architecture-facts.md` | Critical identity and operations risks remain open. |
 | Evidence baseline is identified | Evidence-backed | Commit, date, validation scope, architecture file hashes, and source anchors are listed. | `18-evidence-manifest.md` | Static/unit/render validation is recorded; live e2e flow execution remains a gap. |
-| Historical material is distinguished from current architecture | Evidence-backed | Historical conflict register exists and historical docs carry deprecation banners. | `00-architecture-description.md`, `Architecture/README.md`, historical `v1.md` files | Historical docs remain retained for design history. |
+| Historical material is distinguished from current architecture | Evidence-backed | Historical conflict register exists and historical docs carry deprecation banners. | `00-architecture-description.md`, historical `v1.md` files under `Architecture/*/v1.md` | Historical docs remain retained for design history. |
 | Clause-level normative conformance | Not assessed | Requires access to the purchased standard text and formal review. | Public references only. | Not certified. |
 
 ## Completeness Review
@@ -61,7 +61,7 @@ This checklist does not use `Satisfied` as a broad synonym for "present."
 | Are cross-view relationships explicit? | Yes. Document `09` records correspondence rules, matrices, and consistency checks. |
 | Is rationale explicit for major design decisions? | Partially. ADRs have a register and rationale, but future updates must use the full ADR metadata rule. |
 | Are known architecture gaps explicit? | Yes. Documents `00`, `07`, `12`, `14`, and `15` record critical gaps and risks. |
-| Are validation results tied to dates? | Partially. Static/unit/render checks are recorded in `18-evidence-manifest.md`; live e2e flow execution and full CI/Terraform validation remain open. |
+| Are validation results tied to dates? | Partially. Static/unit/render and local Terraform-language checks are recorded in `18-evidence-manifest.md`; live e2e flow execution and full CI execution remain open. |
 
 ## Open Conformance Risks
 

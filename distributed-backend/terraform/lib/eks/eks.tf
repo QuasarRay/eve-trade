@@ -121,7 +121,6 @@ module "eks_blueprints_addons" {
 
   providers = {
     helm       = helm.addons
-    kubectl    = kubectl.addons
     kubernetes = kubernetes.addons
   }
 

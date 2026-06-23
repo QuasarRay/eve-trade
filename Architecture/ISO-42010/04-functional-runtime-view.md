@@ -34,9 +34,9 @@ CON-10, CON-12, CON-13, CON-14, CON-15, CON-28, CON-29, CON-32, and CON-33.
 
 | Command | Public entry point | Market validation focus | Settlement outcome |
 | --- | --- | --- | --- |
-| Issue trade instance | `GameTradeGatewayService.IssueTradeInstance` | Seller and item stack ownership, item stack availability, requested quantity, price, idempotency replay. | Market requests operations that create trade and item escrow records, decrement the source item stack, and append item ledger effects. |
-| Accept trade instance | `GameTradeGatewayService.AcceptTradeInstance` | Trade open and not expired, buyer wallet ownership and balance, seller wallet active, destination stack compatibility, idempotency replay. | Market requests operations that move accepted quantity to buyer, transfer ISK from buyer wallet through escrow to seller wallet, update remaining quantity through escrow transfer, optionally complete the trade, and append ledgers. |
-| Cancel trade instance | `GameTradeGatewayService.CancelTradeInstance` | Issuer is permitted to cancel, trade open, idempotency replay. | Market requests operations that return remaining item escrow to seller, cancel the trade, and append item ledger effects. |
+| Issue trade instance | `GameTradeGatewayService.IssueTradeInstance` | Seller and item stack ownership, item stack availability, requested quantity, price, idempotency replay. | Market requests operations that create trade and item escrow records, decrement the source item stack, and append hash-chained item ledger effects. |
+| Accept trade instance | `GameTradeGatewayService.AcceptTradeInstance` | Trade open and not expired, buyer wallet ownership and balance, seller wallet active, destination stack compatibility, idempotency replay. | Market requests operations that move accepted quantity to buyer, transfer ISK from buyer wallet through escrow to seller wallet, update remaining quantity through escrow transfer, optionally complete the trade, and append ledgers. Destination stack creation also appends an initial `CREATE_STACK` item ledger row. |
+| Cancel trade instance | `GameTradeGatewayService.CancelTradeInstance` | Issuer is permitted to cancel, trade open, idempotency replay. | Market requests operations that return remaining item escrow to seller, cancel the trade, and append hash-chained item ledger effects. |
 
 ## Runtime Sequence Model
 
@@ -101,7 +101,7 @@ sequenceDiagram
 | --- | --- | --- |
 | Load item stack | Market | Confirms seller ownership, item type, location, quantity, and active state. |
 | Build settlement operations | Market | Creates a batch containing trade creation and item escrow operations. |
-| Execute batch | trade-settlement | Executes the requested operations atomically: inserts trade and escrow records, decreases source item stack, records ledger rows, completes idempotency metadata. |
+| Execute batch | trade-settlement | Executes the requested operations atomically: inserts trade and escrow records, decreases source item stack, appends ledger rows, completes idempotency metadata. |
 | Return response | Market/API Gateway | Returns identifiers such as trade instance and settlement batch. |
 
 ## Accept Runtime Effects
@@ -111,7 +111,7 @@ sequenceDiagram
 | Load trade and wallets | Market | Confirms open state, remaining quantity, expiration, buyer wallet, seller wallet, and balance. |
 | Validate destination stack | Market | Confirms owner, item type, station, and compatibility when a destination stack is supplied. |
 | Build settlement operations | Market | Creates a batch that moves item escrow and wallet value according to accepted quantity and price. |
-| Execute batch | trade-settlement | Executes the requested operations atomically: updates remaining quantity through escrow transfer, optionally changes trade state, updates item stack quantities, wallet balances, escrow records, and ledgers. |
+| Execute batch | trade-settlement | Executes the requested operations atomically: updates remaining quantity through escrow transfer, optionally changes trade state, updates item stack quantities, wallet balances, escrow records, and appends ledgers. |
 | Return response | Market/API Gateway | Returns settlement batch and updated trade identifiers. |
 
 ## Cancel Runtime Effects
@@ -120,7 +120,7 @@ sequenceDiagram
 | --- | --- | --- |
 | Load trade | Market | Confirms the trade exists, is open, and is cancelable by the actor. |
 | Build settlement operations | Market | Creates a batch that returns remaining item escrow and cancels/closes the trade. |
-| Execute batch | trade-settlement | Executes the requested operations atomically: updates trade state, returns item quantity, closes escrow, records ledgers, and completes metadata. |
+| Execute batch | trade-settlement | Executes the requested operations atomically: updates trade state, returns item quantity, closes escrow, appends ledgers, and completes metadata. |
 | Return response | Market/API Gateway | Returns settlement batch and cancellation identifiers. |
 
 ## Idempotency Behavior

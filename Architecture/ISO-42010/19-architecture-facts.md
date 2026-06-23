@@ -39,12 +39,14 @@ can reference these fact IDs rather than duplicating inconsistent prose.
 | FACT-043 | Kubernetes database egress is broad TCP `5432` in current manifests without destination selection in NetworkPolicy. | Gap recorded | `06-deployment-operations-view.md`, `09-correspondences-rationale.md` |
 | FACT-050 | Settlement metadata tables are the durable diagnostic source for idempotency, attempts, batches, steps, stored step outputs, and completed replay reconstruction. | Evidence-backed | `distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql` |
 | FACT-053 | The current repository has one canonical settlement migration file; Compose and Kubernetes apply `0001_settlement_schema.sql` directly. | Evidence-backed | `distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql`, `compose.yaml`, `distributed-backend/orchestration/kubernetes/base/migrate.yaml` |
+| FACT-054 | Item-stack ledger history is append-only and hash-chained per stack. Current `item_stack` rows are projections that must match the latest `item_stack_ledger` row, including creation, transfer, and merge effects. | Evidence-backed | `distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql`, `distributed-backend/src/trade-settlement/src/operations.rs` |
 | FACT-051 | Market can load completed idempotency replay state by idempotency key. | Evidence-backed | `distributed-backend/src/market/distributed-backend/repository.go`, `LoadCompletedIdempotencyReplay` |
 | FACT-052 | The documented recovery path for ambiguous outcomes is same-key retry/replay plus operator queries by idempotency key; there is no separate public outcome-query API. | Structurally represented | `04-functional-runtime-view.md`, `12-resilience-recovery-view.md` |
 | FACT-060 | Observability view identifies request IDs, idempotency keys, RabbitMQ correlation IDs, settlement batch IDs, and failure reasons as needed correlation fields. | Structurally represented | `13-observability-view.md` |
 | FACT-061 | Dashboards, alert thresholds, and incident queries are not yet verified as implemented artifacts. | Gap recorded | `13-observability-view.md`, `15-risk-register.md` |
 | FACT-070 | Data retention, ledger growth, idempotency TTL, escrow cleanup, and archival policy are unresolved production architecture decisions. | Gap recorded | `05-information-data-integrity-view.md`, `15-risk-register.md` |
-| FACT-080 | Static/unit/render validation was run for this update; live e2e trade-flow execution was skipped because live service/database URLs were not configured. | Partially verified | `18-evidence-manifest.md`, root `changes.md` |
+| FACT-080 | Static Rust validation, Docker Compose config validation, and Kubernetes render validation were run for this working-tree update. Live e2e trade-flow and live PostgreSQL migration execution were not run because service/database URLs, Docker engine, and local PostgreSQL tools were unavailable. | Partially verified | `18-evidence-manifest.md`, root `changes.md` |
+| FACT-090 | The current infrastructure-as-code model has separate AWS/EKS and GCP/GKE Terraform roots that feed the same Kubernetes application manifests. | Evidence-backed | `distributed-backend/terraform/eks`, `distributed-backend/terraform/gke`, `ci-cd/pipeline.py` |
 
 ## Production Readiness Gates
 
@@ -89,7 +91,7 @@ reconciliation remain the documented recovery path.
 | Data class | Examples | Classification | Handling rule |
 | --- | --- | --- | --- |
 | Actor-linked game identity | Capsuleer IDs, actor fields, ownership fields | Sensitive operational player-linked data | Avoid logging more than required; correlate by IDs only where needed for diagnosis. |
-| Financial/inventory state | Wallet balances, item stacks, escrow, ledgers | High-integrity business state | Current repository routes durable mutation through trade-settlement and preserves append-only wallet/item ledger history. |
+| Financial/inventory state | Wallet balances, item stacks, escrow, ledgers | High-integrity business state | Current repository routes durable mutation through trade-settlement, preserves append-only wallet ledger history, and preserves hash-chained append-only item-stack ledger history. |
 | Idempotency and request metadata | Idempotency keys, external request IDs, request fingerprints | Sensitive operational metadata | Scope by actor, retain long enough for retry/diagnosis, and define retention before production. |
 | Telemetry | Trace IDs, logs, errors, RabbitMQ correlation IDs | Operational data | Redact secrets and avoid payload logging unless explicitly approved. |
 | Secrets | Database, broker, telemetry, identity configuration | Secret | Store in approved secret manager or Kubernetes Secret with controlled access and rotation. |

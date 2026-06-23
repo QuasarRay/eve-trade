@@ -67,9 +67,18 @@ The platform side currently includes:
 * Litmus for chaos engineering experiments
 * Dagger-based CI/CD pipeline logic written in Python
 * GitLab CI/CD integration for pipeline execution
-* Terraform manifests for provisioning AWS infrastructure
-* EKS deployment foundation for running the system on AWS
+* Terraform manifests for provisioning AWS or GCP infrastructure
+* EKS and GKE deployment foundations for running the system on either cloud
 
-## AWS / EKS Infrastructure
+## Cloud Infrastructure
 
-The project includes Terraform manifests for provisioning AWS infrastructure required to deploy `eve-trade` on AWS, including an EKS-based Kubernetes environment. This gives the project a cloud deployment path instead of limiting it to local Docker or static Kubernetes manifests.
+The project includes Terraform manifests for two production-like cloud paths:
+
+* `distributed-backend/terraform/eks` provisions AWS infrastructure including
+  VPC, EKS, ECR repositories, and optional RDS PostgreSQL.
+* `distributed-backend/terraform/gke` provisions GCP infrastructure including
+  VPC networking, GKE, Artifact Registry, and optional Cloud SQL PostgreSQL.
+
+Both paths deploy the same Kubernetes application manifests. The person running
+`eve-trade` chooses the cloud by selecting the Terraform root and by setting the
+CI/CD `EVE_TRADE_CLOUD_PROVIDER` value to `aws` or `gcp`.

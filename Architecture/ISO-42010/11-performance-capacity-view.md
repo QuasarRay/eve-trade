@@ -64,7 +64,7 @@ Model ID: `MODEL-PERF-01`; view component ID: `VC-PERF-01`.
 | RabbitMQ command queue | Queue depth and publish latency | Quorum command queue and prefetch config. | No alert threshold or saturation policy. |
 | settlement-worker consumers | Consumer lag and worker readiness | Prefetch `8`; horizontal scaling possible through Deployment/HPA. | No max safe worker count or ordering analysis. |
 | trade-settlement execution | RPC latency and DB transaction time | Single mutation owner and PostgreSQL transaction. | No lock-contention budget. |
-| PostgreSQL ledgers | Storage growth, index growth, write latency | Append-only ledger schema and indexes. | No partitioning, retention, or vacuum policy. |
+| PostgreSQL ledgers | Storage growth, index growth, write latency | Append-only ledger schema, item-ledger hash-chain/projection indexes, and current ledger indexes. | No partitioning, retention, or vacuum policy. |
 
 ## Capacity Assumptions
 

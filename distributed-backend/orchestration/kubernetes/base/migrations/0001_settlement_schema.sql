@@ -1,5 +1,71 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+CREATE OR REPLACE FUNCTION compute_item_stack_ledger_payload_hash(
+    p_settlement_step_id UUID,
+    p_item_stack_id UUID,
+    p_ledger_sequence BIGINT,
+    p_item_type_id BIGINT,
+    p_owner_id BIGINT,
+    p_station_id BIGINT,
+    p_entry_kind TEXT,
+    p_quantity_delta BIGINT,
+    p_quantity_before BIGINT,
+    p_quantity_after BIGINT,
+    p_stack_state_before TEXT,
+    p_stack_state_after TEXT,
+    p_stack_version_before BIGINT,
+    p_stack_version_after BIGINT,
+    p_stack_checksum_before TEXT,
+    p_stack_checksum_after TEXT
+)
+RETURNS TEXT AS $$
+    SELECT encode(
+        digest(
+            concat_ws(
+                '|',
+                'item_stack_ledger_payload_v1',
+                p_settlement_step_id::text,
+                p_item_stack_id::text,
+                p_ledger_sequence::text,
+                p_item_type_id::text,
+                p_owner_id::text,
+                p_station_id::text,
+                p_entry_kind,
+                p_quantity_delta::text,
+                p_quantity_before::text,
+                p_quantity_after::text,
+                p_stack_state_before,
+                p_stack_state_after,
+                p_stack_version_before::text,
+                p_stack_version_after::text,
+                p_stack_checksum_before,
+                p_stack_checksum_after
+            ),
+            'sha256'
+        ),
+        'hex'
+    );
+$$ LANGUAGE sql IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION compute_item_stack_ledger_hash(
+    p_previous_item_stack_ledger_hash TEXT,
+    p_ledger_payload_hash TEXT
+)
+RETURNS TEXT AS $$
+    SELECT encode(
+        digest(
+            concat_ws(
+                '|',
+                'item_stack_ledger_hash_v1',
+                p_previous_item_stack_ledger_hash,
+                p_ledger_payload_hash
+            ),
+            'sha256'
+        ),
+        'hex'
+    );
+$$ LANGUAGE sql IMMUTABLE;
+
 CREATE TABLE IF NOT EXISTS capsuleer (
     capsuleer_id BIGINT PRIMARY KEY,
     capsuleer_name TEXT NOT NULL,
@@ -205,10 +271,15 @@ CREATE TABLE IF NOT EXISTS item_stack_ledger (
     item_stack_ledger_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     settlement_step_id UUID NOT NULL REFERENCES settlement_step(settlement_step_id),
     item_stack_id UUID NOT NULL REFERENCES item_stack(item_stack_id),
+    ledger_sequence BIGINT NOT NULL CHECK (ledger_sequence > 0),
+    previous_item_stack_ledger_hash TEXT NOT NULL,
+    ledger_payload_hash TEXT NOT NULL,
+    item_stack_ledger_hash TEXT NOT NULL,
     item_type_id BIGINT NOT NULL REFERENCES item_type(item_type_id),
     owner_id BIGINT NOT NULL REFERENCES capsuleer(capsuleer_id),
     station_id BIGINT NOT NULL REFERENCES station(station_id),
     entry_kind TEXT NOT NULL CHECK (entry_kind IN (
+        'CREATE_STACK',
         'TRANSFER_TO_ESCROW',
         'TRANSFER_FROM_ESCROW_TO_NEW_OWNER',
         'TRANSFER_FROM_ESCROW_TO_PREVIOUS_OWNER',
@@ -218,12 +289,15 @@ CREATE TABLE IF NOT EXISTS item_stack_ledger (
     quantity_delta BIGINT NOT NULL,
     quantity_before BIGINT NOT NULL,
     quantity_after BIGINT NOT NULL,
+    stack_state_before TEXT NOT NULL CHECK (stack_state_before IN ('ABSENT', 'ACTIVE', 'LOCKED', 'DEPLETED', 'MERGED')),
+    stack_state_after TEXT NOT NULL CHECK (stack_state_after IN ('ACTIVE', 'LOCKED', 'DEPLETED', 'MERGED')),
     stack_version_before BIGINT NOT NULL,
     stack_version_after BIGINT NOT NULL,
     stack_checksum_before TEXT NOT NULL,
     stack_checksum_after TEXT NOT NULL,
     CONSTRAINT item_stack_ledger_quantity_delta_chk CHECK (quantity_after = quantity_before + quantity_delta),
     CONSTRAINT item_stack_ledger_version_increment_chk CHECK (stack_version_after = stack_version_before + 1),
+    CONSTRAINT item_stack_ledger_sequence_version_chk CHECK (ledger_sequence = stack_version_after),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -259,12 +333,167 @@ ALTER TABLE item_stack_ledger
 ALTER TABLE item_stack_ledger
     ADD CONSTRAINT item_stack_ledger_entry_kind_check
     CHECK (entry_kind IN (
+        'CREATE_STACK',
         'TRANSFER_TO_ESCROW',
         'TRANSFER_FROM_ESCROW_TO_NEW_OWNER',
         'TRANSFER_FROM_ESCROW_TO_PREVIOUS_OWNER',
         'MERGE_IN',
         'MERGE_OUT'
     ));
+
+CREATE OR REPLACE FUNCTION enforce_item_stack_ledger_insert_integrity()
+RETURNS TRIGGER AS $$
+DECLARE
+    previous_record RECORD;
+    expected_payload_hash TEXT;
+    expected_ledger_hash TEXT;
+BEGIN
+    PERFORM 1
+    FROM item_stack
+    WHERE item_stack_id = NEW.item_stack_id
+    FOR UPDATE;
+
+    SELECT
+        ledger_sequence,
+        quantity_after,
+        stack_state_after,
+        stack_version_after,
+        stack_checksum_after,
+        item_stack_ledger_hash
+    INTO previous_record
+    FROM item_stack_ledger
+    WHERE item_stack_id = NEW.item_stack_id
+    ORDER BY ledger_sequence DESC
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+        IF NEW.ledger_sequence <> 1
+            OR NEW.quantity_before <> 0
+            OR NEW.stack_state_before <> 'ABSENT'
+            OR NEW.stack_version_before <> 0
+            OR NEW.stack_checksum_before <> 'GENESIS'
+            OR NEW.previous_item_stack_ledger_hash <> 'GENESIS'
+        THEN
+            RAISE EXCEPTION 'first item_stack_ledger row for % must start from GENESIS', NEW.item_stack_id
+                USING ERRCODE = '23514';
+        END IF;
+    ELSE
+        IF NEW.ledger_sequence <> previous_record.ledger_sequence + 1
+            OR NEW.quantity_before <> previous_record.quantity_after
+            OR NEW.stack_state_before <> previous_record.stack_state_after
+            OR NEW.stack_version_before <> previous_record.stack_version_after
+            OR NEW.stack_checksum_before <> previous_record.stack_checksum_after
+            OR NEW.previous_item_stack_ledger_hash <> previous_record.item_stack_ledger_hash
+        THEN
+            RAISE EXCEPTION 'item_stack_ledger row for % does not extend the latest ledger row', NEW.item_stack_id
+                USING ERRCODE = '23514';
+        END IF;
+    END IF;
+
+    expected_payload_hash := compute_item_stack_ledger_payload_hash(
+        NEW.settlement_step_id,
+        NEW.item_stack_id,
+        NEW.ledger_sequence,
+        NEW.item_type_id,
+        NEW.owner_id,
+        NEW.station_id,
+        NEW.entry_kind,
+        NEW.quantity_delta,
+        NEW.quantity_before,
+        NEW.quantity_after,
+        NEW.stack_state_before,
+        NEW.stack_state_after,
+        NEW.stack_version_before,
+        NEW.stack_version_after,
+        NEW.stack_checksum_before,
+        NEW.stack_checksum_after
+    );
+    expected_ledger_hash := compute_item_stack_ledger_hash(
+        NEW.previous_item_stack_ledger_hash,
+        expected_payload_hash
+    );
+
+    IF NEW.ledger_payload_hash <> expected_payload_hash
+        OR NEW.item_stack_ledger_hash <> expected_ledger_hash
+    THEN
+        RAISE EXCEPTION 'item_stack_ledger hash mismatch for % sequence %', NEW.item_stack_id, NEW.ledger_sequence
+            USING ERRCODE = '23514';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION check_item_stack_ledger_projection_invariant(target_item_stack_id UUID)
+RETURNS VOID AS $$
+DECLARE
+    stack_record RECORD;
+    ledger_record RECORD;
+BEGIN
+    SELECT
+        item_stack_id,
+        owner_id,
+        item_type_id,
+        station_id,
+        quantity,
+        stack_state,
+        stack_version,
+        stack_checksum
+    INTO stack_record
+    FROM item_stack
+    WHERE item_stack_id = target_item_stack_id;
+
+    IF NOT FOUND THEN
+        RETURN;
+    END IF;
+
+    SELECT
+        item_type_id,
+        owner_id,
+        station_id,
+        quantity_after,
+        stack_state_after,
+        stack_version_after,
+        stack_checksum_after
+    INTO ledger_record
+    FROM item_stack_ledger
+    WHERE item_stack_id = target_item_stack_id
+    ORDER BY ledger_sequence DESC
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'item_stack % has no reconstructable item_stack_ledger rows', target_item_stack_id
+            USING ERRCODE = '23514';
+    END IF;
+
+    IF stack_record.owner_id <> ledger_record.owner_id
+        OR stack_record.item_type_id <> ledger_record.item_type_id
+        OR stack_record.station_id <> ledger_record.station_id
+        OR stack_record.quantity <> ledger_record.quantity_after
+        OR stack_record.stack_state <> ledger_record.stack_state_after
+        OR stack_record.stack_version <> ledger_record.stack_version_after
+        OR stack_record.stack_checksum <> ledger_record.stack_checksum_after
+    THEN
+        RAISE EXCEPTION 'item_stack % projection does not match latest item_stack_ledger row', target_item_stack_id
+            USING ERRCODE = '23514';
+    END IF;
+
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION enforce_item_stack_ledger_projection_invariant()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        PERFORM check_item_stack_ledger_projection_invariant(OLD.item_stack_id);
+    ELSE
+        PERFORM check_item_stack_ledger_projection_invariant(NEW.item_stack_id);
+    END IF;
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS wallet_ledger_append_only_trigger ON wallet_ledger;
 CREATE TRIGGER wallet_ledger_append_only_trigger
@@ -277,6 +506,12 @@ CREATE TRIGGER item_stack_ledger_append_only_trigger
 BEFORE UPDATE OR DELETE ON item_stack_ledger
 FOR EACH ROW
 EXECUTE FUNCTION reject_ledger_mutation();
+
+DROP TRIGGER IF EXISTS item_stack_ledger_insert_integrity_trigger ON item_stack_ledger;
+CREATE TRIGGER item_stack_ledger_insert_integrity_trigger
+BEFORE INSERT ON item_stack_ledger
+FOR EACH ROW
+EXECUTE FUNCTION enforce_item_stack_ledger_insert_integrity();
 
 CREATE TABLE IF NOT EXISTS trade_state_change (
     trade_state_change_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -300,6 +535,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS wallet_primary_capsuleer_unique_idx ON wallet(
 CREATE INDEX IF NOT EXISTS wallet_ledger_wallet_idx ON wallet_ledger(wallet_id, created_at);
 CREATE INDEX IF NOT EXISTS item_stack_owner_item_station_idx ON item_stack(owner_id, item_type_id, station_id, stack_state);
 CREATE INDEX IF NOT EXISTS item_stack_ledger_stack_idx ON item_stack_ledger(item_stack_id, created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS item_stack_ledger_stack_sequence_unique_idx ON item_stack_ledger(item_stack_id, ledger_sequence);
+CREATE UNIQUE INDEX IF NOT EXISTS item_stack_ledger_stack_hash_unique_idx ON item_stack_ledger(item_stack_id, item_stack_ledger_hash);
 CREATE INDEX IF NOT EXISTS trade_instance_lookup_idx ON trade_instance(item_type_id, station_id, trade_state);
 CREATE INDEX IF NOT EXISTS trade_instance_open_expires_at_idx ON trade_instance(expires_at) WHERE trade_state = 'OPEN' AND expires_at IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS item_stack_escrow_active_trade_unique_idx ON item_stack_escrow(trade_instance_id) WHERE is_released = false;
@@ -380,6 +617,20 @@ AFTER INSERT OR UPDATE OR DELETE ON item_stack_escrow
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
 EXECUTE FUNCTION enforce_trade_remaining_quantity_invariant();
+
+DROP TRIGGER IF EXISTS item_stack_projection_ledger_invariant_trigger ON item_stack;
+CREATE CONSTRAINT TRIGGER item_stack_projection_ledger_invariant_trigger
+AFTER INSERT OR UPDATE ON item_stack
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE FUNCTION enforce_item_stack_ledger_projection_invariant();
+
+DROP TRIGGER IF EXISTS item_stack_ledger_projection_invariant_trigger ON item_stack_ledger;
+CREATE CONSTRAINT TRIGGER item_stack_ledger_projection_invariant_trigger
+AFTER INSERT ON item_stack_ledger
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE FUNCTION enforce_item_stack_ledger_projection_invariant();
 
 CREATE OR REPLACE FUNCTION check_trade_wallet_escrow_closed_state_invariant(target_trade_instance_id UUID)
 RETURNS VOID AS $$

@@ -5,8 +5,8 @@
 | Field | Value |
 | --- | --- |
 | Manifest ID | `EVIDENCE-EVE-TRADE-ISO42010-2026-06-23` |
-| Date | 2026-06-23 |
-| Status | Canonical evidence baseline for the ISO 42010-informed architecture documents |
+| Date | 2026-06-24 |
+| Status | Working-tree evidence baseline for the ISO 42010-informed architecture documents |
 | Source commit inspected | `fe5c6af1dcb68715ccb339a00912729a4febdf2d` |
 | Source branch inspected | `main` |
 | Manifest rule | This manifest excludes its own file hash to avoid self-referential churn. |
@@ -18,37 +18,33 @@ The implementation evidence is anchored to Git commit
 `fe5c6af1dcb68715ccb339a00912729a4febdf2d`. The architecture documentation
 changes are content-addressed by the SHA-256 hashes below until they are
 committed. A later commit should replace this file-hash baseline with the final
-commit hash and update the manifest.
+commit hash and update the manifest. The 2026-06-24 item-ledger update was
+validated against the current dirty working tree rather than a committed source
+revision.
 
 ## Architecture File Hashes
 
 | File | SHA-256 |
 | --- | --- |
-| `Architecture/README.md` | `a23d16ada2c74f6e2ab2f20067adead823a6293f01d4b21627623af35e9bcfb8` |
-| `Architecture/changes.md` | `8d819b789a04db11f34e0f02c55eb333c0ce6d80ffeb365572e6a97c11f39c4b` |
-| `Architecture/changesv2.md` | `0c657503bd81dec07dd33dcd514f54b9223e3d2c775ce46e19e247730b93b3cf` |
-| `Architecture/changes-v3.md` | `e9fd9b25f4672ed314dfc2a79cc3e3c6f007859144ab9cea6bd661258c2e2ebf` |
-| `Architecture/flaws-v2.md` | `e116900218c434d052912394b6df1ed8ada12ab7ca00261cb200b614f5763601` |
-| `Architecture/flaws-v3.md` | `a82fb8564dd1f30d3668fba3dbbd2a92661a7d76479a30b56a397bf478b72509` |
-| `Architecture/ISO-42010/00-architecture-description.md` | `e078f94e23311580cb288bc036db18d32563061ece5f275ddd1795fbbe045b94` |
-| `Architecture/ISO-42010/01-stakeholders-concerns-perspectives.md` | `5a0bdd02bcd0d7b306473dde3c6fc49cbddb963f7ee5336d54b412a18ec1a1ac` |
+| `Architecture/ISO-42010/00-architecture-description.md` | `954ca31b52116fe9641fa6b91b1380a431594aaae34b1f75abaa47e7e2814ec7` |
+| `Architecture/ISO-42010/01-stakeholders-concerns-perspectives.md` | `27ce9259933ad454665d150ded83b34cfbb3481c80cc5e8b821452e083f8f36e` |
 | `Architecture/ISO-42010/02-viewpoints.md` | `e4ee7045bf54674ce176e48631c904919727d15fc3e4cce7e704d0c43eb8c011` |
-| `Architecture/ISO-42010/03-context-view.md` | `9421fdebf32e940f324ec665b88858fee47e6234047d6f8ab1083c04e3554f16` |
-| `Architecture/ISO-42010/04-functional-runtime-view.md` | `79ff77c5a6618c63545b2595aefd44237df9099ee5b0bf565ac6eaae90e9cf7e` |
-| `Architecture/ISO-42010/05-information-data-integrity-view.md` | `27cb72d4bb4d3242ee6ad042ea82f25a7a3694adf35bf3d10308e6ef6f336c5c` |
-| `Architecture/ISO-42010/06-deployment-operations-view.md` | `d672cce8a1357950bf3f349edc4518ee411988fed231761a2ce70730a4e92fd9` |
-| `Architecture/ISO-42010/07-security-trust-view.md` | `914648ca2a52b5ab8d5f25930d910466000890916f711385e75c7cdca52f6ba2` |
-| `Architecture/ISO-42010/08-development-validation-view.md` | `5d4a79acfe7bd8228acfa3bcce216486b1749d8e993bc5d67be5e5714d3a6818` |
-| `Architecture/ISO-42010/09-correspondences-rationale.md` | `c5d84befd3a952496c760eb0957587a71bc74914834963054a693a5be0c79cb7` |
-| `Architecture/ISO-42010/10-conformance-checklist.md` | `3ba281ce4287a2190450d62f7dc6ceb35c51a7719122be208b16da16126a5c25` |
-| `Architecture/ISO-42010/11-performance-capacity-view.md` | `d1435c33b20f8d9b6ded87b895115c0586e9937c3d6d28137ace83717286b3b2` |
+| `Architecture/ISO-42010/03-context-view.md` | `7ddbc0a38ce4f7832aac0f79c02252dad3f7bdeaeba284ff6473881b8b50cc96` |
+| `Architecture/ISO-42010/04-functional-runtime-view.md` | `5bd0e578e7ba01e7aed775c39fe9dc14335518e31393498e4c01c4bb95cb5fb0` |
+| `Architecture/ISO-42010/05-information-data-integrity-view.md` | `7a13ed391d89879c6263b72c31bfdab60b2e4688e69ea0c500f84ac6ad761596` |
+| `Architecture/ISO-42010/06-deployment-operations-view.md` | `6d6373bf598088ebff4b7ab90590d20250bf307a894f7a6c2e86b6398e3d2850` |
+| `Architecture/ISO-42010/07-security-trust-view.md` | `7c0c1dfc3cd72aa6d1b7142c230cfabf576e4f78d182c0c66ac22f1f0770a9f6` |
+| `Architecture/ISO-42010/08-development-validation-view.md` | `024953b98b5176764d9548064b514f52a1a9026097a901ee120e3827d332e2e1` |
+| `Architecture/ISO-42010/09-correspondences-rationale.md` | `30b242d248acc88bde9c014fd8585022e0ed35ba500320feb188f53e869d1089` |
+| `Architecture/ISO-42010/10-conformance-checklist.md` | `78690904daee8c0fd6d0a6b90a51fc7a2bae4bbeb00a1f6aa604ca57ba620b23` |
+| `Architecture/ISO-42010/11-performance-capacity-view.md` | `9ef2b1f5d36f42096b7720535605b0f5814255212cbf70d255bc3946a76505f1` |
 | `Architecture/ISO-42010/12-resilience-recovery-view.md` | `9d90cc9f988f58d10f6b6f73de6b58183d595a4c67ce3a941021c68faac8172a` |
-| `Architecture/ISO-42010/13-observability-view.md` | `ac2c50b9dc026f9879e5c9416c384ac6a0074acc7dd25d36d34497b5a3075a5e` |
+| `Architecture/ISO-42010/13-observability-view.md` | `19de903626d5bbcf533ebc052b0b8edbf56a6492602fe1763d305756e9bd5aa7` |
 | `Architecture/ISO-42010/14-threat-model-view.md` | `13db48c561b82391ac720ee8a9b4fdccdd36fced9cdf31ac9e70985dd7d372d5` |
-| `Architecture/ISO-42010/15-risk-register.md` | `09463dfe6b21fba59d3cc0de70e32bee2f0aab5be3e971c8db0369a7fc5baa37` |
+| `Architecture/ISO-42010/15-risk-register.md` | `69f7ab52a24329dbbbf70cf2d03ed0c1d031066e262ecc3ee4693ea500083d47` |
 | `Architecture/ISO-42010/16-glossary.md` | `961de9ba5e941b68867c3d362d94dbc0fd0d043c02551283ac2faf60f2d9b2d5` |
 | `Architecture/ISO-42010/17-adf-adl-specification.md` | `3c3185a44cdc4d6164aa3ee8f98c1ac5eff24005875d1b2ce3d5f94b5e2f788f` |
-| `Architecture/ISO-42010/19-architecture-facts.md` | `783c5838bd992e242b865966e1d56928584e84ac095876307e7968a919c738cd` |
+| `Architecture/ISO-42010/19-architecture-facts.md` | `a450fe51f68ca49f4fa27367a41849047cb6103a42157ed672125626161a2dc8` |
 | `Architecture/ISO-42010/20-stakeholder-review-governance.md` | `e2736cb164f1a08584c5b59a53f951a1546fda69585673513e0d6c875352e8ed` |
 | `Architecture/Trade Request Lifecycle/v1.md` | `8ce7a688ba4309c6085714987afa6823df9472f00bfa345a8b5e70482dea2615` |
 | `Architecture/Trade State Lifecycle/v1.md` | `492f7d32138fbfb3c83a2a40e747ad32a41ba622a0bbdd17e98fa7beefc7e1b3` |
@@ -67,8 +63,12 @@ commit hash and update the manifest.
 | VAL-005 | Architecture ID/schema linter | Not implemented | Gap recorded |
 | VAL-006 | Mermaid render validation | Not implemented | Gap recorded |
 | VAL-010 to VAL-080 | Go, Rust, Python e2e skip-mode, Compose, Kubernetes, and targeted vet/static validation | Passed on 2026-06-23 except live e2e flows were skipped because service/database URLs were not configured | Verified for this update with live-runtime gap recorded |
+| VAL-060 | `kubectl kustomize` for Istio, Gateway, observability, and production overlays | Passed on 2026-06-23 | Verified in this infrastructure update |
+| VAL-070 | OpenTofu v1.10.0 `fmt -check -recursive`, `init -backend=false`, and `validate` for EKS and GKE roots | Passed on 2026-06-23; Terraform CLI was unavailable locally | Verified with compatible local Terraform-language tool |
+| VAL-080 | `python -m py_compile ci-cd/pipeline.py` and `python ci-cd/pipeline.py --help` in a temp venv | Passed on 2026-06-23; full Dagger/GitHub/GitLab execution not run locally | Partially verified |
 | VAL-090 | `rg -n "settlement_attempt\|trade_state_change_ledger\|remaining quantity effect\|operation allow rule\|allowlist" Architecture/ISO-42010 --glob "!18-evidence-manifest.md"` | Passed on 2026-06-23 with no stale ISO matches outside the evidence manifest | Verified in this documentation update |
 | VAL-091 | Focused responsibility/transport searches over ISO records for requested-operation wording, `request_attempt`, `trade_state_change`, and direct/connect transport caveats | Passed on 2026-06-23 | Verified in this documentation update |
+| VAL-092 | `cargo fmt --all -- --check`, `cargo check --locked`, and `cargo test --locked` in `distributed-backend/src/trade-settlement`; `kubectl kustomize` for Kubernetes base and production overlays; `docker compose config --quiet`; source-vs-Kubernetes migration copy comparison; item-ledger writer search | Passed on 2026-06-24; Rust crate has zero tests; live PostgreSQL migration apply was not run because Docker engine and local PostgreSQL tools were unavailable | Verified for this item-ledger update with live-database gap recorded |
 
 ## Source Anchor Register
 
@@ -83,12 +83,13 @@ commit hash and update the manifest.
 | EVID-007 | Settlement executor transaction/idempotency behavior | `distributed-backend/src/trade-settlement/src/executor.rs`, `execute_batch`, savepoint helpers, idempotency completion/failure helpers |
 | EVID-008 | Settlement command conversion validation | `distributed-backend/src/trade-settlement/src/commands.rs`, `TryFrom<pb::ExecuteSettlementBatchRequest>` for `ExecuteBatchCommand` |
 | EVID-009 | RabbitMQ settlement topology and worker branches | `distributed-backend/src/messaging/rabbitmqsettlement/config.go`, `worker.go`, and `publish_test.go` |
-| EVID-010 | Settlement schema, ledgers, idempotency, and metadata | `distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql` |
+| EVID-010 | Settlement schema, hash-chained item ledgers, wallet ledgers, idempotency, and metadata | `distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql` |
 | EVID-011 | Timeout configuration | `distributed-backend/src/api-gateway/distributed-backend/config.go`, `distributed-backend/src/market/distributed-backend/config.go`, `distributed-backend/src/settlement-worker/cmd/settlement-worker/config.go`, Kubernetes `configmaps.yaml` |
 | EVID-012 | Service health/readiness handlers | API Gateway, Market, and settlement-worker server/health files under `distributed-backend/src` |
 | EVID-013 | Kubernetes deployment, probe, network, and policy manifests | `distributed-backend/orchestration/kubernetes/base`, `overlay/prod`, `platform/gateway/prod`, and `platform/istio/prod` |
 | EVID-014 | Local Compose runtime and healthchecks | `compose.yaml` |
 | EVID-015 | Production placeholder values | Production kustomization, HTTPRoute/Gateway hostnames, ClusterIssuer email, and Istio issuer/JWKS values under `distributed-backend/orchestration/kubernetes` |
+| EVID-016 | Cloud infrastructure roots | `distributed-backend/terraform/eks`, `distributed-backend/terraform/gke`, and shared modules under `distributed-backend/terraform/lib` |
 | EVID-020 | Observability assets | `distributed-backend/OBSERVABILITY.md` and Kubernetes observability manifests |
 | EVID-021 | CI/release validation entry points | `.github/workflows/verify.yaml` and `ci-cd` |
 
@@ -101,3 +102,4 @@ commit hash and update the manifest.
 | Mermaid diagrams were not rendered. | Recorded as VAL-006 and RISK-016. |
 | Architecture linter does not exist. | Recorded as VAL-005 and RISK-016. |
 | Source anchors are mostly file/symbol level, not line-level. | Accepted for this remediation pass; future linter/source trace can deepen anchors. |
+| Live PostgreSQL migration execution was not run for the item-ledger schema update. | Docker Desktop engine was unavailable and `psql`/PostgreSQL server binaries were not installed locally; static SQL/render/Rust validation passed. |

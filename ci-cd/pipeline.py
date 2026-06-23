@@ -19,6 +19,7 @@ RABBITMQ_IMAGE = "rabbitmq:3.13.7-management"
 KUSTOMIZE_IMAGE = "alpine/k8s:1.33.1"
 GITLEAKS_IMAGE = "zricethezav/gitleaks:v8.27.2"
 TRIVY_IMAGE = "aquasec/trivy:0.64.1"
+TERRAFORM_IMAGE = "hashicorp/terraform:1.10.5"
 
 BUF_VERSION = "1.70.0"
 PROTOC_GEN_GO_VERSION = "1.36.11"
@@ -38,6 +39,10 @@ DEPLOYMENT_NAMES = (
     "api-gateway",
 )
 STATEFULSET_NAMES = ("rabbitmq",)
+TERRAFORM_ROOTS = {
+    "aws": "distributed-backend/terraform/eks",
+    "gcp": "distributed-backend/terraform/gke",
+}
 
 SOURCE_EXCLUDES = [
     ".git",
@@ -93,10 +98,39 @@ def env(name: str, default: str = "") -> str:
     return value if value else default
 
 
-def image_registry(explicit: str | None = None) -> str:
+def cloud_provider(explicit: str | None = None) -> str:
+    value = (
+        explicit
+        or env("EVE_TRADE_CLOUD_PROVIDER")
+        or env("CLOUD_PROVIDER")
+        or "aws"
+    ).lower()
+    aliases = {
+        "eks": "aws",
+        "gke": "gcp",
+    }
+    value = aliases.get(value, value)
+    if value not in TERRAFORM_ROOTS:
+        raise ValueError(
+            "cloud provider must be one of: "
+            + ", ".join(sorted(TERRAFORM_ROOTS))
+        )
+    return value
+
+
+def provider_image_registry(provider: str) -> str:
+    if provider == "aws":
+        return env("AWS_ECR_IMAGE_REGISTRY") or env("ECR_IMAGE_REGISTRY")
+    if provider == "gcp":
+        return env("GCP_ARTIFACT_REGISTRY_IMAGE") or env("GAR_IMAGE_REGISTRY")
+    return ""
+
+
+def image_registry(explicit: str | None = None, provider: str = "aws") -> str:
     return (
         explicit
         or env("IMAGE_REGISTRY")
+        or provider_image_registry(provider)
         or env("CI_REGISTRY_IMAGE")
         or "registry.local/eve-trade"
     ).rstrip("/")
@@ -126,6 +160,46 @@ def deployment_names_shell() -> str:
 
 def statefulset_names_shell() -> str:
     return " ".join(STATEFULSET_NAMES)
+
+
+def registry_auth(provider: str, registry: str) -> tuple[str, str, str]:
+    registry_host = registry.split("/")[0]
+    if provider == "aws":
+        username = (
+            env("AWS_ECR_REGISTRY_USER")
+            or env("ECR_REGISTRY_USER")
+            or env("REGISTRY_USER")
+            or env("CI_REGISTRY_USER")
+        )
+        password = (
+            env("AWS_ECR_REGISTRY_PASSWORD")
+            or env("ECR_REGISTRY_PASSWORD")
+            or env("REGISTRY_PASSWORD")
+            or env("CI_REGISTRY_PASSWORD")
+        )
+    elif provider == "gcp":
+        username = (
+            env("GCP_ARTIFACT_REGISTRY_USER")
+            or env("GAR_REGISTRY_USER")
+            or env("REGISTRY_USER")
+            or env("CI_REGISTRY_USER")
+        )
+        password = (
+            env("GCP_ARTIFACT_REGISTRY_PASSWORD")
+            or env("GAR_REGISTRY_PASSWORD")
+            or env("REGISTRY_PASSWORD")
+            or env("CI_REGISTRY_PASSWORD")
+        )
+    else:
+        raise ValueError(f"unknown cloud provider: {provider}")
+
+    if not username or not password:
+        raise RuntimeError(
+            "registry credentials are required to publish. Set provider-specific "
+            "registry credentials, REGISTRY_USER/REGISTRY_PASSWORD, or GitLab "
+            "CI_REGISTRY_USER/CI_REGISTRY_PASSWORD."
+        )
+    return registry_host, username, password
 
 
 class EveTradePipeline:
@@ -424,14 +498,8 @@ done
                 self.service_image(name).with_exec(["true"]),
             )
 
-    async def publish_images(self, registry: str, tag: str) -> None:
-        registry_host = env("CI_REGISTRY") or registry.split("/")[0]
-        username = env("CI_REGISTRY_USER")
-        password = env("CI_REGISTRY_PASSWORD")
-        if not username or not password:
-            raise RuntimeError(
-                "CI_REGISTRY_USER and CI_REGISTRY_PASSWORD are required to publish"
-            )
+    async def publish_images(self, registry: str, tag: str, provider: str) -> None:
+        registry_host, username, password = registry_auth(provider, registry)
         password_secret = self.client.set_secret("ci-registry-password", password)
 
         for name in SERVICE_IMAGE_NAMES:
@@ -443,6 +511,37 @@ done
             )
             digest = await container.publish(reference)
             print(f"published {name}: {digest}", flush=True)
+
+    def terraform_base(self) -> dagger.Container:
+        return (
+            self.client.container()
+            .from_(TERRAFORM_IMAGE)
+            .with_entrypoint([])
+            .with_directory("/workspace", self.source)
+            .with_workdir("/workspace")
+        )
+
+    async def terraform_checks(self, providers: tuple[str, ...]) -> None:
+        await self.run_container(
+            "Terraform format",
+            self.terraform_base().with_exec(
+                [
+                    "sh",
+                    "-c",
+                    "terraform fmt -check -recursive distributed-backend/terraform",
+                ]
+            ),
+        )
+        for provider in providers:
+            root = TERRAFORM_ROOTS[provider]
+            script = (
+                f"terraform -chdir={root} init -backend=false && "
+                f"terraform -chdir={root} validate"
+            )
+            await self.run_container(
+                f"Terraform validate {provider}",
+                self.terraform_base().with_exec(["sh", "-c", script]),
+            )
 
     def kubernetes_render_file(self, registry: str, tag: str) -> dagger.File:
         image_commands = " && ".join(
@@ -890,6 +989,7 @@ PY
         await self.proto_generate_check()
         await self.validate_kubernetes_render()
         await self.validate_chaos_render()
+        await self.terraform_checks(tuple(TERRAFORM_ROOTS))
         await self.security_scan()
 
     async def test(self) -> None:
@@ -911,6 +1011,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Image tag. Defaults to IMAGE_TAG, CI_COMMIT_TAG, CI_COMMIT_SHORT_SHA, or local.",
     )
+    shared.add_argument(
+        "--cloud-provider",
+        default=None,
+        choices=sorted(TERRAFORM_ROOTS),
+        help="Deployment cloud provider. Defaults to EVE_TRADE_CLOUD_PROVIDER, CLOUD_PROVIDER, or aws.",
+    )
     subcommands = parser.add_subparsers(dest="command", required=True)
     subcommands.add_parser("check", parents=[shared])
     subcommands.add_parser("test", parents=[shared])
@@ -918,6 +1024,13 @@ def parse_args() -> argparse.Namespace:
     subcommands.add_parser("build", parents=[shared])
     subcommands.add_parser("publish", parents=[shared])
     subcommands.add_parser("integration", parents=[shared])
+
+    terraform = subcommands.add_parser("terraform", parents=[shared])
+    terraform.add_argument(
+        "--all-clouds",
+        action="store_true",
+        help="Validate all Terraform roots instead of only the selected cloud provider.",
+    )
 
     render = subcommands.add_parser("render-kubernetes", parents=[shared])
     render.add_argument(
@@ -965,7 +1078,8 @@ async def run(args: argparse.Namespace) -> None:
     config = dagger.Config(log_output=sys.stderr)
     async with dagger.Connection(config) as client:
         pipeline = EveTradePipeline(client)
-        registry = image_registry(args.registry)
+        selected_provider = cloud_provider(args.cloud_provider)
+        registry = image_registry(args.registry, selected_provider)
         tag = image_tag(args.tag)
 
         if args.command == "check":
@@ -977,9 +1091,16 @@ async def run(args: argparse.Namespace) -> None:
         elif args.command == "build":
             await pipeline.build_images()
         elif args.command == "publish":
-            await pipeline.publish_images(registry, tag)
+            await pipeline.publish_images(registry, tag, selected_provider)
         elif args.command == "integration":
             await pipeline.integration()
+        elif args.command == "terraform":
+            providers = (
+                tuple(TERRAFORM_ROOTS)
+                if args.all_clouds
+                else (selected_provider,)
+            )
+            await pipeline.terraform_checks(providers)
         elif args.command == "render-kubernetes":
             await pipeline.render_kubernetes(registry, tag, args.output)
         elif args.command == "deploy":

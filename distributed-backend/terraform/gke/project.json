@@ -1,0 +1,40 @@
+{
+  "name": "terraform-gke-default",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "distributed-backend/terraform/gke",
+  "projectType": "application",
+  "targets": {
+    "init": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "distributed-backend/terraform/gke",
+        "command": "terraform init"
+      }
+    },
+    "validate": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["init"],
+      "options": {
+        "cwd": "distributed-backend/terraform/gke",
+        "command": "terraform validate"
+      }
+    },
+    "plan": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["validate"],
+      "options": {
+        "cwd": "distributed-backend/terraform/gke",
+        "command": "terraform plan"
+      }
+    },
+    "apply": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["validate"],
+      "options": {
+        "cwd": "distributed-backend/terraform/gke",
+        "command": "terraform apply"
+      }
+    }
+  },
+  "tags": ["terraform"]
+}

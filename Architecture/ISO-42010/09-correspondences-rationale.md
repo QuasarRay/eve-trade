@@ -28,11 +28,11 @@ rationale for material architecture decisions.
 | --- | --- | --- | --- |
 | `CreateNewTradeInstanceRow` | trade-settlement | `trade_instance`, settlement step output | INV-09, operation semantics table |
 | `ModifyTradeInstanceState` | trade-settlement | `trade_instance`, `trade_state_change` | INV-09 |
-| `CreateNewEmptyItemStack` | trade-settlement | `item_stack` | INV-08 |
-| `TransferQuantityFromItemStackToItemStackEscrow` | trade-settlement | `item_stack`, `item_stack_escrow`, `item_stack_ledger` | INV-04, INV-07, INV-08 |
-| `TransferQuantityFromItemStackEscrowToItemStackWithNewOwner` | trade-settlement | `item_stack_escrow`, destination `item_stack`, `item_stack_ledger` | INV-07, INV-08 |
-| `TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner` | trade-settlement | `item_stack_escrow`, seller `item_stack`, `item_stack_ledger` | INV-07, INV-11 |
-| `MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner` | trade-settlement | source/destination `item_stack`, `item_stack_ledger` | INV-08 |
+| `CreateNewEmptyItemStack` | trade-settlement | `item_stack`, initial `item_stack_ledger` `CREATE_STACK` row | INV-08, INV-14 |
+| `TransferQuantityFromItemStackToItemStackEscrow` | trade-settlement | `item_stack`, `item_stack_escrow`, appended `item_stack_ledger` row | INV-04, INV-07, INV-08, INV-14 |
+| `TransferQuantityFromItemStackEscrowToItemStackWithNewOwner` | trade-settlement | `item_stack_escrow`, destination `item_stack`, appended `item_stack_ledger` row | INV-07, INV-08, INV-14 |
+| `TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner` | trade-settlement | `item_stack_escrow`, seller `item_stack`, appended `item_stack_ledger` row | INV-07, INV-11, INV-14 |
+| `MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner` | trade-settlement | source/destination `item_stack`, separate appended `MERGE_OUT` and `MERGE_IN` item ledger rows | INV-07, INV-08, INV-14 |
 | `CreateNewEmptyWalletEscrow` | trade-settlement | `wallet_escrow` | INV-10 |
 | `TransferIskAmountFromWalletToWalletEscrow` | trade-settlement | `wallet`, `wallet_escrow`, `wallet_ledger` | INV-07, INV-10 |
 | `TransferIskAmountFromWalletEscrowToWalletWithNewOwner` | trade-settlement | `wallet_escrow`, destination `wallet`, `wallet_ledger` | INV-07, INV-10 |
@@ -89,7 +89,7 @@ rationale for material architecture decisions.
 | COR-04 | Settlement operation variants, SQL handlers, settlement step records | `distributed-backend/src/trade-settlement/src/commands.rs`; `executor.rs`; migration `settlement_step` table | Structurally represented; exact test mapping still incomplete |
 | COR-05 | Context flows and Kubernetes network policies | `distributed-backend/orchestration/kubernetes/overlay/prod/networkpolicies.yaml` | Gap recorded for database egress destination precision |
 | COR-06 | `/healthz`, `/readyz`, Kubernetes probes | Service server files and Kubernetes base manifests | Gap recorded for incomplete dependency readiness |
-| COR-07 | Migration files and data groups | `distributed-backend/src/trade-settlement/migrations`; Kubernetes migration manifests | Evidence-backed |
+| COR-07 | Migration files and data groups | `distributed-backend/src/trade-settlement/migrations`; Kubernetes migration manifests; item-ledger hash-chain and projection triggers | Evidence-backed |
 | COR-08 | Idempotency key in proto, Market replay, settlement metadata | Market proto fields; `LoadCompletedIdempotencyReplay`; `idempotency_record` migration | Evidence-backed |
 | COR-09 | Security boundaries and network boundaries | `07-security-trust-view.md`; `06-deployment-operations-view.md` | Gap recorded for actor binding and settlement privilege |
 | COR-10 | Validation commands and protected artifacts | `08-development-validation-view.md` | Not run in this documentation update |

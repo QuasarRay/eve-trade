@@ -197,6 +197,37 @@ jobs:
       - name: Lint Rust crate
         run: cargo clippy --locked --all-targets -- -D warnings
 
+  terraform:
+    name: terraform / ${{ matrix.provider }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - provider: aws
+            root: distributed-backend/terraform/eks
+          - provider: gcp
+            root: distributed-backend/terraform/gke
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive distributed-backend/terraform
+
+      - name: Initialize Terraform
+        run: terraform -chdir=${{ matrix.root }} init -backend=false
+
+      - name: Validate Terraform
+        run: terraform -chdir=${{ matrix.root }} validate
+
   kubernetes:
     name: kubernetes / render
     runs-on: ubuntu-latest

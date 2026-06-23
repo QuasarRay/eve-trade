@@ -55,7 +55,7 @@ flowchart TB
   Market --> Rabbit["rabbitmq Service"]
   Rabbit --> Worker["settlement-worker Deployment"]
   Worker --> Settlement["trade-settlement Deployment"]
-  Market --> DB["RDS PostgreSQL / PostgreSQL Service"]
+  Market --> DB["RDS / Cloud SQL / PostgreSQL Service"]
   Settlement --> DB
   Migrate["migration Job"] --> DB
 
@@ -66,13 +66,13 @@ flowchart TB
   Collector --> Observability["Telemetry Export Backend"]
 
   Terraform["Terraform"] -. provisions .-> VPC["VPC"]
-  Terraform -. provisions .-> EKS["EKS"]
+  Terraform -. provisions .-> K8sCloud["EKS or GKE"]
   Terraform -. provisions .-> DB
   Terraform -. provisions .-> Images["Image Repositories"]
-  EKS -. runs .-> APIGW
-  EKS -. runs .-> Market
-  EKS -. runs .-> Worker
-  EKS -. runs .-> Settlement
+  K8sCloud -. runs .-> APIGW
+  K8sCloud -. runs .-> Market
+  K8sCloud -. runs .-> Worker
+  K8sCloud -. runs .-> Settlement
 ```
 
 ## Kubernetes Runtime Elements
@@ -85,7 +85,7 @@ flowchart TB
 | Gateway platform manifests | `distributed-backend/orchestration/kubernetes/platform/gateway/prod` | Defines Gateway API ingress and related platform resources. |
 | Istio platform manifests | `distributed-backend/orchestration/kubernetes/platform/istio/prod` | Defines service mesh operator and related resources. |
 | Observability manifests | `distributed-backend/orchestration/kubernetes/base/observability` and `observability/honeycomb` | Defines collector and telemetry export configuration. |
-| Terraform EKS module/root | `distributed-backend/terraform` | Provisions cloud infrastructure and runtime assets. |
+| Terraform EKS and GKE roots | `distributed-backend/terraform/eks`, `distributed-backend/terraform/gke` | Provision provider-specific cloud infrastructure and runtime assets. |
 
 ## Probe Model
 
@@ -140,7 +140,7 @@ database destination beyond TCP port `5432`.
 | --- | --- | --- |
 | Local Compose | Loopback PostgreSQL port for developer use. | Local-only exposure. |
 | Kubernetes with in-cluster PostgreSQL | Broad TCP `5432` egress in current policy. | No pod/namespace destination selector is modeled for database egress. |
-| Kubernetes with external RDS | Broad TCP `5432` egress in current policy. | Destination restriction would depend on cloud/network controls outside the checked-in NetworkPolicy. |
+| Kubernetes with external managed PostgreSQL | Broad TCP `5432` egress in current policy. | Destination restriction would depend on cloud/network controls outside the checked-in NetworkPolicy. |
 | Migration job | Broad TCP `5432` egress in current policy. | Same broad destination precision as application database egress. |
 
 ## Configuration Model
@@ -184,8 +184,8 @@ View component ID: `VC-DEP-03`.
 
 | Area | Architecture constraint | Cost or capacity driver |
 | --- | --- | --- |
-| EKS/Kubernetes | Services assume Kubernetes Deployments, Services, probes, and network policy. | Cluster baseline cost and pod resource requests/limits. |
-| RDS/PostgreSQL | Settlement correctness depends on transactional PostgreSQL. | Database instance size, storage growth from ledgers, backups, and connection count. |
+| EKS/GKE/Kubernetes | Services assume Kubernetes Deployments, Services, probes, and network policy. | Cluster baseline cost and pod resource requests/limits. |
+| Managed PostgreSQL | Settlement correctness depends on transactional PostgreSQL. | RDS or Cloud SQL instance size, storage growth from ledgers, backups, and connection count. |
 | RabbitMQ | Settlement path depends on AMQP command/reply behavior. | Broker durability, quorum queues, queue depth, and management overhead. |
 | Observability | Services emit telemetry to collector. | Trace/log/metric volume and external backend ingestion. |
 | Image repositories | Terraform provisions runtime image assets. | Storage, scanning, retention, and cross-environment promotion. |

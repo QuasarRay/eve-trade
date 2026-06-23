@@ -27,7 +27,7 @@ Model ID: `MODEL-OBS-01`; view component ID: `VC-OBS-01`.
 | Market publishes settlement command | exchange, routing key, correlation ID, idempotency key | publish latency, returned/unroutable count, timeout count | RabbitMQ settlement messaging library | Logs/source path exist; metrics/alerts need verification |
 | settlement-worker consumes command | queue, delivery tag, correlation ID, message ID | consumer lag, ack/nack count, handler latency | `rabbitmqsettlement/worker.go` and settlement-worker main | Logs/source path exist; metrics/alerts need verification |
 | trade-settlement executes batch | settlement batch ID, idempotency key, attempt number, step kind, failure code/message | batch duration, success/failure count, DB transaction latency | Settlement metadata tables and executor | Metadata exists; telemetry coverage needs verification |
-| PostgreSQL commits or fails | idempotency key, settlement batch ID when available | DB latency, lock waits, connection pool pressure | PostgreSQL/RDS metrics outside service repo | DB metrics not defined in repo docs |
+| PostgreSQL commits or fails | idempotency key, settlement batch ID when available | DB latency, lock waits, connection pool pressure | PostgreSQL, RDS, or Cloud SQL metrics outside service repo | DB metrics not defined in repo docs |
 | Reply returns to Market | correlation ID, reply success, Connect code | reply latency, timeout count | RabbitMQ settlement messaging library | Messaging reply behavior exists; alerting not documented |
 
 ## Correlation Keys
@@ -51,7 +51,7 @@ Model ID: `MODEL-OBS-01`; view component ID: `VC-OBS-01`.
 | RabbitMQ command queue depth | Sustained non-zero or growth above capacity threshold. | SRE | RabbitMQ queue metrics | Threshold not defined |
 | DLQ non-zero sustained depth | Any sustained DLQ depth. | SRE and settlement owner | RabbitMQ DLQ metrics | Alert rule not defined |
 | trade-settlement failed batch rate | Failed batches above baseline. | Settlement owner/on-call | Settlement metadata and service metrics | Threshold not defined |
-| PostgreSQL lock or transaction latency | Lock wait/latency above threshold. | Database owner/SRE | PostgreSQL/RDS metrics | Metric source not defined |
+| PostgreSQL lock or transaction latency | Lock wait/latency above threshold. | Database owner/SRE | PostgreSQL, RDS, or Cloud SQL metrics | Metric source not defined |
 | Identity/auth policy failures | JWT or authorization failures spike. | Security/on-call | Istio/auth policy metrics/logs | Dashboard not documented |
 
 ## Dashboard And Query Register

@@ -47,7 +47,7 @@ flowchart LR
 | Network reachability precision | Production overlay includes default deny and service-specific network policy paths. | Policies have not been rendered/applied in a target cluster during this update; database egress remains broad TCP `5432`. |
 | Secret placement | ConfigMaps and Secrets are used for runtime configuration. | Secret rotation, external secret provider integration, and production credential lifecycle are outside the service code and not fully defined in repo. |
 | Transport security | Gateway/Istio manifests define production ingress and service security resources. | h2c/plaintext service communication exists inside local/internal paths; mTLS enforcement is not verified here. |
-| Auditability | Settlement metadata and append-only ledgers record durable effects and failures. | Cross-service request correlation depends on consistent request IDs, trace propagation, and telemetry export availability. |
+| Auditability | Settlement metadata and append-only ledgers record durable effects and failures; item-stack ledgers are hash-chained and current stack rows must match the latest item ledger row. | Cross-service request correlation depends on consistent request IDs, trace propagation, and telemetry export availability. |
 
 ## Security Control Layers
 

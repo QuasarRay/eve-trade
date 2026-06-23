@@ -161,7 +161,8 @@ The system runs in two intended environments:
 - Production-like deployment: Kubernetes deploys the services with ConfigMaps,
   Secrets, service accounts, probes, network policies, Istio security/traffic
   resources, Gateway API ingress, observability collectors, and Terraform-managed
-  cloud infrastructure such as VPC, EKS, RDS, and image repositories.
+  cloud infrastructure. The current Terraform roots support AWS/EKS with RDS and
+  ECR, or GCP/GKE with Cloud SQL and Artifact Registry.
 
 ## Architecture Summary
 
@@ -274,6 +275,10 @@ remain blockers before untrusted production exposure.
   inside PostgreSQL.
 - PostgreSQL is the source of truth for trade, escrow, wallet, item stack,
   settlement, idempotency, and ledger state.
+- Item-stack ledgers are append-only hash-chained records. Item stack current
+  rows are projections that must match the latest ledger row; merge operations
+  append new source and destination ledger rows instead of modifying or
+  combining existing ledger history.
 - RabbitMQ is the configured asynchronous command/reply boundary between Market
   and settlement execution in Compose and Kubernetes. Direct/connect settlement
   transport remains implemented as an alternate Market configuration.

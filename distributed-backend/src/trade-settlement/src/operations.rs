@@ -293,7 +293,7 @@ pub async fn modify_trade_instance_state(
 
 pub async fn create_new_empty_item_stack(
     tx: &mut Transaction<'_, Postgres>,
-    _settlement_step_id: Uuid,
+    settlement_step_id: Uuid,
     payload: &CreateNewEmptyItemStack,
 ) -> Result<OperationOutput> {
     let item_stack_id = payload.item_stack_id.unwrap_or_else(Uuid::new_v4);
@@ -321,9 +321,22 @@ pub async fn create_new_empty_item_stack(
     .bind(payload.item_type_id)
     .bind(payload.station_id)
     .bind(stack_version)
-    .bind(stack_checksum)
+    .bind(&stack_checksum)
     .bind(CHECKSUM_ALGORITHM)
     .execute(&mut **tx)
+    .await?;
+
+    insert_initial_item_stack_ledger(
+        tx,
+        settlement_step_id,
+        item_stack_id,
+        payload.owner_id,
+        payload.item_type_id,
+        payload.station_id,
+        0,
+        stack_version,
+        &stack_checksum,
+    )
     .await?;
 
     Ok(OperationOutput::single("item_stack", item_stack_id))
@@ -359,6 +372,7 @@ pub async fn transfer_quantity_from_item_stack_to_item_stack_escrow(
         "TRANSFER_TO_ESCROW",
         -payload.quantity,
         new_source_quantity,
+        "ACTIVE",
         source_version_after,
         &source_checksum_after,
     )
@@ -505,6 +519,7 @@ pub async fn merge_item_stacks_with_identical_item_type_and_identical_owner(
         "MERGE_IN",
         source.quantity,
         destination_quantity_after,
+        "ACTIVE",
         destination_version_after,
         &destination_checksum_after,
     )
@@ -519,6 +534,7 @@ pub async fn merge_item_stacks_with_identical_item_type_and_identical_owner(
         "MERGE_OUT",
         -source.quantity,
         0,
+        "MERGED",
         source_version_after,
         &source_checksum_after,
     )
@@ -769,6 +785,7 @@ async fn transfer_quantity_from_item_stack_escrow_to_item_stack(
         entry_kind,
         quantity,
         destination_quantity_after,
+        "ACTIVE",
         destination_version_after,
         &destination_checksum_after,
     )
@@ -1204,6 +1221,39 @@ async fn update_item_stack(
 }
 
 #[allow(clippy::too_many_arguments)]
+async fn insert_initial_item_stack_ledger(
+    tx: &mut Transaction<'_, Postgres>,
+    settlement_step_id: Uuid,
+    item_stack_id: Uuid,
+    owner_id: i64,
+    item_type_id: i64,
+    station_id: i64,
+    quantity_after: i64,
+    stack_version_after: i64,
+    stack_checksum_after: &str,
+) -> Result<()> {
+    insert_item_stack_ledger_event(
+        tx,
+        settlement_step_id,
+        item_stack_id,
+        item_type_id,
+        owner_id,
+        station_id,
+        "CREATE_STACK",
+        quantity_after,
+        0,
+        quantity_after,
+        "ABSENT",
+        "ACTIVE",
+        0,
+        stack_version_after,
+        "GENESIS",
+        stack_checksum_after,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
 async fn insert_item_stack_ledger(
     tx: &mut Transaction<'_, Postgres>,
     settlement_step_id: Uuid,
@@ -1211,14 +1261,90 @@ async fn insert_item_stack_ledger(
     entry_kind: &str,
     quantity_delta: i64,
     quantity_after: i64,
+    stack_state_after: &str,
     stack_version_after: i64,
+    stack_checksum_after: &str,
+) -> Result<()> {
+    insert_item_stack_ledger_event(
+        tx,
+        settlement_step_id,
+        stack.item_stack_id,
+        stack.item_type_id,
+        stack.owner_id,
+        stack.station_id,
+        entry_kind,
+        quantity_delta,
+        stack.quantity,
+        quantity_after,
+        &stack.stack_state,
+        stack_state_after,
+        stack.stack_version,
+        stack_version_after,
+        &stack.stack_checksum,
+        stack_checksum_after,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn insert_item_stack_ledger_event(
+    tx: &mut Transaction<'_, Postgres>,
+    settlement_step_id: Uuid,
+    item_stack_id: Uuid,
+    item_type_id: i64,
+    owner_id: i64,
+    station_id: i64,
+    entry_kind: &str,
+    quantity_delta: i64,
+    quantity_before: i64,
+    quantity_after: i64,
+    stack_state_before: &str,
+    stack_state_after: &str,
+    stack_version_before: i64,
+    stack_version_after: i64,
+    stack_checksum_before: &str,
     stack_checksum_after: &str,
 ) -> Result<()> {
     sqlx::query(
         r#"
+        WITH material AS (
+            SELECT
+                COALESCE(
+                    (
+                        SELECT item_stack_ledger_hash
+                        FROM item_stack_ledger
+                        WHERE item_stack_id = $2
+                        ORDER BY ledger_sequence DESC
+                        LIMIT 1
+                    ),
+                    'GENESIS'
+                ) AS previous_item_stack_ledger_hash,
+                compute_item_stack_ledger_payload_hash(
+                    $1,
+                    $2,
+                    $3,
+                    $4,
+                    $5,
+                    $6,
+                    $7,
+                    $8,
+                    $9,
+                    $10,
+                    $11,
+                    $12,
+                    $13,
+                    $14,
+                    $15,
+                    $16
+                ) AS ledger_payload_hash
+        )
         INSERT INTO item_stack_ledger (
             settlement_step_id,
             item_stack_id,
+            ledger_sequence,
+            previous_item_stack_ledger_hash,
+            ledger_payload_hash,
+            item_stack_ledger_hash,
             item_type_id,
             owner_id,
             station_id,
@@ -1226,26 +1352,54 @@ async fn insert_item_stack_ledger(
             quantity_delta,
             quantity_before,
             quantity_after,
+            stack_state_before,
+            stack_state_after,
             stack_version_before,
             stack_version_after,
             stack_checksum_before,
             stack_checksum_after
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        SELECT
+            $1,
+            $2,
+            $3,
+            material.previous_item_stack_ledger_hash,
+            material.ledger_payload_hash,
+            compute_item_stack_ledger_hash(
+                material.previous_item_stack_ledger_hash,
+                material.ledger_payload_hash
+            ),
+            $4,
+            $5,
+            $6,
+            $7,
+            $8,
+            $9,
+            $10,
+            $11,
+            $12,
+            $13,
+            $14,
+            $15,
+            $16
+        FROM material
         "#,
     )
     .bind(settlement_step_id)
-    .bind(stack.item_stack_id)
-    .bind(stack.item_type_id)
-    .bind(stack.owner_id)
-    .bind(stack.station_id)
+    .bind(item_stack_id)
+    .bind(stack_version_after)
+    .bind(item_type_id)
+    .bind(owner_id)
+    .bind(station_id)
     .bind(entry_kind)
     .bind(quantity_delta)
-    .bind(stack.quantity)
+    .bind(quantity_before)
     .bind(quantity_after)
-    .bind(stack.stack_version)
+    .bind(stack_state_before)
+    .bind(stack_state_after)
+    .bind(stack_version_before)
     .bind(stack_version_after)
-    .bind(&stack.stack_checksum)
+    .bind(stack_checksum_before)
     .bind(stack_checksum_after)
     .execute(&mut **tx)
     .await?;

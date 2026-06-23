@@ -20,6 +20,7 @@ variables:
   CHAOS_SELECTOR: "chaos.eve-trade.io/suite=pod-resilience"
   CHAOS_TIMEOUT_SECONDS: "900"
   DEPLOY_ENVIRONMENT: production
+  EVE_TRADE_CLOUD_PROVIDER: aws
   IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   _EXPERIMENTAL_DAGGER_CLI_BIN: /usr/local/bin/dagger
@@ -104,7 +105,7 @@ publish:images:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   script:
     - . .ci-venv/bin/activate
-    - python ci-cd/pipeline.py publish --tag "$IMAGE_TAG"
+    - python ci-cd/pipeline.py publish --cloud-provider "$EVE_TRADE_CLOUD_PROVIDER" --tag "$IMAGE_TAG"
 
 deploy:render:
   extends: .dagger
@@ -119,7 +120,7 @@ deploy:render:
   script:
     - . .ci-venv/bin/activate
     - mkdir -p ci-cd/out
-    - python ci-cd/pipeline.py render-kubernetes --tag "$IMAGE_TAG" --output ci-cd/out/kubernetes.yaml
+    - python ci-cd/pipeline.py render-kubernetes --cloud-provider "$EVE_TRADE_CLOUD_PROVIDER" --tag "$IMAGE_TAG" --output ci-cd/out/kubernetes.yaml
   artifacts:
     when: always
     expire_in: 30 days
@@ -144,7 +145,7 @@ deploy:production:
     name: $DEPLOY_ENVIRONMENT
   script:
     - . .ci-venv/bin/activate
-    - python ci-cd/pipeline.py deploy --tag "$IMAGE_TAG"
+    - python ci-cd/pipeline.py deploy --cloud-provider "$EVE_TRADE_CLOUD_PROVIDER" --tag "$IMAGE_TAG"
 
 chaos:production:
   extends: .dagger
