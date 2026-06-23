@@ -67,18 +67,25 @@ The platform side currently includes:
 * Litmus for chaos engineering experiments
 * Dagger-based CI/CD pipeline logic written in Python
 * GitLab CI/CD integration for pipeline execution
-* Terraform manifests for provisioning AWS or GCP infrastructure
-* EKS and GKE deployment foundations for running the system on either cloud
+* Terraform manifests for provisioning AWS, GCP, or Talos/Omni deployment
+  foundations
+* EKS, GKE, and Omni-managed Talos deployment foundations for running the
+  system on the operator's chosen Kubernetes platform
 
 ## Cloud Infrastructure
 
-The project includes Terraform manifests for two production-like cloud paths:
+The project includes Terraform manifests for three production-like deployment
+paths:
 
 * `distributed-backend/terraform/eks` provisions AWS infrastructure including
   VPC, EKS, ECR repositories, and optional RDS PostgreSQL.
 * `distributed-backend/terraform/gke` provisions GCP infrastructure including
   VPC networking, GKE, Artifact Registry, and optional Cloud SQL PostgreSQL.
+* `distributed-backend/terraform/talos-omni` prepares an Omni-managed Talos
+  Kubernetes cluster with Eve Trade runtime prerequisites, provider-neutral
+  image references, and either an external PostgreSQL secret or an optional
+  non-production in-cluster PostgreSQL StatefulSet.
 
-Both paths deploy the same Kubernetes application manifests. The person running
-`eve-trade` chooses the cloud by selecting the Terraform root and by setting the
-CI/CD `EVE_TRADE_CLOUD_PROVIDER` value to `aws` or `gcp`.
+All three paths deploy the same Kubernetes application manifests. The person running
+`eve-trade` chooses the platform by selecting the Terraform root and by setting
+the CI/CD `EVE_TRADE_CLOUD_PROVIDER` value to `aws`, `gcp`, or `talos-omni`.

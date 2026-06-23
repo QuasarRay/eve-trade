@@ -161,8 +161,10 @@ The system runs in two intended environments:
 - Production-like deployment: Kubernetes deploys the services with ConfigMaps,
   Secrets, service accounts, probes, network policies, Istio security/traffic
   resources, Gateway API ingress, observability collectors, and Terraform-managed
-  cloud infrastructure. The current Terraform roots support AWS/EKS with RDS and
-  ECR, or GCP/GKE with Cloud SQL and Artifact Registry.
+  platform prerequisites. The current Terraform roots support AWS/EKS with RDS
+  and ECR, GCP/GKE with Cloud SQL and Artifact Registry, or an Omni-managed
+  Talos Kubernetes cluster with provider-neutral image references and
+  external-or-in-cluster PostgreSQL preparation.
 
 ## Architecture Summary
 

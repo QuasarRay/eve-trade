@@ -209,6 +209,8 @@ jobs:
             root: distributed-backend/terraform/eks
           - provider: gcp
             root: distributed-backend/terraform/gke
+          - provider: talos-omni
+            root: distributed-backend/terraform/talos-omni
 
     steps:
       - name: Checkout

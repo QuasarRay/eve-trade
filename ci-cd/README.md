@@ -29,16 +29,19 @@ Render Kubernetes manifests with release image tags:
 python ci-cd\pipeline.py render-kubernetes --registry registry.example.com/eve-trade --tag sha-1234 --output ci-cd\out\kubernetes.yaml
 ```
 
-The deployment cloud is selected with `--cloud-provider aws` or
-`--cloud-provider gcp`, or by setting `EVE_TRADE_CLOUD_PROVIDER`. The default is
-`aws`. The selected provider controls provider-specific registry defaults and
-publish credentials; the rendered Kubernetes manifests remain cloud-agnostic.
+The deployment target is selected with `--deployment-target aws`,
+`--deployment-target gcp`, or `--deployment-target talos-omni`, or by setting
+`EVE_TRADE_CLOUD_PROVIDER`. The default is `aws`. The selected target controls
+provider-specific registry defaults and publish credentials; the rendered
+Kubernetes manifests remain portable across EKS, GKE, and Omni-managed Talos
+clusters.
 
 Validate Terraform locally with:
 
 ```powershell
-python ci-cd\pipeline.py terraform --all-clouds
-python ci-cd\pipeline.py terraform --cloud-provider gcp
+python ci-cd\pipeline.py terraform --all-targets
+python ci-cd\pipeline.py terraform --deployment-target gcp
+python ci-cd\pipeline.py terraform --deployment-target talos-omni
 ```
 
 The renderer targets
@@ -69,16 +72,20 @@ the container registry is enabled.
 Optional variables:
 
 - `DAGGER_CLOUD_TOKEN`: enables Dagger Cloud traces.
-- `EVE_TRADE_CLOUD_PROVIDER`: deployment provider, either `aws` or `gcp`;
-  default `aws`.
+- `EVE_TRADE_CLOUD_PROVIDER`: deployment target, either `aws`, `gcp`, or
+  `talos-omni`; default `aws`. Aliases `eks`, `gke`, `talos`, `omni`, and
+  `talos_omni` are accepted by the Python pipeline.
 - `IMAGE_REGISTRY`: overrides `CI_REGISTRY_IMAGE`.
 - `AWS_ECR_IMAGE_REGISTRY` or `ECR_IMAGE_REGISTRY`: AWS/ECR image registry
   prefix used when `EVE_TRADE_CLOUD_PROVIDER=aws`.
 - `GCP_ARTIFACT_REGISTRY_IMAGE` or `GAR_IMAGE_REGISTRY`: GCP Artifact Registry
   image registry prefix used when `EVE_TRADE_CLOUD_PROVIDER=gcp`.
+- `TALOS_OMNI_IMAGE_REGISTRY` or `OMNI_IMAGE_REGISTRY`: provider-neutral image
+  registry prefix used when `EVE_TRADE_CLOUD_PROVIDER=talos-omni`.
 - `REGISTRY_USER` and `REGISTRY_PASSWORD`: provider-neutral registry
-  credentials. Provider-specific `AWS_ECR_*`, `ECR_*`, `GCP_ARTIFACT_*`, or
-  `GAR_*` credential variables override them when present.
+  credentials. Provider-specific `AWS_ECR_*`, `ECR_*`, `GCP_ARTIFACT_*`,
+  `GAR_*`, `TALOS_OMNI_*`, or `OMNI_*` credential variables override them when
+  present.
 - `KUBE_CONFIG_B64`: base64-encoded kubeconfig for the manual deploy job.
 - `DEPLOY_ENVIRONMENT`: GitLab environment name, default `production`.
 - `CHAOS_NAMESPACE`: target namespace for production chaos, default `eve-trade`.
@@ -94,12 +101,12 @@ Optional variables:
 ## Pipeline Gates
 
 - `check` validates protobuf contracts, generated proto drift, Kubernetes
-  rendering, both Terraform roots, and secret/filesystem scanning.
+  rendering, all Terraform roots, and secret/filesystem scanning.
 - `test` runs Go, Rust, and Python contract tests.
 - `integration` starts PostgreSQL, RabbitMQ, trade-settlement,
   settlement-worker, Market, and API Gateway inside Dagger and runs the Python
   e2e suite through the message-driven settlement path.
-- `terraform` validates one selected Terraform root or all cloud roots.
+- `terraform` validates one selected Terraform root or all deployment roots.
 - `publish` publishes service images to the selected provider registry or the
   explicit `--registry` value.
 - `deploy` applies the rendered kustomize tree after image tags are injected and

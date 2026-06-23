@@ -41,7 +41,7 @@ flowchart LR
   OTel -->|export| Obs["Observability Backend"]
 
   K8s["Kubernetes / Istio / Gateway API"] -. hosts .-> Gateway
-  Terraform["Terraform AWS/GCP Infrastructure"] -. provisions .-> K8s
+  Terraform["Terraform platform roots"] -. provisions/prepares .-> K8s
   Terraform -. provisions .-> Postgres
 ```
 
@@ -106,7 +106,7 @@ Model ID: `MODEL-CTX-03`; view component ID: `VC-CTX-03`.
 | Kubernetes | Production-like runtime | Schedules services and applies probes, configuration, secrets, and network policies. |
 | Istio and Gateway API | Production-like runtime | Ingress, traffic policy, and service security resources. |
 | OpenTelemetry collector | Services | Telemetry collection and export. |
-| Cloud infrastructure | Production-like runtime | AWS VPC/EKS/RDS/ECR or GCP VPC/GKE/Cloud SQL/Artifact Registry resources through provider-specific Terraform roots. |
+| Deployment infrastructure | Production-like runtime | AWS VPC/EKS/RDS/ECR, GCP VPC/GKE/Cloud SQL/Artifact Registry, or Omni-managed Talos cluster prerequisites through target-specific Terraform roots. |
 
 ## Context View Assertions
 

@@ -42,7 +42,18 @@ STATEFULSET_NAMES = ("rabbitmq",)
 TERRAFORM_ROOTS = {
     "aws": "distributed-backend/terraform/eks",
     "gcp": "distributed-backend/terraform/gke",
+    "talos-omni": "distributed-backend/terraform/talos-omni",
 }
+DEPLOYMENT_TARGET_CHOICES = sorted(
+    {
+        *TERRAFORM_ROOTS,
+        "eks",
+        "gke",
+        "omni",
+        "talos",
+        "talos_omni",
+    }
+)
 
 SOURCE_EXCLUDES = [
     ".git",
@@ -108,11 +119,14 @@ def cloud_provider(explicit: str | None = None) -> str:
     aliases = {
         "eks": "aws",
         "gke": "gcp",
+        "omni": "talos-omni",
+        "talos": "talos-omni",
+        "talos_omni": "talos-omni",
     }
     value = aliases.get(value, value)
     if value not in TERRAFORM_ROOTS:
         raise ValueError(
-            "cloud provider must be one of: "
+            "deployment target must be one of: "
             + ", ".join(sorted(TERRAFORM_ROOTS))
         )
     return value
@@ -123,6 +137,8 @@ def provider_image_registry(provider: str) -> str:
         return env("AWS_ECR_IMAGE_REGISTRY") or env("ECR_IMAGE_REGISTRY")
     if provider == "gcp":
         return env("GCP_ARTIFACT_REGISTRY_IMAGE") or env("GAR_IMAGE_REGISTRY")
+    if provider == "talos-omni":
+        return env("TALOS_OMNI_IMAGE_REGISTRY") or env("OMNI_IMAGE_REGISTRY")
     return ""
 
 
@@ -190,8 +206,21 @@ def registry_auth(provider: str, registry: str) -> tuple[str, str, str]:
             or env("REGISTRY_PASSWORD")
             or env("CI_REGISTRY_PASSWORD")
         )
+    elif provider == "talos-omni":
+        username = (
+            env("TALOS_OMNI_REGISTRY_USER")
+            or env("OMNI_REGISTRY_USER")
+            or env("REGISTRY_USER")
+            or env("CI_REGISTRY_USER")
+        )
+        password = (
+            env("TALOS_OMNI_REGISTRY_PASSWORD")
+            or env("OMNI_REGISTRY_PASSWORD")
+            or env("REGISTRY_PASSWORD")
+            or env("CI_REGISTRY_PASSWORD")
+        )
     else:
-        raise ValueError(f"unknown cloud provider: {provider}")
+        raise ValueError(f"unknown deployment target: {provider}")
 
     if not username or not password:
         raise RuntimeError(
@@ -1013,9 +1042,11 @@ def parse_args() -> argparse.Namespace:
     )
     shared.add_argument(
         "--cloud-provider",
+        "--deployment-target",
+        dest="cloud_provider",
         default=None,
-        choices=sorted(TERRAFORM_ROOTS),
-        help="Deployment cloud provider. Defaults to EVE_TRADE_CLOUD_PROVIDER, CLOUD_PROVIDER, or aws.",
+        choices=DEPLOYMENT_TARGET_CHOICES,
+        help="Deployment target. Use aws, gcp, or talos-omni. Defaults to EVE_TRADE_CLOUD_PROVIDER, CLOUD_PROVIDER, or aws.",
     )
     subcommands = parser.add_subparsers(dest="command", required=True)
     subcommands.add_parser("check", parents=[shared])
@@ -1028,8 +1059,10 @@ def parse_args() -> argparse.Namespace:
     terraform = subcommands.add_parser("terraform", parents=[shared])
     terraform.add_argument(
         "--all-clouds",
+        "--all-targets",
+        dest="all_clouds",
         action="store_true",
-        help="Validate all Terraform roots instead of only the selected cloud provider.",
+        help="Validate all Terraform roots instead of only the selected deployment target.",
     )
 
     render = subcommands.add_parser("render-kubernetes", parents=[shared])

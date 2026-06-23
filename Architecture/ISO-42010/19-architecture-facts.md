@@ -46,7 +46,7 @@ can reference these fact IDs rather than duplicating inconsistent prose.
 | FACT-061 | Dashboards, alert thresholds, and incident queries are not yet verified as implemented artifacts. | Gap recorded | `13-observability-view.md`, `15-risk-register.md` |
 | FACT-070 | Data retention, ledger growth, idempotency TTL, escrow cleanup, and archival policy are unresolved production architecture decisions. | Gap recorded | `05-information-data-integrity-view.md`, `15-risk-register.md` |
 | FACT-080 | Static Rust validation, Docker Compose config validation, and Kubernetes render validation were run for this working-tree update. Live e2e trade-flow and live PostgreSQL migration execution were not run because service/database URLs, Docker engine, and local PostgreSQL tools were unavailable. | Partially verified | `18-evidence-manifest.md`, root `changes.md` |
-| FACT-090 | The current infrastructure-as-code model has separate AWS/EKS and GCP/GKE Terraform roots that feed the same Kubernetes application manifests. | Evidence-backed | `distributed-backend/terraform/eks`, `distributed-backend/terraform/gke`, `ci-cd/pipeline.py` |
+| FACT-090 | The current infrastructure-as-code model has separate AWS/EKS, GCP/GKE, and Talos/Omni Terraform roots that feed the same Kubernetes application manifests. | Evidence-backed | `distributed-backend/terraform/eks`, `distributed-backend/terraform/gke`, `distributed-backend/terraform/talos-omni`, `ci-cd/pipeline.py` |
 
 ## Production Readiness Gates
 

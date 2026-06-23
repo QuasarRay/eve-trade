@@ -30,7 +30,7 @@ This view addresses CON-28, CON-29, CON-30, CON-31, and CON-35.
 | E2E tests | `distributed-backend/tests/e2e` | Python end-to-end trade lifecycle tests. |
 | Compose runtime | `compose.yaml` | Local development and integration runtime topology. |
 | Kubernetes manifests | `distributed-backend/orchestration/kubernetes` | Cluster deployment, network, traffic, observability, and platform resources. |
-| Terraform | `distributed-backend/terraform/eks`, `distributed-backend/terraform/gke`, and shared modules under `distributed-backend/terraform/lib` | AWS/EKS and GCP/GKE infrastructure plus runtime asset provisioning. |
+| Terraform | `distributed-backend/terraform/eks`, `distributed-backend/terraform/gke`, `distributed-backend/terraform/talos-omni`, and shared modules under `distributed-backend/terraform/lib` | AWS/EKS, GCP/GKE, and Omni-managed Talos infrastructure or runtime prerequisite provisioning. |
 | CI | `.github/workflows/verify.yaml` and `ci-cd` | Static validation, tests, image build, and integration pipeline definitions. |
 
 ## Change Impact Matrix
@@ -68,7 +68,7 @@ This view addresses CON-28, CON-29, CON-30, CON-31, and CON-35.
 | VAL-050 | Compose syntax | `docker compose config` | Yes for Compose changes | Not run | Validates local runtime definition. |
 | VAL-060 | Kubernetes rendering | `kubectl kustomize` or `kustomize build` for base and overlays | Yes for manifest changes | Passed locally on 2026-06-23 for Istio, Gateway, observability, and production overlays | Validates manifest composition. |
 | VAL-061 | Production placeholder rejection | Script, CI policy, or admission control for example hosts, issuers, emails, and zero digests | Yes before release | Not implemented | Production gate open. |
-| VAL-070 | Terraform validation | `terraform validate` in the EKS and GKE Terraform roots | Yes for Terraform changes | Passed locally on 2026-06-23 with OpenTofu v1.10.0 for both roots | Terraform CLI was unavailable locally; plans and applies still require provider-specific credentials and variables. |
+| VAL-070 | Terraform validation | `terraform validate` in the EKS, GKE, and Talos/Omni Terraform roots | Yes for Terraform changes | Talos/Omni root formatted locally on 2026-06-24; full provider init/validate was blocked by registry/provider download errors in the local environment | CI is configured to validate all three roots; plans and applies still require target-specific credentials, kubeconfig, and variables. |
 | VAL-080 | CI pipeline | GitHub Actions and `ci-cd` Dagger workflow | Yes before release | Python syntax and parser help passed locally on 2026-06-23; full Dagger/GitHub/GitLab execution not run | Provides repeatable repository validation. |
 
 ## Contract Compatibility Rules

@@ -264,7 +264,7 @@ Source anchors are summarized here and detailed in
 | Strong settlement integrity versus latency | CON-06, CON-07, CON-14 | trade-settlement centralizes mutation in one PostgreSQL transaction. | Lock contention and database latency can dominate request time. |
 | Local convenience versus production isolation | CON-16, CON-18, CON-21, CON-22 | Compose exposes PostgreSQL and RabbitMQ on loopback; production uses network policy and mesh controls. | Local exposure must not be copied to production. |
 | Generic settlement operations versus least privilege | CON-20, CON-06, CON-28 | Settlement operations are generic for flexibility and central mutation. | A compromised internal caller has high-impact mutation capability. |
-| Deployment portability versus cloud-specific controls | CON-23, CON-27 | Compose and Kubernetes share logical topology; Terraform has provider-specific AWS/EKS and GCP/GKE roots. | Some behavior depends on provider-specific networking, registry, database, and secrets behavior. |
+| Deployment portability versus platform-specific controls | CON-23, CON-27 | Compose and Kubernetes share logical topology; Terraform has AWS/EKS, GCP/GKE, and Talos/Omni roots. | Some behavior depends on provider-specific networking, registry, database, secrets, storage, and ingress behavior. |
 
 ## Aspect Operationalization
 

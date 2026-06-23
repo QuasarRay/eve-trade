@@ -21,6 +21,7 @@ variables:
   CHAOS_TIMEOUT_SECONDS: "900"
   DEPLOY_ENVIRONMENT: production
   EVE_TRADE_CLOUD_PROVIDER: aws
+  # Supported values: aws, gcp, talos-omni.
   IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   _EXPERIMENTAL_DAGGER_CLI_BIN: /usr/local/bin/dagger

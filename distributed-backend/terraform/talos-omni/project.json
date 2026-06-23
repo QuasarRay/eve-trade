@@ -1,0 +1,30 @@
+{
+  "name": "terraform-talos-omni-default",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "distributed-backend/terraform/talos-omni",
+  "projectType": "application",
+  "targets": {
+    "init": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "distributed-backend/terraform/talos-omni",
+        "command": "terraform init"
+      }
+    },
+    "validate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "distributed-backend/terraform/talos-omni",
+        "command": "terraform validate"
+      }
+    },
+    "plan": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "distributed-backend/terraform/talos-omni",
+        "command": "terraform plan"
+      }
+    }
+  },
+  "tags": ["terraform", "talos", "omni"]
+}
