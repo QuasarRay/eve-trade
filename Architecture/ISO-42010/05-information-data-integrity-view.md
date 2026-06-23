@@ -49,7 +49,7 @@ Model ID: `MODEL-DATA-01`; view component ID: `VC-DATA-01`.
 | `idempotency_record` | Tracks request fingerprint, state, and result batch. | Primary key `idempotency_key`; states `IN_PROGRESS`, `COMPLETED`, `FAILED`; result batch FK. | trade-settlement |
 | `request_attempt` | Records each attempt number for an idempotency key. | Primary key `request_id`; attempt numbers are computed per idempotency key by the executor; attempt states. | trade-settlement |
 | `settlement_batch` | Records one batch execution. | FK to idempotency record; batch states. | trade-settlement |
-| `settlement_step` | Records each operation step in a batch. | Unique `(settlement_batch_id, step_index)`; step states. | trade-settlement |
+| `settlement_step` | Records each operation step in a batch. | Unique `(settlement_batch_id, step_index)`; step states; stored `step_output` for replay. | trade-settlement |
 | `wallet` | Current wallet balance and checksum. | Primary wallet uniqueness per capsuleer; non-negative ISK; checksum fields. | trade-settlement |
 | `wallet_ledger` | Append-only wallet movement audit. | Delta/version checks; append-only triggers. | trade-settlement/database |
 | `item_stack` | Current item stack ownership, location, quantity, and checksum. | Non-negative quantity; stack state checks; checksum fields. | trade-settlement |
@@ -59,6 +59,40 @@ Model ID: `MODEL-DATA-01`; view component ID: `VC-DATA-01`.
 | `item_stack_escrow` | Holds item quantity during issue/accept/cancel. | Non-negative quantity; active trade uniqueness. | trade-settlement |
 | `trade_state_change` | Audit of trade state transitions. | State and change-kind checks. | trade-settlement/database |
 | Reference projection tables | Capsuleer, region, station, item type data. | Projection state checks. | database/migration owner |
+
+## Detailed Persistent Schema Register
+
+This register describes the current SQL schema implemented by
+`distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql`.
+It supersedes the older conceptual schema note and includes the implementation
+details that exist today.
+
+- `capsuleer`: `capsuleer_id BIGINT` primary key; `capsuleer_name TEXT NOT NULL`; `projection_state TEXT NOT NULL DEFAULT 'ACTIVE'` with values `ACTIVE` or `DELETED`; nullable `last_synced_at TIMESTAMPTZ`; `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`.
+- `region`: `region_id BIGINT` primary key; `region_name TEXT NOT NULL`; `projection_state TEXT NOT NULL DEFAULT 'ACTIVE'` with values `ACTIVE` or `DELETED`; nullable `last_synced_at TIMESTAMPTZ`; `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`.
+- `station`: `station_id BIGINT` primary key; `region_id BIGINT NOT NULL` foreign key to `region(region_id)`; `station_name TEXT NOT NULL`; `projection_state TEXT NOT NULL DEFAULT 'ACTIVE'` with values `ACTIVE` or `DELETED`; nullable `last_synced_at TIMESTAMPTZ`; `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`.
+- `item_type`: `item_type_id BIGINT` primary key; `item_type_name TEXT NOT NULL`; `category_name TEXT NOT NULL`; `group_name TEXT NOT NULL`; `projection_state TEXT NOT NULL DEFAULT 'ACTIVE'` with values `ACTIVE` or `DELETED`; nullable `last_synced_at TIMESTAMPTZ`; `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`.
+- `idempotency_record`: `idempotency_key TEXT` primary key; `request_fingerprint TEXT NOT NULL`; `request_kind TEXT NOT NULL`; `idempotency_state TEXT NOT NULL` with values `IN_PROGRESS`, `COMPLETED`, or `FAILED`; `created_by_service TEXT NOT NULL`; `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; nullable `completed_at TIMESTAMPTZ`; nullable `result_settlement_batch_id UUID` foreign key to `settlement_batch(settlement_batch_id)`; nullable `failure_code TEXT`; nullable `failure_message TEXT`.
+- `request_attempt`: `request_id UUID` primary key; `idempotency_key TEXT NOT NULL` foreign key to `idempotency_record(idempotency_key)`; `attempt_number INTEGER NOT NULL`; `received_by_service TEXT NOT NULL`; `attempt_state TEXT NOT NULL` with values `IN_PROGRESS`, `COMPLETED`, or `FAILED`; nullable `failure_code TEXT`; nullable `failure_message TEXT`; `received_at TIMESTAMPTZ NOT NULL DEFAULT now()`; nullable `completed_at TIMESTAMPTZ`; unique `(idempotency_key, attempt_number)`.
+- `settlement_batch`: `settlement_batch_id UUID` primary key; `request_id UUID NOT NULL` foreign key to `request_attempt(request_id)`; `idempotency_key TEXT NOT NULL` foreign key to `idempotency_record(idempotency_key)`; nullable `external_request_id TEXT`; nullable `caused_by_capsuleer_id BIGINT` foreign key to `capsuleer(capsuleer_id)`; `batch_state TEXT NOT NULL` with values `IN_PROGRESS`, `COMPLETED`, or `FAILED`; `created_by_service TEXT NOT NULL`; `started_at TIMESTAMPTZ NOT NULL DEFAULT now()`; nullable `completed_at TIMESTAMPTZ`; nullable `failure_code TEXT`; nullable `failure_message TEXT`; indexed by `settlement_batch_idempotency_key_idx` on `idempotency_key`.
+- `settlement_step`: `settlement_step_id UUID` primary key; `settlement_batch_id UUID NOT NULL` foreign key to `settlement_batch(settlement_batch_id)`; `step_index INTEGER NOT NULL`; `step_kind TEXT NOT NULL`; `step_payload JSONB NOT NULL`; `step_payload_hash TEXT NOT NULL`; `step_output JSONB NOT NULL DEFAULT '{}'::jsonb`; `step_state TEXT NOT NULL` with values `PENDING`, `RUNNING`, `COMPLETED`, or `FAILED`; nullable `started_at TIMESTAMPTZ`; nullable `completed_at TIMESTAMPTZ`; nullable `failure_code TEXT`; nullable `failure_message TEXT`; unique `(settlement_batch_id, step_index)`; indexed by `settlement_step_batch_idx` on `(settlement_batch_id, step_index)`.
+- `wallet`: `wallet_id UUID` primary key; `capsuleer_id BIGINT NOT NULL` foreign key to `capsuleer(capsuleer_id)`; `wallet_kind TEXT NOT NULL` with current value `PRIMARY`; `isk_amount BIGINT NOT NULL CHECK (isk_amount >= 0)`; `wallet_state TEXT NOT NULL` with values `ACTIVE`, `SUSPENDED`, or `CLOSED`; `wallet_version BIGINT NOT NULL`; `wallet_checksum TEXT NOT NULL`; `checksum_algorithm TEXT NOT NULL`; `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`; indexed by `wallet_capsuleer_idx` on `(capsuleer_id, wallet_kind)`; unique partial index `wallet_primary_capsuleer_unique_idx` on `capsuleer_id` where `wallet_kind = 'PRIMARY'`.
+- `wallet_ledger`: `wallet_ledger_id UUID` primary key defaulting to `gen_random_uuid()`; `settlement_step_id UUID NOT NULL` foreign key to `settlement_step(settlement_step_id)`; `wallet_id UUID NOT NULL` foreign key to `wallet(wallet_id)`; `capsuleer_id BIGINT NOT NULL` foreign key to `capsuleer(capsuleer_id)`; `entry_kind TEXT NOT NULL` with values `TRANSFER_TO_ESCROW`, `TRANSFER_FROM_ESCROW_TO_NEW_OWNER`, or `TRANSFER_FROM_ESCROW_TO_PREVIOUS_OWNER`; `isk_amount_delta BIGINT NOT NULL`; `isk_amount_before BIGINT NOT NULL`; `isk_amount_after BIGINT NOT NULL`; `wallet_version_before BIGINT NOT NULL`; `wallet_version_after BIGINT NOT NULL`; `wallet_checksum_before TEXT NOT NULL`; `wallet_checksum_after TEXT NOT NULL`; `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; check `isk_amount_after = isk_amount_before + isk_amount_delta`; check `wallet_version_after = wallet_version_before + 1`; indexed by `wallet_ledger_wallet_idx` on `(wallet_id, created_at)`; `wallet_ledger_append_only_trigger` rejects update/delete.
+- `item_stack`: `item_stack_id UUID` primary key; `owner_id BIGINT NOT NULL` foreign key to `capsuleer(capsuleer_id)`; `item_type_id BIGINT NOT NULL` foreign key to `item_type(item_type_id)`; `station_id BIGINT NOT NULL` foreign key to `station(station_id)`; `quantity BIGINT NOT NULL CHECK (quantity >= 0)`; `stack_state TEXT NOT NULL` with values `ACTIVE`, `LOCKED`, `DEPLETED`, or `MERGED`; `stack_version BIGINT NOT NULL`; `stack_checksum TEXT NOT NULL`; `checksum_algorithm TEXT NOT NULL`; `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`; indexed by `item_stack_owner_item_station_idx` on `(owner_id, item_type_id, station_id, stack_state)`.
+- `item_stack_ledger`: `item_stack_ledger_id UUID` primary key defaulting to `gen_random_uuid()`; `settlement_step_id UUID NOT NULL` foreign key to `settlement_step(settlement_step_id)`; `item_stack_id UUID NOT NULL` foreign key to `item_stack(item_stack_id)`; `item_type_id BIGINT NOT NULL` foreign key to `item_type(item_type_id)`; `owner_id BIGINT NOT NULL` foreign key to `capsuleer(capsuleer_id)`; `station_id BIGINT NOT NULL` foreign key to `station(station_id)`; `entry_kind TEXT NOT NULL` with values `TRANSFER_TO_ESCROW`, `TRANSFER_FROM_ESCROW_TO_NEW_OWNER`, `TRANSFER_FROM_ESCROW_TO_PREVIOUS_OWNER`, `MERGE_IN`, or `MERGE_OUT`; `quantity_delta BIGINT NOT NULL`; `quantity_before BIGINT NOT NULL`; `quantity_after BIGINT NOT NULL`; `stack_version_before BIGINT NOT NULL`; `stack_version_after BIGINT NOT NULL`; `stack_checksum_before TEXT NOT NULL`; `stack_checksum_after TEXT NOT NULL`; `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; check `quantity_after = quantity_before + quantity_delta`; check `stack_version_after = stack_version_before + 1`; indexed by `item_stack_ledger_stack_idx` on `(item_stack_id, created_at)`; `item_stack_ledger_append_only_trigger` rejects update/delete.
+- `trade_instance`: `trade_instance_id UUID` primary key; `created_settlement_step_id UUID NOT NULL` foreign key to `settlement_step(settlement_step_id)`; `trade_kind TEXT NOT NULL` with current value `SELL`; `trade_state TEXT NOT NULL` with values `OPEN`, `CANCELLED`, or `COMPLETED`; `issuer_id BIGINT NOT NULL` foreign key to `capsuleer(capsuleer_id)`; `item_type_id BIGINT NOT NULL` foreign key to `item_type(item_type_id)`; `station_id BIGINT NOT NULL` foreign key to `station(station_id)`; `total_quantity BIGINT NOT NULL CHECK (total_quantity > 0)`; `remaining_quantity BIGINT NOT NULL CHECK (remaining_quantity >= 0 AND remaining_quantity <= total_quantity)`; `unit_price_isk BIGINT NOT NULL CHECK (unit_price_isk > 0)`; nullable `expires_at TIMESTAMPTZ`; `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`; indexed by `trade_instance_lookup_idx` on `(item_type_id, station_id, trade_state)`; partial index `trade_instance_open_expires_at_idx` on `expires_at` where `trade_state = 'OPEN' AND expires_at IS NOT NULL`.
+- `wallet_escrow`: `wallet_escrow_id UUID` primary key; `trade_instance_id UUID NOT NULL` foreign key to `trade_instance(trade_instance_id)`; `owner_id BIGINT NOT NULL` foreign key to `capsuleer(capsuleer_id)`; `source_wallet_id UUID NOT NULL` foreign key to `wallet(wallet_id)`; `isk_amount BIGINT NOT NULL CHECK (isk_amount >= 0)`; `is_released BOOLEAN NOT NULL DEFAULT false`; `created_settlement_step_id UUID NOT NULL` foreign key to `settlement_step(settlement_step_id)`; nullable `released_settlement_step_id UUID` foreign key to `settlement_step(settlement_step_id)`; `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`; nullable `released_at TIMESTAMPTZ`.
+- `item_stack_escrow`: `item_stack_escrow_id UUID` primary key; `trade_instance_id UUID NOT NULL` foreign key to `trade_instance(trade_instance_id)`; `owner_id BIGINT NOT NULL` foreign key to `capsuleer(capsuleer_id)`; `source_item_stack_id UUID NOT NULL` foreign key to `item_stack(item_stack_id)`; `item_type_id BIGINT NOT NULL` foreign key to `item_type(item_type_id)`; `station_id BIGINT NOT NULL` foreign key to `station(station_id)`; `quantity BIGINT NOT NULL CHECK (quantity >= 0)`; `is_released BOOLEAN NOT NULL DEFAULT false`; `created_settlement_step_id UUID NOT NULL` foreign key to `settlement_step(settlement_step_id)`; nullable `released_settlement_step_id UUID` foreign key to `settlement_step(settlement_step_id)`; `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`; `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`; nullable `released_at TIMESTAMPTZ`; unique partial index `item_stack_escrow_active_trade_unique_idx` on `trade_instance_id` where `is_released = false`.
+- `trade_state_change`: `trade_state_change_id UUID` primary key defaulting to `gen_random_uuid()`; `settlement_step_id UUID NOT NULL` foreign key to `settlement_step(settlement_step_id)`; `trade_instance_id UUID NOT NULL` foreign key to `trade_instance(trade_instance_id)`; `from_trade_state TEXT NOT NULL` with values `OPEN`, `CANCELLED`, or `COMPLETED`; `to_trade_state TEXT NOT NULL` with values `OPEN`, `CANCELLED`, or `COMPLETED`; `trade_state_change_kind TEXT NOT NULL` with values `ISSUED`, `CANCELLED_BY_ISSUER`, or `ACCEPTED_BY_BUYER`; `changed_by_service TEXT NOT NULL`; `changed_at TIMESTAMPTZ NOT NULL DEFAULT now()`.
+
+Current cross-table SQL functions and constraint triggers:
+
+- `reject_ledger_mutation()` backs append-only wallet and item ledger triggers.
+- `check_trade_remaining_quantity_invariant()` and `enforce_trade_remaining_quantity_invariant()` require `trade_instance.remaining_quantity` to match active item escrow quantity and prevent `CANCELLED` or `COMPLETED` trades from retaining active item escrow.
+- `check_trade_wallet_escrow_closed_state_invariant()` and `enforce_trade_wallet_escrow_closed_state_invariant()` prevent `CANCELLED` or `COMPLETED` trades from retaining active wallet escrow.
+- `trade_instance_remaining_quantity_invariant_trigger` runs after insert/update on `trade_instance`, deferrable initially deferred.
+- `item_stack_escrow_remaining_quantity_invariant_trigger` runs after insert/update/delete on `item_stack_escrow`, deferrable initially deferred.
+- `trade_instance_wallet_escrow_closed_state_trigger` runs after insert/update on `trade_instance`, deferrable initially deferred.
+- `wallet_escrow_closed_trade_invariant_trigger` runs after insert/update/delete on `wallet_escrow`, deferrable initially deferred.
 
 ## Integrity Invariants
 
@@ -76,6 +110,7 @@ Model ID: `MODEL-DATA-01`; view component ID: `VC-DATA-01`.
 | INV-10 | Buyer wallet value transfer is consistent with quantity multiplied by price on the current trade row. | Market settlement plan plus trade-settlement row-level wallet/item escrow checks. |
 | INV-11 | Cancel returns only quantity present in item escrow to the previous owner. | Market cancellation planning plus item escrow quantity and owner-rule checks. |
 | INV-12 | Database schema must exist before services process requests. | Compose migration service and Kubernetes migration job dependency model. |
+| INV-13 | Cancelled or completed trades cannot retain active wallet escrow. | Deferrable SQL constraint triggers on `trade_instance` and `wallet_escrow`. |
 
 ## Invariant Enforcement Matrix
 
@@ -95,6 +130,7 @@ Model ID: `MODEL-DATA-02`; view component ID: `VC-DATA-02`.
 | INV-10 | Market computes payment from quantity and price; settlement checks payment against current trade price/remaining quantity and applies wallet operations. | Wallet ledger delta checks and non-negative wallet amount. | Source-anchored in EVID-004 and EVID-010; DB operation test not linked. |
 | INV-11 | Market plans return of remaining escrow; settlement checks escrow quantity and previous-owner destination before release. | Escrow release step FK fields. | Source-anchored in EVID-004 and EVID-010; DB operation test not linked. |
 | INV-12 | Compose migration and Kubernetes migration job apply schema before useful service processing. | Migration files are schema source. | Deployment-order assumptions documented; live deploy not run. |
+| INV-13 | Settlement operation handlers release wallet escrow in normal flows. | `trade_instance_wallet_escrow_closed_state_trigger` and `wallet_escrow_closed_trade_invariant_trigger`. | SQL evidence; trigger behavior test not linked. |
 
 ## Invariant Test And Evidence Register
 
@@ -112,6 +148,7 @@ Model ID: `MODEL-DATA-02`; view component ID: `VC-DATA-02`.
 | INV-10 | EVID-004, EVID-010 | Partial test coverage | `TestAcceptTradeInstancePaysSellerAsNewWalletOwner`; wallet ledger SQL checks. |
 | INV-11 | EVID-004 | Partial test coverage | `TestCancelTradeInstanceCanOnlyModifyTradeState`; full escrow-return DB test not linked. |
 | INV-12 | EVID-013, EVID-014 | Not run | Compose/Kubernetes migration order is modeled; live deploy validation was not run. |
+| INV-13 | EVID-010 | SQL evidence | Closed-trade wallet escrow invariant is implemented in migration SQL; trigger behavior test not linked. |
 
 ## Transaction Model
 
@@ -143,7 +180,7 @@ flowchart TD
 | Wallet operations | Reserve buyer funds, transfer accepted price, update buyer and seller balances. |
 | Wallet escrow operations | Hold and release ISK during settlement. |
 | Ledger operations | Append item and wallet movement records for audit. |
-| Settlement metadata operations | Record batch, attempt, step status, failure reason, and idempotent response. |
+| Settlement metadata operations | Record batch, attempt, step status, step output, failure reason, and idempotent response. |
 
 ## Settlement Operation Semantics
 
@@ -167,10 +204,9 @@ Model ID: `MODEL-DATA-03`; view component ID: `VC-DATA-03`.
 
 | Migration artifact | Role |
 | --- | --- |
-| `0001_settlement_schema.sql` | Creates the core settlement schema, trade, escrow, wallet, item, ledger, and metadata structures. |
-| `0002_merge_item_stack_constraints.sql` | Applies additional item stack constraints used by the current schema. |
-| Kubernetes base migration manifests | Mount and run schema migrations in cluster deployment. |
-| Compose `migrate` service | Runs local schema migrations before local services start. |
+| `0001_settlement_schema.sql` | Single canonical settlement migration file. It creates the schema on clean databases and contains idempotent compatibility statements for current item stack merge constraints, ledger kinds, stored settlement step output, append-only ledger triggers, and closed-trade escrow invariants. |
+| Kubernetes base migration manifests | Mount and run `0001_settlement_schema.sql` in cluster deployment. |
+| Compose `migrate` service | Runs `0001_settlement_schema.sql` before local services start, then applies local seed data. |
 | `local_dev_world.sql` | Seeds deterministic local test/demo data. |
 
 ## Data Lifecycle And Retention

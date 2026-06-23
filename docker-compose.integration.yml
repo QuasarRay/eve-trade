@@ -38,8 +38,7 @@ services:
     command: >
       bash -lc "
       psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' &&
-      psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql &&
-      psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/src/trade-settlement/migrations/0002_merge_item_stack_constraints.sql
+      psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql
       "
 
   rabbitmq:
@@ -113,7 +112,7 @@ services:
       RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8081/healthz >/dev/null"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8081/readyz >/dev/null"]
       interval: 2s
       timeout: 2s
       retries: 30
@@ -131,7 +130,7 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/healthz >/dev/null"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/readyz >/dev/null"]
       interval: 2s
       timeout: 2s
       retries: 30

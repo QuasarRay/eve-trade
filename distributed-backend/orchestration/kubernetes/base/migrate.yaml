@@ -36,13 +36,7 @@ spec:
             - -ec
           args:
             - |
-              if psql "$DATABASE_URL" -tAc "SELECT to_regclass('public.trade_instance')" | grep -q trade_instance; then
-                echo 'Database schema already exists; applying compatible migrations.';
-                psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /migrations/0002_merge_item_stack_constraints.sql;
-              else
-                psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /migrations/0001_settlement_schema.sql;
-                psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /migrations/0002_merge_item_stack_constraints.sql;
-              fi
+              psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /migrations/0001_settlement_schema.sql;
           volumeMounts:
             - name: migrations
               mountPath: /migrations

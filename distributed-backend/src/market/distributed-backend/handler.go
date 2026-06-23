@@ -2,8 +2,11 @@ package distributedbackend
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"connectrpc.com/connect"
@@ -11,6 +14,8 @@ import (
 	marketv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1"
 	marketv1connect "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1/marketv1connect"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ marketv1connect.MarketServiceHandler = (*MarketHandler)(nil)
@@ -42,6 +47,9 @@ func (h *MarketHandler) IssueTradeInstance(ctx context.Context, request *connect
 	if itemStack.OwnerID != message.IssuedByCapsuleerId {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("item stack owner must match issued_by_capsuleer_id"))
 	}
+	if itemStack.StackState != "ACTIVE" {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("item_stack is not ACTIVE"))
+	}
 	if message.ItemStack.OwnerId != 0 && message.ItemStack.OwnerId != itemStack.OwnerID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("item_stack owner_id does not match canonical item stack"))
 	}
@@ -71,6 +79,9 @@ func (h *MarketHandler) IssueTradeInstance(ctx context.Context, request *connect
 		ExpiresAt:    message.ExpiresAt,
 	})
 	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := attachRequestFingerprint(&plan, "issue_trade_instance", message); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
@@ -122,6 +133,9 @@ func (h *MarketHandler) AcceptTradeInstance(ctx context.Context, request *connec
 		if destination.OwnerID != message.BuyerCapsuleerId {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("buyer_destination_item_stack_id is not owned by buyer_capsuleer_id"))
 		}
+		if destination.StackState != "ACTIVE" {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("buyer destination item stack is not ACTIVE"))
+		}
 		if destination.ItemTypeID != trade.ItemTypeID || destination.StationID != trade.StationID {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("buyer destination item stack must match trade item type and station"))
 		}
@@ -149,6 +163,9 @@ func (h *MarketHandler) AcceptTradeInstance(ctx context.Context, request *connec
 		CompleteTrade:                   message.QuantityRequested == trade.EscrowQuantity,
 	})
 	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := attachRequestFingerprint(&plan, "accept_trade_instance", message); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
@@ -185,6 +202,9 @@ func (h *MarketHandler) CancelTradeInstance(ctx context.Context, request *connec
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if err := attachRequestFingerprint(&plan, "cancel_trade_instance", message); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 
 	settlementResponse, err := h.executePlan(ctx, plan)
 	if err != nil {
@@ -213,6 +233,9 @@ func (h *MarketHandler) replayIssueTradeInstance(ctx context.Context, message *m
 	if err != nil || replay == nil {
 		return nil, false, err
 	}
+	if ok, err := replayRequestFingerprintMatches(replay, "issue_trade_instance", message); err != nil || !ok {
+		return nil, false, errOrConflict(err, message.IdempotencyKey)
+	}
 	createTrade := replayPayload(replay, "create_new_trade_instance_row")
 	itemEscrow := replayPayload(replay, "transfer_quantity_from_item_stack_to_item_stack_escrow")
 	if createTrade == nil || itemEscrow == nil {
@@ -222,7 +245,8 @@ func (h *MarketHandler) replayIssueTradeInstance(ctx context.Context, message *m
 		int64Field(createTrade, "issuer_id") != message.IssuedByCapsuleerId ||
 		int64Field(createTrade, "total_quantity") != message.Quantity ||
 		int64Field(createTrade, "unit_price_isk") != message.UnitPriceIsk ||
-		stringField(itemEscrow, "source_item_stack_id") != message.ItemStack.ItemStackId {
+		stringField(itemEscrow, "source_item_stack_id") != message.ItemStack.ItemStackId ||
+		!timestampFieldMatches(createTrade, "expires_at", message.ExpiresAt) {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
 	if message.ItemStack.ItemTypeId != 0 && int64Field(createTrade, "item_type_id") != message.ItemStack.ItemTypeId {
@@ -243,8 +267,12 @@ func (h *MarketHandler) replayAcceptTradeInstance(ctx context.Context, message *
 	if err != nil || replay == nil {
 		return nil, false, err
 	}
+	if ok, err := replayRequestFingerprintMatches(replay, "accept_trade_instance", message); err != nil || !ok {
+		return nil, false, errOrConflict(err, message.IdempotencyKey)
+	}
 	walletEscrow := replayPayload(replay, "transfer_isk_amount_from_wallet_to_wallet_escrow")
 	itemTransfer := replayPayload(replay, "transfer_quantity_from_item_stack_escrow_to_item_stack_with_new_owner")
+	createdDestination := replayPayload(replay, "create_new_empty_item_stack") != nil
 	if walletEscrow == nil || itemTransfer == nil {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
@@ -256,7 +284,12 @@ func (h *MarketHandler) replayAcceptTradeInstance(ctx context.Context, message *
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
 	destinationItemStackID := stringField(itemTransfer, "destination_item_stack_id")
-	if message.BuyerDestinationItemStackId != "" && message.BuyerDestinationItemStackId != destinationItemStackID {
+	switch {
+	case message.BuyerDestinationItemStackId == "" && !createdDestination:
+		return nil, false, idempotencyConflict(message.IdempotencyKey)
+	case message.BuyerDestinationItemStackId != "" && createdDestination:
+		return nil, false, idempotencyConflict(message.IdempotencyKey)
+	case message.BuyerDestinationItemStackId != "" && message.BuyerDestinationItemStackId != destinationItemStackID:
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
 	return connect.NewResponse(&marketv1.AcceptTradeInstanceResponse{
@@ -270,6 +303,9 @@ func (h *MarketHandler) replayCancelTradeInstance(ctx context.Context, message *
 	replay, err := h.loadReplay(ctx, message.IdempotencyKey)
 	if err != nil || replay == nil {
 		return nil, false, err
+	}
+	if ok, err := replayRequestFingerprintMatches(replay, "cancel_trade_instance", message); err != nil || !ok {
+		return nil, false, errOrConflict(err, message.IdempotencyKey)
 	}
 	stateChange := replayPayload(replay, "modify_trade_instance_state")
 	if stateChange == nil {
@@ -291,7 +327,7 @@ func (h *MarketHandler) loadReplay(ctx context.Context, idempotencyKey string) (
 	}
 	replay, err := h.trades.LoadCompletedIdempotencyReplay(ctx, idempotencyKey)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		return nil, connect.NewError(connect.CodeUnavailable, err)
 	}
 	return replay, nil
 }
@@ -311,6 +347,42 @@ func idempotencyConflict(idempotencyKey string) error {
 	return connect.NewError(connect.CodeAborted, fmt.Errorf("idempotency_key %s was already used with a different request fingerprint", idempotencyKey))
 }
 
+func attachRequestFingerprint(plan *gametrade.SettlementPlan, requestKind string, message proto.Message) error {
+	fingerprint, err := marketRequestFingerprint(requestKind, message)
+	if err != nil {
+		return err
+	}
+	plan.RequestFingerprint = fingerprint
+	return nil
+}
+
+func replayRequestFingerprintMatches(replay *IdempotencyReplay, requestKind string, message proto.Message) (bool, error) {
+	if !strings.HasPrefix(replay.RequestFingerprint, "market.") {
+		return true, nil
+	}
+	fingerprint, err := marketRequestFingerprint(requestKind, message)
+	if err != nil {
+		return false, err
+	}
+	return replay.RequestFingerprint == fingerprint, nil
+}
+
+func marketRequestFingerprint(requestKind string, message proto.Message) (string, error) {
+	body, err := proto.MarshalOptions{Deterministic: true}.Marshal(message)
+	if err != nil {
+		return "", fmt.Errorf("marshal market request fingerprint: %w", err)
+	}
+	sum := sha256.Sum256(append([]byte(requestKind+":"), body...))
+	return "market." + requestKind + ".sha256:" + hex.EncodeToString(sum[:]), nil
+}
+
+func errOrConflict(err error, idempotencyKey string) error {
+	if err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	return idempotencyConflict(idempotencyKey)
+}
+
 func stringField(payload map[string]AnyJSON, name string) string {
 	value, _ := payload[name].(string)
 	return value
@@ -327,6 +399,24 @@ func int64Field(payload map[string]AnyJSON, name string) int64 {
 	default:
 		return 0
 	}
+}
+
+func timestampFieldMatches(payload map[string]AnyJSON, name string, timestamp *timestamppb.Timestamp) bool {
+	value, exists := payload[name]
+	if timestamp == nil {
+		return !exists || value == nil || value == ""
+	}
+	if value == nil {
+		return false
+	}
+
+	expected := timestamp.AsTime().UTC()
+	if text, ok := value.(string); ok {
+		actual, err := time.Parse(time.RFC3339Nano, text)
+		return err == nil && actual.UTC().Equal(expected)
+	}
+
+	return false
 }
 
 func (h *MarketHandler) loadAcceptableTrade(ctx context.Context, tradeInstanceID string, requestedQuantity int64) (TradeSnapshot, error) {

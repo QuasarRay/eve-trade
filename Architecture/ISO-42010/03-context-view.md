@@ -93,7 +93,7 @@ Model ID: `MODEL-CTX-03`; view component ID: `VC-CTX-03`.
 | Game server to API Gateway cancel | Connect POST `/eve.api_gateway.v1.GameTradeGatewayService/CancelTradeInstance` | API Gateway listens on `:8080`. | Same idempotency rules as other trade commands. |
 | API Gateway to Market | Connect POST `/eve.market.v1.MarketService/{IssueTradeInstance,AcceptTradeInstance,CancelTradeInstance}` | `MARKET_URL=http://market:8081` in Kubernetes base config. | API Gateway readiness checks Market `/readyz`. |
 | Market to RabbitMQ | AMQP publish to exchange `eve.trade.settlement` with routing key `settlement.execute` | Kubernetes base config, Compose, and messaging defaults. | Used when `SETTLEMENT_TRANSPORT=rabbitmq`; this is the checked-in Compose/Kubernetes path. |
-| Market direct to trade-settlement | Connect POST `/eve.trade_settlement.v1.TradeSettlementService/ExecuteSettlementBatch` | Market code defaults `SETTLEMENT_TRANSPORT` to `connect` and uses `TRADE_SETTLEMENT_URL`. | Implemented alternate transport; not the checked-in Compose/Kubernetes path. |
+| Market direct to trade-settlement | Connect POST `/eve.trade_settlement.v1.TradeSettlementService/ExecuteSettlementBatch` | Market code supports explicit `connect`, `grpc`, or `direct` transport and uses `TRADE_SETTLEMENT_URL` for that path. The default fallback is `rabbitmq`. | Implemented alternate transport; not the checked-in Compose/Kubernetes path. |
 | settlement-worker to trade-settlement | Connect POST `/eve.trade_settlement.v1.TradeSettlementService/ExecuteSettlementBatch` | `TRADE_SETTLEMENT_URL=http://trade-settlement:9092`. | Internal privileged API in the RabbitMQ path. |
 | Market and trade-settlement to PostgreSQL | PostgreSQL wire protocol | `DATABASE_URL` secret or local Compose env. | Market reads; trade-settlement writes. |
 
@@ -115,7 +115,7 @@ Model ID: `MODEL-CTX-03`; view component ID: `VC-CTX-03`.
 | API Gateway has no durable data ownership; it forwards game-facing trade commands to Market. | Enforced by code | API Gateway handlers call the Market client and no database repository is modeled for API Gateway. |
 | Market owns game-rule decisions for issue, accept, and cancel requests. | Enforced by code | Market handlers and `game-trade` package perform validation and settlement planning. |
 | trade-settlement atomically executes requested settlement operations and metadata writes. | Enforced by code | Rust settlement executor owns the transaction, savepoint, operation dispatch, idempotency, and settlement-step metadata writes. |
-| RabbitMQ is part of the checked-in Compose and Kubernetes trade command path. | Enforced by configuration | Compose and Kubernetes set `SETTLEMENT_TRANSPORT=rabbitmq`; code still supports direct/connect transport for local or alternate deployment. |
+| RabbitMQ is part of the checked-in Compose and Kubernetes trade command path. | Enforced by configuration | Compose and Kubernetes set `SETTLEMENT_TRANSPORT=rabbitmq`; Market config also defaults to `rabbitmq`; code still supports explicit direct/connect transport for local or alternate deployment. |
 | PostgreSQL is shared by Market for reads and trade-settlement for writes. | Enforced by code | Market repository is read-oriented; trade-settlement applies SQL mutations. |
 | Observability spans all services. | Partially enforced | OTEL configuration exists; complete dashboards and alert rules are tracked as risks. |
 

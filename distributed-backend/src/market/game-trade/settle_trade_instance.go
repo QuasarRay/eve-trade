@@ -31,6 +31,7 @@ type ItemStackRow struct {
 
 type SettlementPlan struct {
 	IdempotencyKey         string
+	RequestFingerprint     string
 	ExternalRequestID      string
 	CausedByCapsuleerID    int64
 	Operations             []*tradesettlementv1.SettlementOperation
@@ -54,7 +55,7 @@ func SettleTradeInstance(plan SettlementPlan) (*tradesettlementv1.ExecuteSettlem
 		CausedByCapsuleerId: &plan.CausedByCapsuleerID,
 		Operations:          plan.Operations,
 		CreatedByService:    CreatedByService,
-		RequestFingerprint:  "",
+		RequestFingerprint:  plan.RequestFingerprint,
 		RequestId:           "",
 	}, nil
 }

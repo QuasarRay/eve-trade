@@ -92,7 +92,7 @@ flowchart TB
 | Service | Expected endpoints | Current operational meaning | Current gap or limitation |
 | --- | --- | --- | --- |
 | API Gateway | `/healthz`, `/readyz` | Liveness means process is up; readiness checks Market reachability. | No wider downstream or trade-flow readiness is checked. |
-| Market | `/healthz`, `/readyz` | Liveness means process is up; current readiness checks PostgreSQL via `repository.Ping` only. RabbitMQ is initialized at startup for RabbitMQ transport but is not actively checked by readiness. | RabbitMQ and settlement reply-path readiness are not actively checked. |
+| Market | `/healthz`, `/readyz` | Liveness means process is up; readiness checks PostgreSQL via `repository.Ping` and checks the RabbitMQ client session when the RabbitMQ transport is active. | End-to-end settlement-worker/trade-settlement reply-path readiness is not actively checked by Market readiness. |
 | settlement-worker | `/healthz`, `/readyz` | Liveness means process is up; readiness reflects the worker health status set by the RabbitMQ consumer loop. | No separate trade-settlement dependency probe is modeled beyond request execution behavior. |
 | trade-settlement | Kubernetes TCP socket probes on port `9092` | Proves the gRPC port is accepting TCP connections; does not prove PostgreSQL is reachable or settlement can commit. | Database commit readiness is not probed. |
 
@@ -103,10 +103,10 @@ flowchart TB
 | Compose | `postgres` | `pg_isready` | Local database accepts connections. |
 | Compose | `rabbitmq` | `rabbitmq-diagnostics -q ping` | Local broker responds. |
 | Compose | `settlement-worker` | `GET /readyz` | Worker readiness, tied to worker health status. |
-| Compose | `market` | `GET /healthz` | Process liveness only; does not prove database or RabbitMQ readiness. |
-| Compose | `api-gateway` | `GET /healthz` | Process liveness only; does not prove Market readiness. |
+| Compose | `market` | `GET /readyz` | Market readiness, including PostgreSQL and RabbitMQ client-session readiness for the default RabbitMQ transport. |
+| Compose | `api-gateway` | `GET /readyz` | API Gateway readiness, including Market reachability. |
 | Kubernetes | `api-gateway` | `GET /readyz`, `GET /healthz` | Readiness checks Market; liveness checks process. |
-| Kubernetes | `market` | `GET /readyz`, `GET /healthz` | Readiness checks PostgreSQL only in current implementation. |
+| Kubernetes | `market` | `GET /readyz`, `GET /healthz` | Readiness checks PostgreSQL and RabbitMQ client-session readiness when RabbitMQ transport is active. |
 | Kubernetes | `settlement-worker` | `GET /readyz`, `GET /healthz` | Readiness reflects worker health status. |
 | Kubernetes | `trade-settlement` | TCP socket startup/readiness/liveness probes | Port-open check only. |
 
@@ -197,14 +197,14 @@ View component ID: `VC-DEP-03`.
 | Local Compose and Kubernetes both preserve the same logical service chain. | Enforced by manifest | Compose and Kubernetes both include API Gateway, Market, RabbitMQ, settlement-worker, trade-settlement, and PostgreSQL/migration path. |
 | Migrations are operationally part of startup. | Enforced by manifest | Compose `migrate` and Kubernetes migration job exist. |
 | Network policies encode intended service reachability rules. | Partially enforced | Business flows are encoded; database egress is broad TCP `5432`. |
-| Readiness probes cover only part of downstream dependency health. | Partially enforced | API Gateway and Market readiness cover some dependencies; trade-settlement uses TCP probe only. |
+| Readiness probes cover only part of downstream dependency health. | Partially enforced | API Gateway and Market readiness cover some dependencies; trade-settlement uses TCP probe only and Market does not probe the full settlement reply path. |
 | Observability is deployed as platform support for all business services. | Partially enforced | Collector manifests exist; alert/dashboard requirements are documented in Observability view. |
 
 ## Concern Satisfaction
 
 | Concern | How this view satisfies it | Evidence or gap |
 | --- | --- | --- |
-| CON-12 | Probe model distinguishes process, dependency, and TCP readiness. | Market and trade-settlement readiness gaps documented. |
+| CON-12 | Probe model distinguishes process, dependency, and TCP readiness. | Remaining settlement reply-path and trade-settlement readiness gaps documented. |
 | CON-13 | RabbitMQ deployment and DLQ config are represented. | Runtime and resilience views define DLQ semantics. |
 | CON-16 | Local and Kubernetes deployment paths are shown. | Compose and Kubernetes models. |
 | CON-23 | Runtime services, ports, config, and dependencies are listed. | Local and production-like deployment models. |

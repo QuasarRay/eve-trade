@@ -212,6 +212,11 @@ func (c *RPCClient) ExecuteSettlementBatch(ctx context.Context, request *tradese
 	}
 }
 
+func (c *RPCClient) Ping(context.Context) error {
+	_, err := c.ensureSession()
+	return err
+}
+
 func (c *RPCClient) Close() error {
 	var err error
 	c.closeOnce.Do(func() {

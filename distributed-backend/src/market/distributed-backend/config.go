@@ -25,7 +25,7 @@ func LoadConfig() Config {
 		TradeSettlementURL:       trimRightSlash(envOr("TRADE_SETTLEMENT_URL", "http://localhost:9090")),
 		DatabaseURL:              envOr("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/eve_trade"),
 		SettlementRequestTimeout: settlementTimeout,
-		SettlementTransport:      envOr("SETTLEMENT_TRANSPORT", "connect"),
+		SettlementTransport:      envOr("SETTLEMENT_TRANSPORT", "rabbitmq"),
 		RabbitMQ: rabbitmqsettlement.Config{
 			URL:                  envOr("RABBITMQ_URL", rabbitmqsettlement.DefaultURL),
 			Exchange:             envOr("RABBITMQ_SETTLEMENT_EXCHANGE", rabbitmqsettlement.DefaultExchange),

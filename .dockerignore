@@ -31,4 +31,4 @@ main.exe
 ci-cd/out/
 
 # Documentation/audit scratch files are not needed in image build contexts.
-flaws.md
+changes/v1/flaws.md

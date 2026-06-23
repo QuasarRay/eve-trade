@@ -31,8 +31,8 @@ The local stack starts:
 * RabbitMQ management UI: `http://localhost:15672` (`eve_trade` / `eve_trade`)
 * PostgreSQL: `localhost:5432`
 
-The startup migration creates the local database schema when it is missing,
-applies compatible follow-up migrations, and seeds a small local world. The
+The startup migration applies the single canonical settlement schema file and
+seeds a small local world. The
 main sample actors are seller capsuleer `1001`, buyer capsuleer `2002`, seller
 Tritanium stack `11111111-1111-4111-8111-111111111111`, buyer wallet
 `00000000-0000-4000-8000-000000002002`, item type `34`, and station

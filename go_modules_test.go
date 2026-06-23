@@ -43,10 +43,6 @@ func TestKubernetesMigrationCopiesMatchSource(t *testing.T) {
 			"distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql",
 			"distributed-backend/orchestration/kubernetes/base/migrations/0001_settlement_schema.sql",
 		},
-		{
-			"distributed-backend/src/trade-settlement/migrations/0002_merge_item_stack_constraints.sql",
-			"distributed-backend/orchestration/kubernetes/base/migrations/0002_merge_item_stack_constraints.sql",
-		},
 	}
 
 	for _, pair := range pairs {

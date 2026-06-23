@@ -74,6 +74,7 @@ struct StepReplayRow {
     settlement_step_id: Uuid,
     step_index: i32,
     step_kind: String,
+    step_output: serde_json::Value,
 }
 
 impl SettlementExecutor {
@@ -197,6 +198,7 @@ impl SettlementExecutor {
                         return Err(error);
                     }
                 };
+            mark_step_completed(&mut tx, step.settlement_step_id, &output).await?;
             step_results.push(StepExecutionResult {
                 step_index: step.step_index as u32,
                 settlement_step_id: step.settlement_step_id,
@@ -211,7 +213,6 @@ impl SettlementExecutor {
             settlement_batch_id,
             request_id,
             &command.idempotency_key,
-            &step_records,
         )
         .await?;
         tx.commit().await?;
@@ -233,7 +234,8 @@ impl SettlementExecutor {
             r#"
             SELECT settlement_step_id,
                    step_index,
-                   step_kind
+                   step_kind,
+                   step_output
             FROM settlement_step
             WHERE settlement_batch_id = $1
             ORDER BY step_index
@@ -243,15 +245,16 @@ impl SettlementExecutor {
         .fetch_all(&self.db)
         .await?;
 
-        Ok(rows
-            .into_iter()
-            .map(|row| StepExecutionResult {
-                step_index: row.step_index as u32,
-                settlement_step_id: row.settlement_step_id,
-                step_kind: kind_name_to_proto(&row.step_kind),
-                output: OperationOutput::default(),
+        rows.into_iter()
+            .map(|row| {
+                Ok(StepExecutionResult {
+                    step_index: row.step_index as u32,
+                    settlement_step_id: row.settlement_step_id,
+                    step_kind: kind_name_to_proto(&row.step_kind),
+                    output: serde_json::from_value(row.step_output)?,
+                })
             })
-            .collect())
+            .collect()
     }
 }
 
@@ -260,11 +263,7 @@ async fn complete_execution(
     settlement_batch_id: Uuid,
     request_id: Uuid,
     idempotency_key: &str,
-    step_records: &[StepRecord],
 ) -> Result<()> {
-    for step in step_records {
-        mark_step_completed(tx, step.settlement_step_id).await?;
-    }
     complete_batch(tx, settlement_batch_id).await?;
     complete_request_attempt(tx, request_id).await?;
     complete_idempotency_record(tx, idempotency_key, settlement_batch_id).await?;
@@ -560,17 +559,21 @@ async fn mark_step_running(
 async fn mark_step_completed(
     tx: &mut Transaction<'_, Postgres>,
     settlement_step_id: Uuid,
+    output: &OperationOutput,
 ) -> Result<()> {
+    let step_output = serde_json::to_value(output)?;
     sqlx::query(
         r#"
         UPDATE settlement_step
         SET step_state = $2,
-            completed_at = now()
+            completed_at = now(),
+            step_output = $3
         WHERE settlement_step_id = $1
         "#,
     )
     .bind(settlement_step_id)
     .bind(STEP_STATE_COMPLETED)
+    .bind(step_output)
     .execute(&mut **tx)
     .await?;
 

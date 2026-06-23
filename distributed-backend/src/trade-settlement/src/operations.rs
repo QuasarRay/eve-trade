@@ -1,4 +1,5 @@
 use chrono::Utc;
+use serde::{Deserialize, Serialize};
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
@@ -22,14 +23,15 @@ const TRADE_STATE_COMPLETED: &str = "COMPLETED";
 const TRADE_STATE_CHANGE_CANCELLED: &str = "CANCELLED_BY_ISSUER";
 const TRADE_STATE_CHANGE_ACCEPTED: &str = "ACCEPTED_BY_BUYER";
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EntityReferenceOutput {
-    pub entity_kind: &'static str,
+    pub entity_kind: String,
     pub entity_id: Uuid,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct OperationOutput {
+    #[serde(default)]
     pub entity_references: Vec<EntityReferenceOutput>,
 }
 
@@ -37,7 +39,7 @@ impl OperationOutput {
     fn single(entity_kind: &'static str, entity_id: Uuid) -> Self {
         Self {
             entity_references: vec![EntityReferenceOutput {
-                entity_kind,
+                entity_kind: entity_kind.to_string(),
                 entity_id,
             }],
         }
@@ -524,11 +526,11 @@ pub async fn merge_item_stacks_with_identical_item_type_and_identical_owner(
 
     Ok(OperationOutput::many(vec![
         EntityReferenceOutput {
-            entity_kind: "item_stack",
+            entity_kind: "item_stack".to_string(),
             entity_id: payload.destination_item_stack_id,
         },
         EntityReferenceOutput {
-            entity_kind: "item_stack",
+            entity_kind: "item_stack".to_string(),
             entity_id: payload.source_item_stack_id,
         },
     ]))
@@ -791,11 +793,11 @@ async fn transfer_quantity_from_item_stack_escrow_to_item_stack(
 
     Ok(OperationOutput::many(vec![
         EntityReferenceOutput {
-            entity_kind: "item_stack",
+            entity_kind: "item_stack".to_string(),
             entity_id: destination_item_stack_id,
         },
         EntityReferenceOutput {
-            entity_kind: "item_stack_escrow",
+            entity_kind: "item_stack_escrow".to_string(),
             entity_id: item_stack_escrow_id,
         },
     ]))
@@ -1039,11 +1041,11 @@ async fn transfer_isk_amount_from_wallet_escrow_to_wallet(
 
     Ok(OperationOutput::many(vec![
         EntityReferenceOutput {
-            entity_kind: "wallet",
+            entity_kind: "wallet".to_string(),
             entity_id: destination_wallet_id,
         },
         EntityReferenceOutput {
-            entity_kind: "wallet_escrow",
+            entity_kind: "wallet_escrow".to_string(),
             entity_id: wallet_escrow_id,
         },
     ]))

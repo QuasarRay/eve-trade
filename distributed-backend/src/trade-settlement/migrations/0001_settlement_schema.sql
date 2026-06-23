@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-CREATE TABLE capsuleer (
+CREATE TABLE IF NOT EXISTS capsuleer (
     capsuleer_id BIGINT PRIMARY KEY,
     capsuleer_name TEXT NOT NULL,
     projection_state TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (projection_state IN ('ACTIVE', 'DELETED')),
@@ -9,7 +9,7 @@ CREATE TABLE capsuleer (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE region (
+CREATE TABLE IF NOT EXISTS region (
     region_id BIGINT PRIMARY KEY,
     region_name TEXT NOT NULL,
     projection_state TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (projection_state IN ('ACTIVE', 'DELETED')),
@@ -18,7 +18,7 @@ CREATE TABLE region (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE station (
+CREATE TABLE IF NOT EXISTS station (
     station_id BIGINT PRIMARY KEY,
     region_id BIGINT NOT NULL REFERENCES region(region_id),
     station_name TEXT NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE station (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE item_type (
+CREATE TABLE IF NOT EXISTS item_type (
     item_type_id BIGINT PRIMARY KEY,
     item_type_name TEXT NOT NULL,
     category_name TEXT NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE item_type (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE idempotency_record (
+CREATE TABLE IF NOT EXISTS idempotency_record (
     idempotency_key TEXT PRIMARY KEY,
     request_fingerprint TEXT NOT NULL,
     request_kind TEXT NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE idempotency_record (
     failure_message TEXT
 );
 
-CREATE TABLE request_attempt (
+CREATE TABLE IF NOT EXISTS request_attempt (
     request_id UUID PRIMARY KEY,
     idempotency_key TEXT NOT NULL REFERENCES idempotency_record(idempotency_key),
     attempt_number INTEGER NOT NULL,
@@ -65,7 +65,7 @@ CREATE TABLE request_attempt (
     UNIQUE (idempotency_key, attempt_number)
 );
 
-CREATE TABLE settlement_batch (
+CREATE TABLE IF NOT EXISTS settlement_batch (
     settlement_batch_id UUID PRIMARY KEY,
     request_id UUID NOT NULL REFERENCES request_attempt(request_id),
     idempotency_key TEXT NOT NULL REFERENCES idempotency_record(idempotency_key),
@@ -80,17 +80,21 @@ CREATE TABLE settlement_batch (
 );
 
 ALTER TABLE idempotency_record
+    DROP CONSTRAINT IF EXISTS idempotency_record_result_batch_fk;
+
+ALTER TABLE idempotency_record
     ADD CONSTRAINT idempotency_record_result_batch_fk
     FOREIGN KEY (result_settlement_batch_id)
     REFERENCES settlement_batch(settlement_batch_id);
 
-CREATE TABLE settlement_step (
+CREATE TABLE IF NOT EXISTS settlement_step (
     settlement_step_id UUID PRIMARY KEY,
     settlement_batch_id UUID NOT NULL REFERENCES settlement_batch(settlement_batch_id),
     step_index INTEGER NOT NULL,
     step_kind TEXT NOT NULL,
     step_payload JSONB NOT NULL,
     step_payload_hash TEXT NOT NULL,
+    step_output JSONB NOT NULL DEFAULT '{}'::jsonb,
     step_state TEXT NOT NULL CHECK (step_state IN ('PENDING', 'RUNNING', 'COMPLETED', 'FAILED')),
     started_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,
@@ -99,7 +103,10 @@ CREATE TABLE settlement_step (
     UNIQUE (settlement_batch_id, step_index)
 );
 
-CREATE TABLE wallet (
+ALTER TABLE settlement_step
+    ADD COLUMN IF NOT EXISTS step_output JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+CREATE TABLE IF NOT EXISTS wallet (
     wallet_id UUID PRIMARY KEY,
     capsuleer_id BIGINT NOT NULL REFERENCES capsuleer(capsuleer_id),
     wallet_kind TEXT NOT NULL CHECK (wallet_kind IN ('PRIMARY')),
@@ -112,7 +119,7 @@ CREATE TABLE wallet (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE item_stack (
+CREATE TABLE IF NOT EXISTS item_stack (
     item_stack_id UUID PRIMARY KEY,
     owner_id BIGINT NOT NULL REFERENCES capsuleer(capsuleer_id),
     item_type_id BIGINT NOT NULL REFERENCES item_type(item_type_id),
@@ -126,7 +133,7 @@ CREATE TABLE item_stack (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE trade_instance (
+CREATE TABLE IF NOT EXISTS trade_instance (
     trade_instance_id UUID PRIMARY KEY,
     created_settlement_step_id UUID NOT NULL REFERENCES settlement_step(settlement_step_id),
     trade_kind TEXT NOT NULL CHECK (trade_kind IN ('SELL')),
@@ -142,7 +149,7 @@ CREATE TABLE trade_instance (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE wallet_escrow (
+CREATE TABLE IF NOT EXISTS wallet_escrow (
     wallet_escrow_id UUID PRIMARY KEY,
     trade_instance_id UUID NOT NULL REFERENCES trade_instance(trade_instance_id),
     owner_id BIGINT NOT NULL REFERENCES capsuleer(capsuleer_id),
@@ -156,7 +163,7 @@ CREATE TABLE wallet_escrow (
     released_at TIMESTAMPTZ
 );
 
-CREATE TABLE item_stack_escrow (
+CREATE TABLE IF NOT EXISTS item_stack_escrow (
     item_stack_escrow_id UUID PRIMARY KEY,
     trade_instance_id UUID NOT NULL REFERENCES trade_instance(trade_instance_id),
     owner_id BIGINT NOT NULL REFERENCES capsuleer(capsuleer_id),
@@ -172,7 +179,7 @@ CREATE TABLE item_stack_escrow (
     released_at TIMESTAMPTZ
 );
 
-CREATE TABLE wallet_ledger (
+CREATE TABLE IF NOT EXISTS wallet_ledger (
     wallet_ledger_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     settlement_step_id UUID NOT NULL REFERENCES settlement_step(settlement_step_id),
     wallet_id UUID NOT NULL REFERENCES wallet(wallet_id),
@@ -194,7 +201,7 @@ CREATE TABLE wallet_ledger (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE item_stack_ledger (
+CREATE TABLE IF NOT EXISTS item_stack_ledger (
     item_stack_ledger_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     settlement_step_id UUID NOT NULL REFERENCES settlement_step(settlement_step_id),
     item_stack_id UUID NOT NULL REFERENCES item_stack(item_stack_id),
@@ -228,17 +235,50 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+ALTER TABLE item_stack
+    DROP CONSTRAINT IF EXISTS item_stack_stack_state_check;
+
+ALTER TABLE item_stack
+    ADD CONSTRAINT item_stack_stack_state_check
+    CHECK (stack_state IN ('ACTIVE', 'LOCKED', 'DEPLETED', 'MERGED'));
+
+ALTER TABLE wallet_ledger
+    DROP CONSTRAINT IF EXISTS wallet_ledger_entry_kind_check;
+
+ALTER TABLE wallet_ledger
+    ADD CONSTRAINT wallet_ledger_entry_kind_check
+    CHECK (entry_kind IN (
+        'TRANSFER_TO_ESCROW',
+        'TRANSFER_FROM_ESCROW_TO_NEW_OWNER',
+        'TRANSFER_FROM_ESCROW_TO_PREVIOUS_OWNER'
+    ));
+
+ALTER TABLE item_stack_ledger
+    DROP CONSTRAINT IF EXISTS item_stack_ledger_entry_kind_check;
+
+ALTER TABLE item_stack_ledger
+    ADD CONSTRAINT item_stack_ledger_entry_kind_check
+    CHECK (entry_kind IN (
+        'TRANSFER_TO_ESCROW',
+        'TRANSFER_FROM_ESCROW_TO_NEW_OWNER',
+        'TRANSFER_FROM_ESCROW_TO_PREVIOUS_OWNER',
+        'MERGE_IN',
+        'MERGE_OUT'
+    ));
+
+DROP TRIGGER IF EXISTS wallet_ledger_append_only_trigger ON wallet_ledger;
 CREATE TRIGGER wallet_ledger_append_only_trigger
 BEFORE UPDATE OR DELETE ON wallet_ledger
 FOR EACH ROW
 EXECUTE FUNCTION reject_ledger_mutation();
 
+DROP TRIGGER IF EXISTS item_stack_ledger_append_only_trigger ON item_stack_ledger;
 CREATE TRIGGER item_stack_ledger_append_only_trigger
 BEFORE UPDATE OR DELETE ON item_stack_ledger
 FOR EACH ROW
 EXECUTE FUNCTION reject_ledger_mutation();
 
-CREATE TABLE trade_state_change (
+CREATE TABLE IF NOT EXISTS trade_state_change (
     trade_state_change_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     settlement_step_id UUID NOT NULL REFERENCES settlement_step(settlement_step_id),
     trade_instance_id UUID NOT NULL REFERENCES trade_instance(trade_instance_id),
@@ -253,16 +293,16 @@ CREATE TABLE trade_state_change (
     changed_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX settlement_batch_idempotency_key_idx ON settlement_batch(idempotency_key);
-CREATE INDEX settlement_step_batch_idx ON settlement_step(settlement_batch_id, step_index);
-CREATE INDEX wallet_capsuleer_idx ON wallet(capsuleer_id, wallet_kind);
-CREATE UNIQUE INDEX wallet_primary_capsuleer_unique_idx ON wallet(capsuleer_id) WHERE wallet_kind = 'PRIMARY';
-CREATE INDEX wallet_ledger_wallet_idx ON wallet_ledger(wallet_id, created_at);
-CREATE INDEX item_stack_owner_item_station_idx ON item_stack(owner_id, item_type_id, station_id, stack_state);
-CREATE INDEX item_stack_ledger_stack_idx ON item_stack_ledger(item_stack_id, created_at);
-CREATE INDEX trade_instance_lookup_idx ON trade_instance(item_type_id, station_id, trade_state);
-CREATE INDEX trade_instance_open_expires_at_idx ON trade_instance(expires_at) WHERE trade_state = 'OPEN' AND expires_at IS NOT NULL;
-CREATE UNIQUE INDEX item_stack_escrow_active_trade_unique_idx ON item_stack_escrow(trade_instance_id) WHERE is_released = false;
+CREATE INDEX IF NOT EXISTS settlement_batch_idempotency_key_idx ON settlement_batch(idempotency_key);
+CREATE INDEX IF NOT EXISTS settlement_step_batch_idx ON settlement_step(settlement_batch_id, step_index);
+CREATE INDEX IF NOT EXISTS wallet_capsuleer_idx ON wallet(capsuleer_id, wallet_kind);
+CREATE UNIQUE INDEX IF NOT EXISTS wallet_primary_capsuleer_unique_idx ON wallet(capsuleer_id) WHERE wallet_kind = 'PRIMARY';
+CREATE INDEX IF NOT EXISTS wallet_ledger_wallet_idx ON wallet_ledger(wallet_id, created_at);
+CREATE INDEX IF NOT EXISTS item_stack_owner_item_station_idx ON item_stack(owner_id, item_type_id, station_id, stack_state);
+CREATE INDEX IF NOT EXISTS item_stack_ledger_stack_idx ON item_stack_ledger(item_stack_id, created_at);
+CREATE INDEX IF NOT EXISTS trade_instance_lookup_idx ON trade_instance(item_type_id, station_id, trade_state);
+CREATE INDEX IF NOT EXISTS trade_instance_open_expires_at_idx ON trade_instance(expires_at) WHERE trade_state = 'OPEN' AND expires_at IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS item_stack_escrow_active_trade_unique_idx ON item_stack_escrow(trade_instance_id) WHERE is_released = false;
 
 CREATE OR REPLACE FUNCTION check_trade_remaining_quantity_invariant(target_trade_instance_id UUID)
 RETURNS VOID AS $$
@@ -327,14 +367,82 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trade_instance_remaining_quantity_invariant_trigger ON trade_instance;
 CREATE CONSTRAINT TRIGGER trade_instance_remaining_quantity_invariant_trigger
 AFTER INSERT OR UPDATE ON trade_instance
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
 EXECUTE FUNCTION enforce_trade_remaining_quantity_invariant();
 
+DROP TRIGGER IF EXISTS item_stack_escrow_remaining_quantity_invariant_trigger ON item_stack_escrow;
 CREATE CONSTRAINT TRIGGER item_stack_escrow_remaining_quantity_invariant_trigger
 AFTER INSERT OR UPDATE OR DELETE ON item_stack_escrow
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
 EXECUTE FUNCTION enforce_trade_remaining_quantity_invariant();
+
+CREATE OR REPLACE FUNCTION check_trade_wallet_escrow_closed_state_invariant(target_trade_instance_id UUID)
+RETURNS VOID AS $$
+DECLARE
+    stored_trade_state TEXT;
+    active_wallet_escrow_isk BIGINT;
+BEGIN
+    SELECT
+        t.trade_state,
+        COALESCE(SUM(w.isk_amount) FILTER (WHERE w.is_released = false), 0)::BIGINT
+    INTO
+        stored_trade_state,
+        active_wallet_escrow_isk
+    FROM trade_instance t
+    LEFT JOIN wallet_escrow w ON w.trade_instance_id = t.trade_instance_id
+    WHERE t.trade_instance_id = target_trade_instance_id
+    GROUP BY t.trade_state;
+
+    IF stored_trade_state IS NULL THEN
+        RETURN;
+    END IF;
+
+    IF stored_trade_state IN ('CANCELLED', 'COMPLETED') AND active_wallet_escrow_isk <> 0 THEN
+        RAISE EXCEPTION 'trade_instance % cannot be % while active wallet escrow amount is %',
+            target_trade_instance_id,
+            stored_trade_state,
+            active_wallet_escrow_isk
+            USING ERRCODE = '23514';
+    END IF;
+
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION enforce_trade_wallet_escrow_closed_state_invariant()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        IF OLD.trade_instance_id IS DISTINCT FROM NEW.trade_instance_id THEN
+            PERFORM check_trade_wallet_escrow_closed_state_invariant(OLD.trade_instance_id);
+        END IF;
+    END IF;
+
+    IF TG_OP = 'DELETE' THEN
+        PERFORM check_trade_wallet_escrow_closed_state_invariant(OLD.trade_instance_id);
+    ELSE
+        PERFORM check_trade_wallet_escrow_closed_state_invariant(NEW.trade_instance_id);
+    END IF;
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trade_instance_wallet_escrow_closed_state_trigger ON trade_instance;
+CREATE CONSTRAINT TRIGGER trade_instance_wallet_escrow_closed_state_trigger
+AFTER INSERT OR UPDATE ON trade_instance
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE FUNCTION enforce_trade_wallet_escrow_closed_state_invariant();
+
+DROP TRIGGER IF EXISTS wallet_escrow_closed_trade_invariant_trigger ON wallet_escrow;
+CREATE CONSTRAINT TRIGGER wallet_escrow_closed_trade_invariant_trigger
+AFTER INSERT OR UPDATE OR DELETE ON wallet_escrow
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE FUNCTION enforce_trade_wallet_escrow_closed_state_invariant();

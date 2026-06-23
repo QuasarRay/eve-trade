@@ -45,6 +45,37 @@ func TestIssueTradeInstanceBuildsTradeAndItemEscrowOperations(t *testing.T) {
 	}
 }
 
+func TestSettleTradeInstanceCarriesRequestFingerprint(t *testing.T) {
+	request, err := SettleTradeInstance(SettlementPlan{
+		IdempotencyKey:      "issue-1",
+		RequestFingerprint:  "market.issue_trade_instance.sha256:fingerprint",
+		ExternalRequestID:   "external-1",
+		CausedByCapsuleerID: 1001,
+		Operations: []*tradesettlementv1.SettlementOperation{
+			{
+				Operation: &tradesettlementv1.SettlementOperation_CreateNewTradeInstanceRow{
+					CreateNewTradeInstanceRow: &tradesettlementv1.CreateNewTradeInstanceRow{
+						TradeInstanceId: "22222222-2222-4222-8222-222222222222",
+						TradeKind:       TradeKindSell,
+						TradeState:      TradeStateOpen,
+						IssuerId:        1001,
+						ItemTypeId:      34,
+						StationId:       60003760,
+						TotalQuantity:   4,
+						UnitPriceIsk:    25,
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("SettleTradeInstance returned error: %v", err)
+	}
+	if request.RequestFingerprint != "market.issue_trade_instance.sha256:fingerprint" {
+		t.Fatalf("request fingerprint = %q, want plan fingerprint", request.RequestFingerprint)
+	}
+}
+
 func TestIssueTradeInstanceRejectsExpiredTrade(t *testing.T) {
 	_, err := IssueTradeInstance(IssueTradeInstanceInput{
 		IdempotencyKey:      "issue-expired",

@@ -57,6 +57,7 @@ type TradeRepository interface {
 
 type IdempotencyReplay struct {
 	SettlementBatchID   string
+	RequestFingerprint  string
 	ExternalRequestID   string
 	CausedByCapsuleerID int64
 	Steps               []ReplayStep
@@ -234,13 +235,14 @@ func (r *PostgresTradeRepository) LoadCompletedIdempotencyReplay(ctx context.Con
 	var replay IdempotencyReplay
 	err := r.pool.QueryRow(ctx, `
 		SELECT ir.result_settlement_batch_id::text,
+		       ir.request_fingerprint,
 		       COALESCE(sb.external_request_id, ''),
 		       COALESCE(sb.caused_by_capsuleer_id, 0)
 		FROM idempotency_record ir
 		JOIN settlement_batch sb ON sb.settlement_batch_id = ir.result_settlement_batch_id
 		WHERE ir.idempotency_key = $1
 		  AND ir.idempotency_state = 'COMPLETED'
-	`, idempotencyKey).Scan(&replay.SettlementBatchID, &replay.ExternalRequestID, &replay.CausedByCapsuleerID)
+	`, idempotencyKey).Scan(&replay.SettlementBatchID, &replay.RequestFingerprint, &replay.ExternalRequestID, &replay.CausedByCapsuleerID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}

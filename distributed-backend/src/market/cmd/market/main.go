@@ -45,10 +45,21 @@ func main() {
 	defer closeSettlement()
 
 	handler := distributedbackend.NewMarketHandler(settlement, repository)
+	readiness := func(ctx context.Context) error {
+		if err := repository.Ping(ctx); err != nil {
+			return err
+		}
+		if checker, ok := settlement.(interface {
+			Ping(context.Context) error
+		}); ok {
+			return checker.Ping(ctx)
+		}
+		return nil
+	}
 	server := distributedbackend.NewHTTPServer(
 		config,
 		handler,
-		repository.Ping,
+		readiness,
 		connect.WithInterceptors(observability.NewInternalServerInterceptor()),
 	)
 
