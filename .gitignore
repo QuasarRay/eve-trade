@@ -20,3 +20,6 @@ __pycache__/
 /distributed-backend/docker/local-bin/
 /.idea/
 .terraform
+docker-compose.integration.local.yml
+trade-settlement.local.dockerfile
+go-service.local.dockerfile
