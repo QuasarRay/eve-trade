@@ -1,12 +1,6 @@
 ﻿# This block chooses the Rust toolchain image used to compile the settlement binary.
-# It exists because the service is Rust and also needs `protoc` at build time for tonic/prost code generation.
+# It exists because the service is Rust and builds protobuf bindings through the vendored protoc crate.
 FROM rust:1-bookworm AS build
-
-# This block installs the protobuf compiler required by build.rs.
-# It exists because the Rust crate generates settlement protobuf code during compilation.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends protobuf-compiler pkg-config ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
 
 # This block sets the repository root as the build working directory.
 # It exists so relative paths inside build.rs continue to resolve exactly as they do in the repo.
@@ -25,26 +19,21 @@ RUN cd distributed-backend/src/trade-settlement \
 # It exists so the runtime container is closer to a deployable service image.
 FROM debian:bookworm-slim AS runtime
 
-# This block installs certificate roots needed by Rust TLS-enabled database dependencies.
-# It exists so the runtime has the minimum OS trust store expected by rustls-based crates.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates passwd \
-    && rm -rf /var/lib/apt/lists/*
-
 # This block creates the runtime working directory.
 # It exists so the Summer config file can live beside the binary in a stable location.
 WORKDIR /app
-RUN useradd --system --uid 10001 --home-dir /app --shell /usr/sbin/nologin appuser
+
+# This block copies certificate roots from the toolchain image without invoking OS package managers.
+# It exists so rustls-based database dependencies retain the trust store expected by production images.
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 # This block copies the compiled settlement binary from the build stage.
 # It exists so the runtime image contains only the executable, not the compiler toolchain.
 COPY --from=build /workspace/distributed-backend/src/trade-settlement/target/release/trade-settlement /app/trade-settlement
-RUN chown appuser:appuser /app/trade-settlement
 
 # This block copies the Summer gRPC configuration expected by the service.
 # It exists so the container binds to 0.0.0.0:9092 instead of a developer-only default.
 COPY --from=build /workspace/distributed-backend/src/trade-settlement/config /app/config
-RUN chown -R appuser:appuser /app/config
 
 # This block documents the gRPC port exposed by trade-settlement.
 # It exists so compose and humans can see the intended network contract.
@@ -52,5 +41,5 @@ EXPOSE 9092
 
 # This block runs the  settlement process.
 # It exists as the only runtime command for this image.
-USER appuser
+USER 10001:10001
 CMD ["/app/trade-settlement"]

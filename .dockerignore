@@ -23,6 +23,8 @@ settlement-worker
 trade-settlement
 main
 main.exe
+!distributed-backend/docker/local-bin/
+!distributed-backend/docker/local-bin/*
 
 # Local editor and CI artifacts
 .idea/

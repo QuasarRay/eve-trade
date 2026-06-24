@@ -17,4 +17,6 @@ __pycache__/
 .pytest_cache/
 .gocache
 .gomodcache
+/distributed-backend/docker/local-bin/
 /.idea/
+.terraform

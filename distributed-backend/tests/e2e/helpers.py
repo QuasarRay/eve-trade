@@ -447,33 +447,233 @@ def insert_item_stack(
     stack_state: str = "ACTIVE",
     stack_version: int = 1,
 ) -> None:
-    db.execute(
-        """
-        INSERT INTO item_stack (
-            item_stack_id,
-            owner_id,
-            item_type_id,
-            station_id,
-            quantity,
-            stack_state,
-            stack_version,
-            stack_checksum,
-            checksum_algorithm
+    batch_id = uuid_str()
+    request_id = uuid_str()
+    settlement_step_id = uuid_str()
+    idempotency_key = fresh_key("seed-item-stack")
+    stack_checksum = item_stack_checksum(item_stack_id, quantity, stack_version)
+
+    with db.conn.transaction():
+        db.execute(
+            """
+            INSERT INTO idempotency_record (
+                idempotency_key,
+                request_fingerprint,
+                request_kind,
+                idempotency_state,
+                created_by_service,
+                completed_at
+            )
+            VALUES (%s, encode(digest(%s, 'sha256'), 'hex'), %s, 'COMPLETED', %s, now())
+            """,
+            (idempotency_key, idempotency_key, "TEST_SEED_ITEM_STACK", "e2e-tests"),
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """,
-        (
-            item_stack_id,
-            owner_id,
-            item_type_id,
-            station_id,
-            quantity,
-            stack_state,
-            stack_version,
-            item_stack_checksum(item_stack_id, quantity, stack_version),
-            CHECKSUM_ALGORITHM,
-        ),
-    )
+        db.execute(
+            """
+            INSERT INTO request_attempt (
+                request_id,
+                idempotency_key,
+                attempt_number,
+                received_by_service,
+                attempt_state,
+                completed_at
+            )
+            VALUES (%s, %s, 1, %s, 'COMPLETED', now())
+            """,
+            (request_id, idempotency_key, "e2e-tests"),
+        )
+        db.execute(
+            """
+            INSERT INTO settlement_batch (
+                settlement_batch_id,
+                request_id,
+                idempotency_key,
+                external_request_id,
+                caused_by_capsuleer_id,
+                batch_state,
+                created_by_service,
+                completed_at
+            )
+            VALUES (%s, %s, %s, %s, %s, 'COMPLETED', %s, now())
+            """,
+            (
+                batch_id,
+                request_id,
+                idempotency_key,
+                f"external-{idempotency_key}",
+                owner_id,
+                "e2e-tests",
+            ),
+        )
+        db.execute(
+            """
+            INSERT INTO settlement_step (
+                settlement_step_id,
+                settlement_batch_id,
+                step_index,
+                step_kind,
+                step_payload,
+                step_payload_hash,
+                step_state,
+                started_at,
+                completed_at
+            )
+            VALUES (
+                %s,
+                %s,
+                0,
+                %s,
+                %s::jsonb,
+                encode(digest(%s, 'sha256'), 'hex'),
+                'COMPLETED',
+                now(),
+                now()
+            )
+            """,
+            (
+                settlement_step_id,
+                batch_id,
+                "e2e-tests.seed_item_stack",
+                "{}",
+                f"seed-item-stack:{item_stack_id}",
+            ),
+        )
+        db.execute(
+            """
+            INSERT INTO item_stack (
+                item_stack_id,
+                owner_id,
+                item_type_id,
+                station_id,
+                quantity,
+                stack_state,
+                stack_version,
+                stack_checksum,
+                checksum_algorithm
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                item_stack_id,
+                owner_id,
+                item_type_id,
+                station_id,
+                quantity,
+                stack_state,
+                stack_version,
+                stack_checksum,
+                CHECKSUM_ALGORITHM,
+            ),
+        )
+        db.execute(
+            """
+            WITH seed_ledger AS (
+                SELECT
+                    %s::uuid AS settlement_step_id,
+                    %s::uuid AS item_stack_id,
+                    %s::bigint AS ledger_sequence,
+                    %s::bigint AS item_type_id,
+                    %s::bigint AS owner_id,
+                    %s::bigint AS station_id,
+                    'CREATE_STACK'::text AS entry_kind,
+                    %s::bigint AS quantity_delta,
+                    0::bigint AS quantity_before,
+                    %s::bigint AS quantity_after,
+                    'ABSENT'::text AS stack_state_before,
+                    %s::text AS stack_state_after,
+                    0::bigint AS stack_version_before,
+                    %s::bigint AS stack_version_after,
+                    'GENESIS'::text AS stack_checksum_before,
+                    %s::text AS stack_checksum_after
+            ),
+            hashed AS (
+                SELECT
+                    seed_ledger.*,
+                    compute_item_stack_ledger_payload_hash(
+                        settlement_step_id,
+                        item_stack_id,
+                        ledger_sequence,
+                        item_type_id,
+                        owner_id,
+                        station_id,
+                        entry_kind,
+                        quantity_delta,
+                        quantity_before,
+                        quantity_after,
+                        stack_state_before,
+                        stack_state_after,
+                        stack_version_before,
+                        stack_version_after,
+                        stack_checksum_before,
+                        stack_checksum_after
+                    ) AS ledger_payload_hash
+                FROM seed_ledger
+            )
+            INSERT INTO item_stack_ledger (
+                settlement_step_id,
+                item_stack_id,
+                ledger_sequence,
+                previous_item_stack_ledger_hash,
+                ledger_payload_hash,
+                item_stack_ledger_hash,
+                item_type_id,
+                owner_id,
+                station_id,
+                entry_kind,
+                quantity_delta,
+                quantity_before,
+                quantity_after,
+                stack_state_before,
+                stack_state_after,
+                stack_version_before,
+                stack_version_after,
+                stack_checksum_before,
+                stack_checksum_after
+            )
+            SELECT
+                settlement_step_id,
+                item_stack_id,
+                ledger_sequence,
+                'GENESIS',
+                ledger_payload_hash,
+                compute_item_stack_ledger_hash('GENESIS', ledger_payload_hash),
+                item_type_id,
+                owner_id,
+                station_id,
+                entry_kind,
+                quantity_delta,
+                quantity_before,
+                quantity_after,
+                stack_state_before,
+                stack_state_after,
+                stack_version_before,
+                stack_version_after,
+                stack_checksum_before,
+                stack_checksum_after
+            FROM hashed
+            """,
+            (
+                settlement_step_id,
+                item_stack_id,
+                stack_version,
+                item_type_id,
+                owner_id,
+                station_id,
+                quantity,
+                quantity,
+                stack_state,
+                stack_version,
+                stack_checksum,
+            ),
+        )
+        db.execute(
+            """
+            UPDATE idempotency_record
+            SET result_settlement_batch_id = %s
+            WHERE idempotency_key = %s
+            """,
+            (batch_id, idempotency_key),
+        )
 
 
 def issue_payload(

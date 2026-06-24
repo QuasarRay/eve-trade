@@ -24,5 +24,10 @@ tracing = "0.1"
 uuid = { version = "1", features = ["serde", "v4"] }
 
 [build-dependencies]
-protoc-bin-vendored = "3"
 tonic-prost-build = "0.14.6"
+
+[target.'cfg(all(target_os = "linux", target_arch = "x86_64"))'.build-dependencies]
+protoc-bin-vendored-linux-x86_64 = "3.2.0"
+
+[target.'cfg(windows)'.build-dependencies]
+protoc-bin-vendored-win32 = "3.2.0"

@@ -4,6 +4,7 @@ FROM golang:1.26-bookworm AS build
 
 WORKDIR /workspace
 
+COPY distributed-backend/docker/http-healthcheck.go ./distributed-backend/docker/
 COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
 COPY distributed-backend/proto/go.mod distributed-backend/proto/go.sum ./distributed-backend/proto/
 COPY distributed-backend/src/messaging/go.mod distributed-backend/src/messaging/go.sum ./distributed-backend/src/messaging/
@@ -17,20 +18,17 @@ COPY distributed-backend/src/market ./distributed-backend/src/market
 
 RUN cd distributed-backend/src/market \
     && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/market ./cmd/market
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/http-healthcheck ./distributed-backend/docker/http-healthcheck.go
 
-FROM debian:bookworm-slim AS runtime
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl passwd \
-    && rm -rf /var/lib/apt/lists/*
+FROM scratch AS runtime
 
 WORKDIR /app
-RUN useradd --system --uid 10001 --home-dir /app --shell /usr/sbin/nologin appuser
 
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /out/market /app/market
-RUN chown appuser:appuser /app/market
+COPY --from=build /out/http-healthcheck /app/http-healthcheck
 
 EXPOSE 8081
-USER appuser
+USER 10001:10001
 
 CMD ["/app/market"]

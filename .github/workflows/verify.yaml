@@ -260,7 +260,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run live Python e2e tests
-        run: docker compose -f docker-compose.integration.yml --profile test up --build --abort-on-container-exit --exit-code-from e2e-tests
+        run: |
+          docker compose -f docker-compose.integration.yml --profile test build
+          docker compose -f docker-compose.integration.yml --profile test up -d postgres rabbitmq
+          docker compose -f docker-compose.integration.yml --profile test up --exit-code-from migrate migrate
+          docker compose -f docker-compose.integration.yml --profile test up -d trade-settlement settlement-worker market api-gateway
+          docker compose -f docker-compose.integration.yml --profile test run --rm --no-deps e2e-tests
 
       - name: Clean up compose resources
         if: always()
