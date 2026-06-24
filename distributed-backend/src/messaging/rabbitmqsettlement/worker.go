@@ -19,6 +19,10 @@ type SettlementExecutor interface {
 	ExecuteSettlementBatch(context.Context, *tradesettlementv1.ExecuteSettlementBatchRequest) (*tradesettlementv1.ExecuteSettlementBatchResponse, error)
 }
 
+type readinessChecker interface {
+	Ping(context.Context) error
+}
+
 func RunSettlementWorker(ctx context.Context, config Config, executor SettlementExecutor, reportReady func(bool)) error {
 	config = config.WithDefaults()
 
@@ -100,6 +104,10 @@ func runSettlementWorkerSession(ctx context.Context, config Config, executor Set
 	var workers sync.WaitGroup
 	defer workers.Wait()
 
+	if err := waitForExecutorReady(ctx, executor, config.RequestTimeout, 500*time.Millisecond); err != nil {
+		return err
+	}
+
 	slog.Info("settlement worker consuming rabbitmq commands", "queue", config.CommandQueue, "prefetch", config.PrefetchCount)
 	if reportReady != nil {
 		reportReady(true)
@@ -138,6 +146,42 @@ func runSettlementWorkerSession(ctx context.Context, config Config, executor Set
 			}(delivery)
 		case err := <-workerErrs:
 			return err
+		}
+	}
+}
+
+func waitForExecutorReady(ctx context.Context, executor SettlementExecutor, timeout time.Duration, retryInterval time.Duration) error {
+	checker, ok := executor.(readinessChecker)
+	if !ok {
+		return nil
+	}
+	if timeout <= 0 {
+		timeout = DefaultRequestTimeout
+	}
+	if retryInterval <= 0 {
+		retryInterval = time.Second
+	}
+
+	readyCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	var lastErr error
+	for {
+		if err := checker.Ping(readyCtx); err == nil {
+			return nil
+		} else {
+			lastErr = err
+		}
+
+		timer := time.NewTimer(retryInterval)
+		select {
+		case <-readyCtx.Done():
+			timer.Stop()
+			if lastErr != nil {
+				return fmt.Errorf("settlement executor not ready: %w", lastErr)
+			}
+			return readyCtx.Err()
+		case <-timer.C:
 		}
 	}
 }

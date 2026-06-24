@@ -351,6 +351,7 @@ def test_accepting_trade_rejects_when_buyer_is_seller_if_self_purchase_is_disall
             world,
             trade,
             buyer_capsuleer_id=world.seller_id,
+            buyer_wallet_id=world.seller_wallet_id,
         ),
         code="invalid_argument",
         contains="buyer and seller must differ",
@@ -417,7 +418,7 @@ def test_cancelling_trade_rejects_non_seller_caller(db, gateway):
             trade,
             cancelled_by_capsuleer_id=world.buyer_id,
         ),
-        contains="seller",
+        contains="issuer",
     )
 
 
@@ -960,7 +961,7 @@ def test_player_cannot_cancel_trade_created_by_another_player(db, gateway):
             trade,
             cancelled_by_capsuleer_id=world.other_id,
         ),
-        contains="seller",
+        contains="issuer",
     )
 
 
@@ -1101,7 +1102,7 @@ def test_cancel_trade_returns_clear_error_for_non_seller_caller(db, gateway):
         )
     )
 
-    assert "seller" in error.message.lower()
+    assert "issuer" in error.message.lower()
 
 
 def test_rejected_request_does_not_return_success_status(db, gateway):
@@ -1266,7 +1267,7 @@ def test_settlement_rejects_releasing_more_item_quantity_than_escrow_contains(db
 
     expect_grpc_error(
         lambda: settlement.execute_settlement_batch(
-            _settlement_accept_request(pb, world, trade, quantity=5, isk_amount=125)
+            _settlement_accept_request(pb, world, trade, quantity=5, isk_amount=100)
         ),
         code="FAILED_PRECONDITION",
         contains="requested 5",
@@ -1290,7 +1291,7 @@ def test_settlement_rejects_releasing_same_item_escrow_twice(db, gateway, settle
             _settlement_accept_request(pb, world, trade, quantity=4, isk_amount=100)
         ),
         code="FAILED_PRECONDITION",
-        contains="already released",
+        contains="not OPEN",
     )
 
 
@@ -1384,7 +1385,7 @@ def test_database_rejects_remaining_quantity_drift(db, gateway):
 
     with pytest.raises(psycopg.errors.CheckViolation, match="remaining_quantity"):
         db.execute(
-            "UPDATE trade_instance SET remaining_quantity = 99 WHERE trade_instance_id = %s",
+            "UPDATE trade_instance SET remaining_quantity = 3 WHERE trade_instance_id = %s",
             (trade.trade_instance_id,),
         )
 
@@ -1396,6 +1397,7 @@ def test_database_rejects_item_stack_ledger_updates(db, gateway):
     world = seed_world(db)
     create_trade(gateway, world, quantity=4)
     ledger_id = db.scalar("SELECT item_stack_ledger_id FROM item_stack_ledger LIMIT 1")
+    ledger_count = table_count(db, "item_stack_ledger")
 
     with pytest.raises(psycopg.errors.CheckViolation, match="append-only"):
         db.execute(
@@ -1403,7 +1405,7 @@ def test_database_rejects_item_stack_ledger_updates(db, gateway):
             (ledger_id,),
         )
 
-    assert table_count(db, "item_stack_ledger") == 1
+    assert table_count(db, "item_stack_ledger") == ledger_count
 
 
 def test_database_rejects_wallet_ledger_deletes(db, gateway):

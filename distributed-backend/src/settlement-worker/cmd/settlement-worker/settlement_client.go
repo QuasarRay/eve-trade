@@ -41,6 +41,21 @@ func (e *ConnectSettlementExecutor) ExecuteSettlementBatch(ctx context.Context, 
 	return response.Msg, nil
 }
 
+func (e *ConnectSettlementExecutor) Ping(ctx context.Context) error {
+	ctx, cancel := e.callContext(ctx)
+	defer cancel()
+
+	_, err := e.client.ExecuteSettlementBatch(ctx, connect.NewRequest(&tradesettlementv1.ExecuteSettlementBatchRequest{
+		IdempotencyKey:    "settlement-worker-readiness",
+		ExternalRequestId: "settlement-worker-readiness",
+		CreatedByService:  "settlement-worker",
+	}))
+	if err == nil || connect.CodeOf(err) == connect.CodeInvalidArgument {
+		return nil
+	}
+	return err
+}
+
 func (e *ConnectSettlementExecutor) callContext(parent context.Context) (context.Context, context.CancelFunc) {
 	if e.timeout <= 0 {
 		return context.WithCancel(parent)
