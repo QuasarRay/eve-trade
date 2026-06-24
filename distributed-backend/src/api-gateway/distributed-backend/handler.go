@@ -41,3 +41,11 @@ func (h *GatewayHandler) CancelTradeInstance(ctx context.Context, request *conne
 	}
 	return connect.NewResponse(response), nil
 }
+
+func (h *GatewayHandler) SubmitTradeGuiInteraction(ctx context.Context, request *connect.Request[marketv1.SubmitTradeGuiInteractionRequest]) (*connect.Response[marketv1.SubmitTradeGuiInteractionResponse], error) {
+	response, err := h.market.SubmitTradeGuiInteraction(ctx, request.Msg)
+	if err != nil {
+		return nil, downstreamUnavailable("market", err)
+	}
+	return connect.NewResponse(response), nil
+}

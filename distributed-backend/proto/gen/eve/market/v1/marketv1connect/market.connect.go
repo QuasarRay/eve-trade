@@ -42,6 +42,9 @@ const (
 	// MarketServiceCancelTradeInstanceProcedure is the fully-qualified name of the MarketService's
 	// CancelTradeInstance RPC.
 	MarketServiceCancelTradeInstanceProcedure = "/eve.market.v1.MarketService/CancelTradeInstance"
+	// MarketServiceSubmitTradeGuiInteractionProcedure is the fully-qualified name of the
+	// MarketService's SubmitTradeGuiInteraction RPC.
+	MarketServiceSubmitTradeGuiInteractionProcedure = "/eve.market.v1.MarketService/SubmitTradeGuiInteraction"
 )
 
 // MarketServiceClient is a client for the eve.market.v1.MarketService service.
@@ -49,6 +52,7 @@ type MarketServiceClient interface {
 	IssueTradeInstance(context.Context, *connect.Request[v1.IssueTradeInstanceRequest]) (*connect.Response[v1.IssueTradeInstanceResponse], error)
 	AcceptTradeInstance(context.Context, *connect.Request[v1.AcceptTradeInstanceRequest]) (*connect.Response[v1.AcceptTradeInstanceResponse], error)
 	CancelTradeInstance(context.Context, *connect.Request[v1.CancelTradeInstanceRequest]) (*connect.Response[v1.CancelTradeInstanceResponse], error)
+	SubmitTradeGuiInteraction(context.Context, *connect.Request[v1.SubmitTradeGuiInteractionRequest]) (*connect.Response[v1.SubmitTradeGuiInteractionResponse], error)
 }
 
 // NewMarketServiceClient constructs a client for the eve.market.v1.MarketService service. By
@@ -80,14 +84,21 @@ func NewMarketServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(marketServiceMethods.ByName("CancelTradeInstance")),
 			connect.WithClientOptions(opts...),
 		),
+		submitTradeGuiInteraction: connect.NewClient[v1.SubmitTradeGuiInteractionRequest, v1.SubmitTradeGuiInteractionResponse](
+			httpClient,
+			baseURL+MarketServiceSubmitTradeGuiInteractionProcedure,
+			connect.WithSchema(marketServiceMethods.ByName("SubmitTradeGuiInteraction")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // marketServiceClient implements MarketServiceClient.
 type marketServiceClient struct {
-	issueTradeInstance  *connect.Client[v1.IssueTradeInstanceRequest, v1.IssueTradeInstanceResponse]
-	acceptTradeInstance *connect.Client[v1.AcceptTradeInstanceRequest, v1.AcceptTradeInstanceResponse]
-	cancelTradeInstance *connect.Client[v1.CancelTradeInstanceRequest, v1.CancelTradeInstanceResponse]
+	issueTradeInstance        *connect.Client[v1.IssueTradeInstanceRequest, v1.IssueTradeInstanceResponse]
+	acceptTradeInstance       *connect.Client[v1.AcceptTradeInstanceRequest, v1.AcceptTradeInstanceResponse]
+	cancelTradeInstance       *connect.Client[v1.CancelTradeInstanceRequest, v1.CancelTradeInstanceResponse]
+	submitTradeGuiInteraction *connect.Client[v1.SubmitTradeGuiInteractionRequest, v1.SubmitTradeGuiInteractionResponse]
 }
 
 // IssueTradeInstance calls eve.market.v1.MarketService.IssueTradeInstance.
@@ -105,11 +116,17 @@ func (c *marketServiceClient) CancelTradeInstance(ctx context.Context, req *conn
 	return c.cancelTradeInstance.CallUnary(ctx, req)
 }
 
+// SubmitTradeGuiInteraction calls eve.market.v1.MarketService.SubmitTradeGuiInteraction.
+func (c *marketServiceClient) SubmitTradeGuiInteraction(ctx context.Context, req *connect.Request[v1.SubmitTradeGuiInteractionRequest]) (*connect.Response[v1.SubmitTradeGuiInteractionResponse], error) {
+	return c.submitTradeGuiInteraction.CallUnary(ctx, req)
+}
+
 // MarketServiceHandler is an implementation of the eve.market.v1.MarketService service.
 type MarketServiceHandler interface {
 	IssueTradeInstance(context.Context, *connect.Request[v1.IssueTradeInstanceRequest]) (*connect.Response[v1.IssueTradeInstanceResponse], error)
 	AcceptTradeInstance(context.Context, *connect.Request[v1.AcceptTradeInstanceRequest]) (*connect.Response[v1.AcceptTradeInstanceResponse], error)
 	CancelTradeInstance(context.Context, *connect.Request[v1.CancelTradeInstanceRequest]) (*connect.Response[v1.CancelTradeInstanceResponse], error)
+	SubmitTradeGuiInteraction(context.Context, *connect.Request[v1.SubmitTradeGuiInteractionRequest]) (*connect.Response[v1.SubmitTradeGuiInteractionResponse], error)
 }
 
 // NewMarketServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -137,6 +154,12 @@ func NewMarketServiceHandler(svc MarketServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(marketServiceMethods.ByName("CancelTradeInstance")),
 		connect.WithHandlerOptions(opts...),
 	)
+	marketServiceSubmitTradeGuiInteractionHandler := connect.NewUnaryHandler(
+		MarketServiceSubmitTradeGuiInteractionProcedure,
+		svc.SubmitTradeGuiInteraction,
+		connect.WithSchema(marketServiceMethods.ByName("SubmitTradeGuiInteraction")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/eve.market.v1.MarketService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case MarketServiceIssueTradeInstanceProcedure:
@@ -145,6 +168,8 @@ func NewMarketServiceHandler(svc MarketServiceHandler, opts ...connect.HandlerOp
 			marketServiceAcceptTradeInstanceHandler.ServeHTTP(w, r)
 		case MarketServiceCancelTradeInstanceProcedure:
 			marketServiceCancelTradeInstanceHandler.ServeHTTP(w, r)
+		case MarketServiceSubmitTradeGuiInteractionProcedure:
+			marketServiceSubmitTradeGuiInteractionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -164,4 +189,8 @@ func (UnimplementedMarketServiceHandler) AcceptTradeInstance(context.Context, *c
 
 func (UnimplementedMarketServiceHandler) CancelTradeInstance(context.Context, *connect.Request[v1.CancelTradeInstanceRequest]) (*connect.Response[v1.CancelTradeInstanceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("eve.market.v1.MarketService.CancelTradeInstance is not implemented"))
+}
+
+func (UnimplementedMarketServiceHandler) SubmitTradeGuiInteraction(context.Context, *connect.Request[v1.SubmitTradeGuiInteractionRequest]) (*connect.Response[v1.SubmitTradeGuiInteractionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("eve.market.v1.MarketService.SubmitTradeGuiInteraction is not implemented"))
 }

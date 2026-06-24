@@ -42,13 +42,22 @@ func main() {
 		connect.WithInterceptors(observability.NewExternalServerInterceptor()),
 	)
 
-	errs := make(chan error, 1)
+	errs := make(chan error, 2)
 	go func() {
 		slog.Info("api-gateway listening", "addr", config.HTTPAddr, "market_url", config.MarketURL)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errs <- err
 		}
 	}()
+	if config.QuilkinUDPEnabled {
+		udpServer := distributedbackend.NewQuilkinUDPServer(config, market)
+		go func() {
+			slog.Info("api-gateway Quilkin UDP listener active", "addr", config.QuilkinUDPAddr)
+			if err := udpServer.ListenAndServe(ctx); err != nil {
+				errs <- err
+			}
+		}()
+	}
 
 	select {
 	case <-ctx.Done():

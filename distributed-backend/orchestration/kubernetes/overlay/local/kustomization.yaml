@@ -1,0 +1,51 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: eve-trade
+
+resources:
+  - ../../base
+  - postgres.yaml
+  - secrets.yaml
+  - local-dev-world-seed.yaml
+  - quilkin.yaml
+  - simulator.yaml
+
+configMapGenerator:
+  - name: local-dev-world-seed
+    files:
+      - local_dev_world.sql
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+replicas:
+  - name: api-gateway
+    count: 1
+  - name: market
+    count: 1
+  - name: settlement-worker
+    count: 1
+
+images:
+  - name: eve-trade/api-gateway
+    newName: eve-trade/api-gateway
+    newTag: dev
+  - name: eve-trade/market
+    newName: eve-trade/market
+    newTag: dev
+  - name: eve-trade/settlement-worker
+    newName: eve-trade/settlement-worker
+    newTag: dev
+  - name: eve-trade/trade-settlement
+    newName: eve-trade/trade-settlement
+    newTag: dev
+  - name: eve-trade/quilkin
+    newName: eve-trade/quilkin
+    newTag: dev
+  - name: eve-trade/simulator
+    newName: eve-trade/simulator
+    newTag: dev
+
+patches:
+  - path: local-config-patches.yaml

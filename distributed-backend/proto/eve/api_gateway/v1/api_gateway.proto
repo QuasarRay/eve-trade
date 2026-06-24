@@ -10,4 +10,5 @@ service GameTradeGatewayService {
   rpc IssueTradeInstance(eve.market.v1.IssueTradeInstanceRequest) returns (eve.market.v1.IssueTradeInstanceResponse);
   rpc AcceptTradeInstance(eve.market.v1.AcceptTradeInstanceRequest) returns (eve.market.v1.AcceptTradeInstanceResponse);
   rpc CancelTradeInstance(eve.market.v1.CancelTradeInstanceRequest) returns (eve.market.v1.CancelTradeInstanceResponse);
+  rpc SubmitTradeGuiInteraction(eve.market.v1.SubmitTradeGuiInteractionRequest) returns (eve.market.v1.SubmitTradeGuiInteractionResponse);
 }

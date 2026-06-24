@@ -43,6 +43,9 @@ const (
 	// GameTradeGatewayServiceCancelTradeInstanceProcedure is the fully-qualified name of the
 	// GameTradeGatewayService's CancelTradeInstance RPC.
 	GameTradeGatewayServiceCancelTradeInstanceProcedure = "/eve.api_gateway.v1.GameTradeGatewayService/CancelTradeInstance"
+	// GameTradeGatewayServiceSubmitTradeGuiInteractionProcedure is the fully-qualified name of the
+	// GameTradeGatewayService's SubmitTradeGuiInteraction RPC.
+	GameTradeGatewayServiceSubmitTradeGuiInteractionProcedure = "/eve.api_gateway.v1.GameTradeGatewayService/SubmitTradeGuiInteraction"
 )
 
 // GameTradeGatewayServiceClient is a client for the eve.api_gateway.v1.GameTradeGatewayService
@@ -51,6 +54,7 @@ type GameTradeGatewayServiceClient interface {
 	IssueTradeInstance(context.Context, *connect.Request[v1.IssueTradeInstanceRequest]) (*connect.Response[v1.IssueTradeInstanceResponse], error)
 	AcceptTradeInstance(context.Context, *connect.Request[v1.AcceptTradeInstanceRequest]) (*connect.Response[v1.AcceptTradeInstanceResponse], error)
 	CancelTradeInstance(context.Context, *connect.Request[v1.CancelTradeInstanceRequest]) (*connect.Response[v1.CancelTradeInstanceResponse], error)
+	SubmitTradeGuiInteraction(context.Context, *connect.Request[v1.SubmitTradeGuiInteractionRequest]) (*connect.Response[v1.SubmitTradeGuiInteractionResponse], error)
 }
 
 // NewGameTradeGatewayServiceClient constructs a client for the
@@ -82,14 +86,21 @@ func NewGameTradeGatewayServiceClient(httpClient connect.HTTPClient, baseURL str
 			connect.WithSchema(gameTradeGatewayServiceMethods.ByName("CancelTradeInstance")),
 			connect.WithClientOptions(opts...),
 		),
+		submitTradeGuiInteraction: connect.NewClient[v1.SubmitTradeGuiInteractionRequest, v1.SubmitTradeGuiInteractionResponse](
+			httpClient,
+			baseURL+GameTradeGatewayServiceSubmitTradeGuiInteractionProcedure,
+			connect.WithSchema(gameTradeGatewayServiceMethods.ByName("SubmitTradeGuiInteraction")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // gameTradeGatewayServiceClient implements GameTradeGatewayServiceClient.
 type gameTradeGatewayServiceClient struct {
-	issueTradeInstance  *connect.Client[v1.IssueTradeInstanceRequest, v1.IssueTradeInstanceResponse]
-	acceptTradeInstance *connect.Client[v1.AcceptTradeInstanceRequest, v1.AcceptTradeInstanceResponse]
-	cancelTradeInstance *connect.Client[v1.CancelTradeInstanceRequest, v1.CancelTradeInstanceResponse]
+	issueTradeInstance        *connect.Client[v1.IssueTradeInstanceRequest, v1.IssueTradeInstanceResponse]
+	acceptTradeInstance       *connect.Client[v1.AcceptTradeInstanceRequest, v1.AcceptTradeInstanceResponse]
+	cancelTradeInstance       *connect.Client[v1.CancelTradeInstanceRequest, v1.CancelTradeInstanceResponse]
+	submitTradeGuiInteraction *connect.Client[v1.SubmitTradeGuiInteractionRequest, v1.SubmitTradeGuiInteractionResponse]
 }
 
 // IssueTradeInstance calls eve.api_gateway.v1.GameTradeGatewayService.IssueTradeInstance.
@@ -107,12 +118,19 @@ func (c *gameTradeGatewayServiceClient) CancelTradeInstance(ctx context.Context,
 	return c.cancelTradeInstance.CallUnary(ctx, req)
 }
 
+// SubmitTradeGuiInteraction calls
+// eve.api_gateway.v1.GameTradeGatewayService.SubmitTradeGuiInteraction.
+func (c *gameTradeGatewayServiceClient) SubmitTradeGuiInteraction(ctx context.Context, req *connect.Request[v1.SubmitTradeGuiInteractionRequest]) (*connect.Response[v1.SubmitTradeGuiInteractionResponse], error) {
+	return c.submitTradeGuiInteraction.CallUnary(ctx, req)
+}
+
 // GameTradeGatewayServiceHandler is an implementation of the
 // eve.api_gateway.v1.GameTradeGatewayService service.
 type GameTradeGatewayServiceHandler interface {
 	IssueTradeInstance(context.Context, *connect.Request[v1.IssueTradeInstanceRequest]) (*connect.Response[v1.IssueTradeInstanceResponse], error)
 	AcceptTradeInstance(context.Context, *connect.Request[v1.AcceptTradeInstanceRequest]) (*connect.Response[v1.AcceptTradeInstanceResponse], error)
 	CancelTradeInstance(context.Context, *connect.Request[v1.CancelTradeInstanceRequest]) (*connect.Response[v1.CancelTradeInstanceResponse], error)
+	SubmitTradeGuiInteraction(context.Context, *connect.Request[v1.SubmitTradeGuiInteractionRequest]) (*connect.Response[v1.SubmitTradeGuiInteractionResponse], error)
 }
 
 // NewGameTradeGatewayServiceHandler builds an HTTP handler from the service implementation. It
@@ -140,6 +158,12 @@ func NewGameTradeGatewayServiceHandler(svc GameTradeGatewayServiceHandler, opts 
 		connect.WithSchema(gameTradeGatewayServiceMethods.ByName("CancelTradeInstance")),
 		connect.WithHandlerOptions(opts...),
 	)
+	gameTradeGatewayServiceSubmitTradeGuiInteractionHandler := connect.NewUnaryHandler(
+		GameTradeGatewayServiceSubmitTradeGuiInteractionProcedure,
+		svc.SubmitTradeGuiInteraction,
+		connect.WithSchema(gameTradeGatewayServiceMethods.ByName("SubmitTradeGuiInteraction")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/eve.api_gateway.v1.GameTradeGatewayService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case GameTradeGatewayServiceIssueTradeInstanceProcedure:
@@ -148,6 +172,8 @@ func NewGameTradeGatewayServiceHandler(svc GameTradeGatewayServiceHandler, opts 
 			gameTradeGatewayServiceAcceptTradeInstanceHandler.ServeHTTP(w, r)
 		case GameTradeGatewayServiceCancelTradeInstanceProcedure:
 			gameTradeGatewayServiceCancelTradeInstanceHandler.ServeHTTP(w, r)
+		case GameTradeGatewayServiceSubmitTradeGuiInteractionProcedure:
+			gameTradeGatewayServiceSubmitTradeGuiInteractionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -167,4 +193,8 @@ func (UnimplementedGameTradeGatewayServiceHandler) AcceptTradeInstance(context.C
 
 func (UnimplementedGameTradeGatewayServiceHandler) CancelTradeInstance(context.Context, *connect.Request[v1.CancelTradeInstanceRequest]) (*connect.Response[v1.CancelTradeInstanceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("eve.api_gateway.v1.GameTradeGatewayService.CancelTradeInstance is not implemented"))
+}
+
+func (UnimplementedGameTradeGatewayServiceHandler) SubmitTradeGuiInteraction(context.Context, *connect.Request[v1.SubmitTradeGuiInteractionRequest]) (*connect.Response[v1.SubmitTradeGuiInteractionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("eve.api_gateway.v1.GameTradeGatewayService.SubmitTradeGuiInteraction is not implemented"))
 }

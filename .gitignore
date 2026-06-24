@@ -18,6 +18,9 @@ __pycache__/
 .gocache
 .gomodcache
 /distributed-backend/docker/local-bin/
+/.downloads/
+/simulator/db.sqlite3
+/simulator/.venv/
 /.idea/
 .terraform
 docker-compose.integration.local.yml

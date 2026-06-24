@@ -514,6 +514,183 @@ func (x *CancelTradeInstanceResponse) GetSettlementBatchId() string {
 	return ""
 }
 
+type SubmitTradeGuiInteractionRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	SourceTransport string                 `protobuf:"bytes,1,opt,name=source_transport,json=sourceTransport,proto3" json:"source_transport,omitempty"`
+	SourceAddress   string                 `protobuf:"bytes,2,opt,name=source_address,json=sourceAddress,proto3" json:"source_address,omitempty"`
+	RawPayload      []byte                 `protobuf:"bytes,3,opt,name=raw_payload,json=rawPayload,proto3" json:"raw_payload,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SubmitTradeGuiInteractionRequest) Reset() {
+	*x = SubmitTradeGuiInteractionRequest{}
+	mi := &file_eve_market_v1_market_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubmitTradeGuiInteractionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubmitTradeGuiInteractionRequest) ProtoMessage() {}
+
+func (x *SubmitTradeGuiInteractionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_eve_market_v1_market_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubmitTradeGuiInteractionRequest.ProtoReflect.Descriptor instead.
+func (*SubmitTradeGuiInteractionRequest) Descriptor() ([]byte, []int) {
+	return file_eve_market_v1_market_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SubmitTradeGuiInteractionRequest) GetSourceTransport() string {
+	if x != nil {
+		return x.SourceTransport
+	}
+	return ""
+}
+
+func (x *SubmitTradeGuiInteractionRequest) GetSourceAddress() string {
+	if x != nil {
+		return x.SourceAddress
+	}
+	return ""
+}
+
+func (x *SubmitTradeGuiInteractionRequest) GetRawPayload() []byte {
+	if x != nil {
+		return x.RawPayload
+	}
+	return nil
+}
+
+type SubmitTradeGuiInteractionResponse struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	InteractionId   string                 `protobuf:"bytes,1,opt,name=interaction_id,json=interactionId,proto3" json:"interaction_id,omitempty"`
+	MappedOperation string                 `protobuf:"bytes,2,opt,name=mapped_operation,json=mappedOperation,proto3" json:"mapped_operation,omitempty"`
+	// Types that are valid to be assigned to Result:
+	//
+	//	*SubmitTradeGuiInteractionResponse_IssueTradeInstance
+	//	*SubmitTradeGuiInteractionResponse_AcceptTradeInstance
+	//	*SubmitTradeGuiInteractionResponse_CancelTradeInstance
+	Result        isSubmitTradeGuiInteractionResponse_Result `protobuf_oneof:"result"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubmitTradeGuiInteractionResponse) Reset() {
+	*x = SubmitTradeGuiInteractionResponse{}
+	mi := &file_eve_market_v1_market_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubmitTradeGuiInteractionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubmitTradeGuiInteractionResponse) ProtoMessage() {}
+
+func (x *SubmitTradeGuiInteractionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_eve_market_v1_market_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubmitTradeGuiInteractionResponse.ProtoReflect.Descriptor instead.
+func (*SubmitTradeGuiInteractionResponse) Descriptor() ([]byte, []int) {
+	return file_eve_market_v1_market_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SubmitTradeGuiInteractionResponse) GetInteractionId() string {
+	if x != nil {
+		return x.InteractionId
+	}
+	return ""
+}
+
+func (x *SubmitTradeGuiInteractionResponse) GetMappedOperation() string {
+	if x != nil {
+		return x.MappedOperation
+	}
+	return ""
+}
+
+func (x *SubmitTradeGuiInteractionResponse) GetResult() isSubmitTradeGuiInteractionResponse_Result {
+	if x != nil {
+		return x.Result
+	}
+	return nil
+}
+
+func (x *SubmitTradeGuiInteractionResponse) GetIssueTradeInstance() *IssueTradeInstanceResponse {
+	if x != nil {
+		if x, ok := x.Result.(*SubmitTradeGuiInteractionResponse_IssueTradeInstance); ok {
+			return x.IssueTradeInstance
+		}
+	}
+	return nil
+}
+
+func (x *SubmitTradeGuiInteractionResponse) GetAcceptTradeInstance() *AcceptTradeInstanceResponse {
+	if x != nil {
+		if x, ok := x.Result.(*SubmitTradeGuiInteractionResponse_AcceptTradeInstance); ok {
+			return x.AcceptTradeInstance
+		}
+	}
+	return nil
+}
+
+func (x *SubmitTradeGuiInteractionResponse) GetCancelTradeInstance() *CancelTradeInstanceResponse {
+	if x != nil {
+		if x, ok := x.Result.(*SubmitTradeGuiInteractionResponse_CancelTradeInstance); ok {
+			return x.CancelTradeInstance
+		}
+	}
+	return nil
+}
+
+type isSubmitTradeGuiInteractionResponse_Result interface {
+	isSubmitTradeGuiInteractionResponse_Result()
+}
+
+type SubmitTradeGuiInteractionResponse_IssueTradeInstance struct {
+	IssueTradeInstance *IssueTradeInstanceResponse `protobuf:"bytes,3,opt,name=issue_trade_instance,json=issueTradeInstance,proto3,oneof"`
+}
+
+type SubmitTradeGuiInteractionResponse_AcceptTradeInstance struct {
+	AcceptTradeInstance *AcceptTradeInstanceResponse `protobuf:"bytes,4,opt,name=accept_trade_instance,json=acceptTradeInstance,proto3,oneof"`
+}
+
+type SubmitTradeGuiInteractionResponse_CancelTradeInstance struct {
+	CancelTradeInstance *CancelTradeInstanceResponse `protobuf:"bytes,5,opt,name=cancel_trade_instance,json=cancelTradeInstance,proto3,oneof"`
+}
+
+func (*SubmitTradeGuiInteractionResponse_IssueTradeInstance) isSubmitTradeGuiInteractionResponse_Result() {
+}
+
+func (*SubmitTradeGuiInteractionResponse_AcceptTradeInstance) isSubmitTradeGuiInteractionResponse_Result() {
+}
+
+func (*SubmitTradeGuiInteractionResponse_CancelTradeInstance) isSubmitTradeGuiInteractionResponse_Result() {
+}
+
 var File_eve_market_v1_market_proto protoreflect.FileDescriptor
 
 const file_eve_market_v1_market_proto_rawDesc = "" +
@@ -559,11 +736,24 @@ const file_eve_market_v1_market_proto_rawDesc = "" +
 	"\x11trade_instance_id\x18\x03 \x01(\tR\x0ftradeInstanceId\x129\n" +
 	"\x19cancelled_by_capsuleer_id\x18\x04 \x01(\x03R\x16cancelledByCapsuleerId\"M\n" +
 	"\x1bCancelTradeInstanceResponse\x12.\n" +
-	"\x13settlement_batch_id\x18\x01 \x01(\tR\x11settlementBatchId2\xd6\x02\n" +
+	"\x13settlement_batch_id\x18\x01 \x01(\tR\x11settlementBatchId\"\x95\x01\n" +
+	" SubmitTradeGuiInteractionRequest\x12)\n" +
+	"\x10source_transport\x18\x01 \x01(\tR\x0fsourceTransport\x12%\n" +
+	"\x0esource_address\x18\x02 \x01(\tR\rsourceAddress\x12\x1f\n" +
+	"\vraw_payload\x18\x03 \x01(\fR\n" +
+	"rawPayload\"\xa2\x03\n" +
+	"!SubmitTradeGuiInteractionResponse\x12%\n" +
+	"\x0einteraction_id\x18\x01 \x01(\tR\rinteractionId\x12)\n" +
+	"\x10mapped_operation\x18\x02 \x01(\tR\x0fmappedOperation\x12]\n" +
+	"\x14issue_trade_instance\x18\x03 \x01(\v2).eve.market.v1.IssueTradeInstanceResponseH\x00R\x12issueTradeInstance\x12`\n" +
+	"\x15accept_trade_instance\x18\x04 \x01(\v2*.eve.market.v1.AcceptTradeInstanceResponseH\x00R\x13acceptTradeInstance\x12`\n" +
+	"\x15cancel_trade_instance\x18\x05 \x01(\v2*.eve.market.v1.CancelTradeInstanceResponseH\x00R\x13cancelTradeInstanceB\b\n" +
+	"\x06result2\xd6\x03\n" +
 	"\rMarketService\x12i\n" +
 	"\x12IssueTradeInstance\x12(.eve.market.v1.IssueTradeInstanceRequest\x1a).eve.market.v1.IssueTradeInstanceResponse\x12l\n" +
 	"\x13AcceptTradeInstance\x12).eve.market.v1.AcceptTradeInstanceRequest\x1a*.eve.market.v1.AcceptTradeInstanceResponse\x12l\n" +
-	"\x13CancelTradeInstance\x12).eve.market.v1.CancelTradeInstanceRequest\x1a*.eve.market.v1.CancelTradeInstanceResponseB\xb7\x01\n" +
+	"\x13CancelTradeInstance\x12).eve.market.v1.CancelTradeInstanceRequest\x1a*.eve.market.v1.CancelTradeInstanceResponse\x12~\n" +
+	"\x19SubmitTradeGuiInteraction\x12/.eve.market.v1.SubmitTradeGuiInteractionRequest\x1a0.eve.market.v1.SubmitTradeGuiInteractionResponseB\xb7\x01\n" +
 	"\x11com.eve.market.v1B\vMarketProtoP\x01Z?github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1;marketv1\xa2\x02\x03EMX\xaa\x02\rEve.Market.V1\xca\x02\rEve\\Market\\V1\xe2\x02\x19Eve\\Market\\V1\\GPBMetadata\xea\x02\x0fEve::Market::V1b\x06proto3"
 
 var (
@@ -578,31 +768,38 @@ func file_eve_market_v1_market_proto_rawDescGZIP() []byte {
 	return file_eve_market_v1_market_proto_rawDescData
 }
 
-var file_eve_market_v1_market_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_eve_market_v1_market_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_eve_market_v1_market_proto_goTypes = []any{
-	(*ItemStackRow)(nil),                // 0: eve.market.v1.ItemStackRow
-	(*IssueTradeInstanceRequest)(nil),   // 1: eve.market.v1.IssueTradeInstanceRequest
-	(*IssueTradeInstanceResponse)(nil),  // 2: eve.market.v1.IssueTradeInstanceResponse
-	(*AcceptTradeInstanceRequest)(nil),  // 3: eve.market.v1.AcceptTradeInstanceRequest
-	(*AcceptTradeInstanceResponse)(nil), // 4: eve.market.v1.AcceptTradeInstanceResponse
-	(*CancelTradeInstanceRequest)(nil),  // 5: eve.market.v1.CancelTradeInstanceRequest
-	(*CancelTradeInstanceResponse)(nil), // 6: eve.market.v1.CancelTradeInstanceResponse
-	(*timestamppb.Timestamp)(nil),       // 7: google.protobuf.Timestamp
+	(*ItemStackRow)(nil),                      // 0: eve.market.v1.ItemStackRow
+	(*IssueTradeInstanceRequest)(nil),         // 1: eve.market.v1.IssueTradeInstanceRequest
+	(*IssueTradeInstanceResponse)(nil),        // 2: eve.market.v1.IssueTradeInstanceResponse
+	(*AcceptTradeInstanceRequest)(nil),        // 3: eve.market.v1.AcceptTradeInstanceRequest
+	(*AcceptTradeInstanceResponse)(nil),       // 4: eve.market.v1.AcceptTradeInstanceResponse
+	(*CancelTradeInstanceRequest)(nil),        // 5: eve.market.v1.CancelTradeInstanceRequest
+	(*CancelTradeInstanceResponse)(nil),       // 6: eve.market.v1.CancelTradeInstanceResponse
+	(*SubmitTradeGuiInteractionRequest)(nil),  // 7: eve.market.v1.SubmitTradeGuiInteractionRequest
+	(*SubmitTradeGuiInteractionResponse)(nil), // 8: eve.market.v1.SubmitTradeGuiInteractionResponse
+	(*timestamppb.Timestamp)(nil),             // 9: google.protobuf.Timestamp
 }
 var file_eve_market_v1_market_proto_depIdxs = []int32{
 	0, // 0: eve.market.v1.IssueTradeInstanceRequest.item_stack:type_name -> eve.market.v1.ItemStackRow
-	7, // 1: eve.market.v1.IssueTradeInstanceRequest.expires_at:type_name -> google.protobuf.Timestamp
-	1, // 2: eve.market.v1.MarketService.IssueTradeInstance:input_type -> eve.market.v1.IssueTradeInstanceRequest
-	3, // 3: eve.market.v1.MarketService.AcceptTradeInstance:input_type -> eve.market.v1.AcceptTradeInstanceRequest
-	5, // 4: eve.market.v1.MarketService.CancelTradeInstance:input_type -> eve.market.v1.CancelTradeInstanceRequest
-	2, // 5: eve.market.v1.MarketService.IssueTradeInstance:output_type -> eve.market.v1.IssueTradeInstanceResponse
-	4, // 6: eve.market.v1.MarketService.AcceptTradeInstance:output_type -> eve.market.v1.AcceptTradeInstanceResponse
-	6, // 7: eve.market.v1.MarketService.CancelTradeInstance:output_type -> eve.market.v1.CancelTradeInstanceResponse
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	9, // 1: eve.market.v1.IssueTradeInstanceRequest.expires_at:type_name -> google.protobuf.Timestamp
+	2, // 2: eve.market.v1.SubmitTradeGuiInteractionResponse.issue_trade_instance:type_name -> eve.market.v1.IssueTradeInstanceResponse
+	4, // 3: eve.market.v1.SubmitTradeGuiInteractionResponse.accept_trade_instance:type_name -> eve.market.v1.AcceptTradeInstanceResponse
+	6, // 4: eve.market.v1.SubmitTradeGuiInteractionResponse.cancel_trade_instance:type_name -> eve.market.v1.CancelTradeInstanceResponse
+	1, // 5: eve.market.v1.MarketService.IssueTradeInstance:input_type -> eve.market.v1.IssueTradeInstanceRequest
+	3, // 6: eve.market.v1.MarketService.AcceptTradeInstance:input_type -> eve.market.v1.AcceptTradeInstanceRequest
+	5, // 7: eve.market.v1.MarketService.CancelTradeInstance:input_type -> eve.market.v1.CancelTradeInstanceRequest
+	7, // 8: eve.market.v1.MarketService.SubmitTradeGuiInteraction:input_type -> eve.market.v1.SubmitTradeGuiInteractionRequest
+	2, // 9: eve.market.v1.MarketService.IssueTradeInstance:output_type -> eve.market.v1.IssueTradeInstanceResponse
+	4, // 10: eve.market.v1.MarketService.AcceptTradeInstance:output_type -> eve.market.v1.AcceptTradeInstanceResponse
+	6, // 11: eve.market.v1.MarketService.CancelTradeInstance:output_type -> eve.market.v1.CancelTradeInstanceResponse
+	8, // 12: eve.market.v1.MarketService.SubmitTradeGuiInteraction:output_type -> eve.market.v1.SubmitTradeGuiInteractionResponse
+	9, // [9:13] is the sub-list for method output_type
+	5, // [5:9] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_eve_market_v1_market_proto_init() }
@@ -610,13 +807,18 @@ func file_eve_market_v1_market_proto_init() {
 	if File_eve_market_v1_market_proto != nil {
 		return
 	}
+	file_eve_market_v1_market_proto_msgTypes[8].OneofWrappers = []any{
+		(*SubmitTradeGuiInteractionResponse_IssueTradeInstance)(nil),
+		(*SubmitTradeGuiInteractionResponse_AcceptTradeInstance)(nil),
+		(*SubmitTradeGuiInteractionResponse_CancelTradeInstance)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_eve_market_v1_market_proto_rawDesc), len(file_eve_market_v1_market_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

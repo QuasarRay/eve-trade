@@ -10,6 +10,7 @@ service MarketService {
   rpc IssueTradeInstance(IssueTradeInstanceRequest) returns (IssueTradeInstanceResponse);
   rpc AcceptTradeInstance(AcceptTradeInstanceRequest) returns (AcceptTradeInstanceResponse);
   rpc CancelTradeInstance(CancelTradeInstanceRequest) returns (CancelTradeInstanceResponse);
+  rpc SubmitTradeGuiInteraction(SubmitTradeGuiInteractionRequest) returns (SubmitTradeGuiInteractionResponse);
 }
 
 message ItemStackRow {
@@ -61,4 +62,20 @@ message CancelTradeInstanceRequest {
 
 message CancelTradeInstanceResponse {
   string settlement_batch_id = 1;
+}
+
+message SubmitTradeGuiInteractionRequest {
+  string source_transport = 1;
+  string source_address = 2;
+  bytes raw_payload = 3;
+}
+
+message SubmitTradeGuiInteractionResponse {
+  string interaction_id = 1;
+  string mapped_operation = 2;
+  oneof result {
+    IssueTradeInstanceResponse issue_trade_instance = 3;
+    AcceptTradeInstanceResponse accept_trade_instance = 4;
+    CancelTradeInstanceResponse cancel_trade_instance = 5;
+  }
 }

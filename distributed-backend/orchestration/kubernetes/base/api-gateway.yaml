@@ -35,6 +35,9 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+            - name: quilkin-udp
+              containerPort: 26000
+              protocol: UDP
           envFrom:
             - configMapRef:
                 name: api-gateway-config
@@ -82,3 +85,7 @@ spec:
     - name: http
       port: 8080
       targetPort: http
+    - name: quilkin-udp
+      port: 26000
+      targetPort: quilkin-udp
+      protocol: UDP

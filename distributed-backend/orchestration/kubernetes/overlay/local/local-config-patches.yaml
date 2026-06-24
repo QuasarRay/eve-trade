@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-config
+data:
+  API_GATEWAY_QUILKIN_UDP_ADDR: ":26000"
+  API_GATEWAY_QUILKIN_UDP_ENABLED: "true"
+  OTEL_SDK_DISABLED: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: market-config
+data:
+  OTEL_SDK_DISABLED: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: settlement-worker-config
+data:
+  OTEL_SDK_DISABLED: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trade-settlement-config
+data:
+  OTEL_SDK_DISABLED: "true"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: settlement-db-migrate
+spec:
+  template:
+    spec:
+      containers:
+        - name: migrate
+          args:
+            - |
+              until psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -tc "select 1" >/dev/null 2>&1; do
+                echo "waiting for postgres";
+                sleep 2;
+              done;
+              psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /migrations/0001_settlement_schema.sql;

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -214,6 +215,115 @@ func (h *MarketHandler) CancelTradeInstance(ctx context.Context, request *connec
 	return connect.NewResponse(&marketv1.CancelTradeInstanceResponse{
 		SettlementBatchId: settlementResponse.SettlementBatchId,
 	}), nil
+}
+
+type tradeGUIInteraction struct {
+	SchemaVersion string `json:"schema_version"`
+	InteractionID string `json:"interaction_id"`
+	UI            struct {
+		Window string `json:"window"`
+		Button string `json:"button"`
+		Action string `json:"action"`
+	} `json:"ui"`
+	Input tradeGUIInput `json:"input"`
+}
+
+type tradeGUIInput struct {
+	IdempotencyKey              string                 `json:"idempotency_key"`
+	ExternalRequestID           string                 `json:"external_request_id"`
+	IssuedByCapsuleerID         int64                  `json:"issued_by_capsuleer_id"`
+	CancelledByCapsuleerID      int64                  `json:"cancelled_by_capsuleer_id"`
+	TradeInstanceID             string                 `json:"trade_instance_id"`
+	BuyerCapsuleerID            int64                  `json:"buyer_capsuleer_id"`
+	Quantity                    int64                  `json:"quantity"`
+	QuantityRequested           int64                  `json:"quantity_requested"`
+	UnitPriceISK                int64                  `json:"unit_price_isk"`
+	BuyerWalletID               string                 `json:"buyer_wallet_id"`
+	BuyerDestinationItemStackID string                 `json:"buyer_destination_item_stack_id"`
+	ItemStack                   *marketv1.ItemStackRow `json:"item_stack"`
+	ExpiresAt                   *timestamppb.Timestamp `json:"-"`
+}
+
+func (h *MarketHandler) SubmitTradeGuiInteraction(ctx context.Context, request *connect.Request[marketv1.SubmitTradeGuiInteractionRequest]) (*connect.Response[marketv1.SubmitTradeGuiInteractionResponse], error) {
+	message := request.Msg
+	if len(message.RawPayload) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("raw_payload is required"))
+	}
+
+	var interaction tradeGUIInteraction
+	if err := json.Unmarshal(message.RawPayload, &interaction); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("decode trade GUI packet: %w", err))
+	}
+	if interaction.SchemaVersion != "eve-trade-gui.v1" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("unsupported trade GUI schema_version %q", interaction.SchemaVersion))
+	}
+
+	action := strings.TrimSpace(interaction.UI.Action)
+	switch action {
+	case "market_place_sell_order", "contract_create_item_exchange", "direct_trade_offer":
+		response, err := h.IssueTradeInstance(ctx, connect.NewRequest(&marketv1.IssueTradeInstanceRequest{
+			IdempotencyKey:      interaction.Input.IdempotencyKey,
+			ExternalRequestId:   interaction.Input.ExternalRequestID,
+			IssuedByCapsuleerId: interaction.Input.IssuedByCapsuleerID,
+			ItemStack:           interaction.Input.ItemStack,
+			Quantity:            interaction.Input.Quantity,
+			UnitPriceIsk:        interaction.Input.UnitPriceISK,
+			ExpiresAt:           interaction.Input.ExpiresAt,
+		}))
+		if err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(&marketv1.SubmitTradeGuiInteractionResponse{
+			InteractionId:   interaction.InteractionID,
+			MappedOperation: "IssueTradeInstance",
+			Result: &marketv1.SubmitTradeGuiInteractionResponse_IssueTradeInstance{
+				IssueTradeInstance: response.Msg,
+			},
+		}), nil
+	case "market_buy_from_sell_order", "contract_accept_item_exchange", "direct_trade_accept":
+		quantityRequested := interaction.Input.QuantityRequested
+		if quantityRequested == 0 {
+			quantityRequested = interaction.Input.Quantity
+		}
+		response, err := h.AcceptTradeInstance(ctx, connect.NewRequest(&marketv1.AcceptTradeInstanceRequest{
+			IdempotencyKey:              interaction.Input.IdempotencyKey,
+			ExternalRequestId:           interaction.Input.ExternalRequestID,
+			TradeInstanceId:             interaction.Input.TradeInstanceID,
+			BuyerCapsuleerId:            interaction.Input.BuyerCapsuleerID,
+			QuantityRequested:           quantityRequested,
+			BuyerWalletId:               interaction.Input.BuyerWalletID,
+			BuyerDestinationItemStackId: interaction.Input.BuyerDestinationItemStackID,
+		}))
+		if err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(&marketv1.SubmitTradeGuiInteractionResponse{
+			InteractionId:   interaction.InteractionID,
+			MappedOperation: "AcceptTradeInstance",
+			Result: &marketv1.SubmitTradeGuiInteractionResponse_AcceptTradeInstance{
+				AcceptTradeInstance: response.Msg,
+			},
+		}), nil
+	case "market_cancel_order", "contract_cancel_item_exchange", "direct_trade_cancel":
+		response, err := h.CancelTradeInstance(ctx, connect.NewRequest(&marketv1.CancelTradeInstanceRequest{
+			IdempotencyKey:         interaction.Input.IdempotencyKey,
+			ExternalRequestId:      interaction.Input.ExternalRequestID,
+			TradeInstanceId:        interaction.Input.TradeInstanceID,
+			CancelledByCapsuleerId: interaction.Input.CancelledByCapsuleerID,
+		}))
+		if err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(&marketv1.SubmitTradeGuiInteractionResponse{
+			InteractionId:   interaction.InteractionID,
+			MappedOperation: "CancelTradeInstance",
+			Result: &marketv1.SubmitTradeGuiInteractionResponse_CancelTradeInstance{
+				CancelTradeInstance: response.Msg,
+			},
+		}), nil
+	default:
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("unsupported trade GUI action %q", action))
+	}
 }
 
 func (h *MarketHandler) executePlan(ctx context.Context, plan gametrade.SettlementPlan) (*tradesettlementv1.ExecuteSettlementBatchResponse, error) {

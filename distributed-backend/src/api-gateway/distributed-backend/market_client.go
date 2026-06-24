@@ -20,6 +20,7 @@ type MarketClient interface {
 	IssueTradeInstance(context.Context, *marketv1.IssueTradeInstanceRequest) (*marketv1.IssueTradeInstanceResponse, error)
 	AcceptTradeInstance(context.Context, *marketv1.AcceptTradeInstanceRequest) (*marketv1.AcceptTradeInstanceResponse, error)
 	CancelTradeInstance(context.Context, *marketv1.CancelTradeInstanceRequest) (*marketv1.CancelTradeInstanceResponse, error)
+	SubmitTradeGuiInteraction(context.Context, *marketv1.SubmitTradeGuiInteractionRequest) (*marketv1.SubmitTradeGuiInteractionResponse, error)
 }
 
 type ConnectMarketClient struct {
@@ -67,6 +68,17 @@ func (c *ConnectMarketClient) CancelTradeInstance(ctx context.Context, request *
 	defer cancel()
 
 	response, err := c.client.CancelTradeInstance(ctx, connect.NewRequest(request))
+	if err != nil {
+		return nil, downstreamUnavailable("market", err)
+	}
+	return response.Msg, nil
+}
+
+func (c *ConnectMarketClient) SubmitTradeGuiInteraction(ctx context.Context, request *marketv1.SubmitTradeGuiInteractionRequest) (*marketv1.SubmitTradeGuiInteractionResponse, error) {
+	ctx, cancel := c.callContext(ctx)
+	defer cancel()
+
+	response, err := c.client.SubmitTradeGuiInteraction(ctx, connect.NewRequest(request))
 	if err != nil {
 		return nil, downstreamUnavailable("market", err)
 	}

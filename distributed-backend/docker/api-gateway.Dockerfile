@@ -25,6 +25,7 @@ COPY --from=build /out/api-gateway /app/api-gateway
 COPY --from=build /out/http-healthcheck /app/http-healthcheck
 
 EXPOSE 8080
+EXPOSE 26000/udp
 USER 10001:10001
 
 CMD ["/app/api-gateway"]

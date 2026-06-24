@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EVE Trade GUI Simulator</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101314;
+      --panel: #1b2022;
+      --line: #394247;
+      --text: #e6ecef;
+      --muted: #aeb9bf;
+      --accent: #e2b650;
+      --danger: #d6634f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .shell { display: grid; grid-template-columns: 72px minmax(0, 1fr); min-height: 100vh; }
+    .neocom {
+      background: #080a0b;
+      border-right: 1px solid var(--line);
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .neo-btn {
+      width: 48px;
+      height: 48px;
+      border: 1px solid var(--line);
+      background: #15191b;
+      color: var(--text);
+      border-radius: 4px;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+    }
+    main { padding: 18px; }
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+    h1 { font-size: 22px; margin: 0; letter-spacing: 0; }
+    .status { color: var(--muted); font-size: 13px; }
+    .windows { display: grid; grid-template-columns: repeat(2, minmax(320px, 1fr)); gap: 14px; }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      min-height: 230px;
+      padding: 12px;
+    }
+    h2 { font-size: 15px; margin: 0 0 10px; color: var(--accent); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    label { color: var(--muted); font-size: 12px; display: grid; gap: 4px; }
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #0f1315;
+      color: var(--text);
+      padding: 7px;
+      font: inherit;
+    }
+    textarea { min-height: 120px; grid-column: 1 / -1; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    button {
+      border: 1px solid #6f5c2f;
+      background: #2a2519;
+      color: var(--text);
+      border-radius: 4px;
+      padding: 8px 10px;
+      cursor: pointer;
+      min-height: 34px;
+    }
+    button:hover { border-color: var(--accent); }
+    button.cancel { border-color: #704338; background: #2a1917; }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #0b0e10;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      min-height: 94px;
+      padding: 10px;
+      color: var(--muted);
+    }
+    @media (max-width: 880px) {
+      .shell { grid-template-columns: 1fr; }
+      .neocom { flex-direction: row; border-right: 0; border-bottom: 1px solid var(--line); }
+      .windows { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav class="neocom" aria-label="Neocom">
+      <div class="neo-btn" title="Inventory">Inv</div>
+      <div class="neo-btn" title="Regional Market">Mkt</div>
+      <div class="neo-btn" title="Contracts">Ctr</div>
+      <div class="neo-btn" title="Wallet">ISK</div>
+    </nav>
+    <main>
+      <header>
+        <h1>EVE Trade GUI Simulator</h1>
+        <div class="status">UDP via Quilkin: <span id="endpoint">{{ quilkin_endpoint }}</span></div>
+      </header>
+      <div class="windows">
+        <section>
+          <h2>Regional Market</h2>
+          <div class="grid">
+            <label>Item Stack ID<input id="item_stack_id" placeholder="seller stack uuid"></label>
+            <label>Trade Instance ID<input id="trade_instance_id" placeholder="trade uuid"></label>
+            <label>Buyer Wallet ID<input id="buyer_wallet_id" placeholder="buyer wallet uuid"></label>
+            <label>Quantity<input id="quantity" type="number" value="1"></label>
+            <label>Unit Price ISK<input id="unit_price_isk" type="number" value="25"></label>
+            <label>Destination Stack ID<input id="buyer_destination_item_stack_id"></label>
+          </div>
+          <div class="actions">
+            {% for button in buttons %}
+              {% if button.window == "regional_market" or button.window == "wallet_orders" %}
+                <button data-button-id="{{ button.id }}" class="{% if button.action == 'market_cancel_order' %}cancel{% endif %}" title="{{ button.tooltip }}">{{ button.label }}</button>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </section>
+        <section>
+          <h2>Contracts and Direct Trade</h2>
+          <div class="grid">
+            <label>Seller Capsuleer ID<input id="issued_by_capsuleer_id" type="number" value="1001"></label>
+            <label>Buyer Capsuleer ID<input id="buyer_capsuleer_id" type="number" value="2002"></label>
+            <label>Station ID<input id="station_id" type="number" value="60003760"></label>
+            <label>Item Type ID<input id="item_type_id" type="number" value="34"></label>
+          </div>
+          <div class="actions">
+            {% for button in buttons %}
+              {% if button.window == "contracts" or button.window == "direct_trade" %}
+                <button data-button-id="{{ button.id }}" title="{{ button.tooltip }}">{{ button.label }}</button>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </section>
+        <section>
+          <h2>Packet Payload</h2>
+          <div class="grid">
+            <label>Idempotency Key<input id="idempotency_key" value="sim-manual"></label>
+            <label>External Request ID<input id="external_request_id" value="sim-manual"></label>
+            <textarea id="extra_payload" spellcheck="false">{}</textarea>
+          </div>
+        </section>
+        <section>
+          <h2>Gateway Response</h2>
+          <pre id="response">No interaction sent.</pre>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    const fieldValue = (id) => document.getElementById(id).value.trim();
+    const numberValue = (id) => Number(fieldValue(id) || 0);
+    const response = document.getElementById("response");
+
+    function payload() {
+      let extra = {};
+      try {
+        extra = JSON.parse(fieldValue("extra_payload") || "{}");
+      } catch (error) {
+        response.textContent = `Invalid JSON in extra payload: ${error}`;
+        throw error;
+      }
+      return {
+        idempotency_key: fieldValue("idempotency_key"),
+        external_request_id: fieldValue("external_request_id"),
+        issued_by_capsuleer_id: numberValue("issued_by_capsuleer_id"),
+        cancelled_by_capsuleer_id: numberValue("issued_by_capsuleer_id"),
+        buyer_capsuleer_id: numberValue("buyer_capsuleer_id"),
+        trade_instance_id: fieldValue("trade_instance_id"),
+        quantity: numberValue("quantity"),
+        quantity_requested: numberValue("quantity"),
+        unit_price_isk: numberValue("unit_price_isk"),
+        buyer_wallet_id: fieldValue("buyer_wallet_id"),
+        buyer_destination_item_stack_id: fieldValue("buyer_destination_item_stack_id"),
+        item_stack: {
+          item_stack_id: fieldValue("item_stack_id"),
+          owner_id: numberValue("issued_by_capsuleer_id"),
+          item_type_id: numberValue("item_type_id"),
+          station_id: numberValue("station_id"),
+          quantity: 10
+        },
+        ...extra
+      };
+    }
+
+    document.querySelectorAll("button[data-button-id]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        response.textContent = "Sending UDP packet through Quilkin...";
+        const body = { player_input: payload() };
+        const result = await fetch(`/api/gui/buttons/${button.dataset.buttonId}/press/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const text = await result.text();
+        try {
+          response.textContent = JSON.stringify(JSON.parse(text), null, 2);
+        } catch {
+          response.textContent = text;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
