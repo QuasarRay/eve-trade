@@ -7,7 +7,7 @@ require (
 	github.com/QuasarRay/eve-trade/messaging v0.0.0
 	github.com/QuasarRay/eve-trade/observability v0.0.0
 	github.com/QuasarRay/eve-trade/proto v0.0.0
-	github.com/jackc/pgx/v5 v5.7.6
+	github.com/jackc/pgx/v5 v5.10.0
 	golang.org/x/net v0.55.0
 	google.golang.org/protobuf v1.36.11
 )
@@ -48,7 +48,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
-	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
