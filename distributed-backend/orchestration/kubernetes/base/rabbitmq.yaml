@@ -44,7 +44,7 @@ spec:
                 - -q
                 - ping
             periodSeconds: 10
-            timeoutSeconds: 5
+            timeoutSeconds: 10
             failureThreshold: 6
           livenessProbe:
             exec:
@@ -54,8 +54,8 @@ spec:
                 - ping
             initialDelaySeconds: 30
             periodSeconds: 30
-            timeoutSeconds: 5
-            failureThreshold: 3
+            timeoutSeconds: 10
+            failureThreshold: 6
           resources:
             requests:
               cpu: 250m

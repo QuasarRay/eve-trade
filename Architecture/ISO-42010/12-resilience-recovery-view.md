@@ -121,8 +121,8 @@ When a caller receives a timeout or ambiguous downstream error:
    `settlement_step` failure fields before retry.
 5. If in progress beyond expected timeout, inspect RabbitMQ queue state,
    settlement-worker logs, and trade-settlement logs.
-6. Do not issue a semantically duplicate trade command with a new idempotency key
-   until the first outcome is resolved.
+6. Do not issue a semantically duplicate GUI interaction with a new idempotency
+   key until the first outcome is resolved.
 
 ## Resilience Assertions
 

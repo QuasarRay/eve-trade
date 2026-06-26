@@ -14,6 +14,8 @@ type Config struct {
 	TradeSettlementURL       string
 	DatabaseURL              string
 	SettlementRequestTimeout time.Duration
+	StartupDependencyTimeout time.Duration
+	StartupRetryInterval     time.Duration
 	SettlementTransport      string
 	RabbitMQ                 rabbitmqsettlement.Config
 }
@@ -25,6 +27,8 @@ func LoadConfig() Config {
 		TradeSettlementURL:       trimRightSlash(envOr("TRADE_SETTLEMENT_URL", "http://localhost:9090")),
 		DatabaseURL:              envOr("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/eve_trade"),
 		SettlementRequestTimeout: settlementTimeout,
+		StartupDependencyTimeout: durationEnvOr("MARKET_STARTUP_DEPENDENCY_TIMEOUT", 90*time.Second),
+		StartupRetryInterval:     durationEnvOr("MARKET_STARTUP_RETRY_INTERVAL", 2*time.Second),
 		SettlementTransport:      envOr("SETTLEMENT_TRANSPORT", "rabbitmq"),
 		RabbitMQ: rabbitmqsettlement.Config{
 			URL:                  envOr("RABBITMQ_URL", rabbitmqsettlement.DefaultURL),

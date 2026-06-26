@@ -8,8 +8,6 @@ import (
 
 	"connectrpc.com/connect"
 	marketv1connect "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1/marketv1connect"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 type ReadinessCheck func(context.Context) error
@@ -22,9 +20,14 @@ func NewHTTPServer(config Config, handler *MarketHandler, readiness ReadinessChe
 	path, serviceHandler := marketv1connect.NewMarketServiceHandler(handler, handlerOptions...)
 	mux.Handle(path, serviceHandler)
 
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+	protocols.SetUnencryptedHTTP2(true)
+
 	return &http.Server{
 		Addr:              config.HTTPAddr,
-		Handler:           h2c.NewHandler(mux, &http2.Server{}),
+		Handler:           mux,
+		Protocols:         protocols,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,

@@ -68,6 +68,7 @@ spec:
           - settlement-worker
           - trade-settlement
           - rabbitmq
+          - quilkin
   policyTypes:
     - Egress
   egress:
@@ -89,6 +90,40 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: quilkin-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: quilkin
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: UDP
+          port: 26001
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: quilkin-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: quilkin
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+      ports:
+        - protocol: UDP
+          port: 26000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: api-gateway-ingress
 spec:
   podSelector:
@@ -104,6 +139,13 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: quilkin
+      ports:
+        - protocol: UDP
+          port: 26000
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

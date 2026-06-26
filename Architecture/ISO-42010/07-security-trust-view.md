@@ -4,10 +4,10 @@
 
 | Field | Value |
 | --- | --- |
-| View status | Canonical |
-| Last reviewed | 2026-06-23 |
+| View status | Canonical current state |
+| Last reviewed | 2026-06-25 |
 | Governing viewpoint | VP-06 Security And Trust |
-| Evidence baseline | Repository commit `fe5c6af`; architecture file hashes are recorded in `18-evidence-manifest.md` |
+| Evidence baseline | v6 architecture cleanup; starting commit recorded in `changes/v6/changes.md` |
 
 Governed by: [VP-06 Security And Trust Viewpoint](./02-viewpoints.md#vp-06-security-and-trust-viewpoint)
 
@@ -21,9 +21,10 @@ Model ID: `MODEL-SEC-01`; view component ID: `VC-SEC-01`.
 
 ```mermaid
 flowchart LR
-  Caller["Game Server / Upstream Caller"] -->|untrusted request fields until authenticated| Gateway["API Gateway"]
+  Caller["Game frontend / local simulator"] -->|signed UDP edge envelope| Quilkin["Quilkin UDP"]
+  Quilkin -->|UDP forward| Gateway["API Gateway UDP edge"]
   subgraph InternalServices["Internal service boundary"]
-    Gateway --> Market["Market"]
+    Gateway -->|raw GUI payload only| Market["Market"]
     Market --> Rabbit["RabbitMQ"]
     Rabbit --> Worker["settlement-worker"]
     Worker --> Settlement["trade-settlement"]
@@ -40,10 +41,12 @@ flowchart LR
 
 | Security concern | Current control | Residual gap or risk |
 | --- | --- | --- |
-| Internal service exposure | API Gateway is the public entry point; Kubernetes network policies restrict internal ingress paths. | Local development publishes more ports for convenience; production ingress depends on correct Gateway/Istio deployment. |
-| Market policy ownership | API Gateway forwards to Market; settlement operations are constructed by Market. | Direct access to Market or settlement APIs bypasses the intended game-facing entry point. |
+| UDP edge exposure | Quilkin is the UDP entry point; API Gateway validates packet size, empty packets, HMAC signature, replay, rate limits, queue capacity, and downstream timeout before forwarding. | Edge replay cache is process-local; external DDoS controls are outside this repo. |
+| Internal service exposure | API Gateway forwards only to Market; Kubernetes network policies restrict internal ingress paths. | Local development publishes more ports for convenience; production ingress depends on correct Quilkin/NetworkPolicy/Istio deployment. |
+| Market policy ownership | API Gateway forwards raw GUI payload only; settlement operations are constructed by Market. | Direct access to Market or settlement APIs bypasses the intended packet entry point. |
 | Settlement operation privilege | In the checked-in production-like topology, trade-settlement receives requests from settlement-worker. | The settlement protobuf exposes generic mutation operations; no operation-provenance or operation-allow policy is implemented in trade-settlement. |
-| Actor identity trust | Requests carry actor and ownership identifiers; Market validates ownership against database snapshots. | End-to-end authentication and JWT/identity-provider enforcement are not fully implemented in the repository. Client-supplied actor fields remain a trust assumption. |
+| Actor identity trust | Signed packets protect payload integrity; Market validates ownership against database snapshots. | HMAC does not bind account identity to capsuleer IDs; client-supplied actor fields remain a trust assumption. |
+| Gateway metadata isolation | Remote address/transport metadata is gateway-internal log/trace data and not sent to Market's business request. | Logs/traces must avoid full payload logging and must be reviewed before production. |
 | Network reachability precision | Production overlay includes default deny and service-specific network policy paths. | Policies have not been rendered/applied in a target cluster during this update; database egress remains broad TCP `5432`. |
 | Secret placement | ConfigMaps and Secrets are used for runtime configuration. | Secret rotation, external secret provider integration, and production credential lifecycle are outside the service code and not fully defined in repo. |
 | Transport security | Gateway/Istio manifests define production ingress and service security resources. | h2c/plaintext service communication exists inside local/internal paths; mTLS enforcement is not verified here. |
@@ -53,8 +56,8 @@ flowchart LR
 
 | Layer | Implemented or documented controls | Current gaps |
 | --- | --- | --- |
-| Application layer | API Gateway forwards trade commands; Market validates ownership against database snapshots; trade-settlement validates command-envelope and row-level operation preconditions. | Application code does not yet bind request actor IDs to authenticated identity claims. |
-| Mesh layer | Production overlay defines strict mTLS, `RequestAuthentication`, default-deny `AuthorizationPolicy`, service-account principals, and allowed RPC paths. | JWT issuer/JWKS/audience are placeholders until patched for the target environment. |
+| Application layer | API Gateway validates signed UDP envelope and forwards raw GUI payload; Market validates ownership against database snapshots; trade-settlement validates command-envelope and row-level operation preconditions. | Application code does not yet bind request actor IDs to authenticated identity claims. |
+| Mesh layer | Production overlay defines strict mTLS, default-deny `AuthorizationPolicy`, service-account principals, and allowed internal RPC paths. | External UDP authentication is HMAC at the edge; account identity provider integration is not implemented. |
 | Kubernetes network layer | Default deny, service-specific ingress/egress, telemetry egress, DNS egress, and Istio control-plane egress are defined. | Database egress is broad TCP `5432` without destination selector in current manifests. |
 | Broker layer | RabbitMQ credentials, internal service reachability, command queue, and dead-letter queue exist. | Per-service broker credentials, credential rotation, and broker-level authorization policy are not fully documented. |
 | Secret layer | Kubernetes Secrets are referenced for database, RabbitMQ, and observability credentials. | External secret provider, rotation, break-glass access, and ownership are not defined. |
@@ -71,8 +74,9 @@ claims to those actor fields.
 | `issued_by_capsuleer_id` | Accepted from request data and checked against item ownership snapshots. |
 | `buyer_capsuleer_id` | Accepted from request data and checked against buyer wallet/destination ownership snapshots. |
 | `cancelled_by_capsuleer_id` | Accepted from request data and checked against trade issuer snapshots. |
-| `external_request_id` | Accepted from upstream request data for correlation. |
-| `idempotency_key` | Accepted from request data; actor-scoped key policy is not fully specified. |
+| `interaction_id` | Required in the GUI packet for edge replay and Market request correlation. |
+| `external_request_id` | Defaults from the interaction ID when not supplied in player input. |
+| `idempotency_key` | Defaults from the interaction ID when not supplied in player input; actor-scoped key policy is not fully specified. |
 
 This is recorded as a production-readiness gap, not as an implemented control.
 
@@ -103,8 +107,8 @@ View component ID: `VC-SEC-02`.
 
 | Boundary | Current behavior or documented gap |
 | --- | --- |
-| External to API Gateway | Identity-to-actor binding is not complete in application code. |
-| API Gateway to Market | Preserve request identity, idempotency, and external request context; do not reinterpret trade policy. |
+| External to Quilkin/API Gateway | HMAC integrity and replay/rate controls exist; identity-to-actor binding is not complete in application code. |
+| API Gateway to Market | Forward raw GUI payload only; keep source transport/address metadata internal; do not reinterpret trade policy. |
 | Market to RabbitMQ | Market publishes validated settlement commands with deterministic IDs and idempotency data in the RabbitMQ configuration. |
 | RabbitMQ to settlement-worker | Queue and DLQ topology exist; per-service broker authorization is not fully documented. |
 | settlement-worker to trade-settlement | Production NetworkPolicy models worker-originated settlement execution. |
@@ -115,8 +119,8 @@ View component ID: `VC-SEC-02`.
 
 | Misuse case | Current architectural response | Current gap |
 | --- | --- | --- |
-| Caller claims another capsuleer ID. | Market validates resource ownership where data is available. | Actor IDs are not bound to authenticated claims in application code. |
-| Caller replays a successful request. | Idempotency replay returns prior response without duplicate mutation. | Upstream idempotency discipline is assumed. |
+| Caller claims another capsuleer ID. | Market validates resource ownership where data is available. | HMAC proves packet integrity, not account ownership; actor IDs are not bound to authenticated claims in application code. |
+| Caller replays a successful packet. | API Gateway rejects immediate duplicate interaction IDs; Market/trade-settlement idempotency prevents duplicate durable settlement. | Edge replay cache is process-local. |
 | Attacker reaches trade-settlement directly. | Production NetworkPolicy models no direct external access. | Mesh authorization render/apply and negative tests are not recorded. |
 | Attacker injects RabbitMQ messages. | Broker credentials and network policy restrict publishers in the modeled path. | Per-service RabbitMQ authorization and DLQ monitoring are not fully documented. |
 | Operator deploys mismatched protobuf and service versions. | CI and generated code validation are documented as validation paths. | Independent deployment compatibility gates are not implemented here. |
@@ -133,14 +137,14 @@ The detailed threat model is maintained in
 | Network isolation is the current main control around the settlement API in manifests. | Partially enforced | Mesh/service identity verification and payload provenance are not fully evidenced. |
 | Request actor fields are not bound to authenticated identity claims in application code. | Gap | Actor identity binding is not implemented end to end. |
 | The settlement API is a privileged internal API. | Partially enforced | Mesh and network controls restrict access; operation-level authorization is not implemented in trade-settlement. |
-| Local development exposure differs from production-like ingress. | Enforced by manifest | Local exposures are loopback-only in Compose; production ingress is Gateway/Istio. |
-| JWT/mTLS controls exist at the mesh layer but require environment-specific values and deployment verification. | Partially enforced | Production overlay contains strict mTLS and JWT policy placeholders. |
+| Local development exposure differs from production-like ingress. | Enforced by manifest | Local exposures are loopback-only in Compose; production trade ingress is Quilkin UDP. |
+| HMAC and mTLS controls exist at different layers. | Partially enforced | Edge packet integrity is implemented with HMAC; internal service mTLS depends on production mesh deployment verification. |
 
 ## Security Verification Gaps
 
 | Verification | Evidence needed to close the gap | Current status |
 | --- | --- | --- |
-| Rendered production mesh policy | Rendered `PeerAuthentication`, `RequestAuthentication`, and `AuthorizationPolicy` with real issuer/JWKS/audience values. | Not run; placeholder gate open |
+| Rendered production mesh policy | Rendered `PeerAuthentication` and `AuthorizationPolicy` for internal service paths. | Not run; placeholder gate open |
 | Negative service-call tests | Tests showing API Gateway and Market cannot call trade-settlement directly in production topology. | Not implemented |
 | Actor spoofing tests | Unit/e2e tests proving request actor fields must match authenticated claims. | Not implemented |
 | Broker permission tests | Evidence that only intended publishers/consumers can use settlement exchange/queues. | Not implemented |
@@ -155,4 +159,4 @@ The detailed threat model is maintained in
 | CON-19 | Records current actor-to-claim binding gap. | Current Actor Identity Binding Gap. |
 | CON-20 | Records settlement API access model and gaps. | Settlement API Access And Gaps. |
 | CON-21 | Lists secret-management gaps. | Security Control Layers and Deployment view. |
-| CON-22 | Documents strict mTLS/JWT placeholders and h2c/local assumptions. | Security Control Layers. |
+| CON-22 | Documents edge HMAC, strict mTLS expectations, and h2c/local assumptions. | Security Control Layers. |

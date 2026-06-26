@@ -1,6 +1,10 @@
 # eve-trade
 
-`eve-trade` is a modular MMORPG trade system in development. It is designed to integrate with a game server, receive trade requests from that game server, process them through distributed backend services, perform durable settlement operations, and return a result.
+`eve-trade` is a production-ready distributed backend/platform slice for an EVE-like trade flow. The current production boundary is a game GUI packet path, not a public command RPC path:
+
+`game frontend -> Quilkin UDP -> API gateway UDP edge -> Market GUI interaction -> settlement operations -> trade-settlement`
+
+The checked-in Django simulator is a local game-frontend simulator. From the packet boundary outward, its UDP payload is production-identical to a real game frontend interaction and does not identify itself as Django, browser, test, simulator, or framework traffic.
 
 ## Run Locally
 
@@ -26,19 +30,20 @@ VS Code button path:
 
 The local stack starts:
 
+* Django game-frontend simulator: `http://localhost:8000`
+* Quilkin UDP: `localhost:26001`
 * API Gateway: `http://localhost:8080`
 * RabbitMQ AMQP: `localhost:5672`
 * RabbitMQ management UI: `http://localhost:15672` (`eve_trade` / `eve_trade`)
 * PostgreSQL: `localhost:5432`
 
 The startup migration applies the single canonical settlement schema file and
-seeds a small local world. The
-main sample actors are seller capsuleer `1001`, buyer capsuleer `2002`, seller
-Tritanium stack `11111111-1111-4111-8111-111111111111`, buyer wallet
+seeds a small local world. The main sample actors are seller capsuleer `1001`,
+buyer capsuleer `2002`, seller Tritanium stack
+`11111111-1111-4111-8111-111111111111`, buyer wallet
 `00000000-0000-4000-8000-000000002002`, item type `34`, and station
 `60003760`. To reset everything, run `docker compose down -v` before starting
-the stack again. This project currently exposes backend services, not a browser
-UI.
+the stack again.
 
 ## Goal
 
@@ -48,9 +53,11 @@ The project focuses on the backend and platform engineering problems behind play
 
 ## Current Status
 
-`eve-trade` is currently capable of performing a trade request lifecycle starting from the API Gateway receiving a request from a game server.
+`eve-trade` is currently capable of performing a trade lifecycle starting from a game GUI interaction packet sent over UDP through Quilkin.
 
-The API Gateway translates the request into the internal protocol convention defined by the project's protobuf contracts, then forwards it to the Market service. The Market service owns trade-mechanic decisions and publishes settlement commands through RabbitMQ. `settlement-worker` consumes those commands and calls `trade-settlement`.
+The API Gateway is a UDP edge and UDP-to-gRPC forwarder only. It enforces transport-level safety such as packet size, empty-packet rejection, bounded worker/queue limits, per-remote rate limits, HMAC integrity, replay protection, downstream timeouts, compact UDP responses, and structured telemetry. It forwards the exact raw game GUI payload to Market using `MarketService.SubmitTradeGuiInteraction` and does not send gateway-only source metadata as part of the Market business request.
+
+The Market service owns game trade interpretation. It maps GUI actions and player-provided trade inputs into internal issue, accept, or cancel decisions, then publishes low-level settlement operation batches through RabbitMQ. `settlement-worker` consumes those commands and calls `trade-settlement`.
 
 `trade-settlement` is a separate microservice decoupled from market trade logic. Its responsibility is to protect correctness-critical persistence: reliable database transactions, item ownership transfer, ISK wallet transfer, escrow handling, and settlement state management.
 
@@ -62,7 +69,7 @@ The platform side currently includes:
 
 * Kubernetes manifests for service orchestration
 * Kustomize-based manifest organization
-* API Gateway -> Market -> RabbitMQ -> settlement-worker -> trade-settlement service flow
+* game frontend/simulator -> Quilkin UDP -> API Gateway UDP edge -> Market GUI interaction -> RabbitMQ -> settlement-worker -> trade-settlement service flow
 * OpenTelemetry-based observability with Honeycomb, Sentry, and Prometheus
 * Litmus for chaos engineering experiments
 * Dagger-based CI/CD pipeline logic written in Python

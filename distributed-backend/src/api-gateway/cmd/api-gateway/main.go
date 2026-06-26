@@ -34,12 +34,9 @@ func main() {
 		config.DownstreamTimeout,
 		connect.WithInterceptors(observability.NewClientInterceptor()),
 	)
-	handler := distributedbackend.NewGatewayHandler(market)
 	server := distributedbackend.NewHTTPServer(
 		config,
-		handler,
 		market.CheckReady,
-		connect.WithInterceptors(observability.NewExternalServerInterceptor()),
 	)
 
 	errs := make(chan error, 2)

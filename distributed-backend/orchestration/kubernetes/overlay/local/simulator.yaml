@@ -47,6 +47,13 @@ spec:
               value: quilkin
             - name: QUILKIN_UDP_PORT
               value: "26001"
+            - name: GAME_PACKET_HMAC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-gateway-edge-auth
+                  key: GAME_PACKET_HMAC_SECRET
+            - name: GAME_PACKET_HMAC_KEY_ID
+              value: primary
             - name: SIMULATOR_ALLOWED_HOSTS
               value: "*"
             - name: SIMULATOR_DB

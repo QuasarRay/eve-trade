@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,6 +23,34 @@ func (f fakeSettlementExecutor) ExecuteSettlementBatch(context.Context, *tradese
 		return nil, f.err
 	}
 	return &tradesettlementv1.ExecuteSettlementBatchResponse{SettlementBatchId: "settlement-batch"}, nil
+}
+
+type recordingSettlementExecutor struct {
+	mu       sync.Mutex
+	requests []*tradesettlementv1.ExecuteSettlementBatchRequest
+}
+
+func (r *recordingSettlementExecutor) ExecuteSettlementBatch(_ context.Context, request *tradesettlementv1.ExecuteSettlementBatchRequest) (*tradesettlementv1.ExecuteSettlementBatchResponse, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.requests = append(r.requests, request)
+	return &tradesettlementv1.ExecuteSettlementBatchResponse{SettlementBatchId: "settlement-batch"}, nil
+}
+
+func (r *recordingSettlementExecutor) count() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.requests)
+}
+
+func (r *recordingSettlementExecutor) lastRequest(t *testing.T) *tradesettlementv1.ExecuteSettlementBatchRequest {
+	t.Helper()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if len(r.requests) == 0 {
+		t.Fatalf("no settlement request recorded")
+	}
+	return r.requests[len(r.requests)-1]
 }
 
 type fakeTradeRepository struct{}
@@ -82,6 +111,15 @@ func (r fakeReplayRepository) LoadCompletedIdempotencyReplay(context.Context, st
 		return nil, r.err
 	}
 	return r.replay, nil
+}
+
+func mustMarketRequestFingerprint(t *testing.T, requestKind string, message any) string {
+	t.Helper()
+	fingerprint, err := marketRequestFingerprint(requestKind, message)
+	if err != nil {
+		t.Fatalf("marketRequestFingerprint returned error: %v", err)
+	}
+	return fingerprint
 }
 
 type fakeInactiveIssueRepository struct {
@@ -153,16 +191,120 @@ func (r fakeAcceptRepository) LoadItemStack(context.Context, string) (ItemStackS
 	}, nil
 }
 
+func TestSubmitTradeGuiInteractionDefaultsIdempotencyFromInteractionID(t *testing.T) {
+	settlement := &recordingSettlementExecutor{}
+	handler := NewMarketHandler(settlement, fakeTradeRepository{})
+	rawPayload := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"gui-issue-1","ui":{"window":"regional_market","action":"market_place_sell_order"},"input":{"issued_by_capsuleer_id":1001,"item_stack":{"item_stack_id":"11111111-1111-4111-8111-111111111111","owner_id":1001,"item_type_id":34,"station_id":60003760,"quantity":10},"quantity":4,"unit_price_isk":25}}`)
+
+	response, err := handler.SubmitTradeGuiInteraction(context.Background(), connect.NewRequest(&marketv1.SubmitTradeGuiInteractionRequest{
+		RawPayload: rawPayload,
+	}))
+	if err != nil {
+		t.Fatalf("SubmitTradeGuiInteraction returned error: %v", err)
+	}
+	if response.Msg.InteractionId != "gui-issue-1" {
+		t.Fatalf("interaction_id = %q, want gui-issue-1", response.Msg.InteractionId)
+	}
+	request := settlement.lastRequest(t)
+	if request.IdempotencyKey != "gui-issue-1" {
+		t.Fatalf("settlement idempotency key = %q, want gui-issue-1", request.IdempotencyKey)
+	}
+	if request.ExternalRequestId != "gui-issue-1" {
+		t.Fatalf("settlement external request ID = %q, want gui-issue-1", request.ExternalRequestId)
+	}
+}
+
+func TestSubmitTradeGuiInteractionReplaysDuplicateInteractionWithoutSecondSettlement(t *testing.T) {
+	settlement := &recordingSettlementExecutor{}
+	repo := &fakeReplayRepository{}
+	handler := NewMarketHandler(settlement, repo)
+	rawPayload := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"gui-replay-1","ui":{"window":"regional_market","action":"market_place_sell_order"},"input":{"issued_by_capsuleer_id":1001,"item_stack":{"item_stack_id":"11111111-1111-4111-8111-111111111111","owner_id":1001,"item_type_id":34,"station_id":60003760,"quantity":10},"quantity":4,"unit_price_isk":25}}`)
+
+	first, err := handler.SubmitTradeGuiInteraction(context.Background(), connect.NewRequest(&marketv1.SubmitTradeGuiInteractionRequest{
+		RawPayload: rawPayload,
+	}))
+	if err != nil {
+		t.Fatalf("first SubmitTradeGuiInteraction returned error: %v", err)
+	}
+	if settlement.count() != 1 {
+		t.Fatalf("settlement calls after first submit = %d, want 1", settlement.count())
+	}
+
+	request := issueTradeInstanceRequest{
+		IdempotencyKey:      "gui-replay-1",
+		ExternalRequestID:   "gui-replay-1",
+		IssuedByCapsuleerID: 1001,
+		ItemStack: &tradeGUIItemStackInput{
+			ItemStackID: "11111111-1111-4111-8111-111111111111",
+			OwnerID:     1001,
+			ItemTypeID:  34,
+			StationID:   60003760,
+			Quantity:    10,
+		},
+		Quantity:     4,
+		UnitPriceISK: 25,
+	}
+	fingerprint, err := marketRequestFingerprint("issue_trade_instance", request)
+	if err != nil {
+		t.Fatalf("marketRequestFingerprint returned error: %v", err)
+	}
+	repo.replay = &IdempotencyReplay{
+		SettlementBatchID:  first.Msg.SettlementBatchId,
+		RequestFingerprint: fingerprint,
+		ExternalRequestID:  "gui-replay-1",
+		Steps: []ReplayStep{
+			{
+				StepKind: "create_new_trade_instance_row",
+				Payload: map[string]AnyJSON{
+					"payload": map[string]AnyJSON{
+						"trade_instance_id": first.Msg.TradeInstanceId,
+						"issuer_id":         float64(1001),
+						"item_type_id":      float64(34),
+						"station_id":        float64(60003760),
+						"total_quantity":    float64(4),
+						"unit_price_isk":    float64(25),
+					},
+				},
+			},
+			{
+				StepKind: "transfer_quantity_from_item_stack_to_item_stack_escrow",
+				Payload: map[string]AnyJSON{
+					"payload": map[string]AnyJSON{
+						"source_item_stack_id": "11111111-1111-4111-8111-111111111111",
+						"item_stack_escrow_id": first.Msg.ItemStackEscrowId,
+					},
+				},
+			},
+		},
+	}
+
+	second, err := handler.SubmitTradeGuiInteraction(context.Background(), connect.NewRequest(&marketv1.SubmitTradeGuiInteractionRequest{
+		RawPayload: rawPayload,
+	}))
+	if err != nil {
+		t.Fatalf("second SubmitTradeGuiInteraction returned error: %v", err)
+	}
+	if settlement.count() != 1 {
+		t.Fatalf("settlement calls after replay = %d, want 1", settlement.count())
+	}
+	if second.Msg.TradeInstanceId != first.Msg.TradeInstanceId {
+		t.Fatalf("replayed trade instance ID = %q, want %q", second.Msg.TradeInstanceId, first.Msg.TradeInstanceId)
+	}
+	if second.Msg.SettlementBatchId != first.Msg.SettlementBatchId {
+		t.Fatalf("replayed settlement batch ID = %q, want %q", second.Msg.SettlementBatchId, first.Msg.SettlementBatchId)
+	}
+}
+
 func TestMarketHandlerReportsTradeSettlementUnavailable(t *testing.T) {
 	handler := NewMarketHandler(fakeSettlementExecutor{err: errors.New("connection refused")}, fakeTradeRepository{})
 
-	_, err := handler.IssueTradeInstance(context.Background(), connect.NewRequest(&marketv1.IssueTradeInstanceRequest{
+	_, err := handler.issueTradeInstance(context.Background(), issueTradeInstanceRequest{
 		IdempotencyKey:      "issue-key",
-		IssuedByCapsuleerId: 1001,
-		ItemStack:           &marketv1.ItemStackRow{ItemStackId: "11111111-1111-4111-8111-111111111111", OwnerId: 1001, ItemTypeId: 34, StationId: 60003760, Quantity: 10},
+		IssuedByCapsuleerID: 1001,
+		ItemStack:           &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111", OwnerID: 1001, ItemTypeID: 34, StationID: 60003760, Quantity: 10},
 		Quantity:            4,
-		UnitPriceIsk:        25,
-	}))
+		UnitPriceISK:        25,
+	})
 	if connect.CodeOf(err) != connect.CodeUnavailable {
 		t.Fatalf("error code = %v, want unavailable: %v", connect.CodeOf(err), err)
 	}
@@ -171,14 +313,14 @@ func TestMarketHandlerReportsTradeSettlementUnavailable(t *testing.T) {
 func TestMarketHandlerRejectsAcceptingExpiredTrade(t *testing.T) {
 	handler := NewMarketHandler(fakeSettlementExecutor{}, fakeExpiredTradeRepository{})
 
-	_, err := handler.AcceptTradeInstance(context.Background(), connect.NewRequest(&marketv1.AcceptTradeInstanceRequest{
+	_, err := handler.acceptTradeInstance(context.Background(), acceptTradeInstanceRequest{
 		IdempotencyKey:    "accept-expired",
-		ExternalRequestId: "external-accept-expired",
-		TradeInstanceId:   "22222222-2222-4222-8222-222222222222",
-		BuyerCapsuleerId:  2002,
+		ExternalRequestID: "external-accept-expired",
+		TradeInstanceID:   "22222222-2222-4222-8222-222222222222",
+		BuyerCapsuleerID:  2002,
 		QuantityRequested: 1,
-		BuyerWalletId:     "33333333-3333-4333-8333-333333333333",
-	}))
+		BuyerWalletID:     "33333333-3333-4333-8333-333333333333",
+	})
 	if connect.CodeOf(err) != connect.CodeFailedPrecondition {
 		t.Fatalf("error code = %v, want failed_precondition: %v", connect.CodeOf(err), err)
 	}
@@ -188,10 +330,19 @@ func TestMarketHandlerRejectsAcceptingExpiredTrade(t *testing.T) {
 }
 
 func TestMarketHandlerRejectsReplayWithDifferentExternalRequestID(t *testing.T) {
+	original := issueTradeInstanceRequest{
+		IdempotencyKey:      "issue-replay",
+		ExternalRequestID:   "external-original",
+		IssuedByCapsuleerID: 1001,
+		ItemStack:           &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
+		Quantity:            4,
+		UnitPriceISK:        25,
+	}
 	handler := NewMarketHandler(fakeSettlementExecutor{}, fakeReplayRepository{
 		replay: &IdempotencyReplay{
-			SettlementBatchID: "settlement-batch",
-			ExternalRequestID: "external-original",
+			SettlementBatchID:  "settlement-batch",
+			RequestFingerprint: mustMarketRequestFingerprint(t, "issue_trade_instance", original),
+			ExternalRequestID:  "external-original",
 			Steps: []ReplayStep{
 				{
 					StepKind: "create_new_trade_instance_row",
@@ -215,14 +366,14 @@ func TestMarketHandlerRejectsReplayWithDifferentExternalRequestID(t *testing.T) 
 		},
 	})
 
-	_, err := handler.IssueTradeInstance(context.Background(), connect.NewRequest(&marketv1.IssueTradeInstanceRequest{
+	_, err := handler.issueTradeInstance(context.Background(), issueTradeInstanceRequest{
 		IdempotencyKey:      "issue-replay",
-		ExternalRequestId:   "external-different",
-		IssuedByCapsuleerId: 1001,
-		ItemStack:           &marketv1.ItemStackRow{ItemStackId: "11111111-1111-4111-8111-111111111111"},
+		ExternalRequestID:   "external-different",
+		IssuedByCapsuleerID: 1001,
+		ItemStack:           &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
 		Quantity:            4,
-		UnitPriceIsk:        25,
-	}))
+		UnitPriceISK:        25,
+	})
 	if connect.CodeOf(err) != connect.CodeAborted {
 		t.Fatalf("error code = %v, want aborted: %v", connect.CodeOf(err), err)
 	}
@@ -233,10 +384,20 @@ func TestMarketHandlerRejectsReplayWithDifferentExternalRequestID(t *testing.T) 
 
 func TestMarketHandlerRejectsReplayWithDifferentExpiresAt(t *testing.T) {
 	originalExpiresAt := time.Now().Add(time.Hour).UTC()
+	original := issueTradeInstanceRequest{
+		IdempotencyKey:      "issue-replay",
+		ExternalRequestID:   "external-original",
+		IssuedByCapsuleerID: 1001,
+		ItemStack:           &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
+		Quantity:            4,
+		UnitPriceISK:        25,
+		ExpiresAt:           timestamppb.New(originalExpiresAt),
+	}
 	handler := NewMarketHandler(fakeSettlementExecutor{}, fakeReplayRepository{
 		replay: &IdempotencyReplay{
-			SettlementBatchID: "settlement-batch",
-			ExternalRequestID: "external-original",
+			SettlementBatchID:  "settlement-batch",
+			RequestFingerprint: mustMarketRequestFingerprint(t, "issue_trade_instance", original),
+			ExternalRequestID:  "external-original",
 			Steps: []ReplayStep{
 				{
 					StepKind: "create_new_trade_instance_row",
@@ -261,31 +422,31 @@ func TestMarketHandlerRejectsReplayWithDifferentExpiresAt(t *testing.T) {
 		},
 	})
 
-	_, err := handler.IssueTradeInstance(context.Background(), connect.NewRequest(&marketv1.IssueTradeInstanceRequest{
+	_, err := handler.issueTradeInstance(context.Background(), issueTradeInstanceRequest{
 		IdempotencyKey:      "issue-replay",
-		ExternalRequestId:   "external-original",
-		IssuedByCapsuleerId: 1001,
-		ItemStack:           &marketv1.ItemStackRow{ItemStackId: "11111111-1111-4111-8111-111111111111"},
+		ExternalRequestID:   "external-original",
+		IssuedByCapsuleerID: 1001,
+		ItemStack:           &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
 		Quantity:            4,
-		UnitPriceIsk:        25,
+		UnitPriceISK:        25,
 		ExpiresAt:           timestamppb.New(originalExpiresAt.Add(time.Hour)),
-	}))
+	})
 	if connect.CodeOf(err) != connect.CodeAborted {
 		t.Fatalf("error code = %v, want aborted: %v", connect.CodeOf(err), err)
 	}
 }
 
 func TestMarketHandlerRejectsReplayWithDifferentRequestFingerprint(t *testing.T) {
-	original := &marketv1.IssueTradeInstanceRequest{
+	original := issueTradeInstanceRequest{
 		IdempotencyKey:      "issue-replay",
-		ExternalRequestId:   "external-original",
-		IssuedByCapsuleerId: 1001,
-		ItemStack: &marketv1.ItemStackRow{
-			ItemStackId: "11111111-1111-4111-8111-111111111111",
-			OwnerId:     1001,
+		ExternalRequestID:   "external-original",
+		IssuedByCapsuleerID: 1001,
+		ItemStack: &tradeGUIItemStackInput{
+			ItemStackID: "11111111-1111-4111-8111-111111111111",
+			OwnerID:     1001,
 		},
 		Quantity:     4,
-		UnitPriceIsk: 25,
+		UnitPriceISK: 25,
 	}
 	fingerprint, err := marketRequestFingerprint("issue_trade_instance", original)
 	if err != nil {
@@ -320,26 +481,36 @@ func TestMarketHandlerRejectsReplayWithDifferentRequestFingerprint(t *testing.T)
 		},
 	})
 
-	_, err = handler.IssueTradeInstance(context.Background(), connect.NewRequest(&marketv1.IssueTradeInstanceRequest{
+	_, err = handler.issueTradeInstance(context.Background(), issueTradeInstanceRequest{
 		IdempotencyKey:      "issue-replay",
-		ExternalRequestId:   "external-original",
-		IssuedByCapsuleerId: 1001,
-		ItemStack: &marketv1.ItemStackRow{
-			ItemStackId: "11111111-1111-4111-8111-111111111111",
-			OwnerId:     3003,
+		ExternalRequestID:   "external-original",
+		IssuedByCapsuleerID: 1001,
+		ItemStack: &tradeGUIItemStackInput{
+			ItemStackID: "11111111-1111-4111-8111-111111111111",
+			OwnerID:     3003,
 		},
 		Quantity:     4,
-		UnitPriceIsk: 25,
-	}))
+		UnitPriceISK: 25,
+	})
 	if connect.CodeOf(err) != connect.CodeAborted {
 		t.Fatalf("error code = %v, want aborted: %v", connect.CodeOf(err), err)
 	}
 }
 
 func TestMarketHandlerRejectsReplayWhenDestinationModeChanged(t *testing.T) {
+	original := acceptTradeInstanceRequest{
+		IdempotencyKey:              "accept-replay",
+		ExternalRequestID:           "external-original",
+		TradeInstanceID:             "22222222-2222-4222-8222-222222222222",
+		BuyerCapsuleerID:            2002,
+		QuantityRequested:           1,
+		BuyerWalletID:               "33333333-3333-4333-8333-333333333333",
+		BuyerDestinationItemStackID: "66666666-6666-4666-8666-666666666666",
+	}
 	handler := NewMarketHandler(fakeSettlementExecutor{}, fakeReplayRepository{
 		replay: &IdempotencyReplay{
 			SettlementBatchID:   "settlement-batch",
+			RequestFingerprint:  mustMarketRequestFingerprint(t, "accept_trade_instance", original),
 			ExternalRequestID:   "external-original",
 			CausedByCapsuleerID: 2002,
 			Steps: []ReplayStep{
@@ -366,14 +537,14 @@ func TestMarketHandlerRejectsReplayWhenDestinationModeChanged(t *testing.T) {
 		},
 	})
 
-	_, err := handler.AcceptTradeInstance(context.Background(), connect.NewRequest(&marketv1.AcceptTradeInstanceRequest{
+	_, err := handler.acceptTradeInstance(context.Background(), acceptTradeInstanceRequest{
 		IdempotencyKey:    "accept-replay",
-		ExternalRequestId: "external-original",
-		TradeInstanceId:   "22222222-2222-4222-8222-222222222222",
-		BuyerCapsuleerId:  2002,
+		ExternalRequestID: "external-original",
+		TradeInstanceID:   "22222222-2222-4222-8222-222222222222",
+		BuyerCapsuleerID:  2002,
 		QuantityRequested: 1,
-		BuyerWalletId:     "33333333-3333-4333-8333-333333333333",
-	}))
+		BuyerWalletID:     "33333333-3333-4333-8333-333333333333",
+	})
 	if connect.CodeOf(err) != connect.CodeAborted {
 		t.Fatalf("error code = %v, want aborted: %v", connect.CodeOf(err), err)
 	}
@@ -382,10 +553,10 @@ func TestMarketHandlerRejectsReplayWhenDestinationModeChanged(t *testing.T) {
 func TestMarketHandlerReportsReplayLoadErrorUnavailable(t *testing.T) {
 	handler := NewMarketHandler(fakeSettlementExecutor{}, fakeReplayRepository{err: errors.New("postgres unavailable")})
 
-	_, err := handler.IssueTradeInstance(context.Background(), connect.NewRequest(&marketv1.IssueTradeInstanceRequest{
+	_, err := handler.issueTradeInstance(context.Background(), issueTradeInstanceRequest{
 		IdempotencyKey: "issue-replay-load-error",
-		ItemStack:      &marketv1.ItemStackRow{ItemStackId: "11111111-1111-4111-8111-111111111111"},
-	}))
+		ItemStack:      &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
+	})
 	if connect.CodeOf(err) != connect.CodeUnavailable {
 		t.Fatalf("error code = %v, want unavailable: %v", connect.CodeOf(err), err)
 	}
@@ -394,13 +565,13 @@ func TestMarketHandlerReportsReplayLoadErrorUnavailable(t *testing.T) {
 func TestMarketHandlerRejectsInactiveIssueItemStack(t *testing.T) {
 	handler := NewMarketHandler(fakeSettlementExecutor{}, fakeInactiveIssueRepository{})
 
-	_, err := handler.IssueTradeInstance(context.Background(), connect.NewRequest(&marketv1.IssueTradeInstanceRequest{
+	_, err := handler.issueTradeInstance(context.Background(), issueTradeInstanceRequest{
 		IdempotencyKey:      "issue-inactive",
-		IssuedByCapsuleerId: 1001,
-		ItemStack:           &marketv1.ItemStackRow{ItemStackId: "11111111-1111-4111-8111-111111111111"},
+		IssuedByCapsuleerID: 1001,
+		ItemStack:           &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
 		Quantity:            4,
-		UnitPriceIsk:        25,
-	}))
+		UnitPriceISK:        25,
+	})
 	if connect.CodeOf(err) != connect.CodeFailedPrecondition {
 		t.Fatalf("error code = %v, want failed_precondition: %v", connect.CodeOf(err), err)
 	}
@@ -409,15 +580,15 @@ func TestMarketHandlerRejectsInactiveIssueItemStack(t *testing.T) {
 func TestMarketHandlerRejectsInactiveDestinationItemStack(t *testing.T) {
 	handler := NewMarketHandler(fakeSettlementExecutor{}, fakeAcceptRepository{destinationState: "MERGED"})
 
-	_, err := handler.AcceptTradeInstance(context.Background(), connect.NewRequest(&marketv1.AcceptTradeInstanceRequest{
+	_, err := handler.acceptTradeInstance(context.Background(), acceptTradeInstanceRequest{
 		IdempotencyKey:              "accept-inactive-destination",
-		ExternalRequestId:           "external-accept-inactive-destination",
-		TradeInstanceId:             "22222222-2222-4222-8222-222222222222",
-		BuyerCapsuleerId:            2002,
+		ExternalRequestID:           "external-accept-inactive-destination",
+		TradeInstanceID:             "22222222-2222-4222-8222-222222222222",
+		BuyerCapsuleerID:            2002,
 		QuantityRequested:           1,
-		BuyerWalletId:               "33333333-3333-4333-8333-333333333333",
-		BuyerDestinationItemStackId: "66666666-6666-4666-8666-666666666666",
-	}))
+		BuyerWalletID:               "33333333-3333-4333-8333-333333333333",
+		BuyerDestinationItemStackID: "66666666-6666-4666-8666-666666666666",
+	})
 	if connect.CodeOf(err) != connect.CodeFailedPrecondition {
 		t.Fatalf("error code = %v, want failed_precondition: %v", connect.CodeOf(err), err)
 	}

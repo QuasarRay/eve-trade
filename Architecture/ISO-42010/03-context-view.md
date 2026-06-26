@@ -4,35 +4,37 @@
 
 | Field | Value |
 | --- | --- |
-| View status | Canonical |
-| Last reviewed | 2026-06-23 |
+| View status | Canonical current state |
+| Last reviewed | 2026-06-25 |
 | Governing viewpoint | VP-01 Context Viewpoint |
-| Evidence baseline | Repository commit `fe5c6af`; architecture file hashes are recorded in `18-evidence-manifest.md` |
+| Evidence baseline | v6 architecture cleanup; starting commit recorded in `changes/v6/changes.md` |
 
 Governed by: [VP-01 Context Viewpoint](./02-viewpoints.md#vp-01-context-viewpoint)
 
 ## Concerns Addressed
 
-This view addresses CON-01, CON-03, CON-12, CON-16, CON-17, CON-18, and
-CON-32.
+This view addresses the game frontend/player interaction boundary, low-latency
+UDP edge behavior, Market domain interpretation, settlement correctness,
+platform operations, security/replay/idempotency, and CI/CD enforcement.
 
 ## System Context Model
 
 Model ID: `MODEL-CTX-01`; view component ID: `VC-CTX-01`.
 
-This model shows the Compose and Kubernetes configuration, where
-`SETTLEMENT_TRANSPORT=rabbitmq`. The Market service binary also contains a
-direct/connect settlement client used when that transport is configured.
+The current production runtime path is:
+
+`game frontend -> Quilkin UDP -> API gateway UDP edge -> Market GUI interaction -> settlement operations -> trade-settlement`
 
 ```mermaid
 flowchart LR
-  Game["Game Server / Upstream Backend"] -->|Connect RPC over HTTP| Gateway["API Gateway"]
-  Gateway -->|MarketService Connect RPC| Market["Market Service"]
-  Market -->|SQL reads and idempotency replay reads| Postgres["PostgreSQL"]
-  Market -->|ExecuteSettlementBatch command message| Rabbit["RabbitMQ"]
+  Frontend["Real game frontend or local simulator"] -->|signed production GUI UDP packet| Quilkin["Quilkin UDP"]
+  Quilkin -->|UDP forward| Gateway["API Gateway UDP edge"]
+  Gateway -->|SubmitTradeGuiInteraction raw_payload only| Market["Market"]
+  Market -->|SQL reads and replay lookup| Postgres["PostgreSQL"]
+  Market -->|low-level settlement batch command| Rabbit["RabbitMQ"]
   Rabbit -->|settlement command| Worker["settlement-worker"]
-  Worker -->|TradeSettlementService Connect RPC| Settlement["trade-settlement"]
-  Settlement -->|SQL transaction| Postgres
+  Worker -->|ExecuteSettlementBatch| Settlement["trade-settlement"]
+  Settlement -->|atomic SQL transaction| Postgres
 
   Gateway -->|logs metrics traces| OTel["OpenTelemetry Collector"]
   Market -->|logs metrics traces| OTel
@@ -40,62 +42,63 @@ flowchart LR
   Settlement -->|logs metrics traces| OTel
   OTel -->|export| Obs["Observability Backend"]
 
-  K8s["Kubernetes / Istio / Gateway API"] -. hosts .-> Gateway
+  K8s["Kubernetes / Istio / NetworkPolicy"] -. constrains .-> Quilkin
+  K8s -. constrains .-> Gateway
+  K8s -. constrains .-> Market
   Terraform["Terraform platform roots"] -. provisions/prepares .-> K8s
   Terraform -. provisions .-> Postgres
 ```
-
-## Legend
-
-| Element | Meaning |
-| --- | --- |
-| Solid arrow | Runtime request, message, or database interaction |
-| Dotted arrow | Deployment or infrastructure relationship |
-| `Connect RPC` | Protobuf service over Connect-compatible HTTP |
-| `RabbitMQ` | Asynchronous settlement command/reply broker |
-| `PostgreSQL` | Durable source of truth |
 
 ## Boundary Model
 
 Model ID: `MODEL-CTX-02`; view component ID: `VC-CTX-02`.
 
-| Boundary | Inside | Outside | Control intent | Related aspect | Evidence level |
-| --- | --- | --- | --- | --- | --- |
-| BND-01 Game-facing API boundary | API Gateway | Game server and upstream callers | API Gateway is the only public service in the checked-in local and production-like manifests. | ASP-05 | E2 |
-| BND-02 Trade policy boundary | Market | API Gateway and settlement execution | Market performs trade-mechanic validation and composes settlement operation batches. | ASP-01, ASP-05 | E2 |
-| BND-03 Async settlement boundary | RabbitMQ and settlement-worker | Market and trade-settlement | In Compose and Kubernetes, Market publishes commands to the broker and settlement-worker calls trade-settlement. | ASP-04 | E2 |
-| BND-04 Settlement execution boundary | trade-settlement | Market, worker, and callers | trade-settlement atomically executes requested operation batches and writes idempotency/settlement metadata. | ASP-03, ASP-05 | E2 |
-| BND-05 Data boundary | PostgreSQL | All services | PostgreSQL holds authoritative state and settlement audit metadata. | ASP-03, ASP-08 | E2 |
-| BND-06 Operations boundary | Kubernetes, Terraform, observability assets | Runtime business services | Deployment configuration constrains runtime connectivity and visibility. | ASP-06, ASP-07 | E2 |
+| Boundary | Inside | Outside | Current control intent | Evidence level |
+| --- | --- | --- | --- | --- |
+| Game packet boundary | Real frontend packet shape, simulator outbound payload | Simulator local UI/database/log implementation | The local simulator sends the same production-shaped GUI packet a real frontend would send; no Django/browser/test/simulator identity leaves the process. | Enforced by `simulator/trade_gui/tests.py` |
+| UDP routing boundary | Quilkin UDP | Public/client network | Quilkin owns UDP proxy/routing behavior and forwards to API Gateway UDP. | Enforced by Compose and Kubernetes manifests |
+| UDP edge boundary | API Gateway UDP listener | Quilkin and clients | API Gateway validates transport safety, HMAC integrity, rate/replay limits, queue capacity, and downstream timeout. It does not decide issue/accept/cancel. | Enforced by `quilkin_udp.go` and tests |
+| Business interpretation boundary | Market | API Gateway and settlement execution | Market owns GUI action interpretation, game-trade validation, and conversion into settlement operations. | Enforced by Market handler and proto |
+| Settlement execution boundary | trade-settlement | Market, worker, and callers | trade-settlement executes only low-level settlement operation batches and infrastructure idempotency/audit metadata. | Enforced by settlement proto/Rust executor |
+| Data boundary | PostgreSQL | All services | PostgreSQL holds authoritative state, settlement metadata, idempotency records, and ledgers. | Enforced by migrations and repositories |
+| Operations boundary | Kubernetes/Terraform/CI | Runtime services | Production overlays exclude local simulator resources and CI validates manifests and architecture boundaries. | Enforced by workflow and guard script |
 
 ## Interface Catalog
 
 Model ID: `MODEL-CTX-03`; view component ID: `VC-CTX-03`.
 
-| Interface | Provider | Consumer | Contract source | Purpose | Evidence anchor |
-| --- | --- | --- | --- | --- | --- |
-| `GameTradeGatewayService.IssueTradeInstance` | API Gateway | Game server | `distributed-backend/proto/eve/api_gateway/v1/api_gateway.proto` | Game-facing request to create a trade instance. | EVID-001 |
-| `GameTradeGatewayService.AcceptTradeInstance` | API Gateway | Game server | `distributed-backend/proto/eve/api_gateway/v1/api_gateway.proto` | Game-facing request to accept an open trade instance. | EVID-001 |
-| `GameTradeGatewayService.CancelTradeInstance` | API Gateway | Game server | `distributed-backend/proto/eve/api_gateway/v1/api_gateway.proto` | Game-facing request to cancel an open trade instance. | EVID-001 |
-| `MarketService.*` | Market | API Gateway | `distributed-backend/proto/eve/market/v1/market.proto` | Internal trade command validation and settlement planning. | EVID-002 |
-| `ExecuteSettlementBatch` message | RabbitMQ topology | Market, settlement-worker | `distributed-backend/proto/eve/trade_settlement/v1/trade_settlement.proto` and `distributed-backend/src/messaging/rabbitmqsettlement` | Brokered settlement command and reply path. | EVID-003, EVID-009 |
-| `TradeSettlementService.ExecuteSettlementBatch` | trade-settlement | settlement-worker in RabbitMQ deployments; Market when direct/connect transport is configured | `distributed-backend/proto/eve/trade_settlement/v1/trade_settlement.proto` | Atomically executes requested settlement operations in PostgreSQL. | EVID-003 |
-| SQL connections | PostgreSQL | Market, trade-settlement, migration job | Migrations under `distributed-backend/src/trade-settlement/migrations` | Read snapshots, run migrations, and apply mutations. | EVID-010 |
-| `/healthz` and `/readyz` | Services | Compose, Kubernetes, operators | Service server implementations and manifests | Liveness/readiness reporting. | EVID-012, EVID-013 |
-| OpenTelemetry export | Services and collector | Observability backend | `distributed-backend/OBSERVABILITY.md` and manifests | Distributed observability. | EVID-020 |
+| Interface | Provider | Consumer | Contract source | Purpose |
+| --- | --- | --- | --- | --- |
+| Signed `eve-trade-edge.v1` UDP envelope | Game frontend or local simulator | Quilkin/API Gateway | `simulator/trade_gui/udp_client.py`, `distributed-backend/src/api-gateway/distributed-backend/quilkin_udp.go` | Carries authenticated raw GUI payload without simulator/test identity. |
+| `eve-trade-gui.v1` GUI payload | Game frontend or local simulator | Market through API Gateway | `simulator/trade_gui/views.py`, Market GUI handler structs | Represents UI window/action/control and player-provided trade inputs. |
+| `MarketService.SubmitTradeGuiInteraction` | Market | API Gateway | `distributed-backend/proto/eve/market/v1/market.proto` | Receives only `bytes raw_payload`; Market interprets the game GUI interaction. |
+| `ExecuteSettlementBatch` message | RabbitMQ topology | Market, settlement-worker | `distributed-backend/proto/eve/trade_settlement/v1/trade_settlement.proto`, `distributed-backend/src/messaging/rabbitmqsettlement` | Brokered low-level settlement command and reply path. |
+| `TradeSettlementService.ExecuteSettlementBatch` | trade-settlement | settlement-worker in RabbitMQ deployments; Market only when explicitly configured for direct/connect transport | `distributed-backend/proto/eve/trade_settlement/v1/trade_settlement.proto` | Atomically executes requested settlement operations in PostgreSQL. |
+| SQL connections | PostgreSQL | Market, trade-settlement, migration job | `distributed-backend/src/trade-settlement/migrations` | Market reads snapshots; trade-settlement applies mutations. |
+| `/healthz` and `/readyz` | API Gateway, Market, settlement-worker, trade-settlement | Compose, Kubernetes, operators | Service implementations and manifests | Liveness/readiness reporting. |
+| OpenTelemetry export | Services and collector | Observability backend | `distributed-backend/OBSERVABILITY.md` and manifests | Distributed observability without logging full player payloads. |
 
 ## Protocol And Path Catalog
 
 | Flow | Protocol and path | Port/config evidence | Notes |
 | --- | --- | --- | --- |
-| Game server to API Gateway issue | Connect POST `/eve.api_gateway.v1.GameTradeGatewayService/IssueTradeInstance` | API Gateway listens on `:8080` via `API_GATEWAY_HTTP_ADDR`. | External method reuses Market request/response message types. |
-| Game server to API Gateway accept | Connect POST `/eve.api_gateway.v1.GameTradeGatewayService/AcceptTradeInstance` | API Gateway listens on `:8080`. | Actor identity must be bound to authenticated claims before production exposure. |
-| Game server to API Gateway cancel | Connect POST `/eve.api_gateway.v1.GameTradeGatewayService/CancelTradeInstance` | API Gateway listens on `:8080`. | Same idempotency rules as other trade commands. |
-| API Gateway to Market | Connect POST `/eve.market.v1.MarketService/{IssueTradeInstance,AcceptTradeInstance,CancelTradeInstance}` | `MARKET_URL=http://market:8081` in Kubernetes base config. | API Gateway readiness checks Market `/readyz`. |
-| Market to RabbitMQ | AMQP publish to exchange `eve.trade.settlement` with routing key `settlement.execute` | Kubernetes base config, Compose, and messaging defaults. | Used when `SETTLEMENT_TRANSPORT=rabbitmq`; this is the checked-in Compose/Kubernetes path. |
-| Market direct to trade-settlement | Connect POST `/eve.trade_settlement.v1.TradeSettlementService/ExecuteSettlementBatch` | Market code supports explicit `connect`, `grpc`, or `direct` transport and uses `TRADE_SETTLEMENT_URL` for that path. The default fallback is `rabbitmq`. | Implemented alternate transport; not the checked-in Compose/Kubernetes path. |
-| settlement-worker to trade-settlement | Connect POST `/eve.trade_settlement.v1.TradeSettlementService/ExecuteSettlementBatch` | `TRADE_SETTLEMENT_URL=http://trade-settlement:9092`. | Internal privileged API in the RabbitMQ path. |
+| Game frontend to Quilkin | UDP signed edge envelope | Compose/Kubernetes expose Quilkin UDP `26001`. | Simulator and real frontend use the same payload shape. |
+| Quilkin to API Gateway | UDP forward | API Gateway listens on UDP `26000` via `API_GATEWAY_QUILKIN_UDP_ADDR`. | NetworkPolicy allows Quilkin to API Gateway UDP in production overlay. |
+| API Gateway to Market | Connect POST `/eve.market.v1.MarketService/SubmitTradeGuiInteraction` | `MARKET_URL=http://market:8081` in config. | Request contains only `raw_payload`; source transport/address are not part of the business contract. |
+| Market to RabbitMQ | AMQP publish to exchange `eve.trade.settlement` with routing key `settlement.execute` | Kubernetes base config, Compose, and messaging defaults. | Checked-in Compose/Kubernetes settlement path. |
+| settlement-worker to trade-settlement | Connect/gRPC-compatible call to `ExecuteSettlementBatch` | `TRADE_SETTLEMENT_URL=http://trade-settlement:9092`. | Internal privileged settlement API. |
 | Market and trade-settlement to PostgreSQL | PostgreSQL wire protocol | `DATABASE_URL` secret or local Compose env. | Market reads; trade-settlement writes. |
+
+## Context View Assertions
+
+| Assertion | Enforcement tag | Evidence |
+| --- | --- | --- |
+| API Gateway exposes no production direct issue, accept, or cancel trade RPCs. | Enforced by deletion and CI guard | API Gateway proto and generated service files are deleted; `scripts/verify_architecture_boundaries.py` rejects drift. |
+| Market exposes one production GUI submission RPC. | Enforced by proto | `MarketService.SubmitTradeGuiInteraction` request contains only `bytes raw_payload`. |
+| API Gateway forwards raw GUI payload to Market and keeps gateway source metadata internal. | Enforced by tests | `TestQuilkinUDPServerForwardsOnlyRawPayloadToMarket`. |
+| Market owns game trade interpretation. | Enforced by code | Market maps GUI actions to private issue/accept/cancel helpers and settlement plans. |
+| trade-settlement receives low-level settlement operations only. | Enforced by proto and Rust command conversion | Settlement proto contains operation batches, not game trade mechanics. |
+| Production overlays do not include simulator resources. | Enforced by CI guard and kustomize render | Production `kustomization.yaml` includes Quilkin but not simulator. |
 
 ## External Dependencies
 
@@ -103,39 +106,17 @@ Model ID: `MODEL-CTX-03`; view component ID: `VC-CTX-03`.
 | --- | --- | --- |
 | PostgreSQL | Market, trade-settlement, migration job | Source of truth and transaction manager. |
 | RabbitMQ | Market, settlement-worker | Settlement command/reply broker. |
+| Quilkin | Game UDP path | UDP proxy/routing edge in local and production overlays. |
 | Kubernetes | Production-like runtime | Schedules services and applies probes, configuration, secrets, and network policies. |
-| Istio and Gateway API | Production-like runtime | Ingress, traffic policy, and service security resources. |
+| Istio | Production-like internal service mesh controls | mTLS and service authorization for internal HTTP/gRPC paths. |
 | OpenTelemetry collector | Services | Telemetry collection and export. |
-| Deployment infrastructure | Production-like runtime | AWS VPC/EKS/RDS/ECR, GCP VPC/GKE/Cloud SQL/Artifact Registry, or Omni-managed Talos cluster prerequisites through target-specific Terraform roots. |
+| Terraform platform roots | Operators | AWS, GCP, or Talos/Omni platform preparation. |
 
-## Context View Assertions
+## Current Limitations
 
-| Assertion | Enforcement tag | Evidence |
-| --- | --- | --- |
-| API Gateway has no durable data ownership; it forwards game-facing trade commands to Market. | Enforced by code | API Gateway handlers call the Market client and no database repository is modeled for API Gateway. |
-| Market owns game-rule decisions for issue, accept, and cancel requests. | Enforced by code | Market handlers and `game-trade` package perform validation and settlement planning. |
-| trade-settlement atomically executes requested settlement operations and metadata writes. | Enforced by code | Rust settlement executor owns the transaction, savepoint, operation dispatch, idempotency, and settlement-step metadata writes. |
-| RabbitMQ is part of the checked-in Compose and Kubernetes trade command path. | Enforced by configuration | Compose and Kubernetes set `SETTLEMENT_TRANSPORT=rabbitmq`; Market config also defaults to `rabbitmq`; code still supports explicit direct/connect transport for local or alternate deployment. |
-| PostgreSQL is shared by Market for reads and trade-settlement for writes. | Enforced by code | Market repository is read-oriented; trade-settlement applies SQL mutations. |
-| Observability spans all services. | Partially enforced | OTEL configuration exists; complete dashboards and alert rules are tracked as risks. |
-
-## Concern Satisfaction
-
-| Concern | How this view satisfies it | Evidence or gap |
-| --- | --- | --- |
-| CON-01 | Lists all public trade commands and API paths. | Protobuf contracts under `distributed-backend/proto/eve`. |
-| CON-03 | Identifies providers and consumers for response-bearing interfaces. | Interface Catalog. |
-| CON-12 | Identifies health/readiness interfaces and downstream dependencies. | Detailed probe semantics are in Deployment and Operations. |
-| CON-16 | Shows the same logical service chain for local and Kubernetes contexts. | Compose and Kubernetes artifacts. |
-| CON-17 | Separates game-facing API boundary from internal settlement boundary. | Boundary Model. |
-| CON-18 | Identifies network and trust boundaries that must be enforced by deployment policy. | Deployment and Security views provide enforcement details. |
-| CON-32 | Shows telemetry export path and cross-service flow. | Observability view defines required signals. |
-
-## Aspect Application
-
-| Aspect | Context element |
+| Limitation | Current status |
 | --- | --- |
-| ASP-01 Contract compatibility | Protobuf service contracts and shared message types. |
-| ASP-04 Asynchronous settlement | RabbitMQ plus settlement-worker boundary. |
-| ASP-05 Trust boundary control | BND-01 through BND-06. |
-| ASP-07 Observability | OpenTelemetry collector and telemetry export relationships. |
+| HMAC authenticates packet integrity but does not bind account identity to capsuleer IDs. | Future work; documented in security and risk views. |
+| API Gateway replay cache is in-memory per process. | Acceptable for local slice; production multi-replica replay/idempotency relies on Market/settlement durable idempotency for business effects. |
+| Market still contains private Go issue/accept/cancel helper functions. | Intentional internal implementation detail; not public production RPC surface. |
+| Full production Quilkin configuration depends on operator-supplied image digests/secrets. | Production overlay renders and validates but uses placeholder image digests until CI release injection. |

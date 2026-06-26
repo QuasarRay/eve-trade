@@ -4,10 +4,10 @@
 
 | Field | Value |
 | --- | --- |
-| View status | Canonical |
-| Last reviewed | 2026-06-23 |
+| View status | Canonical current state |
+| Last reviewed | 2026-06-25 |
 | Governing viewpoint | VP-04 Information And Data Integrity |
-| Evidence baseline | Repository commit `fe5c6af`; architecture file hashes are recorded in `18-evidence-manifest.md` |
+| Evidence baseline | v6 architecture cleanup; starting commit recorded in `changes/v6/changes.md` |
 
 Governed by: [VP-04 Information And Data Integrity Viewpoint](./02-viewpoints.md#vp-04-information-and-data-integrity-viewpoint)
 
@@ -27,7 +27,8 @@ and CON-33.
 | Escrow | Item escrow and wallet escrow records | trade-settlement write path; Market read path | Holds items and ISK during issue and accept flows. |
 | Settlement metadata | Settlement batch, attempt, step, and operation metadata | trade-settlement | Audits settlement execution, success, failure, and replay outcomes. |
 | Idempotency metadata | Idempotency records, fingerprints, statuses, completed responses | trade-settlement and Market read path | Prevents duplicate mutation and supports replay. |
-| Protobuf command data | Request and operation messages | API Gateway, Market, messaging, settlement-worker, trade-settlement | Defines portable command data crossing service boundaries. |
+| Game GUI packet data | Signed UDP edge envelope and raw `eve-trade-gui.v1` payload | Game frontend/simulator, Quilkin, API Gateway, Market | Defines the production packet data crossing the frontend-to-Market boundary. |
+| Settlement operation data | Low-level operation batches and metadata | Market, messaging, settlement-worker, trade-settlement | Defines durable settlement mutation data crossing the Market-to-settlement boundary. |
 
 ## Persistent State Responsibilities
 

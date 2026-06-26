@@ -4,10 +4,10 @@
 
 | Field | Value |
 | --- | --- |
-| View status | Canonical |
-| Last reviewed | 2026-06-23 |
+| View status | Canonical current state |
+| Last reviewed | 2026-06-25 |
 | Governing viewpoint | VP-05 Deployment And Operations |
-| Evidence baseline | Repository commit `fe5c6af`; architecture file hashes are recorded in `18-evidence-manifest.md` |
+| Evidence baseline | v6 architecture cleanup; starting commit recorded in `changes/v6/changes.md` |
 
 Governed by: [VP-05 Deployment And Operations Viewpoint](./02-viewpoints.md#vp-05-deployment-and-operations-viewpoint)
 
@@ -28,17 +28,22 @@ Local development uses Docker Compose.
 | `trade-settlement` | Rust settlement service | Depends on migrated PostgreSQL. |
 | `settlement-worker` | RabbitMQ consumer and trade-settlement caller | Depends on RabbitMQ and trade-settlement. |
 | `market` | Go trade policy service | Depends on PostgreSQL and RabbitMQ. |
-| `api-gateway` | Game-facing local entry point | Depends on Market; publishes `localhost:8080`. |
+| `api-gateway` | UDP edge and health/readiness service | Depends on Market; listens for Quilkin UDP on `26000` and publishes HTTP health/readiness on `localhost:8080`. |
+| `quilkin` | Local UDP proxy/routing edge | Forwards UDP `26001` to API Gateway UDP `26000`. |
+| `simulator` | Local game-frontend simulator | Sends signed production-shaped GUI packets to Quilkin. |
 
-Local ports expose developer access to API Gateway, PostgreSQL, RabbitMQ AMQP,
-and RabbitMQ management UI on loopback. These exposures are local-only; the
-checked-in production-like ingress model is Gateway/Istio to API Gateway.
+Local ports expose developer access to the simulator, Quilkin UDP, API Gateway
+health/readiness, PostgreSQL, RabbitMQ AMQP, and RabbitMQ management UI on
+loopback. These exposures are local-only. Production overlays exclude simulator
+resources and use Quilkin as the UDP ingress point.
 
 ## Local-Only Exposure Model
 
 | Local exposure | Compose binding | Production-like manifest behavior |
 | --- | --- | --- |
-| API Gateway | `127.0.0.1:8080:8080` | API Gateway ingress is modeled through Gateway/Istio resources. |
+| Simulator | `127.0.0.1:8000:8000` | Simulator is excluded from production overlays. |
+| Quilkin UDP | `127.0.0.1:26001:26001/udp` | Production overlay exposes Quilkin UDP through its service. |
+| API Gateway health/readiness | `127.0.0.1:8080:8080` | Production HTTP exposure is health/readiness only; trade traffic enters through Quilkin UDP. |
 | PostgreSQL | `127.0.0.1:5432:5432` | Database egress is broad TCP `5432`; no public database ingress is modeled here. |
 | RabbitMQ AMQP | `127.0.0.1:5672:5672` | RabbitMQ is reached by Market and settlement-worker through cluster service policy. |
 | RabbitMQ management UI | `127.0.0.1:15672:15672` | No production-like RabbitMQ management UI ingress is modeled in this ISO view. |
@@ -49,8 +54,8 @@ Model ID: `MODEL-DEP-01`; view component ID: `VC-DEP-01`.
 
 ```mermaid
 flowchart TB
-  Internet["Game Network / Ingress Client"] --> GatewayAPI["Gateway API / Istio Gateway"]
-  GatewayAPI --> APIGW["api-gateway Deployment"]
+  Internet["Game UDP Clients"] --> Quilkin["quilkin Deployment / UDP Service"]
+  Quilkin --> APIGW["api-gateway Deployment"]
   APIGW --> Market["market Deployment"]
   Market --> Rabbit["rabbitmq Service"]
   Rabbit --> Worker["settlement-worker Deployment"]
@@ -70,6 +75,7 @@ flowchart TB
   Terraform -. provisions .-> DB
   Terraform -. provisions .-> Images["Image Repositories"]
   K8sCloud -. runs .-> APIGW
+  K8sCloud -. runs .-> Quilkin
   K8sCloud -. runs .-> Market
   K8sCloud -. runs .-> Worker
   K8sCloud -. runs .-> Settlement
@@ -82,6 +88,8 @@ flowchart TB
 | Base Deployments and Services | `distributed-backend/orchestration/kubernetes/base` | Defines service workloads, ports, probes, service accounts, and ConfigMaps. |
 | Migration Job | Kubernetes base manifests | Applies database migrations before serving traffic. |
 | Production overlay | `distributed-backend/orchestration/kubernetes/overlay/prod` | Adds production resource governance, HPAs, PDBs, network policies, traffic policy, and security resources. |
+| Production Quilkin overlay | `distributed-backend/orchestration/kubernetes/overlay/prod/quilkin.yaml` | Adds production UDP proxy/routing deployment and service. |
+| Local simulator overlay | `distributed-backend/orchestration/kubernetes/overlay/local/simulator.yaml` | Adds the local frontend simulator and local-only packet signing secret; not included in production. |
 | Gateway platform manifests | `distributed-backend/orchestration/kubernetes/platform/gateway/prod` | Defines Gateway API ingress and related platform resources. |
 | Istio platform manifests | `distributed-backend/orchestration/kubernetes/platform/istio/prod` | Defines service mesh operator and related resources. |
 | Observability manifests | `distributed-backend/orchestration/kubernetes/base/observability` and `observability/honeycomb` | Defines collector and telemetry export configuration. |
@@ -91,7 +99,7 @@ flowchart TB
 
 | Service | Expected endpoints | Current operational meaning | Current gap or limitation |
 | --- | --- | --- | --- |
-| API Gateway | `/healthz`, `/readyz` | Liveness means process is up; readiness checks Market reachability. | No wider downstream or trade-flow readiness is checked. |
+| API Gateway | `/healthz`, `/readyz` | Liveness means process is up; readiness checks Market reachability; UDP listener health is process/config dependent. | No wider downstream or trade-flow readiness is checked. |
 | Market | `/healthz`, `/readyz` | Liveness means process is up; readiness checks PostgreSQL via `repository.Ping` and checks the RabbitMQ client session when the RabbitMQ transport is active. | End-to-end settlement-worker/trade-settlement reply-path readiness is not actively checked by Market readiness. |
 | settlement-worker | `/healthz`, `/readyz` | Liveness means process is up; readiness reflects the worker health status set by the RabbitMQ consumer loop. | No separate trade-settlement dependency probe is modeled beyond request execution behavior. |
 | trade-settlement | Kubernetes TCP socket probes on port `9092` | Proves the gRPC port is accepting TCP connections; does not prove PostgreSQL is reachable or settlement can commit. | Database commit readiness is not probed. |
@@ -161,14 +169,14 @@ database destination beyond TCP port `5432`.
 | Image digests | Production overlay README and kustomization | Placeholder/zero digest replacement is described but not enforced. | Not implemented; GATE-003 open |
 | Public hostname | Gateway and HTTPRoute manifests | Example hostname `api.eve-trade.example.com` appears in manifests/docs. | Not implemented; GATE-003 open |
 | ACME email | Gateway platform ClusterIssuer | Placeholder email remains in checked-in platform manifests. | Not implemented; GATE-003 open |
-| JWT issuer, JWKS URI, and audience | `istio-security.yaml` | Example issuer/JWKS/audience values remain placeholders. | Not implemented; GATE-003 open |
 | Database secret | `trade-settlement-database` secret reference | Runtime expects `DATABASE_URL`; production secret material is not in repo. | Not implemented; GATE-003 open |
 | RabbitMQ secret | `rabbitmq` secret reference | Runtime expects broker credentials/URL; production secret material is not in repo. | Not implemented; GATE-003 open |
+| Edge HMAC secret | `api-gateway-edge-auth` secret reference | Runtime expects `GAME_PACKET_HMAC_SECRET`; production secret material is not in repo. | Not implemented; GATE-003 open |
 | Observability secrets | `observability-backends` secret reference | Export credentials are out of band. | Not implemented; GATE-003 open |
 
 No checked-in CI check, release script, policy-as-code rule, or admission policy
-currently rejects example hosts, example identity issuer values, placeholder
-emails, zero image digests, or missing production secrets.
+currently rejects example hosts, placeholder emails, zero image digests, or
+missing production secrets.
 
 ## Secrets Model
 
@@ -178,7 +186,7 @@ View component ID: `VC-DEP-03`.
 | --- | --- | --- | --- | --- | --- | --- |
 | `DATABASE_URL` | Market, trade-settlement, migration job | Kubernetes Secret or Compose environment | SRE/database owner | Rotation policy not defined in repo | Secret read access is modeled by workload secret references; break-glass logging is not implemented in repo | Gap recorded |
 | RabbitMQ username/password/URL | RabbitMQ, Market, settlement-worker | Kubernetes Secret or Compose environment | SRE/platform owner | Per-service rotation policy not defined in repo | Broker publisher/consumer/admin permission separation is not documented. | Gap recorded |
-| JWT issuer/JWKS/audience | Istio RequestAuthentication | Production overlay placeholders | Security/platform owner | Follows external identity provider lifecycle when configured | Current rendered values are placeholders until replaced outside this repo. | Production blocker |
+| `GAME_PACKET_HMAC_SECRET` | API Gateway UDP edge | Production secret manager or Kubernetes Secret | Security/platform owner | Rotation policy not defined in repo | Must match the game frontend signing key without identifying local simulator traffic. | Production blocker |
 | Observability API keys | OpenTelemetry/Honeycomb/Sentry components | Out-of-band secret | Observability owner | Rotation policy not defined in repo | Export credentials are not present in checked-in manifests. | Gap recorded |
 
 ## Infrastructure Constraints And Cost Drivers

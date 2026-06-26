@@ -30,19 +30,25 @@ func main() {
 	}()
 
 	config := distributedbackend.LoadConfig()
-	repository, err := distributedbackend.NewPostgresTradeRepository(ctx, config.DatabaseURL)
+	repository, err := retryStartupDependency(ctx, config, "postgres", func(ctx context.Context) (*distributedbackend.PostgresTradeRepository, error) {
+		return distributedbackend.NewPostgresTradeRepository(ctx, config.DatabaseURL)
+	})
 	if err != nil {
 		slog.Error("market repository initialization failed", "error", err)
 		os.Exit(1)
 	}
 	defer repository.Close()
 
-	settlement, closeSettlement, err := newSettlementExecutor(ctx, config)
+	settlementWithClose, err := retryStartupDependency(ctx, config, "settlement_transport", func(ctx context.Context) (settlementExecutorWithClose, error) {
+		settlement, closeSettlement, err := newSettlementExecutor(ctx, config)
+		return settlementExecutorWithClose{executor: settlement, close: closeSettlement}, err
+	})
 	if err != nil {
 		slog.Error("market settlement transport initialization failed", "transport", config.SettlementTransport, "error", err)
 		os.Exit(1)
 	}
-	defer closeSettlement()
+	settlement := settlementWithClose.executor
+	defer settlementWithClose.close()
 
 	handler := distributedbackend.NewMarketHandler(settlement, repository)
 	readiness := func(ctx context.Context) error {
@@ -106,5 +112,44 @@ func newSettlementExecutor(ctx context.Context, config distributedbackend.Config
 		}, nil
 	default:
 		return nil, func() {}, errors.New("SETTLEMENT_TRANSPORT must be connect or rabbitmq")
+	}
+}
+
+type settlementExecutorWithClose struct {
+	executor distributedbackend.SettlementExecutor
+	close    func()
+}
+
+func retryStartupDependency[T any](
+	ctx context.Context,
+	config distributedbackend.Config,
+	name string,
+	connect func(context.Context) (T, error),
+) (T, error) {
+	var zero T
+	deadline := time.Now().Add(config.StartupDependencyTimeout)
+
+	var lastErr error
+	for attempt := 1; ; attempt++ {
+		value, err := connect(ctx)
+		if err == nil {
+			if attempt > 1 {
+				slog.Info("market startup dependency ready", "dependency", name, "attempt", attempt)
+			}
+			return value, nil
+		}
+		lastErr = err
+		slog.Warn("market startup dependency not ready", "dependency", name, "attempt", attempt, "error", err)
+
+		timer := time.NewTimer(config.StartupRetryInterval)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return zero, errors.Join(lastErr, ctx.Err())
+		case <-timer.C:
+		}
+		if !time.Now().Before(deadline) {
+			return zero, errors.Join(lastErr, context.DeadlineExceeded)
+		}
 	}
 }

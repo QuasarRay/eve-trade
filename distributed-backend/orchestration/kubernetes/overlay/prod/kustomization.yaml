@@ -11,13 +11,13 @@ labels:
 resources:
   - ../../base
   - horizontalpodautoscalers.yaml
-  - httproute.yaml
   - httproute-redirect.yaml
   - istio-security.yaml
   - istio-telemetry.yaml
   - istio-traffic.yaml
   - networkpolicies.yaml
   - poddisruptionbudgets.yaml
+  - quilkin.yaml
   - resource-governance.yaml
 
 patches:
@@ -37,4 +37,7 @@ images:
     digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
   - name: eve-trade/trade-settlement
     newName: registry.example.com/eve-trade/trade-settlement
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  - name: eve-trade/quilkin
+    newName: registry.example.com/eve-trade/quilkin
     digest: sha256:0000000000000000000000000000000000000000000000000000000000000000

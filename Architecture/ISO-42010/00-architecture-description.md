@@ -6,13 +6,13 @@
 | --- | --- |
 | Architecture description identifier | `AD-EVE-TRADE-ISO42010` |
 | System of interest | `eve-trade` distributed trade backend |
-| Version | 1.3 |
-| Date | 2026-06-23 |
-| Status | Canonical ISO/IEC/IEEE 42010-informed architecture description for internal review; not production-ready approval |
+| Version | 1.4 |
+| Date | 2026-06-25 |
+| Status | Canonical ISO/IEC/IEEE 42010-informed current-state architecture description |
 | Maintainers | Project maintainers and backend owners |
 | Location | `Architecture/ISO-42010` |
 | Standard basis | ISO/IEC/IEEE 42010 architecture description concepts |
-| Source baseline | Repository commit `fe5c6af`; architecture document file hashes are recorded in `18-evidence-manifest.md` |
+| Source baseline | v6 refactor baseline from repository HEAD `13baa27824010bd1fc3b4d17409a0dfe086d425c`; final evidence is recorded in `changes/v6/changes.md` |
 
 This document set is written as an architecture description for the system of
 interest. It uses the ISO/IEC/IEEE 42010 concepts of stakeholders, concerns,
@@ -120,13 +120,18 @@ how `eve-trade` is structured and why. It is intended to support:
 
 ## System Of Interest
 
-`eve-trade` is a backend-only distributed service for issuing, accepting, and
-canceling player trade instances in an MMORPG-like domain. The system exposes a
-game-facing API, validates trade mechanics in Market, and applies requested
-settlement operation batches to PostgreSQL with transactional integrity. The
-Compose and Kubernetes configurations route settlement commands through
-RabbitMQ and settlement-worker; the Market binary also supports a direct/connect
-settlement transport when configured that way.
+`eve-trade` is a production-ready distributed backend/platform slice for an
+EVE-like trade flow. The production path is:
+
+`game frontend -> Quilkin UDP -> API gateway UDP edge -> Market GUI interaction -> settlement operations -> trade-settlement`
+
+The system receives production-shaped game GUI interaction packets, forwards the
+exact game payload from the UDP edge to Market, lets Market interpret the game
+trade action, and applies low-level settlement operation batches to PostgreSQL
+with transactional integrity. The Compose and Kubernetes configurations route
+settlement commands through RabbitMQ and settlement-worker; the Market binary
+also supports a direct/connect settlement transport when explicitly configured
+outside the checked-in production path.
 
 The system of interest includes:
 
@@ -144,7 +149,11 @@ The system of interest includes:
 
 The system of interest excludes:
 
-- game clients and the wider game server beyond their API integration point;
+- real game frontend clients and the wider game server beyond their UDP packet
+  integration point;
+- the Django simulator as a backend production component. The simulator is a
+  local game-frontend simulator only; its outbound UDP packet is
+  production-identical to real frontend traffic once it leaves the process;
 - identity provider implementation;
 - external observability SaaS behavior;
 - cloud provider managed-service internals;
@@ -155,35 +164,51 @@ The system of interest excludes:
 The system runs in two intended environments:
 
 - Local development: Docker Compose starts PostgreSQL, migration, RabbitMQ,
-  trade-settlement, settlement-worker, Market, and API Gateway. The public local
-  entry point is API Gateway on `localhost:8080`; PostgreSQL and RabbitMQ are
-  published to loopback for development.
-- Production-like deployment: Kubernetes deploys the services with ConfigMaps,
-  Secrets, service accounts, probes, network policies, Istio security/traffic
-  resources, Gateway API ingress, observability collectors, and Terraform-managed
-  platform prerequisites. The current Terraform roots support AWS/EKS with RDS
-  and ECR, GCP/GKE with Cloud SQL and Artifact Registry, or an Omni-managed
-  Talos Kubernetes cluster with provider-neutral image references and
-  external-or-in-cluster PostgreSQL preparation.
+  trade-settlement, settlement-worker, Market, API Gateway, Quilkin, and the
+  Django game-frontend simulator. The local packet entry point is Quilkin UDP on
+  `localhost:26001`. PostgreSQL and RabbitMQ are published to loopback for
+  development.
+- Production-like deployment: Kubernetes deploys the backend services with
+  ConfigMaps, Secrets, service accounts, probes, NetworkPolicy, Istio
+  security/traffic resources, a production Quilkin UDP edge, observability
+  collectors, and Terraform-managed platform prerequisites. Production overlays
+  intentionally exclude simulator resources. The current Terraform roots support
+  AWS/EKS with RDS and ECR, GCP/GKE with Cloud SQL and Artifact Registry, or an
+  Omni-managed Talos Kubernetes cluster with provider-neutral image references
+  and external-or-in-cluster PostgreSQL preparation.
 
 ## Architecture Summary
 
 The main Compose and Kubernetes trade path is:
 
-1. A game server calls API Gateway with a trade command.
-2. API Gateway forwards the command to Market using generated protobuf/Connect
-   clients and shared request/response contracts.
-3. Market reads current snapshots from PostgreSQL, performs game-mechanic
-   validation, and converts valid commands into settlement operation batches.
-4. Market publishes settlement batches through RabbitMQ.
-5. settlement-worker consumes settlement command messages and calls the Rust
+1. A real game frontend, or the local simulator using the same packet shape,
+   sends a signed `eve-trade-edge.v1` UDP envelope containing an
+   `eve-trade-gui.v1` game GUI interaction payload to Quilkin.
+2. Quilkin forwards UDP traffic to the API Gateway UDP listener.
+3. API Gateway performs only edge safety work: packet size checks,
+   empty-packet rejection, bounded queue/worker handling, per-remote rate
+   limiting, HMAC integrity validation, replay rejection by interaction ID,
+   downstream timeout handling, compact UDP responses, and structured
+   logs/metrics. It does not parse business meaning and does not decide issue,
+   accept, or cancel.
+4. API Gateway calls `MarketService.SubmitTradeGuiInteraction` with
+   `raw_payload` only. Gateway source metadata remains in gateway logs/traces
+   and is not part of Market's business request.
+5. Market interprets the GUI action and player-provided trade input, performs
+   game-trade validation and idempotency/replay handling, reads current
+   snapshots from PostgreSQL, and converts valid decisions into low-level
+   settlement operation batches.
+6. Market publishes settlement batches through RabbitMQ.
+7. settlement-worker consumes settlement command messages and calls the Rust
    trade-settlement service.
-6. trade-settlement atomically executes the requested settlement operations
-   inside one PostgreSQL transaction and records idempotency and settlement
-   audit metadata. It handles command-envelope and row-level data preconditions;
-   it is not the owner of Market trade policy.
-7. The settlement response returns through the worker and messaging reply path
-   to Market and then to API Gateway.
+8. trade-settlement atomically executes the requested low-level settlement
+   operations inside one PostgreSQL transaction and records idempotency and
+   settlement audit metadata. It handles command-envelope and row-level data
+   preconditions; it is not aware of whether the operation came from a market
+   order, direct trade, contract, GUI button, browser, simulator, or other
+   gameplay mechanic.
+9. The settlement response returns through the worker and messaging reply path
+   to Market and then to API Gateway as a compact UDP response.
 
 ## Architecture Description Map
 
@@ -216,7 +241,7 @@ The main Compose and Kubernetes trade path is:
 | Evidence item | Value |
 | --- | --- |
 | Source branch at review time | `main` |
-| Source commit at review time | `fe5c6af` |
+| Source commit at review time | `13baa27824010bd1fc3b4d17409a0dfe086d425c` before v6 edits |
 | Architecture document status | Content-addressed by `18-evidence-manifest.md` until committed. |
 | Review date | 2026-06-22 |
 | Repository validation run by this documentation update | Recorded in `18-evidence-manifest.md`. |
@@ -226,7 +251,6 @@ The architecture views are derived from the following repository artifacts:
 
 - `README.md`
 - `compose.yaml`
-- `distributed-backend/proto/eve/api_gateway/v1/api_gateway.proto`
 - `distributed-backend/proto/eve/market/v1/market.proto`
 - `distributed-backend/proto/eve/trade_settlement/v1/trade_settlement.proto`
 - `distributed-backend/src/api-gateway`
@@ -236,6 +260,7 @@ The architecture views are derived from the following repository artifacts:
 - `distributed-backend/src/trade-settlement`
 - `distributed-backend/src/trade-settlement/migrations`
 - `distributed-backend/src/trade-settlement/seeds/local_dev_world.sql`
+- `simulator/trade_gui`
 - `distributed-backend/orchestration/kubernetes`
 - `distributed-backend/terraform`
 - `ci-cd`
@@ -268,10 +293,15 @@ remain blockers before untrusted production exposure.
 
 ## Architectural Constraints
 
-- The game-facing API is protobuf-based and implemented with Connect-compatible
-  HTTP services.
-- Market owns trade rules, validation, and settlement-operation composition that
-  depend on current database snapshots.
+- API Gateway is a production UDP edge and UDP-to-gRPC forwarder only.
+  Production API Gateway protobuf service definitions for direct issue, accept,
+  or cancel trade commands are deleted.
+- Market exposes one production trade submission RPC,
+  `SubmitTradeGuiInteraction`, whose request contains only `bytes raw_payload`.
+  Market owns trade rules, GUI action interpretation, validation, and
+  settlement-operation composition that depend on current database snapshots.
+- Gateway transport metadata such as source transport or source address remains
+  internal to gateway logs/traces and is not sent to Market as business data.
 - trade-settlement's runtime responsibility is atomic execution of requested
   settlement operations plus ledger, settlement metadata, and idempotency writes
   inside PostgreSQL.
@@ -285,15 +315,17 @@ remain blockers before untrusted production exposure.
   and settlement execution in Compose and Kubernetes. Direct/connect settlement
   transport remains implemented as an alternate Market configuration.
 - Production deployment assumes Kubernetes controls, service-specific
-  configuration, probes, network policy, and observability.
+  configuration, probes, network policy, Quilkin UDP ingress, and observability.
+- Production overlays must not include the local Django simulator or
+  simulator-only secrets/settings.
 
 ## Known Architecture Limitations
 
-- Authentication and caller identity are not fully modeled end to end. Request
-  actor fields are accepted from upstream callers, and JWT/identity-provider
-  binding to `issued_by_capsuleer_id`, `buyer_capsuleer_id`, and
-  `cancelled_by_capsuleer_id` is a critical production-blocking gap until the
-  mapping is enforced.
+- The UDP edge now authenticates packet integrity with HMAC, but full
+  account/capsuleer identity binding is not implemented end to end. Player actor
+  fields are still supplied in the game payload, and identity-provider binding
+  to `issued_by_capsuleer_id`, `buyer_capsuleer_id`, and
+  `cancelled_by_capsuleer_id` remains future work.
 - Settlement commands are powerful generic operations. Current repository
   controls are topology/network isolation, Market-side command composition, and
   trade-settlement command-envelope and row-level precondition checks. No
@@ -301,7 +333,9 @@ remain blockers before untrusted production exposure.
   settlement API.
 - Live end-to-end validation requires local runtime dependencies. Some checks can
   be static, but full trade flow validation needs PostgreSQL, RabbitMQ, and
-  services.
+  services. CI now includes the simulator -> Quilkin -> API Gateway UDP ->
+  Market -> settlement-worker -> trade-settlement -> PostgreSQL compose path,
+  but local developer runs still depend on Docker availability.
 - The architecture description is repository-grounded. It does not assert
   certification by ISO or any standards body.
 - Several architecture controls are documented as intended controls, not

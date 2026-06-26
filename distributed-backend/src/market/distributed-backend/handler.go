@@ -15,7 +15,6 @@ import (
 	marketv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1"
 	marketv1connect "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1/marketv1connect"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -30,34 +29,84 @@ func NewMarketHandler(settlement SettlementExecutor, trades TradeRepository) *Ma
 	return &MarketHandler{settlement: settlement, trades: trades}
 }
 
-func (h *MarketHandler) IssueTradeInstance(ctx context.Context, request *connect.Request[marketv1.IssueTradeInstanceRequest]) (*connect.Response[marketv1.IssueTradeInstanceResponse], error) {
-	message := request.Msg
+type tradeGUIItemStackInput struct {
+	ItemStackID string `json:"item_stack_id"`
+	OwnerID     int64  `json:"owner_id"`
+	ItemTypeID  int64  `json:"item_type_id"`
+	StationID   int64  `json:"station_id"`
+	Quantity    int64  `json:"quantity"`
+}
+
+type issueTradeInstanceRequest struct {
+	IdempotencyKey      string
+	ExternalRequestID   string
+	IssuedByCapsuleerID int64
+	ItemStack           *tradeGUIItemStackInput
+	Quantity            int64
+	UnitPriceISK        int64
+	ExpiresAt           *timestamppb.Timestamp
+}
+
+type issueTradeInstanceResult struct {
+	TradeInstanceID   string
+	ItemStackEscrowID string
+	SettlementBatchID string
+}
+
+type acceptTradeInstanceRequest struct {
+	IdempotencyKey              string
+	ExternalRequestID           string
+	TradeInstanceID             string
+	BuyerCapsuleerID            int64
+	QuantityRequested           int64
+	BuyerWalletID               string
+	BuyerDestinationItemStackID string
+}
+
+type acceptTradeInstanceResult struct {
+	WalletEscrowID              string
+	BuyerDestinationItemStackID string
+	SettlementBatchID           string
+}
+
+type cancelTradeInstanceRequest struct {
+	IdempotencyKey         string
+	ExternalRequestID      string
+	TradeInstanceID        string
+	CancelledByCapsuleerID int64
+}
+
+type cancelTradeInstanceResult struct {
+	SettlementBatchID string
+}
+
+func (h *MarketHandler) issueTradeInstance(ctx context.Context, message issueTradeInstanceRequest) (*issueTradeInstanceResult, error) {
 	if message.ItemStack == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("item_stack is required"))
 	}
 	if response, ok, err := h.replayIssueTradeInstance(ctx, message); ok || err != nil {
 		return response, err
 	}
-	if message.ItemStack.ItemStackId == "" {
+	if message.ItemStack.ItemStackID == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("item_stack_id is required"))
 	}
-	itemStack, err := h.trades.LoadItemStack(ctx, message.ItemStack.ItemStackId)
+	itemStack, err := h.trades.LoadItemStack(ctx, message.ItemStack.ItemStackID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 	}
-	if itemStack.OwnerID != message.IssuedByCapsuleerId {
+	if itemStack.OwnerID != message.IssuedByCapsuleerID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("item stack owner must match issued_by_capsuleer_id"))
 	}
 	if itemStack.StackState != "ACTIVE" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("item_stack is not ACTIVE"))
 	}
-	if message.ItemStack.OwnerId != 0 && message.ItemStack.OwnerId != itemStack.OwnerID {
+	if message.ItemStack.OwnerID != 0 && message.ItemStack.OwnerID != itemStack.OwnerID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("item_stack owner_id does not match canonical item stack"))
 	}
-	if message.ItemStack.ItemTypeId != 0 && message.ItemStack.ItemTypeId != itemStack.ItemTypeID {
+	if message.ItemStack.ItemTypeID != 0 && message.ItemStack.ItemTypeID != itemStack.ItemTypeID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("item_stack item_type_id does not match canonical item stack"))
 	}
-	if message.ItemStack.StationId != 0 && message.ItemStack.StationId != itemStack.StationID {
+	if message.ItemStack.StationID != 0 && message.ItemStack.StationID != itemStack.StationID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("item_stack station_id does not match canonical item stack"))
 	}
 	if message.ItemStack.Quantity != 0 && message.ItemStack.Quantity != itemStack.Quantity {
@@ -66,8 +115,8 @@ func (h *MarketHandler) IssueTradeInstance(ctx context.Context, request *connect
 
 	plan, err := gametrade.IssueTradeInstance(gametrade.IssueTradeInstanceInput{
 		IdempotencyKey:      message.IdempotencyKey,
-		ExternalRequestID:   message.ExternalRequestId,
-		IssuedByCapsuleerID: message.IssuedByCapsuleerId,
+		ExternalRequestID:   message.ExternalRequestID,
+		IssuedByCapsuleerID: message.IssuedByCapsuleerID,
 		ItemStack: gametrade.ItemStackRow{
 			ItemStackID: itemStack.ItemStackID,
 			OwnerID:     itemStack.OwnerID,
@@ -76,7 +125,7 @@ func (h *MarketHandler) IssueTradeInstance(ctx context.Context, request *connect
 			Quantity:    itemStack.Quantity,
 		},
 		Quantity:     message.Quantity,
-		UnitPriceISK: message.UnitPriceIsk,
+		UnitPriceISK: message.UnitPriceISK,
 		ExpiresAt:    message.ExpiresAt,
 	})
 	if err != nil {
@@ -91,27 +140,26 @@ func (h *MarketHandler) IssueTradeInstance(ctx context.Context, request *connect
 		return nil, err
 	}
 
-	return connect.NewResponse(&marketv1.IssueTradeInstanceResponse{
-		TradeInstanceId:   plan.TradeInstanceID,
-		ItemStackEscrowId: plan.ItemStackEscrowID,
-		SettlementBatchId: settlementResponse.SettlementBatchId,
-	}), nil
+	return &issueTradeInstanceResult{
+		TradeInstanceID:   plan.TradeInstanceID,
+		ItemStackEscrowID: plan.ItemStackEscrowID,
+		SettlementBatchID: settlementResponse.SettlementBatchId,
+	}, nil
 }
 
-func (h *MarketHandler) AcceptTradeInstance(ctx context.Context, request *connect.Request[marketv1.AcceptTradeInstanceRequest]) (*connect.Response[marketv1.AcceptTradeInstanceResponse], error) {
-	message := request.Msg
+func (h *MarketHandler) acceptTradeInstance(ctx context.Context, message acceptTradeInstanceRequest) (*acceptTradeInstanceResult, error) {
 	if response, ok, err := h.replayAcceptTradeInstance(ctx, message); ok || err != nil {
 		return response, err
 	}
-	trade, err := h.loadAcceptableTrade(ctx, message.TradeInstanceId, message.QuantityRequested)
+	trade, err := h.loadAcceptableTrade(ctx, message.TradeInstanceID, message.QuantityRequested)
 	if err != nil {
 		return nil, err
 	}
-	buyerWallet, err := h.trades.LoadWallet(ctx, message.BuyerWalletId)
+	buyerWallet, err := h.trades.LoadWallet(ctx, message.BuyerWalletID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 	}
-	if buyerWallet.CapsuleerID != message.BuyerCapsuleerId {
+	if buyerWallet.CapsuleerID != message.BuyerCapsuleerID {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("buyer_wallet_id is not owned by buyer_capsuleer_id"))
 	}
 	if buyerWallet.WalletState != "ACTIVE" {
@@ -124,14 +172,14 @@ func (h *MarketHandler) AcceptTradeInstance(ctx context.Context, request *connec
 	if sellerWallet.WalletState != "ACTIVE" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("seller wallet is not ACTIVE"))
 	}
-	destinationItemStackID := message.BuyerDestinationItemStackId
+	destinationItemStackID := message.BuyerDestinationItemStackID
 	createDestinationItemStack := destinationItemStackID == ""
 	if destinationItemStackID != "" {
 		destination, err := h.trades.LoadItemStack(ctx, destinationItemStackID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
-		if destination.OwnerID != message.BuyerCapsuleerId {
+		if destination.OwnerID != message.BuyerCapsuleerID {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("buyer_destination_item_stack_id is not owned by buyer_capsuleer_id"))
 		}
 		if destination.StackState != "ACTIVE" {
@@ -148,15 +196,15 @@ func (h *MarketHandler) AcceptTradeInstance(ctx context.Context, request *connec
 
 	plan, err := gametrade.AcceptTradeInstance(gametrade.AcceptTradeInstanceInput{
 		IdempotencyKey:                  message.IdempotencyKey,
-		ExternalRequestID:               message.ExternalRequestId,
-		TradeInstanceID:                 message.TradeInstanceId,
-		BuyerCapsuleerID:                message.BuyerCapsuleerId,
+		ExternalRequestID:               message.ExternalRequestID,
+		TradeInstanceID:                 message.TradeInstanceID,
+		BuyerCapsuleerID:                message.BuyerCapsuleerID,
 		SellerCapsuleerID:               trade.IssuerID,
 		ItemTypeID:                      trade.ItemTypeID,
 		StationID:                       trade.StationID,
 		QuantityRequested:               message.QuantityRequested,
 		ISKAmountPaid:                   iskAmountPaid,
-		BuyerWalletID:                   message.BuyerWalletId,
+		BuyerWalletID:                   message.BuyerWalletID,
 		SellerWalletID:                  sellerWallet.WalletID,
 		ItemStackEscrowID:               trade.ItemStackEscrowID,
 		BuyerDestinationItemStackID:     destinationItemStackID,
@@ -175,27 +223,26 @@ func (h *MarketHandler) AcceptTradeInstance(ctx context.Context, request *connec
 		return nil, err
 	}
 
-	return connect.NewResponse(&marketv1.AcceptTradeInstanceResponse{
-		WalletEscrowId:              plan.WalletEscrowID,
-		BuyerDestinationItemStackId: plan.DestinationItemStackID,
-		SettlementBatchId:           settlementResponse.SettlementBatchId,
-	}), nil
+	return &acceptTradeInstanceResult{
+		WalletEscrowID:              plan.WalletEscrowID,
+		BuyerDestinationItemStackID: plan.DestinationItemStackID,
+		SettlementBatchID:           settlementResponse.SettlementBatchId,
+	}, nil
 }
 
-func (h *MarketHandler) CancelTradeInstance(ctx context.Context, request *connect.Request[marketv1.CancelTradeInstanceRequest]) (*connect.Response[marketv1.CancelTradeInstanceResponse], error) {
-	message := request.Msg
+func (h *MarketHandler) cancelTradeInstance(ctx context.Context, message cancelTradeInstanceRequest) (*cancelTradeInstanceResult, error) {
 	if response, ok, err := h.replayCancelTradeInstance(ctx, message); ok || err != nil {
 		return response, err
 	}
-	trade, err := h.loadCancellableTrade(ctx, message.TradeInstanceId, message.CancelledByCapsuleerId)
+	trade, err := h.loadCancellableTrade(ctx, message.TradeInstanceID, message.CancelledByCapsuleerID)
 	if err != nil {
 		return nil, err
 	}
 	plan, err := gametrade.CancelTradeInstance(gametrade.CancelTradeInstanceInput{
 		IdempotencyKey:         message.IdempotencyKey,
-		ExternalRequestID:      message.ExternalRequestId,
-		TradeInstanceID:        message.TradeInstanceId,
-		CancelledByCapsuleerID: message.CancelledByCapsuleerId,
+		ExternalRequestID:      message.ExternalRequestID,
+		TradeInstanceID:        message.TradeInstanceID,
+		CancelledByCapsuleerID: message.CancelledByCapsuleerID,
 		ItemStackEscrowID:      trade.ItemStackEscrowID,
 		ReturnItemStackID:      trade.SourceItemStackID,
 		ReturnQuantity:         trade.EscrowQuantity,
@@ -212,9 +259,9 @@ func (h *MarketHandler) CancelTradeInstance(ctx context.Context, request *connec
 		return nil, err
 	}
 
-	return connect.NewResponse(&marketv1.CancelTradeInstanceResponse{
-		SettlementBatchId: settlementResponse.SettlementBatchId,
-	}), nil
+	return &cancelTradeInstanceResult{
+		SettlementBatchID: settlementResponse.SettlementBatchId,
+	}, nil
 }
 
 type tradeGUIInteraction struct {
@@ -229,19 +276,19 @@ type tradeGUIInteraction struct {
 }
 
 type tradeGUIInput struct {
-	IdempotencyKey              string                 `json:"idempotency_key"`
-	ExternalRequestID           string                 `json:"external_request_id"`
-	IssuedByCapsuleerID         int64                  `json:"issued_by_capsuleer_id"`
-	CancelledByCapsuleerID      int64                  `json:"cancelled_by_capsuleer_id"`
-	TradeInstanceID             string                 `json:"trade_instance_id"`
-	BuyerCapsuleerID            int64                  `json:"buyer_capsuleer_id"`
-	Quantity                    int64                  `json:"quantity"`
-	QuantityRequested           int64                  `json:"quantity_requested"`
-	UnitPriceISK                int64                  `json:"unit_price_isk"`
-	BuyerWalletID               string                 `json:"buyer_wallet_id"`
-	BuyerDestinationItemStackID string                 `json:"buyer_destination_item_stack_id"`
-	ItemStack                   *marketv1.ItemStackRow `json:"item_stack"`
-	ExpiresAt                   *timestamppb.Timestamp `json:"-"`
+	IdempotencyKey              string                  `json:"idempotency_key"`
+	ExternalRequestID           string                  `json:"external_request_id"`
+	IssuedByCapsuleerID         int64                   `json:"issued_by_capsuleer_id"`
+	CancelledByCapsuleerID      int64                   `json:"cancelled_by_capsuleer_id"`
+	TradeInstanceID             string                  `json:"trade_instance_id"`
+	BuyerCapsuleerID            int64                   `json:"buyer_capsuleer_id"`
+	Quantity                    int64                   `json:"quantity"`
+	QuantityRequested           int64                   `json:"quantity_requested"`
+	UnitPriceISK                int64                   `json:"unit_price_isk"`
+	BuyerWalletID               string                  `json:"buyer_wallet_id"`
+	BuyerDestinationItemStackID string                  `json:"buyer_destination_item_stack_id"`
+	ItemStack                   *tradeGUIItemStackInput `json:"item_stack"`
+	ExpiresAt                   *timestamppb.Timestamp  `json:"-"`
 }
 
 func (h *MarketHandler) SubmitTradeGuiInteraction(ctx context.Context, request *connect.Request[marketv1.SubmitTradeGuiInteractionRequest]) (*connect.Response[marketv1.SubmitTradeGuiInteractionResponse], error) {
@@ -257,69 +304,78 @@ func (h *MarketHandler) SubmitTradeGuiInteraction(ctx context.Context, request *
 	if interaction.SchemaVersion != "eve-trade-gui.v1" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("unsupported trade GUI schema_version %q", interaction.SchemaVersion))
 	}
+	interactionID := strings.TrimSpace(interaction.InteractionID)
+	if interactionID == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("interaction_id is required"))
+	}
+	input := interaction.Input
+	if strings.TrimSpace(input.IdempotencyKey) == "" {
+		input.IdempotencyKey = interactionID
+	}
+	if strings.TrimSpace(input.ExternalRequestID) == "" {
+		input.ExternalRequestID = interactionID
+	}
 
 	action := strings.TrimSpace(interaction.UI.Action)
 	switch action {
 	case "market_place_sell_order", "contract_create_item_exchange", "direct_trade_offer":
-		response, err := h.IssueTradeInstance(ctx, connect.NewRequest(&marketv1.IssueTradeInstanceRequest{
-			IdempotencyKey:      interaction.Input.IdempotencyKey,
-			ExternalRequestId:   interaction.Input.ExternalRequestID,
-			IssuedByCapsuleerId: interaction.Input.IssuedByCapsuleerID,
-			ItemStack:           interaction.Input.ItemStack,
-			Quantity:            interaction.Input.Quantity,
-			UnitPriceIsk:        interaction.Input.UnitPriceISK,
-			ExpiresAt:           interaction.Input.ExpiresAt,
-		}))
+		response, err := h.issueTradeInstance(ctx, issueTradeInstanceRequest{
+			IdempotencyKey:      input.IdempotencyKey,
+			ExternalRequestID:   input.ExternalRequestID,
+			IssuedByCapsuleerID: input.IssuedByCapsuleerID,
+			ItemStack:           input.ItemStack,
+			Quantity:            input.Quantity,
+			UnitPriceISK:        input.UnitPriceISK,
+			ExpiresAt:           input.ExpiresAt,
+		})
 		if err != nil {
 			return nil, err
 		}
 		return connect.NewResponse(&marketv1.SubmitTradeGuiInteractionResponse{
-			InteractionId:   interaction.InteractionID,
-			MappedOperation: "IssueTradeInstance",
-			Result: &marketv1.SubmitTradeGuiInteractionResponse_IssueTradeInstance{
-				IssueTradeInstance: response.Msg,
-			},
+			InteractionId:     interactionID,
+			Status:            "accepted",
+			SettlementBatchId: response.SettlementBatchID,
+			TradeInstanceId:   response.TradeInstanceID,
+			ItemStackEscrowId: response.ItemStackEscrowID,
 		}), nil
 	case "market_buy_from_sell_order", "contract_accept_item_exchange", "direct_trade_accept":
-		quantityRequested := interaction.Input.QuantityRequested
+		quantityRequested := input.QuantityRequested
 		if quantityRequested == 0 {
-			quantityRequested = interaction.Input.Quantity
+			quantityRequested = input.Quantity
 		}
-		response, err := h.AcceptTradeInstance(ctx, connect.NewRequest(&marketv1.AcceptTradeInstanceRequest{
-			IdempotencyKey:              interaction.Input.IdempotencyKey,
-			ExternalRequestId:           interaction.Input.ExternalRequestID,
-			TradeInstanceId:             interaction.Input.TradeInstanceID,
-			BuyerCapsuleerId:            interaction.Input.BuyerCapsuleerID,
+		response, err := h.acceptTradeInstance(ctx, acceptTradeInstanceRequest{
+			IdempotencyKey:              input.IdempotencyKey,
+			ExternalRequestID:           input.ExternalRequestID,
+			TradeInstanceID:             input.TradeInstanceID,
+			BuyerCapsuleerID:            input.BuyerCapsuleerID,
 			QuantityRequested:           quantityRequested,
-			BuyerWalletId:               interaction.Input.BuyerWalletID,
-			BuyerDestinationItemStackId: interaction.Input.BuyerDestinationItemStackID,
-		}))
+			BuyerWalletID:               input.BuyerWalletID,
+			BuyerDestinationItemStackID: input.BuyerDestinationItemStackID,
+		})
 		if err != nil {
 			return nil, err
 		}
 		return connect.NewResponse(&marketv1.SubmitTradeGuiInteractionResponse{
-			InteractionId:   interaction.InteractionID,
-			MappedOperation: "AcceptTradeInstance",
-			Result: &marketv1.SubmitTradeGuiInteractionResponse_AcceptTradeInstance{
-				AcceptTradeInstance: response.Msg,
-			},
+			InteractionId:               interactionID,
+			Status:                      "accepted",
+			SettlementBatchId:           response.SettlementBatchID,
+			WalletEscrowId:              response.WalletEscrowID,
+			BuyerDestinationItemStackId: response.BuyerDestinationItemStackID,
 		}), nil
 	case "market_cancel_order", "contract_cancel_item_exchange", "direct_trade_cancel":
-		response, err := h.CancelTradeInstance(ctx, connect.NewRequest(&marketv1.CancelTradeInstanceRequest{
-			IdempotencyKey:         interaction.Input.IdempotencyKey,
-			ExternalRequestId:      interaction.Input.ExternalRequestID,
-			TradeInstanceId:        interaction.Input.TradeInstanceID,
-			CancelledByCapsuleerId: interaction.Input.CancelledByCapsuleerID,
-		}))
+		response, err := h.cancelTradeInstance(ctx, cancelTradeInstanceRequest{
+			IdempotencyKey:         input.IdempotencyKey,
+			ExternalRequestID:      input.ExternalRequestID,
+			TradeInstanceID:        input.TradeInstanceID,
+			CancelledByCapsuleerID: input.CancelledByCapsuleerID,
+		})
 		if err != nil {
 			return nil, err
 		}
 		return connect.NewResponse(&marketv1.SubmitTradeGuiInteractionResponse{
-			InteractionId:   interaction.InteractionID,
-			MappedOperation: "CancelTradeInstance",
-			Result: &marketv1.SubmitTradeGuiInteractionResponse_CancelTradeInstance{
-				CancelTradeInstance: response.Msg,
-			},
+			InteractionId:     interactionID,
+			Status:            "accepted",
+			SettlementBatchId: response.SettlementBatchID,
 		}), nil
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("unsupported trade GUI action %q", action))
@@ -338,7 +394,7 @@ func (h *MarketHandler) executePlan(ctx context.Context, plan gametrade.Settleme
 	return response, nil
 }
 
-func (h *MarketHandler) replayIssueTradeInstance(ctx context.Context, message *marketv1.IssueTradeInstanceRequest) (*connect.Response[marketv1.IssueTradeInstanceResponse], bool, error) {
+func (h *MarketHandler) replayIssueTradeInstance(ctx context.Context, message issueTradeInstanceRequest) (*issueTradeInstanceResult, bool, error) {
 	replay, err := h.loadReplay(ctx, message.IdempotencyKey)
 	if err != nil || replay == nil {
 		return nil, false, err
@@ -351,28 +407,28 @@ func (h *MarketHandler) replayIssueTradeInstance(ctx context.Context, message *m
 	if createTrade == nil || itemEscrow == nil {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
-	if replay.ExternalRequestID != message.ExternalRequestId ||
-		int64Field(createTrade, "issuer_id") != message.IssuedByCapsuleerId ||
+	if replay.ExternalRequestID != message.ExternalRequestID ||
+		int64Field(createTrade, "issuer_id") != message.IssuedByCapsuleerID ||
 		int64Field(createTrade, "total_quantity") != message.Quantity ||
-		int64Field(createTrade, "unit_price_isk") != message.UnitPriceIsk ||
-		stringField(itemEscrow, "source_item_stack_id") != message.ItemStack.ItemStackId ||
+		int64Field(createTrade, "unit_price_isk") != message.UnitPriceISK ||
+		stringField(itemEscrow, "source_item_stack_id") != message.ItemStack.ItemStackID ||
 		!timestampFieldMatches(createTrade, "expires_at", message.ExpiresAt) {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
-	if message.ItemStack.ItemTypeId != 0 && int64Field(createTrade, "item_type_id") != message.ItemStack.ItemTypeId {
+	if message.ItemStack.ItemTypeID != 0 && int64Field(createTrade, "item_type_id") != message.ItemStack.ItemTypeID {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
-	if message.ItemStack.StationId != 0 && int64Field(createTrade, "station_id") != message.ItemStack.StationId {
+	if message.ItemStack.StationID != 0 && int64Field(createTrade, "station_id") != message.ItemStack.StationID {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
-	return connect.NewResponse(&marketv1.IssueTradeInstanceResponse{
-		TradeInstanceId:   stringField(createTrade, "trade_instance_id"),
-		ItemStackEscrowId: stringField(itemEscrow, "item_stack_escrow_id"),
-		SettlementBatchId: replay.SettlementBatchID,
-	}), true, nil
+	return &issueTradeInstanceResult{
+		TradeInstanceID:   stringField(createTrade, "trade_instance_id"),
+		ItemStackEscrowID: stringField(itemEscrow, "item_stack_escrow_id"),
+		SettlementBatchID: replay.SettlementBatchID,
+	}, true, nil
 }
 
-func (h *MarketHandler) replayAcceptTradeInstance(ctx context.Context, message *marketv1.AcceptTradeInstanceRequest) (*connect.Response[marketv1.AcceptTradeInstanceResponse], bool, error) {
+func (h *MarketHandler) replayAcceptTradeInstance(ctx context.Context, message acceptTradeInstanceRequest) (*acceptTradeInstanceResult, bool, error) {
 	replay, err := h.loadReplay(ctx, message.IdempotencyKey)
 	if err != nil || replay == nil {
 		return nil, false, err
@@ -386,30 +442,30 @@ func (h *MarketHandler) replayAcceptTradeInstance(ctx context.Context, message *
 	if walletEscrow == nil || itemTransfer == nil {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
-	if replay.ExternalRequestID != message.ExternalRequestId ||
-		replay.CausedByCapsuleerID != message.BuyerCapsuleerId ||
-		stringField(walletEscrow, "source_wallet_id") != message.BuyerWalletId ||
-		stringField(walletEscrow, "trade_instance_id") != message.TradeInstanceId ||
+	if replay.ExternalRequestID != message.ExternalRequestID ||
+		replay.CausedByCapsuleerID != message.BuyerCapsuleerID ||
+		stringField(walletEscrow, "source_wallet_id") != message.BuyerWalletID ||
+		stringField(walletEscrow, "trade_instance_id") != message.TradeInstanceID ||
 		int64Field(itemTransfer, "quantity") != message.QuantityRequested {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
 	destinationItemStackID := stringField(itemTransfer, "destination_item_stack_id")
 	switch {
-	case message.BuyerDestinationItemStackId == "" && !createdDestination:
+	case message.BuyerDestinationItemStackID == "" && !createdDestination:
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
-	case message.BuyerDestinationItemStackId != "" && createdDestination:
+	case message.BuyerDestinationItemStackID != "" && createdDestination:
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
-	case message.BuyerDestinationItemStackId != "" && message.BuyerDestinationItemStackId != destinationItemStackID:
+	case message.BuyerDestinationItemStackID != "" && message.BuyerDestinationItemStackID != destinationItemStackID:
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
-	return connect.NewResponse(&marketv1.AcceptTradeInstanceResponse{
-		WalletEscrowId:              stringField(walletEscrow, "wallet_escrow_id"),
-		BuyerDestinationItemStackId: destinationItemStackID,
-		SettlementBatchId:           replay.SettlementBatchID,
-	}), true, nil
+	return &acceptTradeInstanceResult{
+		WalletEscrowID:              stringField(walletEscrow, "wallet_escrow_id"),
+		BuyerDestinationItemStackID: destinationItemStackID,
+		SettlementBatchID:           replay.SettlementBatchID,
+	}, true, nil
 }
 
-func (h *MarketHandler) replayCancelTradeInstance(ctx context.Context, message *marketv1.CancelTradeInstanceRequest) (*connect.Response[marketv1.CancelTradeInstanceResponse], bool, error) {
+func (h *MarketHandler) replayCancelTradeInstance(ctx context.Context, message cancelTradeInstanceRequest) (*cancelTradeInstanceResult, bool, error) {
 	replay, err := h.loadReplay(ctx, message.IdempotencyKey)
 	if err != nil || replay == nil {
 		return nil, false, err
@@ -421,14 +477,14 @@ func (h *MarketHandler) replayCancelTradeInstance(ctx context.Context, message *
 	if stateChange == nil {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
-	if replay.ExternalRequestID != message.ExternalRequestId ||
-		replay.CausedByCapsuleerID != message.CancelledByCapsuleerId ||
-		stringField(stateChange, "trade_instance_id") != message.TradeInstanceId {
+	if replay.ExternalRequestID != message.ExternalRequestID ||
+		replay.CausedByCapsuleerID != message.CancelledByCapsuleerID ||
+		stringField(stateChange, "trade_instance_id") != message.TradeInstanceID {
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
-	return connect.NewResponse(&marketv1.CancelTradeInstanceResponse{
-		SettlementBatchId: replay.SettlementBatchID,
-	}), true, nil
+	return &cancelTradeInstanceResult{
+		SettlementBatchID: replay.SettlementBatchID,
+	}, true, nil
 }
 
 func (h *MarketHandler) loadReplay(ctx context.Context, idempotencyKey string) (*IdempotencyReplay, error) {
@@ -457,7 +513,7 @@ func idempotencyConflict(idempotencyKey string) error {
 	return connect.NewError(connect.CodeAborted, fmt.Errorf("idempotency_key %s was already used with a different request fingerprint", idempotencyKey))
 }
 
-func attachRequestFingerprint(plan *gametrade.SettlementPlan, requestKind string, message proto.Message) error {
+func attachRequestFingerprint(plan *gametrade.SettlementPlan, requestKind string, message any) error {
 	fingerprint, err := marketRequestFingerprint(requestKind, message)
 	if err != nil {
 		return err
@@ -466,10 +522,7 @@ func attachRequestFingerprint(plan *gametrade.SettlementPlan, requestKind string
 	return nil
 }
 
-func replayRequestFingerprintMatches(replay *IdempotencyReplay, requestKind string, message proto.Message) (bool, error) {
-	if !strings.HasPrefix(replay.RequestFingerprint, "market.") {
-		return true, nil
-	}
+func replayRequestFingerprintMatches(replay *IdempotencyReplay, requestKind string, message any) (bool, error) {
 	fingerprint, err := marketRequestFingerprint(requestKind, message)
 	if err != nil {
 		return false, err
@@ -477,8 +530,8 @@ func replayRequestFingerprintMatches(replay *IdempotencyReplay, requestKind stri
 	return replay.RequestFingerprint == fingerprint, nil
 }
 
-func marketRequestFingerprint(requestKind string, message proto.Message) (string, error) {
-	body, err := proto.MarshalOptions{Deterministic: true}.Marshal(message)
+func marketRequestFingerprint(requestKind string, message any) (string, error) {
+	body, err := json.Marshal(message)
 	if err != nil {
 		return "", fmt.Errorf("marshal market request fingerprint: %w", err)
 	}

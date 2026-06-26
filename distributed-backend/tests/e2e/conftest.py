@@ -2,7 +2,14 @@ import os
 
 import pytest
 
-from helpers import Database, GatewayClient, SettlementClient, wait_for_database, wait_for_gateway
+from helpers import (
+    Database,
+    GatewayClient,
+    SettlementClient,
+    wait_for_database,
+    wait_for_gateway,
+    wait_for_simulator,
+)
 
 
 def pytest_sessionfinish(session, exitstatus):
@@ -21,24 +28,26 @@ def pytest_sessionfinish(session, exitstatus):
 @pytest.fixture(scope="session")
 def service_urls():
     api_gateway_url = os.environ.get("EVE_TRADE_API_GATEWAY_URL")
+    simulator_url = os.environ.get("EVE_TRADE_SIMULATOR_URL")
     database_url = os.environ.get("EVE_TRADE_DATABASE_URL")
-    if not api_gateway_url or not database_url:
+    if not api_gateway_url or not simulator_url or not database_url:
         pytest.skip(
-            "set EVE_TRADE_API_GATEWAY_URL and EVE_TRADE_DATABASE_URL to run e2e tests"
+            "set EVE_TRADE_API_GATEWAY_URL, EVE_TRADE_SIMULATOR_URL, and EVE_TRADE_DATABASE_URL to run e2e tests"
         )
-    return api_gateway_url, database_url
+    return api_gateway_url, simulator_url, database_url
 
 
 @pytest.fixture(scope="session", autouse=True)
 def services_ready(service_urls):
-    api_gateway_url, database_url = service_urls
+    api_gateway_url, simulator_url, database_url = service_urls
     wait_for_database(database_url)
     wait_for_gateway(api_gateway_url)
+    wait_for_simulator(simulator_url)
 
 
 @pytest.fixture
 def db(service_urls, services_ready):
-    _, database_url = service_urls
+    _, _, database_url = service_urls
     database = Database(database_url)
     database.reset()
     try:
@@ -49,8 +58,8 @@ def db(service_urls, services_ready):
 
 @pytest.fixture
 def gateway(service_urls, services_ready):
-    api_gateway_url, _ = service_urls
-    return GatewayClient(api_gateway_url)
+    _, simulator_url, _ = service_urls
+    return GatewayClient(simulator_url)
 
 
 @pytest.fixture

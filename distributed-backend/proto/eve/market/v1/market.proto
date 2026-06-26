@@ -2,80 +2,22 @@ syntax = "proto3";
 
 package eve.market.v1;
 
-import "google/protobuf/timestamp.proto";
-
 option go_package = "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1;marketv1";
 
 service MarketService {
-  rpc IssueTradeInstance(IssueTradeInstanceRequest) returns (IssueTradeInstanceResponse);
-  rpc AcceptTradeInstance(AcceptTradeInstanceRequest) returns (AcceptTradeInstanceResponse);
-  rpc CancelTradeInstance(CancelTradeInstanceRequest) returns (CancelTradeInstanceResponse);
   rpc SubmitTradeGuiInteraction(SubmitTradeGuiInteractionRequest) returns (SubmitTradeGuiInteractionResponse);
 }
 
-message ItemStackRow {
-  string item_stack_id = 1;
-  int64 owner_id = 2;
-  int64 item_type_id = 3;
-  int64 station_id = 4;
-  int64 quantity = 5;
-}
-
-message IssueTradeInstanceRequest {
-  string idempotency_key = 1;
-  string external_request_id = 2;
-  int64 issued_by_capsuleer_id = 3;
-  ItemStackRow item_stack = 4;
-  int64 quantity = 5;
-  int64 unit_price_isk = 6;
-  google.protobuf.Timestamp expires_at = 7;
-}
-
-message IssueTradeInstanceResponse {
-  string trade_instance_id = 1;
-  string item_stack_escrow_id = 2;
-  string settlement_batch_id = 3;
-}
-
-message AcceptTradeInstanceRequest {
-  string idempotency_key = 1;
-  string external_request_id = 2;
-  string trade_instance_id = 3;
-  int64 buyer_capsuleer_id = 4;
-  int64 quantity_requested = 5;
-  string buyer_wallet_id = 6;
-  string buyer_destination_item_stack_id = 7;
-}
-
-message AcceptTradeInstanceResponse {
-  string wallet_escrow_id = 1;
-  string buyer_destination_item_stack_id = 2;
-  string settlement_batch_id = 3;
-}
-
-message CancelTradeInstanceRequest {
-  string idempotency_key = 1;
-  string external_request_id = 2;
-  string trade_instance_id = 3;
-  int64 cancelled_by_capsuleer_id = 4;
-}
-
-message CancelTradeInstanceResponse {
-  string settlement_batch_id = 1;
-}
-
 message SubmitTradeGuiInteractionRequest {
-  string source_transport = 1;
-  string source_address = 2;
-  bytes raw_payload = 3;
+  bytes raw_payload = 1;
 }
 
 message SubmitTradeGuiInteractionResponse {
   string interaction_id = 1;
-  string mapped_operation = 2;
-  oneof result {
-    IssueTradeInstanceResponse issue_trade_instance = 3;
-    AcceptTradeInstanceResponse accept_trade_instance = 4;
-    CancelTradeInstanceResponse cancel_trade_instance = 5;
-  }
+  string status = 2;
+  string settlement_batch_id = 3;
+  string trade_instance_id = 4;
+  string item_stack_escrow_id = 5;
+  string wallet_escrow_id = 6;
+  string buyer_destination_item_stack_id = 7;
 }

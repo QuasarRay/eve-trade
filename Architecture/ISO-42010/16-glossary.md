@@ -26,8 +26,11 @@
 
 | Term | Meaning |
 | --- | --- |
-| API Gateway | Game-facing Go service exposing `GameTradeGatewayService`. |
-| Market | Go service that performs trade mechanics, validation, settlement planning, and settlement command publication. |
+| API Gateway | Go UDP edge and UDP-to-gRPC forwarder. It validates transport safety and forwards raw game GUI payloads to Market; it does not expose production direct trade command RPCs. |
+| Quilkin | UDP proxy/routing component between game frontend traffic and the API Gateway UDP listener. |
+| Edge envelope | Signed `eve-trade-edge.v1` UDP JSON envelope carrying the raw game GUI payload and HMAC authentication data. |
+| GUI interaction payload | Production game packet payload with `schema_version`, `interaction_id`, `ui`, and `input` fields. The local simulator and real frontend use the same shape. |
+| Market | Go service that interprets game GUI interactions, performs trade mechanics, validation, settlement planning, and settlement command publication. |
 | settlement-worker | Go worker that consumes RabbitMQ settlement commands and calls trade-settlement. |
 | trade-settlement | Rust service that atomically executes requested settlement batches and applies durable PostgreSQL mutations plus settlement metadata. |
 | Settlement batch | A set of ordered settlement operations executed under one idempotency key. |
@@ -50,7 +53,6 @@
 | OTEL | OpenTelemetry instrumentation and collector/export pipeline. |
 | mTLS | Mutual TLS, where both client and server identities are authenticated through TLS certificates. |
 | Service account principal | Mesh or Kubernetes identity representing a workload for authorization decisions. |
-| RequestAuthentication | Istio resource that validates JWTs for selected workloads. |
 | AuthorizationPolicy | Istio resource that allows or denies traffic based on workload identity, request properties, and paths. |
 | PeerAuthentication | Istio resource that configures peer authentication mode, including strict mTLS. |
 | Break-glass access | Emergency operational access path that bypasses normal flow only with approval and audit. |

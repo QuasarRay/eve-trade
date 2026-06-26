@@ -12,8 +12,6 @@ BUTTONS = [
         "wiki_reference": "https://wiki.eveuniversity.org/Trading",
         "sort_order": 10,
         "default_payload": {
-            "idempotency_key": "sim-market-sell",
-            "external_request_id": "sim-market-sell",
             "issued_by_capsuleer_id": 1001,
             "item_stack": {
                 "item_stack_id": "",
@@ -34,8 +32,6 @@ BUTTONS = [
         "wiki_reference": "https://wiki.eveuniversity.org/Trading",
         "sort_order": 20,
         "default_payload": {
-            "idempotency_key": "sim-market-buy",
-            "external_request_id": "sim-market-buy",
             "trade_instance_id": "",
             "buyer_capsuleer_id": 2002,
             "quantity_requested": 1,
@@ -51,8 +47,6 @@ BUTTONS = [
         "wiki_reference": "https://wiki.eveuniversity.org/Neocom",
         "sort_order": 30,
         "default_payload": {
-            "idempotency_key": "sim-market-cancel",
-            "external_request_id": "sim-market-cancel",
             "trade_instance_id": "",
             "cancelled_by_capsuleer_id": 1001,
         },
@@ -65,8 +59,6 @@ BUTTONS = [
         "wiki_reference": "https://wiki.eveuniversity.org/Contracts",
         "sort_order": 40,
         "default_payload": {
-            "idempotency_key": "sim-contract-create",
-            "external_request_id": "sim-contract-create",
             "issued_by_capsuleer_id": 1001,
             "item_stack": {
                 "item_stack_id": "",
@@ -87,8 +79,6 @@ BUTTONS = [
         "wiki_reference": "https://wiki.eveuniversity.org/Contracts",
         "sort_order": 50,
         "default_payload": {
-            "idempotency_key": "sim-contract-accept",
-            "external_request_id": "sim-contract-accept",
             "trade_instance_id": "",
             "buyer_capsuleer_id": 2002,
             "quantity_requested": 1,
@@ -104,8 +94,6 @@ BUTTONS = [
         "wiki_reference": "https://wiki.eveuniversity.org/Trading",
         "sort_order": 60,
         "default_payload": {
-            "idempotency_key": "sim-direct-offer",
-            "external_request_id": "sim-direct-offer",
             "issued_by_capsuleer_id": 1001,
             "item_stack": {
                 "item_stack_id": "",
@@ -126,8 +114,6 @@ BUTTONS = [
         "wiki_reference": "https://wiki.eveuniversity.org/Trading",
         "sort_order": 70,
         "default_payload": {
-            "idempotency_key": "sim-direct-accept",
-            "external_request_id": "sim-direct-accept",
             "trade_instance_id": "",
             "buyer_capsuleer_id": 2002,
             "quantity_requested": 1,

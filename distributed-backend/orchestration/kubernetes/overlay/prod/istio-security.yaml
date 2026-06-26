@@ -7,21 +7,6 @@ spec:
     mode: STRICT
 ---
 apiVersion: security.istio.io/v1
-kind: RequestAuthentication
-metadata:
-  name: api-gateway-jwt
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: api-gateway
-  jwtRules:
-    - issuer: https://issuer.eve-trade.example.com/
-      jwksUri: https://issuer.eve-trade.example.com/.well-known/jwks.json
-      audiences:
-        - eve-trade-api
-      forwardOriginalToken: true
----
-apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
   name: default-deny
@@ -45,26 +30,6 @@ spec:
             paths:
               - /healthz
               - /readyz
-    - from:
-        - source:
-            principals:
-              - cluster.local/ns/eve-trade-gateway/sa/public-web-istio
-            requestPrincipals:
-              - "*"
-      to:
-        - operation:
-            ports:
-              - "8080"
-            methods:
-              - POST
-            paths:
-              - /eve.api_gateway.v1.GameTradeGatewayService/IssueTradeInstance
-              - /eve.api_gateway.v1.GameTradeGatewayService/AcceptTradeInstance
-              - /eve.api_gateway.v1.GameTradeGatewayService/CancelTradeInstance
-      when:
-        - key: request.auth.audiences
-          values:
-            - eve-trade-api
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -95,9 +60,7 @@ spec:
             methods:
               - POST
             paths:
-              - /eve.market.v1.MarketService/IssueTradeInstance
-              - /eve.market.v1.MarketService/AcceptTradeInstance
-              - /eve.market.v1.MarketService/CancelTradeInstance
+              - /eve.market.v1.MarketService/SubmitTradeGuiInteraction
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

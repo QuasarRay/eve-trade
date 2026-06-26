@@ -13,10 +13,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: eve_trade
-    ports:
-      - "127.0.0.1:5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d eve_trade"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d eve_trade"]
       interval: 2s
       timeout: 2s
       retries: 30
@@ -37,6 +35,9 @@ services:
       PGPASSWORD: postgres
     command: >
       bash -lc "
+      until psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -c 'SELECT 1'; do
+        sleep 1;
+      done &&
       psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' &&
       psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql
       "
@@ -47,9 +48,6 @@ services:
       RABBITMQ_DEFAULT_USER: eve_trade
       RABBITMQ_DEFAULT_PASS: eve_trade
       RABBITMQ_DEFAULT_VHOST: /
-    ports:
-      - "127.0.0.1:5672:5672"
-      - "127.0.0.1:15672:15672"
     healthcheck:
       test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
       interval: 5s
@@ -111,6 +109,7 @@ services:
       TRADE_SETTLEMENT_URL: http://trade-settlement:9092
       RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
+      OTEL_SDK_DISABLED: "true"
     healthcheck:
       test: ["CMD", "/app/http-healthcheck", "http://127.0.0.1:8081/readyz"]
       interval: 2s
@@ -126,11 +125,60 @@ services:
         condition: service_healthy
     environment:
       API_GATEWAY_HTTP_ADDR: :8080
+      API_GATEWAY_QUILKIN_UDP_ADDR: :26000
+      API_GATEWAY_QUILKIN_UDP_ENABLED: "true"
+      API_GATEWAY_QUILKIN_WORKERS: "4"
+      API_GATEWAY_QUILKIN_QUEUE_DEPTH: "64"
+      API_GATEWAY_UDP_RATE_LIMIT_PER_SECOND: "100"
+      API_GATEWAY_UDP_RATE_LIMIT_BURST: "200"
+      API_GATEWAY_UDP_AUTH_REQUIRED: "true"
+      API_GATEWAY_UDP_HMAC_SECRET: local-game-edge-secret
+      API_GATEWAY_UDP_HMAC_KEY_ID: primary
       MARKET_URL: http://market:8081
-    ports:
-      - "127.0.0.1:8080:8080"
+      OTEL_SDK_DISABLED: "true"
     healthcheck:
       test: ["CMD", "/app/http-healthcheck", "http://127.0.0.1:8080/readyz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  quilkin:
+    build:
+      context: .
+      dockerfile: distributed-backend/docker/quilkin.Dockerfile
+    image: eve-trade/quilkin:dev
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        endpoint="$$(getent hosts api-gateway | awk '{print $$1; exit}'):26000"
+        exec /usr/local/bin/quilkin \
+          --service.udp \
+          --service.udp.port 26001 \
+          --provider.static.endpoints "$${endpoint}" \
+          --admin.enabled=false \
+          --log-format json
+    security_opt:
+      - seccomp=unconfined
+
+  simulator:
+    build:
+      context: .
+      dockerfile: simulator/Dockerfile
+    depends_on:
+      quilkin:
+        condition: service_started
+    environment:
+      QUILKIN_UDP_HOST: quilkin
+      QUILKIN_UDP_PORT: "26001"
+      GAME_PACKET_HMAC_SECRET: local-game-edge-secret
+      GAME_PACKET_HMAC_KEY_ID: primary
+      SIMULATOR_ALLOWED_HOSTS: "*"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/gui/buttons/', timeout=2).read()\""]
       interval: 2s
       timeout: 2s
       retries: 30
@@ -142,7 +190,7 @@ services:
     profiles:
       - test
     depends_on:
-      api-gateway:
+      simulator:
         condition: service_healthy
     working_dir: /workspace
     volumes:
@@ -150,6 +198,7 @@ services:
       - pip_cache:/root/.cache/pip
     environment:
       EVE_TRADE_API_GATEWAY_URL: http://api-gateway:8080
+      EVE_TRADE_SIMULATOR_URL: http://simulator:8000
       EVE_TRADE_SETTLEMENT_GRPC: trade-settlement:9092
       EVE_TRADE_GATEWAY_GRPC: api-gateway:8080
       EVE_TRADE_DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade

@@ -41,6 +41,12 @@ spec:
           envFrom:
             - configMapRef:
                 name: api-gateway-config
+          env:
+            - name: API_GATEWAY_UDP_HMAC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-gateway-edge-auth
+                  key: GAME_PACKET_HMAC_SECRET
           readinessProbe:
             httpGet:
               path: /readyz

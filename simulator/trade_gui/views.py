@@ -4,7 +4,6 @@ from django.conf import settings
 from uuid import uuid4
 
 from django.shortcuts import render
-from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -39,18 +38,7 @@ class GameGuiButtonViewSet(viewsets.ModelViewSet):
 
         player_input = dict(button.default_payload)
         player_input.update(request.data.get("player_input", request.data) or {})
-        packet = {
-            "schema_version": "eve-trade-gui.v1",
-            "source": "django-rest-framework-simulator",
-            "sent_at": timezone.now().isoformat(),
-            "interaction_id": str(uuid4()),
-            "ui": {
-                "window": button.window,
-                "button": button.label,
-                "action": button.action,
-            },
-            "input": player_input,
-        }
+        packet = build_gui_packet(button, player_input, interaction_id=request.data.get("interaction_id"))
         interaction = GameGuiInteraction.objects.create(
             button=button,
             action=button.action,
@@ -78,3 +66,25 @@ class GameGuiButtonViewSet(viewsets.ModelViewSet):
 class GameGuiInteractionViewSet(viewsets.ModelViewSet):
     queryset = GameGuiInteraction.objects.all()
     serializer_class = GameGuiInteractionSerializer
+
+
+def build_gui_packet(button: GameGuiButton, player_input: dict, interaction_id: str | None = None) -> dict:
+    player_input = dict(player_input)
+    interaction_id = (
+        interaction_id
+        or player_input.pop("interaction_id", None)
+        or player_input.pop("idempotency_key", None)
+        or str(uuid4())
+    )
+    interaction_id = str(interaction_id).strip() or str(uuid4())
+    player_input.pop("external_request_id", None)
+    return {
+        "schema_version": "eve-trade-gui.v1",
+        "interaction_id": interaction_id,
+        "ui": {
+            "window": button.window,
+            "control_id": button.action,
+            "action": button.action,
+        },
+        "input": player_input,
+    }

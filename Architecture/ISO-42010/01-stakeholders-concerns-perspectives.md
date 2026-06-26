@@ -4,10 +4,10 @@
 
 | Field | Value |
 | --- | --- |
-| View status | Canonical |
-| Last reviewed | 2026-06-22 |
+| View status | Canonical current state |
+| Last reviewed | 2026-06-25 |
 | Governing framework | eve-trade Architecture Description Framework |
-| Evidence baseline | Repository commit `fe5c6af`; architecture file hashes are recorded in `18-evidence-manifest.md` |
+| Evidence baseline | v6 architecture cleanup; starting commit recorded in `changes/v6/changes.md` |
 
 ## Purpose
 
@@ -19,7 +19,7 @@ architecture aspects that recur across multiple views.
 
 | ID | Stakeholder | Role in relation to the system |
 | --- | --- | --- |
-| STK-01 | Game server integrator | Calls API Gateway and depends on stable command semantics and error behavior. |
+| STK-01 | Game frontend integrator | Sends signed production GUI UDP packets through Quilkin and depends on stable packet, response, timeout, and idempotency behavior. |
 | STK-02 | Gameplay/product owner | Defines acceptable trade mechanics, cancellation behavior, escrow behavior, and player-facing outcomes. |
 | STK-03 | Backend service developer | Evolves Go and Rust services, protobuf contracts, messaging, and SQL-backed behavior. |
 | STK-04 | Settlement/data integrity owner | Is accountable for atomic trade, wallet, item stack, escrow, ledger, and idempotency semantics. |
@@ -34,7 +34,7 @@ architecture aspects that recur across multiple views.
 
 | Stakeholder | Architecture accountability | Review status |
 | --- | --- | --- |
-| STK-01 Game server integrator | Approves public command behavior, error semantics, timeout expectations, and idempotency usage. | Assumed; requires upstream integrator review. |
+| STK-01 Game frontend integrator | Approves production GUI packet shape, edge error semantics, timeout expectations, and idempotency usage. | Assumed; requires upstream integrator review. |
 | STK-02 Gameplay/product owner | Approves trade lifecycle rules, expiration behavior, cancellation behavior, and player-visible outcomes. | Assumed; requires product review. |
 | STK-03 Backend service developer | Maintains service implementation consistency with contracts and views. | Repository-derived. |
 | STK-04 Settlement/data integrity owner | Approves invariants, idempotency behavior, ledgers, and settlement failure semantics. | Repository-derived; requires owner sign-off. |
@@ -59,8 +59,8 @@ Primary stakeholders: STK-01, STK-02, STK-03, STK-08.
 
 Concerns:
 
-- CON-01: Which public trade commands exist and what contract they expose.
-- CON-02: How issue, accept, and cancel flows map to game mechanics.
+- CON-01: Which production GUI packet shape and edge response contract the frontend uses.
+- CON-02: How GUI interactions map to game mechanics inside Market.
 - CON-03: Which service returns trade, escrow, and settlement identifiers.
 - CON-04: How idempotency keys and external request IDs should be supplied.
 - CON-05: Which behavior is intentionally not provided, such as a separate

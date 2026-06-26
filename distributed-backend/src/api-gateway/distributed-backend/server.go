@@ -5,26 +5,18 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"connectrpc.com/connect"
-	api_gatewayv1connect "github.com/QuasarRay/eve-trade/proto/gen/eve/api_gateway/v1/api_gatewayv1connect"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 type ReadinessCheck func(context.Context) error
 
-func NewHTTPServer(config Config, handler *GatewayHandler, readiness ReadinessCheck, handlerOptions ...connect.HandlerOption) *http.Server {
+func NewHTTPServer(config Config, readiness ReadinessCheck) *http.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", healthHandler)
 	mux.HandleFunc("/readyz", readyHandler(readiness))
 
-	path, serviceHandler := api_gatewayv1connect.NewGameTradeGatewayServiceHandler(handler, handlerOptions...)
-	mux.Handle(path, serviceHandler)
-
 	return &http.Server{
 		Addr:              config.HTTPAddr,
-		Handler:           h2c.NewHandler(mux, &http2.Server{}),
+		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,

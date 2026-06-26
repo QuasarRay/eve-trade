@@ -72,3 +72,5 @@ REST_FRAMEWORK = {
 QUILKIN_UDP_HOST = os.environ.get("QUILKIN_UDP_HOST", "127.0.0.1")
 QUILKIN_UDP_PORT = int(os.environ.get("QUILKIN_UDP_PORT", "26001"))
 QUILKIN_UDP_TIMEOUT_SECONDS = float(os.environ.get("QUILKIN_UDP_TIMEOUT_SECONDS", "3.0"))
+GAME_PACKET_HMAC_SECRET = os.environ.get("GAME_PACKET_HMAC_SECRET", "local-game-edge-secret")
+GAME_PACKET_HMAC_KEY_ID = os.environ.get("GAME_PACKET_HMAC_KEY_ID", "primary")

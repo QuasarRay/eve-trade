@@ -5,9 +5,9 @@
 | Field | Value |
 | --- | --- |
 | Catalog ID | `FACTCAT-EVE-TRADE-001` |
-| Date | 2026-06-23 |
-| Status | Canonical central fact catalog |
-| Evidence baseline | Repository commit `fe5c6af`; architecture file hashes are recorded in `18-evidence-manifest.md` |
+| Date | 2026-06-25 |
+| Status | Canonical current-state fact catalog |
+| Evidence baseline | v6 architecture cleanup; starting commit recorded in `changes/v6/changes.md` |
 
 ## Purpose
 
@@ -20,22 +20,30 @@ can reference these fact IDs rather than duplicating inconsistent prose.
 | Fact ID | Fact | Current status | Primary evidence anchors |
 | --- | --- | --- | --- |
 | FACT-001 | The architecture document baseline is content-addressed by file hashes until the architecture set is committed. | Evidence-backed | `18-evidence-manifest.md` |
-| FACT-002 | The source commit inspected for implementation evidence is `fe5c6af1dcb68715ccb339a00912729a4febdf2d`. | Evidence-backed | Git `HEAD` at review time |
+| FACT-002 | The source commit before v6 implementation work was `13baa27824010bd1fc3b4d17409a0dfe086d425c`. | Evidence-backed | `changes/v6/changes.md` |
+| FACT-003 | The production path is `game frontend -> Quilkin UDP -> API gateway UDP edge -> Market GUI interaction -> settlement operations -> trade-settlement`. | Evidence-backed | `00-architecture-description.md`, `03-context-view.md`, README |
+| FACT-004 | API Gateway production direct issue, accept, and cancel trade RPCs were deleted. | Evidence-backed | Deleted API Gateway proto/generated files; `scripts/verify_architecture_boundaries.py` |
+| FACT-005 | Market production direct issue, accept, and cancel trade RPCs were deleted; Market exposes `SubmitTradeGuiInteraction` for trade GUI packets. | Evidence-backed | `distributed-backend/proto/eve/market/v1/market.proto` |
+| FACT-006 | Market's GUI submission request contains only `bytes raw_payload = 1`. | Evidence-backed | `distributed-backend/proto/eve/market/v1/market.proto` |
+| FACT-007 | The Django simulator is a local game-frontend simulator and its outbound UDP packet is production-identical from the packet boundary outward. | Evidence-backed | `simulator/trade_gui/views.py`, `simulator/trade_gui/udp_client.py`, `simulator/trade_gui/tests.py` |
+| FACT-008 | API Gateway forwards raw GUI payload to Market and does not send source transport/address metadata as Market business data. | Evidence-backed | `quilkin_udp.go`, `quilkin_udp_test.go` |
+| FACT-009 | trade-settlement receives low-level settlement operation batches, not game trade mechanics. | Evidence-backed | `distributed-backend/proto/eve/trade_settlement/v1/trade_settlement.proto` |
 | FACT-010 | API Gateway downstream timeout defaults to `5s`. | Evidence-backed | `distributed-backend/src/api-gateway/distributed-backend/config.go`, config key `API_GATEWAY_DOWNSTREAM_TIMEOUT` |
 | FACT-011 | Market settlement request timeout defaults to `10s`. | Evidence-backed | `distributed-backend/src/market/distributed-backend/config.go`, key `MARKET_SETTLEMENT_REQUEST_TIMEOUT` |
 | FACT-012 | settlement-worker request timeout is configured as `10s` in Kubernetes base config. | Evidence-backed | `distributed-backend/orchestration/kubernetes/base/configmaps.yaml`, key `SETTLEMENT_WORKER_REQUEST_TIMEOUT` |
 | FACT-013 | RabbitMQ publish timeout is configured as `5s` in Kubernetes base config. | Evidence-backed | `distributed-backend/orchestration/kubernetes/base/configmaps.yaml`, key `RABBITMQ_PUBLISH_TIMEOUT` |
-| FACT-014 | The current timeout hierarchy is inconsistent for a synchronous caller contract because API Gateway can time out before Market settlement wait completes. | Gap recorded | FACT-010, FACT-011, `11-performance-capacity-view.md` |
+| FACT-014 | The current timeout hierarchy is explicit but not a complete external SLO contract. API Gateway downstream timeout defaults to `5s`; Market settlement wait defaults to `10s`. | Gap recorded | FACT-010, FACT-011, `11-performance-capacity-view.md` |
 | FACT-020 | RabbitMQ command exchange is `eve.trade.settlement`. | Evidence-backed | `distributed-backend/src/messaging/rabbitmqsettlement/config.go`, `DefaultExchange`; Kubernetes configmaps |
 | FACT-021 | RabbitMQ command queue is `eve.trade.settlement.commands`. | Evidence-backed | `distributed-backend/src/messaging/rabbitmqsettlement/config.go`, `DefaultCommandQueue`; Kubernetes configmaps |
 | FACT-022 | RabbitMQ DLX is `eve.trade.settlement.dlx`; DLQ is `eve.trade.settlement.dead`; dead-letter routing key is `settlement.dead`. | Evidence-backed | `distributed-backend/src/messaging/rabbitmqsettlement/config.go`; Kubernetes configmaps |
 | FACT-023 | Worker prefetch is configured as `8` in Kubernetes base config. | Evidence-backed | `distributed-backend/orchestration/kubernetes/base/configmaps.yaml`, key `RABBITMQ_SETTLEMENT_PREFETCH` |
-| FACT-030 | API Gateway exposes `/healthz` and `/readyz`; readiness checks Market. | Evidence-backed | `distributed-backend/src/api-gateway/distributed-backend/server.go`; `market_client.go` |
+| FACT-030 | API Gateway exposes `/healthz` and `/readyz`; readiness checks Market. Trade traffic enters through UDP/Quilkin, not a production API Gateway trade RPC service. | Evidence-backed | `distributed-backend/src/api-gateway/distributed-backend/server.go`; `market_client.go`; `quilkin_udp.go` |
 | FACT-031 | Market exposes `/healthz` and `/readyz`; current readiness checks PostgreSQL and, for RabbitMQ transport, the RabbitMQ client session. It does not prove a complete settlement-worker/trade-settlement reply path. | Evidence-backed with gap | `distributed-backend/src/market/distributed-backend/server.go`, `distributed-backend/src/market/cmd/market/main.go`, `distributed-backend/src/messaging/rabbitmqsettlement/client.go`, `06-deployment-operations-view.md` |
 | FACT-032 | trade-settlement Kubernetes probes are TCP socket probes on port `9092`, not database-commit readiness checks. | Evidence-backed with gap | `distributed-backend/orchestration/kubernetes/base/trade-settlement.yaml` |
-| FACT-040 | Actor identity binding to authenticated claims is not implemented end to end in application code. | Gap recorded | `07-security-trust-view.md`, `14-threat-model-view.md`, `15-risk-register.md` |
+| FACT-040 | HMAC packet integrity is implemented at the UDP edge, but actor identity binding to authenticated account/capsuleer claims is not implemented end to end in application code. | Gap recorded | `07-security-trust-view.md`, `14-threat-model-view.md`, `15-risk-register.md` |
 | FACT-041 | Generic settlement operations are high privilege; current controls are internal topology, NetworkPolicy, mesh placeholders, settlement envelope validation, and row-level operation preconditions. No operation-provenance or operation-allow policy is implemented in trade-settlement. | Gap recorded | `07-security-trust-view.md`, `14-threat-model-view.md`, `15-risk-register.md` |
-| FACT-042 | Production overlay contains placeholder host, issuer/JWKS/audience, image digests, and ACME email values; no checked-in gate rejects them. | Gap recorded | `distributed-backend/orchestration/kubernetes/overlay/prod`, `distributed-backend/orchestration/kubernetes/platform/gateway/prod` |
+| FACT-042 | Production overlay contains placeholder host, image digests, and ACME email values; no checked-in gate rejects all placeholders. | Gap recorded | `distributed-backend/orchestration/kubernetes/overlay/prod`, `distributed-backend/orchestration/kubernetes/platform/gateway/prod` |
+| FACT-044 | Production overlay includes Quilkin UDP resources and excludes simulator resources. | Evidence-backed | `distributed-backend/orchestration/kubernetes/overlay/prod/quilkin.yaml`, `scripts/verify_architecture_boundaries.py` |
 | FACT-043 | Kubernetes database egress is broad TCP `5432` in current manifests without destination selection in NetworkPolicy. | Gap recorded | `06-deployment-operations-view.md`, `09-correspondences-rationale.md` |
 | FACT-050 | Settlement metadata tables are the durable diagnostic source for idempotency, attempts, batches, steps, stored step outputs, and completed replay reconstruction. | Evidence-backed | `distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql` |
 | FACT-053 | The current repository has one canonical settlement migration file; Compose and Kubernetes apply `0001_settlement_schema.sql` directly. | Evidence-backed | `distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql`, `compose.yaml`, `distributed-backend/orchestration/kubernetes/base/migrate.yaml` |
@@ -45,7 +53,7 @@ can reference these fact IDs rather than duplicating inconsistent prose.
 | FACT-060 | Observability view identifies request IDs, idempotency keys, RabbitMQ correlation IDs, settlement batch IDs, and failure reasons as needed correlation fields. | Structurally represented | `13-observability-view.md` |
 | FACT-061 | Dashboards, alert thresholds, and incident queries are not yet verified as implemented artifacts. | Gap recorded | `13-observability-view.md`, `15-risk-register.md` |
 | FACT-070 | Data retention, ledger growth, idempotency TTL, escrow cleanup, and archival policy are unresolved production architecture decisions. | Gap recorded | `05-information-data-integrity-view.md`, `15-risk-register.md` |
-| FACT-080 | Static Rust validation, Docker Compose config validation, and Kubernetes render validation were run for this working-tree update. Live e2e trade-flow and live PostgreSQL migration execution were not run because service/database URLs, Docker engine, and local PostgreSQL tools were unavailable. | Partially verified | `18-evidence-manifest.md`, root `changes.md` |
+| FACT-080 | CI is configured to run strict protobuf, architecture boundary, Go, Rust, Python simulator, Terraform, Kubernetes, and compose e2e gates. Local command results for v6 are recorded in `changes/v6/changes.md`. | Evidence-backed | `.github/workflows/verify.yaml`, `changes/v6/changes.md` |
 | FACT-090 | The current infrastructure-as-code model has separate AWS/EKS, GCP/GKE, and Talos/Omni Terraform roots that feed the same Kubernetes application manifests. | Evidence-backed | `distributed-backend/terraform/eks`, `distributed-backend/terraform/gke`, `distributed-backend/terraform/talos-omni`, `ci-cd/pipeline.py` |
 
 ## Production Readiness Gates
@@ -58,8 +66,9 @@ can reference these fact IDs rather than duplicating inconsistent prose.
 | GATE-004 | Timeout hierarchy or async outcome-query contract is resolved and tested. | Open | Yes |
 | GATE-005 | DLQ alerting, inspection, redrive, and discard runbooks are documented and tested. | Open | Yes |
 | GATE-006 | PostgreSQL backup/restore RTO/RPO are defined and tested. | Open | Yes |
-| GATE-007 | Runtime validation package passes for Compose, e2e, Kubernetes render, and relevant tests. | Open | Yes |
+| GATE-007 | Runtime validation package passes for Compose, e2e, Kubernetes render, and relevant tests. | Enforced in CI; local result must be recorded per change | Yes until CI is green |
 | GATE-008 | Stakeholder reviews for security, SRE, data integrity, QA, product, and integration are recorded. | Open | Yes |
+| GATE-009 | Distributed edge replay behavior is implemented or explicitly accepted with durable idempotency evidence. | Open | Yes |
 
 ## Current Timeout Position
 
@@ -69,7 +78,7 @@ status; it is not an implemented contract.
 
 | Pattern | Current repository status |
 | --- | --- |
-| Synchronous completion | Not satisfied by current defaults because API Gateway can time out before Market settlement wait completes. |
+| Synchronous completion | Not defined as an external SLO contract in this repository. |
 | Asynchronous outcome retrieval | Not implemented as a separate public outcome lookup API. |
 | Hybrid | Closest to current documented behavior: fast replies return synchronously; ambiguous outcomes use same-key retry/replay and operator reconciliation. |
 
@@ -83,7 +92,7 @@ reconciliation remain the documented recovery path.
 | --- | --- | --- | --- | --- | --- |
 | `DATABASE_URL` | Market, trade-settlement, migration job | Kubernetes Secret or Compose env | SRE/database owner | Rotation policy not defined in repo | Gap recorded |
 | RabbitMQ username/password/URL | RabbitMQ, Market, settlement-worker | Kubernetes Secret or Compose env | SRE/platform owner | Per-service rotation policy not defined in repo | Gap recorded |
-| JWT issuer/JWKS/audience | Istio RequestAuthentication | Production overlay patch values | Security/platform owner | External identity-provider lifecycle, not defined here | Placeholder gate open |
+| `GAME_PACKET_HMAC_SECRET` | API Gateway UDP edge | Production secret manager or Kubernetes Secret | Security/platform owner | Rotation policy not defined in repo | Gap recorded |
 | Observability API keys | OTEL/Honeycomb/Sentry components | Out-of-band secret | Observability owner | Rotation policy not defined in repo | Gap recorded |
 
 ## Data Classification Facts

@@ -196,14 +196,14 @@ View governed by this viewpoint:
 | Field | Specification |
 | --- | --- |
 | Viewpoint ID | VP-10 |
-| Purpose | Define trace, log, metric, alert, and diagnostic requirements for trade commands and settlement. |
+| Purpose | Define trace, log, metric, alert, and diagnostic requirements for GUI interactions, UDP edge handling, and settlement. |
 | Primary stakeholders | STK-05, STK-08, STK-09, STK-10 |
 | Framed concerns | CON-14, CON-25, CON-32, CON-33, CON-34, CON-35 |
 | Related perspectives | PER-03, PER-05, PER-07 |
 | Related aspects | ASP-02, ASP-04, ASP-07 |
 | Model kinds | Telemetry map, correlation key table, alert signal table, incident query table |
 | Notation | Tables |
-| Required model elements | Request ID, external request ID, idempotency key, settlement batch ID, RabbitMQ correlation ID, service spans, logs, metrics, health/readiness signals |
+| Required model elements | Interaction ID, external request ID, idempotency key, settlement batch ID, RabbitMQ correlation ID, service spans, logs, metrics, health/readiness signals |
 | Analysis method | Confirm each runtime step has at least one observable signal and one correlation key. |
 
 View governed by this viewpoint:
@@ -254,7 +254,7 @@ View governed by this viewpoint:
 | --- | --- |
 | VP-01 Context | Required to bound the system of interest and external dependencies. |
 | VP-02 Functional Decomposition | Required because service responsibility boundaries are a primary correctness mechanism. |
-| VP-03 Runtime Transaction | Required because the trade path crosses synchronous HTTP, RabbitMQ, worker execution, and SQL transactions. |
+| VP-03 Runtime Transaction | Required because the trade path crosses UDP edge handling, gRPC/Connect, RabbitMQ, worker execution, and SQL transactions. |
 | VP-04 Information and Data Integrity | Required because settlement mutates inventory, wallet, escrow, trade, ledger, and idempotency state. |
 | VP-05 Deployment and Operations | Required because deployment manifests enforce communication and runtime behavior. |
 | VP-06 Security and Trust | Required because actor identity, privileged settlement operations, and service isolation are high risk. |
@@ -279,7 +279,7 @@ View governed by this viewpoint:
 | Model kind | Model kind ID | Construction rules | Interpretation rules | Invalid when |
 | --- | --- | --- | --- | --- |
 | System context diagram | MK-CTX-DIAGRAM | Must show the system boundary, external actors, internal services, data stores, brokers, and observability destinations. | Arrows represent runtime or provisioning relationships as defined by the legend. | A runtime dependency exists in Compose/Kubernetes but is absent from the diagram or table. |
-| Sequence diagram | MK-RUN-SEQUENCE | Must show caller, API Gateway, Market, PostgreSQL, the configured settlement transport, trade-settlement, and success/failure alternatives when modeling trade commands. The checked-in Compose/Kubernetes model includes RabbitMQ and settlement-worker. | Ordered arrows are logical interaction order, not precise network timing. | A durable write is shown outside trade-settlement without an explicit exception. |
+| Sequence diagram | MK-RUN-SEQUENCE | Must show game frontend or simulator, Quilkin, API Gateway UDP edge, Market, PostgreSQL, the configured settlement transport, trade-settlement, and success/failure alternatives when modeling GUI interactions. The checked-in Compose/Kubernetes model includes RabbitMQ and settlement-worker. | Ordered arrows are logical interaction order, not precise network timing. | A durable write is shown outside trade-settlement without an explicit exception. |
 | Data table model | MK-DATA-TABLE | Must list table or data group, owner, key role, and evidence. | Table rows are architecture-level data responsibilities, not full DDL. | It omits a table that enforces a stated invariant. |
 | Invariant catalog | MK-DATA-INVARIANT | Must name invariant, enforcement mechanism, evidence, tests or gaps. | An invariant is only fully satisfied when service logic, SQL, and tests are identified or a gap is recorded. | Enforcement is asserted without source evidence. |
 | Deployment model | MK-DEP-TOPOLOGY | Must include local and Kubernetes differences, probes, ports, secrets, network policy, and platform egress. | Deployment arrows describe intended connectivity, not proof of live reachability. | It hides broad egress, placeholder configuration, or probe semantics. |

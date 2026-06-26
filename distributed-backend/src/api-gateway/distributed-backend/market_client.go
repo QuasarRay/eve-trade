@@ -17,9 +17,6 @@ import (
 )
 
 type MarketClient interface {
-	IssueTradeInstance(context.Context, *marketv1.IssueTradeInstanceRequest) (*marketv1.IssueTradeInstanceResponse, error)
-	AcceptTradeInstance(context.Context, *marketv1.AcceptTradeInstanceRequest) (*marketv1.AcceptTradeInstanceResponse, error)
-	CancelTradeInstance(context.Context, *marketv1.CancelTradeInstanceRequest) (*marketv1.CancelTradeInstanceResponse, error)
 	SubmitTradeGuiInteraction(context.Context, *marketv1.SubmitTradeGuiInteractionRequest) (*marketv1.SubmitTradeGuiInteractionResponse, error)
 }
 
@@ -39,39 +36,6 @@ func NewConnectMarketClient(baseURL string, timeout time.Duration, options ...co
 		baseURL:    baseURL,
 		timeout:    timeout,
 	}
-}
-
-func (c *ConnectMarketClient) IssueTradeInstance(ctx context.Context, request *marketv1.IssueTradeInstanceRequest) (*marketv1.IssueTradeInstanceResponse, error) {
-	ctx, cancel := c.callContext(ctx)
-	defer cancel()
-
-	response, err := c.client.IssueTradeInstance(ctx, connect.NewRequest(request))
-	if err != nil {
-		return nil, downstreamUnavailable("market", err)
-	}
-	return response.Msg, nil
-}
-
-func (c *ConnectMarketClient) AcceptTradeInstance(ctx context.Context, request *marketv1.AcceptTradeInstanceRequest) (*marketv1.AcceptTradeInstanceResponse, error) {
-	ctx, cancel := c.callContext(ctx)
-	defer cancel()
-
-	response, err := c.client.AcceptTradeInstance(ctx, connect.NewRequest(request))
-	if err != nil {
-		return nil, downstreamUnavailable("market", err)
-	}
-	return response.Msg, nil
-}
-
-func (c *ConnectMarketClient) CancelTradeInstance(ctx context.Context, request *marketv1.CancelTradeInstanceRequest) (*marketv1.CancelTradeInstanceResponse, error) {
-	ctx, cancel := c.callContext(ctx)
-	defer cancel()
-
-	response, err := c.client.CancelTradeInstance(ctx, connect.NewRequest(request))
-	if err != nil {
-		return nil, downstreamUnavailable("market", err)
-	}
-	return response.Msg, nil
 }
 
 func (c *ConnectMarketClient) SubmitTradeGuiInteraction(ctx context.Context, request *marketv1.SubmitTradeGuiInteractionRequest) (*marketv1.SubmitTradeGuiInteractionResponse, error) {

@@ -23,19 +23,22 @@ Before deployment, patch these production values:
 - Image digests in `kustomization.yaml`. The checked-in zero digests are
   placeholders so production renders are immutable and fail closed until CI
   injects real `sha256:` digests for the built images.
-- `api.eve-trade.example.com` in `httproute.yaml` and the platform Gateway.
+- `api.eve-trade.example.com` in the HTTP redirect route and the platform
+  Gateway, if the HTTP redirect endpoint is used.
 - The ACME email in `platform/gateway/prod/clusterissuer-letsencrypt-prod.yaml`.
-- The JWT issuer, JWKS URI, and audience in `istio-security.yaml`.
 - The `trade-settlement-database` secret.
 - The `rabbitmq` secret.
+- The `api-gateway-edge-auth` secret with `GAME_PACKET_HMAC_SECRET`, supplied
+  out of band by the production secret manager.
 - The `observability-backends` secret in the `eve-trade-observability` namespace
   with Honeycomb and Sentry credentials.
 
 The production overlay enables Istio sidecar injection, STRICT mTLS,
-deny-by-default mesh authorization, JWT enforcement at `api-gateway`, and
-service-account allow rules for the internal API Gateway -> Market -> RabbitMQ
--> settlement-worker -> trade-settlement path. The platform Gateway uses the
-Istio Gateway API controller and redirects HTTP traffic to HTTPS.
+deny-by-default mesh authorization, a Quilkin UDP edge, service-account allow
+rules for the internal API Gateway -> Market -> RabbitMQ -> settlement-worker
+-> trade-settlement path, and an HTTP-to-HTTPS redirect endpoint when the
+platform Gateway is installed. Trade traffic enters through Quilkin UDP and API
+Gateway forwards only raw GUI payloads to Market.
 
 The base kustomization intentionally does not create database or RabbitMQ
 secrets. Create `trade-settlement-database` with a `DATABASE_URL` key and

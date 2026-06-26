@@ -68,6 +68,18 @@ jobs:
       - name: Fail if generated protobuf code is stale
         run: git diff --exit-code -- distributed-backend/proto/gen
 
+  architecture-boundaries:
+    name: architecture / boundaries
+    runs-on: ubuntu-latest
+    needs: [proto]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify production architecture boundaries
+        run: python scripts/verify_architecture_boundaries.py
+
   go:
     name: go / ${{ matrix.name }}
     runs-on: ubuntu-latest
@@ -110,6 +122,11 @@ jobs:
           go-version-file: ${{ matrix.module }}/go.mod
           cache: true
 
+      - name: Install Go analysis tools
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+
       - name: Check Go module metadata
         working-directory: ${{ matrix.module }}
         run: |
@@ -136,6 +153,40 @@ jobs:
           else
             go test ./...
           fi
+
+      - name: Vet Go packages
+        working-directory: ${{ matrix.module }}
+        shell: bash
+        run: |
+          if [ -n "${{ matrix.build_tags }}" ]; then
+            go vet -tags "${{ matrix.build_tags }}" ./...
+          else
+            go vet ./...
+          fi
+
+      - name: Race-test Go packages
+        working-directory: ${{ matrix.module }}
+        shell: bash
+        run: |
+          if [ -n "${{ matrix.build_tags }}" ]; then
+            go test -race -tags "${{ matrix.build_tags }}" ./...
+          else
+            go test -race ./...
+          fi
+
+      - name: Staticcheck Go packages
+        working-directory: ${{ matrix.module }}
+        shell: bash
+        run: |
+          if [ -n "${{ matrix.build_tags }}" ]; then
+            staticcheck -tags "${{ matrix.build_tags }}" ./...
+          else
+            staticcheck ./...
+          fi
+
+      - name: Govulncheck Go packages
+        working-directory: ${{ matrix.module }}
+        run: govulncheck ./...
 
       - name: Build service
         if: matrix.build_package != ''
@@ -165,6 +216,9 @@ jobs:
       - name: Test root workspace
         run: go test ./...
 
+      - name: Vet root workspace
+        run: go vet ./...
+
   rust-trade-settlement:
     name: rust / trade-settlement
     runs-on: ubuntu-latest
@@ -189,13 +243,21 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Check Rust build
-        run: cargo check --locked
+        run: cargo check --locked --all-targets --all-features
 
       - name: Test Rust crate
-        run: cargo test --locked
+        run: cargo test --locked --all-features
 
       - name: Lint Rust crate
-        run: cargo clippy --locked --all-targets -- -D warnings
+        run: cargo clippy --locked --all-targets --all-features -- -D warnings
+
+      - name: Audit Rust dependencies
+        run: |
+          cargo install cargo-audit --locked
+          # sqlx currently leaves rsa 0.9.x in Cargo.lock through optional MySQL support even
+          # though trade-settlement is PostgreSQL-only and `cargo tree -i rsa` is empty.
+          # RUSTSEC-2023-0071 has no fixed upgrade; keep this ignore explicit and reviewed.
+          cargo audit --ignore RUSTSEC-2023-0071
 
   terraform:
     name: terraform / ${{ matrix.provider }}
@@ -248,12 +310,65 @@ jobs:
           kubectl kustomize distributed-backend/orchestration/kubernetes/platform/istio/prod >/tmp/eve-trade-istio.yaml
           kubectl kustomize distributed-backend/orchestration/kubernetes/platform/gateway/prod >/tmp/eve-trade-gateway.yaml
           kubectl kustomize distributed-backend/orchestration/kubernetes/base/observability >/tmp/eve-trade-observability.yaml
+          kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/local >/tmp/eve-trade-local.yaml
           kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/prod >/tmp/eve-trade-prod.yaml
+
+      - name: Install kubeconform
+        run: |
+          curl -fsSL -o /tmp/kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          tar -C /tmp -xzf /tmp/kubeconform.tar.gz kubeconform
+
+      - name: Validate Kubernetes manifests
+        run: |
+          /tmp/kubeconform -strict -ignore-missing-schemas /tmp/eve-trade-istio.yaml
+          /tmp/kubeconform -strict -ignore-missing-schemas /tmp/eve-trade-gateway.yaml
+          /tmp/kubeconform -strict -ignore-missing-schemas /tmp/eve-trade-observability.yaml
+          /tmp/kubeconform -strict -ignore-missing-schemas /tmp/eve-trade-local.yaml
+          /tmp/kubeconform -strict -ignore-missing-schemas /tmp/eve-trade-prod.yaml
+
+  python-simulator:
+    name: python / simulator
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: simulator
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: simulator/requirements.txt
+
+      - name: Install simulator dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Check installed Python dependencies
+        run: python -m pip check
+
+      - name: Compile simulator and e2e Python
+        working-directory: .
+        run: python -m compileall simulator/eve_trade_simulator simulator/trade_gui distributed-backend/tests/e2e
+
+      - name: Test simulator packet construction
+        run: python manage.py test trade_gui
+
+      - name: Audit simulator dependencies
+        run: |
+          python -m pip install pip-audit
+          python -m pip_audit -r requirements.txt
 
   e2e:
     name: e2e / compose
     runs-on: ubuntu-latest
-    needs: [proto, go, go-root, rust-trade-settlement, kubernetes]
+    needs: [proto, architecture-boundaries, go, go-root, rust-trade-settlement, kubernetes, python-simulator]
 
     steps:
       - name: Checkout
@@ -264,7 +379,7 @@ jobs:
           docker compose -f docker-compose.integration.yml --profile test build
           docker compose -f docker-compose.integration.yml --profile test up -d postgres rabbitmq
           docker compose -f docker-compose.integration.yml --profile test up --exit-code-from migrate migrate
-          docker compose -f docker-compose.integration.yml --profile test up -d trade-settlement settlement-worker market api-gateway
+          docker compose -f docker-compose.integration.yml --profile test up -d trade-settlement settlement-worker market api-gateway quilkin simulator
           docker compose -f docker-compose.integration.yml --profile test run --rm --no-deps e2e-tests
 
       - name: Clean up compose resources

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import re
 import sys
 import tempfile
 import time
@@ -27,7 +28,6 @@ ITEM_TYPE_ID = 34
 OTHER_ITEM_TYPE_ID = 35
 CHECKSUM_ALGORITHM = "sha256-v1"
 
-GATEWAY_SERVICE_PATH = "/eve.api_gateway.v1.GameTradeGatewayService"
 _SETTLEMENT_PROTO_CACHE: tuple[Any, Any] | None = None
 _SETTLEMENT_PROTO_TMPDIR: tempfile.TemporaryDirectory[str] | None = None
 
@@ -72,28 +72,25 @@ class Trade:
 
 
 class GatewayClient:
-    def __init__(self, base_url: str):
-        self.base_url = base_url.rstrip("/")
+    def __init__(self, simulator_url: str):
+        self.simulator_url = simulator_url.rstrip("/")
         self.http = httpx.Client(timeout=httpx.Timeout(20.0))
+        self._buttons_by_action: dict[str, int] | None = None
 
     def issue_trade_instance(self, payload: dict[str, Any]) -> dict[str, Any]:
-        return self._post("IssueTradeInstance", payload)
+        return self._press("market_place_sell_order", payload)
 
     def accept_trade_instance(self, payload: dict[str, Any]) -> dict[str, Any]:
-        return self._post("AcceptTradeInstance", payload)
+        return self._press("market_buy_from_sell_order", payload)
 
     def cancel_trade_instance(self, payload: dict[str, Any]) -> dict[str, Any]:
-        return self._post("CancelTradeInstance", payload)
+        return self._press("market_cancel_order", payload)
 
-    def _post(self, method: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def _press(self, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+        button_id = self._button_id(action)
         response = self.http.post(
-            f"{self.base_url}{GATEWAY_SERVICE_PATH}/{method}",
-            json=payload,
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Connect-Protocol-Version": "1",
-            },
+            f"{self.simulator_url}/api/gui/buttons/{button_id}/press/",
+            json={"player_input": camel_to_snake(payload)},
         )
         if response.status_code >= 400:
             body: Any
@@ -108,7 +105,35 @@ class GatewayClient:
                 code = str(response.status_code)
                 message = str(body)
             raise RpcFailure(response.status_code, code, message, body)
-        return response.json()
+        body = response.json()
+        gateway_payload = body.get("response_payload", body)
+        if isinstance(gateway_payload, dict) and "code" in gateway_payload:
+            raise RpcFailure(
+                response.status_code,
+                str(gateway_payload.get("code") or "error"),
+                str(gateway_payload.get("message") or gateway_payload),
+                gateway_payload,
+            )
+        if not isinstance(gateway_payload, dict):
+            raise RpcFailure(response.status_code, "invalid_response", str(gateway_payload), body)
+        return snake_to_camel(gateway_payload)
+
+    def _button_id(self, action: str) -> int:
+        if self._buttons_by_action is None:
+            response = self.http.get(f"{self.simulator_url}/api/gui/buttons/")
+            response.raise_for_status()
+            rows = response.json()
+            if isinstance(rows, dict) and "results" in rows:
+                rows = rows["results"]
+            self._buttons_by_action = {
+                str(row["action"]): int(row["id"])
+                for row in rows
+                if row.get("enabled", True)
+            }
+        try:
+            return self._buttons_by_action[action]
+        except KeyError as exc:
+            raise RuntimeError(f"simulator button for action {action!r} was not seeded") from exc
 
 
 class SettlementClient:
@@ -269,6 +294,46 @@ def wait_for_gateway(api_gateway_url: str, timeout_seconds: float = 60.0) -> Non
             last_error = exc
             time.sleep(0.5)
     raise RuntimeError(f"api gateway did not become reachable: {last_error}")
+
+
+def wait_for_simulator(simulator_url: str, timeout_seconds: float = 60.0) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    last_error: Exception | None = None
+    url = simulator_url.rstrip("/") + "/api/gui/buttons/"
+    while time.monotonic() < deadline:
+        try:
+            response = httpx.get(url, timeout=2.0)
+            if response.status_code == 200 and response.json():
+                return
+        except Exception as exc:  # noqa: BLE001 - preserve final connection error.
+            last_error = exc
+            time.sleep(0.5)
+    raise RuntimeError(f"simulator did not become reachable: {last_error}")
+
+
+def camel_to_snake(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {camel_name_to_snake(str(key)): camel_to_snake(child) for key, child in value.items()}
+    if isinstance(value, list):
+        return [camel_to_snake(child) for child in value]
+    return value
+
+
+def snake_to_camel(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {snake_name_to_camel(str(key)): snake_to_camel(child) for key, child in value.items()}
+    if isinstance(value, list):
+        return [snake_to_camel(child) for child in value]
+    return value
+
+
+def camel_name_to_snake(name: str) -> str:
+    return re.sub(r"(?<!^)([A-Z])", r"_\1", name).lower()
+
+
+def snake_name_to_camel(name: str) -> str:
+    head, *tail = name.split("_")
+    return head + "".join(part[:1].upper() + part[1:] for part in tail)
 
 
 def fresh_key(prefix: str) -> str:
