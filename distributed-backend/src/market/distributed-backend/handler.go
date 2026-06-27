@@ -155,6 +155,9 @@ func (h *MarketHandler) acceptTradeInstance(ctx context.Context, message acceptT
 	if err != nil {
 		return nil, err
 	}
+	if message.BuyerCapsuleerID == trade.IssuerID {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("buyer and seller must differ"))
+	}
 	buyerWallet, err := h.trades.LoadWallet(ctx, message.BuyerWalletID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
@@ -339,9 +342,20 @@ func (h *MarketHandler) SubmitTradeGuiInteraction(ctx context.Context, request *
 			ItemStackEscrowId: response.ItemStackEscrowID,
 		}), nil
 	case "market_buy_from_sell_order", "contract_accept_item_exchange", "direct_trade_accept":
-		quantityRequested := input.QuantityRequested
-		if quantityRequested == 0 {
-			quantityRequested = input.Quantity
+		quantityRequested, quantityPresent, err := readGUIInputInt64(message.RawPayload, "quantity_requested")
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+
+		if !quantityPresent {
+			quantityRequested, quantityPresent, err = readGUIInputInt64(message.RawPayload, "quantity")
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
+		}
+
+		if !quantityPresent {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("quantity_requested is required"))
 		}
 		response, err := h.acceptTradeInstance(ctx, acceptTradeInstanceRequest{
 			IdempotencyKey:              input.IdempotencyKey,
@@ -380,6 +394,32 @@ func (h *MarketHandler) SubmitTradeGuiInteraction(ctx context.Context, request *
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("unsupported trade GUI action %q", action))
 	}
+}
+
+func readGUIInputInt64(rawPayload []byte, field string) (int64, bool, error) {
+	var packet struct {
+		Input map[string]json.RawMessage `json:"input"`
+	}
+
+	if err := json.Unmarshal(rawPayload, &packet); err != nil {
+		return 0, false, fmt.Errorf("decode trade GUI packet for %s: %w", field, err)
+	}
+
+	if packet.Input == nil {
+		return 0, false, nil
+	}
+
+	rawValue, exists := packet.Input[field]
+	if !exists {
+		return 0, false, nil
+	}
+
+	var value int64
+	if err := json.Unmarshal(rawValue, &value); err != nil {
+		return 0, true, fmt.Errorf("%s must be an integer", field)
+	}
+
+	return value, true, nil
 }
 
 func (h *MarketHandler) executePlan(ctx context.Context, plan gametrade.SettlementPlan) (*tradesettlementv1.ExecuteSettlementBatchResponse, error) {
