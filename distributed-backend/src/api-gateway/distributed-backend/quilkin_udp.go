@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -27,6 +28,7 @@ const edgeEnvelopeSchema = "eve-trade-edge.v1"
 
 var (
 	udpMeter           = otel.Meter("github.com/QuasarRay/eve-trade/api-gateway/udp")
+	udpTracer          = otel.Tracer("github.com/QuasarRay/eve-trade/api-gateway/udp")
 	udpPacketCounter   metric.Int64Counter
 	udpPacketBytes     metric.Int64Histogram
 	udpDownstreamCalls metric.Float64Histogram
@@ -194,7 +196,14 @@ func (s *QuilkinUDPServer) worker(ctx context.Context, conn net.PacketConn, jobs
 }
 
 func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketConn, remote net.Addr, packet []byte) {
+	ctx, receiveSpan := udpTracer.Start(parent, "gateway.receive_ui_activity", trace.WithAttributes(
+		attribute.Int("network.packet.size", len(packet)),
+		attribute.String("network.transport", "udp"),
+	))
+	defer receiveSpan.End()
+
 	if len(packet) == 0 {
+		receiveSpan.SetAttributes(attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", "empty_packet"))
 		slog.Warn("udp packet rejected", "reason", "empty_packet", "remote", remoteKey(remote))
 		recordUDPPacket(parent, "empty_packet", 0)
 		s.writeError(conn, remote, "empty_packet", "empty packet")
@@ -203,31 +212,42 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 
 	rawPayload, interactionID, err := s.authenticatedPayload(packet)
 	if err != nil {
+		receiveSpan.RecordError(err)
+		receiveSpan.SetAttributes(attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", err.Code))
 		slog.Warn("udp packet rejected", "reason", err.Code, "remote", remoteKey(remote))
 		recordUDPPacket(parent, err.Code, len(packet))
 		s.writeError(conn, remote, err.Code, err.ClientMessage)
 		return
 	}
 	if interactionID == "" {
+		receiveSpan.SetAttributes(attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", "missing_interaction_id"))
 		slog.Warn("udp packet rejected", "reason", "missing_interaction_id", "remote", remoteKey(remote))
 		recordUDPPacket(parent, "missing_interaction_id", len(packet))
 		s.writeError(conn, remote, "missing_interaction_id", "missing interaction_id")
 		return
 	}
 	if s.replay().seenOrStore(interactionID) {
+		receiveSpan.SetAttributes(attribute.String("interaction_id", interactionID), attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", "replay"))
 		slog.Warn("udp packet replay rejected", "remote", remoteKey(remote), "interaction_id", interactionID)
 		recordUDPPacket(parent, "replay", len(packet))
 		s.writeError(conn, remote, "replay", "replay rejected")
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(parent, s.timeout)
+	receiveSpan.SetAttributes(attribute.String("interaction_id", interactionID), attribute.String("validation.result", "accepted"))
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
 
 	start := time.Now()
-	response, callErr := s.market.SubmitTradeGuiInteraction(ctx, &marketv1.SubmitTradeGuiInteractionRequest{
+	forwardCtx, forwardSpan := udpTracer.Start(ctx, "gateway.forward_to_market", trace.WithAttributes(attribute.String("interaction_id", interactionID)))
+	response, callErr := s.market.SubmitTradeGuiInteraction(forwardCtx, &marketv1.SubmitTradeGuiInteractionRequest{
 		RawPayload: rawPayload,
 	})
+	if callErr != nil {
+		forwardSpan.RecordError(callErr)
+		forwardSpan.SetAttributes(attribute.String("error.kind", stableDownstreamCode(callErr)))
+	}
+	forwardSpan.End()
 	elapsed := time.Since(start)
 	recordUDPDownstream(ctx, elapsed, callErr)
 	if callErr != nil {

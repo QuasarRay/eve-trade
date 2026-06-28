@@ -11,6 +11,10 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 node_modules/
+.downloads/
+artifacts/
+.o11y/
+observability/tests/
 
 # Local binaries
 *.exe

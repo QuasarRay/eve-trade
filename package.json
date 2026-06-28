@@ -1,0 +1,11 @@
+{
+  "name": "eve-trade-gui-demo",
+  "private": true,
+  "scripts": {
+    "gui:demo": "node scripts/gui-simulator-demo.cjs",
+    "gui:demo:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "playwright": "1.55.0"
+  }
+}

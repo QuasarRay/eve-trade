@@ -125,6 +125,25 @@ class GameGuiPacketBoundaryTests(TestCase):
         self.assertEqual(leaked_terms, [])
 
 
+class GameGuiIndexTests(TestCase):
+    def setUp(self) -> None:
+        GameGuiButton.objects.create(
+            window=GameGuiButton.Window.REGIONAL_MARKET,
+            label="Sell This Item",
+            action="market_place_sell_order",
+            default_payload={},
+            enabled=True,
+        )
+
+    def test_index_exposes_stable_automation_contract_without_stale_stack_quantity(self) -> None:
+        response = Client().get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-testid="action-market_place_sell_order"')
+        self.assertContains(response, 'data-testid="gateway-response"')
+        self.assertContains(response, "quantity: 0")
+
+
 def packet_contains_term(value: Any, term: str) -> bool:
     term = term.lower()
     if isinstance(value, dict):

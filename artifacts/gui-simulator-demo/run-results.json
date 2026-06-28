@@ -1,0 +1,367 @@
+{
+  "runId": "20260627122639",
+  "baseUrl": "http://127.0.0.1:8000",
+  "initial": {
+    "sellerStack": {
+      "item_stack_id": "11111111-1111-4111-8111-111111111111",
+      "owner_id": 1001,
+      "item_type_id": 34,
+      "station_id": 60003760,
+      "quantity": 100,
+      "stack_state": "ACTIVE",
+      "stack_version": 1
+    },
+    "buyerStack": {
+      "item_stack_id": "33333333-3333-4333-8333-333333333333",
+      "owner_id": 2002,
+      "item_type_id": 34,
+      "station_id": 60003760,
+      "quantity": 5,
+      "stack_state": "ACTIVE",
+      "stack_version": 1
+    },
+    "sellerWallet": {
+      "wallet_id": "00000000-0000-4000-8000-000000001001",
+      "capsuleer_id": 1001,
+      "isk_amount": 1000000,
+      "wallet_state": "ACTIVE",
+      "wallet_version": 1
+    },
+    "buyerWallet": {
+      "wallet_id": "00000000-0000-4000-8000-000000002002",
+      "capsuleer_id": 2002,
+      "isk_amount": 1000000,
+      "wallet_state": "ACTIVE",
+      "wallet_version": 1
+    },
+    "tradeCount": 0,
+    "openTrades": 0,
+    "totalWalletISK": 4000000,
+    "totalItemQuantity": 180
+  },
+  "final": {
+    "sellerStack": {
+      "item_stack_id": "11111111-1111-4111-8111-111111111111",
+      "owner_id": 1001,
+      "item_type_id": 34,
+      "station_id": 60003760,
+      "quantity": 75,
+      "stack_state": "ACTIVE",
+      "stack_version": 26
+    },
+    "buyerStack": {
+      "item_stack_id": "33333333-3333-4333-8333-333333333333",
+      "owner_id": 2002,
+      "item_type_id": 34,
+      "station_id": 60003760,
+      "quantity": 30,
+      "stack_state": "ACTIVE",
+      "stack_version": 10
+    },
+    "sellerWallet": {
+      "wallet_id": "00000000-0000-4000-8000-000000001001",
+      "capsuleer_id": 1001,
+      "isk_amount": 1000276,
+      "wallet_state": "ACTIVE",
+      "wallet_version": 10
+    },
+    "buyerWallet": {
+      "wallet_id": "00000000-0000-4000-8000-000000002002",
+      "capsuleer_id": 2002,
+      "isk_amount": 999724,
+      "wallet_state": "ACTIVE",
+      "wallet_version": 10
+    },
+    "tradeCount": 16,
+    "openTrades": 0,
+    "totalWalletISK": 4000000,
+    "totalItemQuantity": 180
+  },
+  "results": [
+    {
+      "name": "Homepage loads with all seven seeded actions",
+      "passed": true,
+      "evidence": "7/7 visible"
+    },
+    {
+      "name": "Every seeded action exposes a tooltip",
+      "passed": true,
+      "evidence": "7/7 tooltips populated"
+    },
+    {
+      "name": "Neocom shortcuts are functional controls",
+      "passed": false,
+      "evidence": "[{\"tag\":\"DIV\",\"role\":null,\"tabIndex\":-1},{\"tag\":\"DIV\",\"role\":null,\"tabIndex\":-1},{\"tag\":\"DIV\",\"role\":null,\"tabIndex\":-1},{\"tag\":\"DIV\",\"role\":null,\"tabIndex\":-1}]"
+    },
+    {
+      "name": "Initial state has a readable empty response",
+      "passed": true,
+      "evidence": "response panel says no interaction sent"
+    },
+    {
+      "name": "Browser refresh preserves a working simulator",
+      "passed": true,
+      "evidence": "loaded http://127.0.0.1:8000/"
+    },
+    {
+      "name": "Seller issues a valid market sell order",
+      "passed": true,
+      "evidence": "{\"trade_instance_id\":\"84e1c535-61a6-46db-a3de-497d761f14d0\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":4,\"remaining_quantity\":4,\"unit_price_isk\":25,\"trade_state\":\"OPEN\"}"
+    },
+    {
+      "name": "External Request ID field is propagated by the GUI packet",
+      "passed": false,
+      "evidence": "raw packet external_request_id=absent"
+    },
+    {
+      "name": "Buyer accepts the full market order",
+      "passed": true,
+      "evidence": "{\"trade_instance_id\":\"84e1c535-61a6-46db-a3de-497d761f14d0\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":4,\"remaining_quantity\":0,\"unit_price_isk\":25,\"trade_state\":\"COMPLETED\"}"
+    },
+    {
+      "name": "Full acceptance transfers items and ISK exactly once",
+      "passed": true,
+      "evidence": "buyer items +4; seller ISK +100; buyer ISK -100"
+    },
+    {
+      "name": "Partial acceptance keeps the order open",
+      "passed": true,
+      "evidence": "{\"trade_instance_id\":\"1f142bb8-dc29-4c86-bc93-863fb8053346\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":10,\"remaining_quantity\":6,\"unit_price_isk\":7,\"trade_state\":\"OPEN\"}"
+    },
+    {
+      "name": "Final partial acceptance completes without a phantom order",
+      "passed": true,
+      "evidence": "{\"trade_instance_id\":\"1f142bb8-dc29-4c86-bc93-863fb8053346\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":10,\"remaining_quantity\":0,\"unit_price_isk\":7,\"trade_state\":\"COMPLETED\"}"
+    },
+    {
+      "name": "Seller cancels an outstanding order",
+      "passed": true,
+      "evidence": "{\"trade_instance_id\":\"4d0e27e8-994b-459f-86c1-72353bba596b\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":5,\"remaining_quantity\":0,\"unit_price_isk\":9,\"trade_state\":\"CANCELLED\"}; seller refund=5"
+    },
+    {
+      "name": "Cancel after partial fill preserves accepted quantity",
+      "passed": true,
+      "evidence": "buyer retained 3; seller refund=5"
+    },
+    {
+      "name": "Reject issue with zero quantity",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: quantity must be greater than zero"
+    },
+    {
+      "name": "Reject issue with negative quantity",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: quantity must be greater than zero"
+    },
+    {
+      "name": "Reject issue above owned quantity",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: item stack quantity is lower than requested issue quantity"
+    },
+    {
+      "name": "Reject issue with zero price",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: unit_price_isk must be greater than zero"
+    },
+    {
+      "name": "Reject issue with negative price",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: unit_price_isk must be greater than zero"
+    },
+    {
+      "name": "Reject issue with blank quantity",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: quantity must be greater than zero"
+    },
+    {
+      "name": "Reject issue with blank price",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: unit_price_isk must be greater than zero"
+    },
+    {
+      "name": "Reject issue with missing seller",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: item stack owner must match issued_by_capsuleer_id"
+    },
+    {
+      "name": "Reject issue with missing item stack",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: item_stack_id is required"
+    },
+    {
+      "name": "Reject non-numeric quantity payload",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: decode trade GUI packet: json: cannot unmarshal string into Go struct field tradeGUIInput.input.quantity of type int64"
+    },
+    {
+      "name": "Reject extremely large quantity",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: decode trade GUI packet: json: cannot unmarshal number 9.223372036854776e+25 into Go struct field tradeGUIInput.input.quantity of type int64"
+    },
+    {
+      "name": "Reject extremely large price",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: decode trade GUI packet: json: cannot unmarshal number 9.223372036854776e+25 into Go struct field tradeGUIInput.input.unit_price_isk of type int64"
+    },
+    {
+      "name": "Reject item offered by the wrong owner",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: item stack owner must match issued_by_capsuleer_id"
+    },
+    {
+      "name": "Reject item projection at the wrong station",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: item_stack station_id does not match canonical item stack"
+    },
+    {
+      "name": "Malformed extra JSON is rejected client-side",
+      "passed": true,
+      "evidence": "Invalid JSON in extra payload: SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+    },
+    {
+      "name": "Reject accept with zero quantity",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: quantity_requested must be greater than zero"
+    },
+    {
+      "name": "Reject accept with negative quantity",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: quantity_requested must be greater than zero"
+    },
+    {
+      "name": "Reject accept above remaining quantity",
+      "passed": true,
+      "evidence": "failed_precondition: failed_precondition: item_stack_escrow 0bbe4d40-f506-4d14-9db3-3b98b557321c has 3, requested 4"
+    },
+    {
+      "name": "Reject seller accepting own order",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: buyer and seller must differ"
+    },
+    {
+      "name": "Reject wallet owned by another player",
+      "passed": true,
+      "evidence": "failed_precondition: failed_precondition: buyer_wallet_id is not owned by buyer_capsuleer_id"
+    },
+    {
+      "name": "Reject accept with missing wallet",
+      "passed": true,
+      "evidence": "failed_precondition: failed_precondition: load wallet : ERROR: invalid input syntax for type uuid: \"\" (SQLSTATE 22P02)"
+    },
+    {
+      "name": "Reject non-numeric accept quantity",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: decode trade GUI packet: json: cannot unmarshal string into Go struct field tradeGUIInput.input.quantity_requested of type int64"
+    },
+    {
+      "name": "Reject extremely large accept quantity",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: decode trade GUI packet: json: cannot unmarshal number 9.223372036854776e+25 into Go struct field tradeGUIInput.input.quantity_requested of type int64"
+    },
+    {
+      "name": "Reject accept with insufficient ISK",
+      "passed": true,
+      "evidence": "failed_precondition: failed_precondition: failed_precondition: wallet 00000000-0000-4000-8000-000000002002 has 999821, requested 1200000"
+    },
+    {
+      "name": "Reject accept of a cancelled trade",
+      "passed": true,
+      "evidence": "failed_precondition: failed_precondition: trade is cancelled"
+    },
+    {
+      "name": "Reject cancelling an already cancelled trade",
+      "passed": true,
+      "evidence": "failed_precondition: failed_precondition: trade is cancelled"
+    },
+    {
+      "name": "Reject accept of a completed trade",
+      "passed": true,
+      "evidence": "failed_precondition: failed_precondition: trade is completed"
+    },
+    {
+      "name": "Reject cancelling a completed trade",
+      "passed": true,
+      "evidence": "failed_precondition: failed_precondition: trade is completed"
+    },
+    {
+      "name": "Reject accept with missing trade ID",
+      "passed": true,
+      "evidence": "invalid_argument: invalid_argument: trade_instance_id is required"
+    },
+    {
+      "name": "Reject cancellation by a non-seller",
+      "passed": true,
+      "evidence": "permission_denied: permission_denied: only the trade issuer can cancel this trade"
+    },
+    {
+      "name": "Role-based controls are enforced in GUI visibility",
+      "passed": false,
+      "evidence": "all 7 action buttons remain visible for every typed capsuleer ID"
+    },
+    {
+      "name": "Double-click issue creates one trade and one settlement",
+      "passed": true,
+      "evidence": "trade delta=1; settlements=1"
+    },
+    {
+      "name": "Double-click accept settles once",
+      "passed": true,
+      "evidence": "buyer items +2; buyer ISK -26; settlements=1"
+    },
+    {
+      "name": "Double-click cancel refunds once",
+      "passed": true,
+      "evidence": "seller items +3; settlements=1"
+    },
+    {
+      "name": "Immediate refresh cannot duplicate an in-flight issue",
+      "passed": true,
+      "evidence": "settlements=1; trade delta=1"
+    },
+    {
+      "name": "Contract create and accept controls execute the lifecycle",
+      "passed": true,
+      "evidence": "{\"trade_instance_id\":\"049de09a-fb98-4e21-b85b-c08b8d024e23\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":1,\"remaining_quantity\":0,\"unit_price_isk\":10,\"trade_state\":\"COMPLETED\"}"
+    },
+    {
+      "name": "Direct offer and accept controls execute the lifecycle",
+      "passed": true,
+      "evidence": "{\"trade_instance_id\":\"dac5bcdb-c289-4874-b605-3088f6016dff\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":1,\"remaining_quantity\":0,\"unit_price_isk\":11,\"trade_state\":\"COMPLETED\"}"
+    },
+    {
+      "name": "Two tabs racing to accept settle exactly once",
+      "passed": true,
+      "evidence": "accepted responses=1; buyer items +2; buyer ISK -38"
+    },
+    {
+      "name": "Market outage produces visible GUI feedback",
+      "passed": true,
+      "evidence": "failed: timed out"
+    },
+    {
+      "name": "Action button disables while a request is in flight",
+      "passed": false,
+      "evidence": "button enabled=true"
+    },
+    {
+      "name": "GUI recovers after Market restarts",
+      "passed": true,
+      "evidence": "accepted; settlement=3549ba33-e94b-4e25-948f-2d526fd3965f"
+    },
+    {
+      "name": "Wallet conservation invariant holds",
+      "passed": true,
+      "evidence": "4000000 -> 4000000"
+    },
+    {
+      "name": "Item quantity conservation invariant holds",
+      "passed": true,
+      "evidence": "180 -> 180"
+    },
+    {
+      "name": "Demo leaves no open trades",
+      "passed": true,
+      "evidence": "open trades=0"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 use serde::Serialize;
 use sqlx::{PgPool, Postgres, Transaction};
+use tracing::{error, info_span, Instrument};
 use uuid::Uuid;
 
 use crate::checksum;
@@ -82,10 +83,25 @@ impl SettlementExecutor {
         Self { db }
     }
 
+    #[tracing::instrument(
+        name = "settlement.execute_transaction",
+        skip_all,
+        fields(
+            idempotency_key = %command.idempotency_key,
+            operation_count = command.operations.len(),
+            settlement_batch_id = tracing::field::Empty
+        )
+    )]
     pub async fn execute_batch(
         &self,
         command: ExecuteBatchCommand,
     ) -> Result<BatchExecutionResult> {
+        let validation_span = info_span!(
+            "settlement.validate_batch",
+            idempotency_key = %command.idempotency_key,
+            operation_count = command.operations.len(),
+        );
+        let _validation_guard = validation_span.enter();
         if command.operations.is_empty() {
             return Err(SettlementError::InvalidArgument(
                 "operations must contain at least one settlement operation".to_string(),
@@ -96,6 +112,7 @@ impl SettlementExecutor {
             Some(fingerprint) => fingerprint,
             None => build_request_fingerprint(&command)?,
         };
+        drop(_validation_guard);
 
         let mut tx = self.db.begin().await?;
 
@@ -163,6 +180,7 @@ impl SettlementExecutor {
         .await?;
 
         let settlement_batch_id = Uuid::new_v4();
+        tracing::Span::current().record("settlement_batch_id", settlement_batch_id.to_string());
         insert_settlement_batch(&mut tx, settlement_batch_id, request_id, &command).await?;
 
         let step_records =
@@ -172,15 +190,47 @@ impl SettlementExecutor {
         let mut step_results = Vec::with_capacity(command.operations.len());
         for (operation, step) in command.operations.iter().zip(step_records.iter()) {
             mark_step_running(&mut tx, step.settlement_step_id).await?;
+            let step_span = info_span!(
+                "settlement.execute_step",
+                settlement_batch_id = %settlement_batch_id,
+                settlement_step_id = %step.settlement_step_id,
+                step_kind = operation.kind_name(),
+                step_order = step.step_index,
+            );
             let output =
-                match execute_settlement_command(&mut tx, step.settlement_step_id, operation).await
+                match execute_settlement_command(&mut tx, step.settlement_step_id, operation)
+                    .instrument(step_span)
+                    .await
                 {
                     Ok(output) => output,
                     Err(error) => {
                         let failure_code = error.code().to_string();
                         let failure_message = error.to_string();
                         let attempted_steps = step_results.len() + 1;
-                        rollback_business_savepoint(&mut tx).await?;
+                        let rollback_span = info_span!(
+                            "settlement.rollback",
+                            settlement_batch_id = %settlement_batch_id,
+                            settlement_step_id = %step.settlement_step_id,
+                            rollback.performed = true,
+                            failure_code = %failure_code,
+                        );
+                        rollback_business_savepoint(&mut tx)
+                            .instrument(rollback_span)
+                            .await?;
+                        error!(
+                            settlement_batch_id = %settlement_batch_id,
+                            settlement_step_id = %step.settlement_step_id,
+                            failure_code = %failure_code,
+                            error.message = %failure_message,
+                            rollback.performed = true,
+                            "settlement step failed and business savepoint was rolled back"
+                        );
+                        let failure_span = info_span!(
+                            "settlement.record_failure_audit",
+                            settlement_batch_id = %settlement_batch_id,
+                            failure_code = %failure_code,
+                            attempted_steps,
+                        );
                         fail_execution(
                             &mut tx,
                             FailedExecution {
@@ -193,6 +243,7 @@ impl SettlementExecutor {
                                 failure_message: &failure_message,
                             },
                         )
+                        .instrument(failure_span)
                         .await?;
                         tx.commit().await?;
                         return Err(error);

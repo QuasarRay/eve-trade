@@ -10,11 +10,13 @@
 # CI/CD local artifacts
 /.ci-venv
 /ci-cd/out
+/.o11y/
 
 # Python caches
 __pycache__/
 *.py[cod]
 .pytest_cache/
+/node_modules/
 .gocache
 .gomodcache
 /distributed-backend/docker/local-bin/

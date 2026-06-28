@@ -61,6 +61,7 @@ SOURCE_EXCLUDES = [
     ".ci-venv",
     ".venv",
     "ci-cd/out",
+    ".o11y",
     "target",
     "distributed-backend/src/trade-settlement/target",
     "**/.pytest_cache",

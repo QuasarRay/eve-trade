@@ -6,9 +6,7 @@ metadata:
 type: Opaque
 stringData:
   HONEYCOMB_API_KEY: "REPLACE_WITH_HONEYCOMB_INGEST_API_KEY"
-  SENTRY_AUTH_TOKEN: "REPLACE_WITH_SENTRY_AUTH_TOKEN"
-  SENTRY_ORG_SLUG: "REPLACE_WITH_SENTRY_ORG_SLUG"
-  SENTRY_URL: "https://sentry.io"
+  HONEYCOMB_DATASET: "eve-trade"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -47,19 +45,16 @@ data:
           - key: deployment.environment.name
             value: production
             action: upsert
+          - key: observability.run_id
+            value: ${env:OBSERVABILITY_RUN_ID:-kubernetes}
+            action: upsert
 
     exporters:
       otlphttp/honeycomb:
         endpoint: https://api.honeycomb.io:443
         headers:
           x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
-
-      sentry:
-        url: ${env:SENTRY_URL:-https://sentry.io}
-        org_slug: ${env:SENTRY_ORG_SLUG}
-        auth_token: ${env:SENTRY_AUTH_TOKEN}
-        routing:
-          project_from_attribute: service.name
+          x-honeycomb-dataset: ${env:HONEYCOMB_DATASET:-eve-trade}
 
       prometheus:
         endpoint: 0.0.0.0:9464
@@ -71,7 +66,7 @@ data:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, resource, batch]
-          exporters: [otlphttp/honeycomb, sentry]
+          exporters: [otlphttp/honeycomb]
 
         metrics:
           receivers: [otlp]
@@ -81,7 +76,7 @@ data:
         logs:
           receivers: [otlp]
           processors: [memory_limiter, resource, batch]
-          exporters: [otlphttp/honeycomb, sentry]
+          exporters: [otlphttp/honeycomb]
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -108,12 +103,15 @@ spec:
     spec:
       containers:
         - name: otel-collector
-          image: otel/opentelemetry-collector-contrib@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.153.0@sha256:93aad750175cbf1a973ae1c5886c3371f4d800f61be25cdd26870b8441ffe9fa
           args:
             - "--config=/etc/otelcol/collector.yaml"
           envFrom:
             - secretRef:
                 name: observability-backends
+          env:
+            - name: OBSERVABILITY_RUN_ID
+              value: "kubernetes"
           ports:
             - name: otlp-grpc
               containerPort: 4317

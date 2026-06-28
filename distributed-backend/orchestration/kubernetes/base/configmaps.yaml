@@ -29,6 +29,7 @@ data:
   OTEL_LOGS_EXPORTER: "otlp"
   OTEL_PROPAGATORS: "tracecontext,baggage"
   OTEL_METRIC_EXPORT_INTERVAL: "15000"
+  OBSERVABILITY_RUN_ID: "kubernetes"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -60,6 +61,7 @@ data:
   OTEL_LOGS_EXPORTER: "otlp"
   OTEL_PROPAGATORS: "tracecontext,baggage"
   OTEL_METRIC_EXPORT_INTERVAL: "15000"
+  OBSERVABILITY_RUN_ID: "kubernetes"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -91,6 +93,7 @@ data:
   OTEL_LOGS_EXPORTER: "otlp"
   OTEL_PROPAGATORS: "tracecontext,baggage"
   OTEL_METRIC_EXPORT_INTERVAL: "15000"
+  OBSERVABILITY_RUN_ID: "kubernetes"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -111,6 +114,7 @@ data:
   OTEL_LOGS_EXPORTER: "otlp"
   OTEL_PROPAGATORS: "tracecontext,baggage"
   OTEL_METRIC_EXPORT_INTERVAL: "15000"
+  OBSERVABILITY_RUN_ID: "kubernetes"
 
   RUST_LOG: "info,sqlx=info,tonic=info,h2=warn,hyper=warn,trade_settlement=debug"
   RUST_BACKTRACE: "0"

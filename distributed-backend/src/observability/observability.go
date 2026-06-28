@@ -36,7 +36,17 @@ const (
 type ShutdownFunc func(context.Context) error
 
 func Init(ctx context.Context) ShutdownFunc {
-	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel()})
+	serviceName := envOr("OTEL_SERVICE_NAME", defaultServiceName)
+	commonAttrs := []slog.Attr{
+		slog.String("service.name", serviceName),
+		slog.String("service.version", envOr("SERVICE_VERSION", envOr("GITHUB_SHA", "local"))),
+		slog.String("service.language", "go"),
+		slog.String("observability.run_id", envOr("OBSERVABILITY_RUN_ID", "unobserved")),
+	}
+	jsonHandler := newCorrelationHandler(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level:       logLevel(),
+		ReplaceAttr: normalizeLogAttribute,
+	}).WithAttrs(commonAttrs))
 	slog.SetDefault(slog.New(jsonHandler))
 
 	if sdkDisabled() {
@@ -44,7 +54,6 @@ func Init(ctx context.Context) ShutdownFunc {
 		return func(context.Context) error { return nil }
 	}
 
-	serviceName := envOr("OTEL_SERVICE_NAME", defaultServiceName)
 	otelResource, err := newResource(ctx, serviceName)
 	if err != nil {
 		slog.Error("failed to initialize OpenTelemetry resource", "error", err)
@@ -95,7 +104,7 @@ func Init(ctx context.Context) ShutdownFunc {
 	otelHandler := otelslog.NewHandler(
 		envOr("OTEL_LOG_HANDLER_NAME", defaultLogHandlerName),
 		otelslog.WithLoggerProvider(loggerProvider),
-	)
+	).WithAttrs(commonAttrs)
 	slog.SetDefault(slog.New(newTeeHandler(jsonHandler, otelHandler)))
 	slog.Info("OpenTelemetry initialized", "service_name", serviceName)
 
@@ -139,13 +148,22 @@ func newResource(ctx context.Context, serviceName string) (*resource.Resource, e
 		resource.WithTelemetrySDK(),
 		resource.WithHost(),
 		resource.WithOS(),
-		resource.WithProcess(),
+		// Avoid WithProcess: it includes command arguments (which may contain
+		// secrets) and a process-owner detector that fails in minimal containers.
+		resource.WithProcessPID(),
+		resource.WithProcessExecutableName(),
+		resource.WithProcessRuntimeName(),
+		resource.WithProcessRuntimeVersion(),
+		resource.WithProcessRuntimeDescription(),
 		resource.WithContainer(),
 		resource.WithFromEnv(),
 		resource.WithAttributes(
 			attribute.String("service.name", serviceName),
 			attribute.String("service.namespace", envOr("OTEL_SERVICE_NAMESPACE", defaultServiceNamespace)),
+			attribute.String("service.version", envOr("SERVICE_VERSION", envOr("GITHUB_SHA", "local"))),
+			attribute.String("service.language", "go"),
 			attribute.String("deployment.environment.name", envOr("DEPLOYMENT_ENVIRONMENT", "development")),
+			attribute.String("observability.run_id", envOr("OBSERVABILITY_RUN_ID", "unobserved")),
 		),
 	)
 }

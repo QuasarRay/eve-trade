@@ -374,13 +374,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run live Python e2e tests
-        run: |
-          docker compose -f docker-compose.integration.yml --profile test build
-          docker compose -f docker-compose.integration.yml --profile test up -d postgres rabbitmq
-          docker compose -f docker-compose.integration.yml --profile test up --exit-code-from migrate migrate
-          docker compose -f docker-compose.integration.yml --profile test up -d trade-settlement settlement-worker market api-gateway quilkin simulator
-          docker compose -f docker-compose.integration.yml --profile test run --rm --no-deps e2e-tests
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: observability/requirements.txt
+
+      - name: Install observability control plane
+        run: python -m pip install -r observability/requirements.txt
+
+      - name: Run observed live Python e2e tests
+        env:
+          OBSERVABILITY_ENV: github-actions
+          OBSERVABILITY_STRICT: "false"
+          HONEYCOMB_API_KEY: ${{ secrets.HONEYCOMB_API_KEY }}
+          HONEYCOMB_CONFIGURATION_KEY: ${{ secrets.HONEYCOMB_CONFIGURATION_KEY }}
+          HONEYCOMB_DATASET: eve-trade-ci
+          OTEL_COLLECTOR_CONFIG: ${{ secrets.HONEYCOMB_API_KEY != '' && './observability/collector/otel-collector.honeycomb.yaml' || './observability/collector/otel-collector.local.yaml' }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        run: python observability/ci/observed_run.py integration --clean --maxfail 1
+
+      - name: Upload observability run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eve-trade-observability-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .o11y/runs/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Clean up compose resources
         if: always()

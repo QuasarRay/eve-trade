@@ -105,7 +105,7 @@
   </style>
 </head>
 <body>
-  <div class="shell">
+  <div class="shell" data-testid="simulator-shell">
     <nav class="neocom" aria-label="Neocom">
       <div class="neo-btn" title="Inventory">Inv</div>
       <div class="neo-btn" title="Regional Market">Mkt</div>
@@ -113,56 +113,56 @@
       <div class="neo-btn" title="Wallet">ISK</div>
     </nav>
     <main>
-      <header>
+      <header data-testid="simulator-header">
         <h1>EVE Trade GUI Simulator</h1>
         <div class="status">UDP via Quilkin: <span id="endpoint">{{ quilkin_endpoint }}</span></div>
       </header>
       <div class="windows">
-        <section>
+        <section data-testid="regional-market-panel">
           <h2>Regional Market</h2>
           <div class="grid">
-            <label>Item Stack ID<input id="item_stack_id" placeholder="seller stack uuid"></label>
-            <label>Trade Instance ID<input id="trade_instance_id" placeholder="trade uuid"></label>
-            <label>Buyer Wallet ID<input id="buyer_wallet_id" placeholder="buyer wallet uuid"></label>
-            <label>Quantity<input id="quantity" type="number" value="1"></label>
-            <label>Unit Price ISK<input id="unit_price_isk" type="number" value="25"></label>
-            <label>Destination Stack ID<input id="buyer_destination_item_stack_id"></label>
+            <label>Item Stack ID<input id="item_stack_id" data-testid="item-stack-id" placeholder="seller stack uuid"></label>
+            <label>Trade Instance ID<input id="trade_instance_id" data-testid="trade-instance-id" placeholder="trade uuid"></label>
+            <label>Buyer Wallet ID<input id="buyer_wallet_id" data-testid="buyer-wallet-id" placeholder="buyer wallet uuid"></label>
+            <label>Quantity<input id="quantity" data-testid="quantity" type="number" value="1"></label>
+            <label>Unit Price ISK<input id="unit_price_isk" data-testid="unit-price-isk" type="number" value="25"></label>
+            <label>Destination Stack ID<input id="buyer_destination_item_stack_id" data-testid="buyer-destination-item-stack-id"></label>
           </div>
           <div class="actions">
             {% for button in buttons %}
               {% if button.window == "regional_market" or button.window == "wallet_orders" %}
-                <button data-button-id="{{ button.id }}" class="{% if button.action == 'market_cancel_order' %}cancel{% endif %}" title="{{ button.tooltip }}">{{ button.label }}</button>
+                <button data-button-id="{{ button.id }}" data-testid="action-{{ button.action }}" class="{% if button.action == 'market_cancel_order' %}cancel{% endif %}" title="{{ button.tooltip }}">{{ button.label }}</button>
               {% endif %}
             {% endfor %}
           </div>
         </section>
-        <section>
+        <section data-testid="alternate-trade-panel">
           <h2>Contracts and Direct Trade</h2>
           <div class="grid">
-            <label>Seller Capsuleer ID<input id="issued_by_capsuleer_id" type="number" value="1001"></label>
-            <label>Buyer Capsuleer ID<input id="buyer_capsuleer_id" type="number" value="2002"></label>
-            <label>Station ID<input id="station_id" type="number" value="60003760"></label>
-            <label>Item Type ID<input id="item_type_id" type="number" value="34"></label>
+            <label>Seller Capsuleer ID<input id="issued_by_capsuleer_id" data-testid="seller-capsuleer-id" type="number" value="1001"></label>
+            <label>Buyer Capsuleer ID<input id="buyer_capsuleer_id" data-testid="buyer-capsuleer-id" type="number" value="2002"></label>
+            <label>Station ID<input id="station_id" data-testid="station-id" type="number" value="60003760"></label>
+            <label>Item Type ID<input id="item_type_id" data-testid="item-type-id" type="number" value="34"></label>
           </div>
           <div class="actions">
             {% for button in buttons %}
               {% if button.window == "contracts" or button.window == "direct_trade" %}
-                <button data-button-id="{{ button.id }}" title="{{ button.tooltip }}">{{ button.label }}</button>
+                <button data-button-id="{{ button.id }}" data-testid="action-{{ button.action }}" title="{{ button.tooltip }}">{{ button.label }}</button>
               {% endif %}
             {% endfor %}
           </div>
         </section>
-        <section>
+        <section data-testid="packet-payload-panel">
           <h2>Packet Payload</h2>
           <div class="grid">
-            <label>Idempotency Key<input id="idempotency_key" value="sim-manual"></label>
-            <label>External Request ID<input id="external_request_id" value="sim-manual"></label>
-            <textarea id="extra_payload" spellcheck="false">{}</textarea>
+            <label>Idempotency Key<input id="idempotency_key" data-testid="idempotency-key" value="sim-manual"></label>
+            <label>External Request ID<input id="external_request_id" data-testid="external-request-id" value="sim-manual"></label>
+            <textarea id="extra_payload" data-testid="extra-payload" aria-label="Extra payload JSON" spellcheck="false">{}</textarea>
           </div>
         </section>
-        <section>
+        <section data-testid="gateway-response-panel">
           <h2>Gateway Response</h2>
-          <pre id="response">No interaction sent.</pre>
+          <pre id="response" data-testid="gateway-response" aria-live="polite">No interaction sent.</pre>
         </section>
       </div>
     </main>
@@ -197,7 +197,9 @@
           owner_id: numberValue("issued_by_capsuleer_id"),
           item_type_id: numberValue("item_type_id"),
           station_id: numberValue("station_id"),
-          quantity: 10
+          // The market loads canonical quantity from PostgreSQL. Zero avoids sending a
+          // stale client projection that would reject an otherwise valid order.
+          quantity: 0
         },
         ...extra
       };

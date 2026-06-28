@@ -29,6 +29,9 @@ services:
       PGPASSWORD: postgres
     command: >
       bash -lc "
+      until psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -c 'SELECT 1'; do
+        sleep 1;
+      done &&
       psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql;
       psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/src/trade-settlement/seeds/local_dev_world.sql;
       "
@@ -60,6 +63,11 @@ services:
     environment:
       SUMMER_ENV: prod
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
+      OTEL_SERVICE_NAME: trade-settlement
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+      OBSERVABILITY_RUN_ID: ${OBSERVABILITY_RUN_ID:-local-unobserved}
   settlement-worker:
     build:
       context: .
@@ -73,7 +81,11 @@ services:
       SETTLEMENT_WORKER_HEALTH_HTTP_ADDR: :8082
       TRADE_SETTLEMENT_URL: http://trade-settlement:9092
       RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
-      OTEL_SDK_DISABLED: "true"
+      OTEL_SERVICE_NAME: settlement-worker
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+      OBSERVABILITY_RUN_ID: ${OBSERVABILITY_RUN_ID:-local-unobserved}
     healthcheck:
       test: ["CMD", "/app/http-healthcheck", "http://127.0.0.1:8082/readyz"]
       interval: 2s
@@ -97,6 +109,11 @@ services:
       TRADE_SETTLEMENT_URL: http://trade-settlement:9092
       RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
+      OTEL_SERVICE_NAME: market
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+      OBSERVABILITY_RUN_ID: ${OBSERVABILITY_RUN_ID:-local-unobserved}
     healthcheck:
       test: ["CMD", "/app/http-healthcheck", "http://127.0.0.1:8081/readyz"]
       interval: 2s
@@ -121,6 +138,11 @@ services:
       API_GATEWAY_UDP_HMAC_SECRET: local-game-edge-secret
       API_GATEWAY_UDP_HMAC_KEY_ID: primary
       MARKET_URL: http://market:8081
+      OTEL_SERVICE_NAME: api-gateway
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+      OBSERVABILITY_RUN_ID: ${OBSERVABILITY_RUN_ID:-local-unobserved}
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:
@@ -137,15 +159,18 @@ services:
     depends_on:
       api-gateway:
         condition: service_healthy
-    entrypoint: ["/bin/sh", "-ec"]
-    command: >
-      set -- $(getent hosts api-gateway);
-      exec /usr/local/bin/quilkin
-      --service.udp
-      --service.udp.port 26001
-      --provider.static.endpoints "$${1}:26000"
-      --admin.enabled=false
-      --log-format json
+    entrypoint:
+      - /bin/sh
+      - -ec
+    command:
+      - |
+        endpoint="$$(getent hosts api-gateway | awk '{print $$1; exit}'):26000"
+        exec /usr/local/bin/quilkin \
+          --service.udp \
+          --service.udp.port 26001 \
+          --provider.static.endpoints "$${endpoint}" \
+          --admin.enabled=false \
+          --log-format json
     security_opt:
       - seccomp=unconfined
     ports:
@@ -166,6 +191,23 @@ services:
       SIMULATOR_ALLOWED_HOSTS: "*"
     ports:
       - "127.0.0.1:8000:8000"
+
+  otel-collector:
+    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.153.0@sha256:93aad750175cbf1a973ae1c5886c3371f4d800f61be25cdd26870b8441ffe9fa
+    profiles:
+      - observability
+    command: ["--config=/etc/otelcol/config.yaml"]
+    environment:
+      OBSERVABILITY_RUN_ID: ${OBSERVABILITY_RUN_ID:-local-unobserved}
+      HONEYCOMB_API_KEY: ${HONEYCOMB_API_KEY:-}
+      HONEYCOMB_DATASET: ${HONEYCOMB_DATASET:-eve-trade-ci}
+    volumes:
+      - ${OTEL_COLLECTOR_CONFIG:-./observability/collector/otel-collector.local.yaml}:/etc/otelcol/config.yaml:ro
+      - ${OTEL_LOCAL_OUTPUT_DIR:-./.o11y/collector}:/var/lib/otel
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+      - "127.0.0.1:13133:13133"
 
 volumes:
   eve_trade_pgdata:

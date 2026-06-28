@@ -7,11 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"connectrpc.com/connect"
 	gametrade "github.com/QuasarRay/eve-trade/market/game-trade"
+	"github.com/QuasarRay/eve-trade/observability"
 	marketv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1"
 	marketv1connect "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1/marketv1connect"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
@@ -81,6 +83,12 @@ type cancelTradeInstanceResult struct {
 }
 
 func (h *MarketHandler) issueTradeInstance(ctx context.Context, message issueTradeInstanceRequest) (*issueTradeInstanceResult, error) {
+	ctx, span := observability.StartSpan(ctx, "market.create_trade_offer",
+		slog.String("idempotency_key", message.IdempotencyKey),
+		slog.Int64("quantity", message.Quantity),
+		slog.String("seller_id_hash", observability.HashIdentifier(message.IssuedByCapsuleerID)),
+	)
+	defer span.End()
 	if message.ItemStack == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("item_stack is required"))
 	}
@@ -94,7 +102,12 @@ func (h *MarketHandler) issueTradeInstance(ctx context.Context, message issueTra
 	if err != nil {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 	}
+	span.Set(
+		slog.Int64("item_type_id", itemStack.ItemTypeID),
+		slog.Int64("station_id", itemStack.StationID),
+	)
 	if itemStack.OwnerID != message.IssuedByCapsuleerID {
+		span.Set(slog.String("validation.result", "rejected"), slog.String("rejection.reason", "owner_mismatch"))
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("item stack owner must match issued_by_capsuleer_id"))
 	}
 	if itemStack.StackState != "ACTIVE" {
@@ -129,14 +142,17 @@ func (h *MarketHandler) issueTradeInstance(ctx context.Context, message issueTra
 		ExpiresAt:    message.ExpiresAt,
 	})
 	if err != nil {
+		span.RecordError(err)
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if err := attachRequestFingerprint(&plan, "issue_trade_instance", message); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	span.Set(slog.String("trade_id", plan.TradeInstanceID), slog.String("trade_state", "OPEN"))
 
 	settlementResponse, err := h.executePlan(ctx, plan)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 
@@ -148,14 +164,29 @@ func (h *MarketHandler) issueTradeInstance(ctx context.Context, message issueTra
 }
 
 func (h *MarketHandler) acceptTradeInstance(ctx context.Context, message acceptTradeInstanceRequest) (*acceptTradeInstanceResult, error) {
+	ctx, span := observability.StartSpan(ctx, "market.accept_trade",
+		slog.String("idempotency_key", message.IdempotencyKey),
+		slog.String("trade_id", message.TradeInstanceID),
+		slog.Int64("quantity", message.QuantityRequested),
+		slog.String("buyer_id_hash", observability.HashIdentifier(message.BuyerCapsuleerID)),
+	)
+	defer span.End()
 	if response, ok, err := h.replayAcceptTradeInstance(ctx, message); ok || err != nil {
 		return response, err
 	}
 	trade, err := h.loadAcceptableTrade(ctx, message.TradeInstanceID, message.QuantityRequested)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
+	span.Set(
+		slog.String("trade_state", trade.TradeState),
+		slog.Int64("item_type_id", trade.ItemTypeID),
+		slog.Int64("station_id", trade.StationID),
+		slog.String("seller_id_hash", observability.HashIdentifier(trade.IssuerID)),
+	)
 	if message.BuyerCapsuleerID == trade.IssuerID {
+		span.Set(slog.String("validation.result", "rejected"), slog.String("rejection.reason", "self_purchase"))
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("buyer and seller must differ"))
 	}
 	buyerWallet, err := h.trades.LoadWallet(ctx, message.BuyerWalletID)
@@ -223,6 +254,7 @@ func (h *MarketHandler) acceptTradeInstance(ctx context.Context, message acceptT
 
 	settlementResponse, err := h.executePlan(ctx, plan)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 
@@ -234,13 +266,21 @@ func (h *MarketHandler) acceptTradeInstance(ctx context.Context, message acceptT
 }
 
 func (h *MarketHandler) cancelTradeInstance(ctx context.Context, message cancelTradeInstanceRequest) (*cancelTradeInstanceResult, error) {
+	ctx, span := observability.StartSpan(ctx, "market.cancel_trade",
+		slog.String("idempotency_key", message.IdempotencyKey),
+		slog.String("trade_id", message.TradeInstanceID),
+		slog.String("seller_id_hash", observability.HashIdentifier(message.CancelledByCapsuleerID)),
+	)
+	defer span.End()
 	if response, ok, err := h.replayCancelTradeInstance(ctx, message); ok || err != nil {
 		return response, err
 	}
 	trade, err := h.loadCancellableTrade(ctx, message.TradeInstanceID, message.CancelledByCapsuleerID)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
+	span.Set(slog.String("trade_state", trade.TradeState), slog.Int64("quantity", trade.EscrowQuantity))
 	plan, err := gametrade.CancelTradeInstance(gametrade.CancelTradeInstanceInput{
 		IdempotencyKey:         message.IdempotencyKey,
 		ExternalRequestID:      message.ExternalRequestID,
@@ -259,6 +299,7 @@ func (h *MarketHandler) cancelTradeInstance(ctx context.Context, message cancelT
 
 	settlementResponse, err := h.executePlan(ctx, plan)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 
@@ -295,6 +336,8 @@ type tradeGUIInput struct {
 }
 
 func (h *MarketHandler) SubmitTradeGuiInteraction(ctx context.Context, request *connect.Request[marketv1.SubmitTradeGuiInteractionRequest]) (*connect.Response[marketv1.SubmitTradeGuiInteractionResponse], error) {
+	ctx, validationSpan := observability.StartSpan(ctx, "market.validation")
+	defer validationSpan.End()
 	message := request.Msg
 	if len(message.RawPayload) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("raw_payload is required"))
@@ -308,6 +351,7 @@ func (h *MarketHandler) SubmitTradeGuiInteraction(ctx context.Context, request *
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("unsupported trade GUI schema_version %q", interaction.SchemaVersion))
 	}
 	interactionID := strings.TrimSpace(interaction.InteractionID)
+	validationSpan.Set(slog.String("interaction_id", interactionID))
 	if interactionID == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("interaction_id is required"))
 	}
@@ -320,6 +364,7 @@ func (h *MarketHandler) SubmitTradeGuiInteraction(ctx context.Context, request *
 	}
 
 	action := strings.TrimSpace(interaction.UI.Action)
+	validationSpan.Set(slog.String("ui.action", action), slog.String("validation.result", "accepted"))
 	switch action {
 	case "market_place_sell_order", "contract_create_item_exchange", "direct_trade_offer":
 		response, err := h.issueTradeInstance(ctx, issueTradeInstanceRequest{
@@ -423,12 +468,20 @@ func readGUIInputInt64(rawPayload []byte, field string) (int64, bool, error) {
 }
 
 func (h *MarketHandler) executePlan(ctx context.Context, plan gametrade.SettlementPlan) (*tradesettlementv1.ExecuteSettlementBatchResponse, error) {
+	ctx, span := observability.StartSpan(ctx, "market.build_settlement_operations",
+		slog.String("idempotency_key", plan.IdempotencyKey),
+		slog.String("trade_id", plan.TradeInstanceID),
+		slog.Int("settlement.operation_count", len(plan.Operations)),
+	)
+	defer span.End()
 	settlementRequest, err := gametrade.SettleTradeInstance(plan)
 	if err != nil {
+		span.RecordError(err)
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	response, err := h.settlement.ExecuteSettlementBatch(ctx, settlementRequest)
 	if err != nil {
+		span.RecordError(err)
 		return nil, downstreamUnavailable("trade-settlement", err)
 	}
 	return response, nil

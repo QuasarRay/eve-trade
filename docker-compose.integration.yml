@@ -68,6 +68,13 @@ services:
     environment:
       SUMMER_ENV: prod
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
+      OTEL_SERVICE_NAME: trade-settlement
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
+      OBSERVABILITY_RUN_ID: ${OBSERVABILITY_RUN_ID:-local-unobserved}
+      DEPLOYMENT_ENVIRONMENT: ${OBSERVABILITY_ENV:-integration}
+      SERVICE_VERSION: ${GITHUB_SHA:-local}
   # This block consumes settlement commands from RabbitMQ and forwards them to the Rust settlement service.
   # It exists so integration tests exercise the production message boundary instead of only direct gRPC.
   settlement-worker:
@@ -83,7 +90,13 @@ services:
       SETTLEMENT_WORKER_HEALTH_HTTP_ADDR: :8082
       TRADE_SETTLEMENT_URL: http://trade-settlement:9092
       RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
-      OTEL_SDK_DISABLED: "true"
+      OTEL_SERVICE_NAME: settlement-worker
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
+      OBSERVABILITY_RUN_ID: ${OBSERVABILITY_RUN_ID:-local-unobserved}
+      DEPLOYMENT_ENVIRONMENT: ${OBSERVABILITY_ENV:-integration}
+      SERVICE_VERSION: ${GITHUB_SHA:-local}
     healthcheck:
       test: ["CMD", "/app/http-healthcheck", "http://127.0.0.1:8082/readyz"]
       interval: 2s
@@ -109,7 +122,13 @@ services:
       TRADE_SETTLEMENT_URL: http://trade-settlement:9092
       RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
-      OTEL_SDK_DISABLED: "true"
+      OTEL_SERVICE_NAME: market
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
+      OBSERVABILITY_RUN_ID: ${OBSERVABILITY_RUN_ID:-local-unobserved}
+      DEPLOYMENT_ENVIRONMENT: ${OBSERVABILITY_ENV:-integration}
+      SERVICE_VERSION: ${GITHUB_SHA:-local}
     healthcheck:
       test: ["CMD", "/app/http-healthcheck", "http://127.0.0.1:8081/readyz"]
       interval: 2s
@@ -135,7 +154,13 @@ services:
       API_GATEWAY_UDP_HMAC_SECRET: local-game-edge-secret
       API_GATEWAY_UDP_HMAC_KEY_ID: primary
       MARKET_URL: http://market:8081
-      OTEL_SDK_DISABLED: "true"
+      OTEL_SERVICE_NAME: api-gateway
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
+      OBSERVABILITY_RUN_ID: ${OBSERVABILITY_RUN_ID:-local-unobserved}
+      DEPLOYMENT_ENVIRONMENT: ${OBSERVABILITY_ENV:-integration}
+      SERVICE_VERSION: ${GITHUB_SHA:-local}
     healthcheck:
       test: ["CMD", "/app/http-healthcheck", "http://127.0.0.1:8080/readyz"]
       interval: 2s
@@ -208,6 +233,19 @@ services:
       proc = subprocess.run([sys.executable, '-m', 'pytest', 'distributed-backend/tests/e2e', '-q', '-rA'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True);
       print(proc.stdout, end='');
       sys.exit(1 if re.search(r'(?m)^[0-9]+ skipped in ', proc.stdout) else proc.returncode)\""
+
+  otel-collector:
+    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.153.0@sha256:93aad750175cbf1a973ae1c5886c3371f4d800f61be25cdd26870b8441ffe9fa
+    profiles:
+      - test
+    command: ["--config=/etc/otelcol/config.yaml"]
+    environment:
+      OBSERVABILITY_RUN_ID: ${OBSERVABILITY_RUN_ID:-local-unobserved}
+      HONEYCOMB_API_KEY: ${HONEYCOMB_API_KEY:-}
+      HONEYCOMB_DATASET: ${HONEYCOMB_DATASET:-eve-trade-ci}
+    volumes:
+      - ${OTEL_COLLECTOR_CONFIG:-./observability/collector/otel-collector.local.yaml}:/etc/otelcol/config.yaml:ro
+      - ${OTEL_LOCAL_OUTPUT_DIR:-./.o11y/collector}:/var/lib/otel
 
 # This block stores PostgreSQL state between container restarts while still allowing full cleanup via `down -v`.
 # It exists so local runs are fast, but deterministic reset is still handled by the migrate service.

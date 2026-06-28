@@ -1,6 +1,7 @@
 use summer::plugin::service::Service;
 use summer_sqlx::ConnectPool;
 use tonic::{Request, Response, Status};
+use tracing::{info_span, Instrument};
 
 use crate::commands::ExecuteBatchCommand;
 use crate::executor::BatchExecutionResult;
@@ -23,11 +24,17 @@ impl TradeSettlementService for TradeSettlementGrpc {
         &self,
         request: Request<pb::ExecuteSettlementBatchRequest>,
     ) -> std::result::Result<Response<pb::ExecuteSettlementBatchResponse>, Status> {
+        let receive_span = info_span!(
+            "settlement.receive_batch",
+            idempotency_key = %request.get_ref().idempotency_key,
+            operation_count = request.get_ref().operations.len(),
+        );
         let command = ExecuteBatchCommand::try_from(request.into_inner())
             .map_err(|error| error.into_status())?;
         let executor = SettlementExecutor::new(self.db.clone());
         let result = executor
             .execute_batch(command)
+            .instrument(receive_span)
             .await
             .map_err(|error| error.into_status())?;
 
