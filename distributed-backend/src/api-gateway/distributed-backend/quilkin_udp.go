@@ -248,7 +248,7 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 		receiveSpan.SetAttributes(attribute.String("interaction_id", interactionID), attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", "replay_payload_mismatch"))
 		slog.Warn("udp replay payload mismatch rejected", "remote", remoteKey(remote), "interaction_id", interactionID)
 		recordUDPPacket(parent, "replay", len(packet))
-		s.writeError(conn, remote, "replay", "interaction_id was already used with a different payload")
+		s.writeError(conn, remote, "replay", "replay rejected: interaction_id was already used with a different payload")
 		return
 	}
 

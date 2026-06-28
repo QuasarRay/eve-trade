@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -211,8 +212,12 @@ func TestQuilkinUDPServerRejectsInteractionIDReusedWithDifferentPayload(t *testi
 	if market.count() != 1 {
 		t.Fatalf("market calls = %d, want 1", market.count())
 	}
-	if code := conn.lastJSON(t)["code"]; code != "replay" {
+	response := conn.lastJSON(t)
+	if code := response["code"]; code != "replay" {
 		t.Fatalf("error code = %v, want replay", code)
+	}
+	if message, _ := response["message"].(string); !strings.Contains(message, "replay") {
+		t.Fatalf("error message = %q, want replay diagnostic", message)
 	}
 }
 

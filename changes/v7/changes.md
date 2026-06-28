@@ -478,3 +478,27 @@ The resilience policy is now explicit:
 - Observability unit suite: passed with transient and deterministic failure-classification coverage.
 - `go mod tidy -diff` for API Gateway and observability: clean after correction.
 - A full observed E2E attempt could not reach service startup because the local Docker build environment repeatedly failed TLS handshakes to both `proxy.golang.org` and GitHub. The pipeline retained all bounded attempt logs and stopped before migrations or services, demonstrating safe exhaustion behavior. This is an external dependency-network blocker, not an application test result.
+
+## Follow-up: Quilkin session capacity and replay diagnostics
+
+GitHub Actions run `28319158642` failed on simulator interaction 37 after 23 tests had passed. The request timed out three times before returning HTTP 502, and its interaction ID never appeared in API Gateway logs. An isolated UDP echo reproduction confirmed that Quilkin 0.10 exhausts the container's locked-memory allowance as it creates io_uring-backed resources for active client sessions. Quilkin remains running but silently stops forwarding new sessions when that limit is reached.
+
+The correction:
+
+- Sets the Quilkin `memlock` soft and hard limits to unlimited in both normal and integration Compose definitions.
+- Keeps the scope restricted to the non-root Quilkin container; no application or database container receives the elevated limit.
+- Preserves exact-response caching for identical retries and conflicting-payload rejection for interaction ID misuse.
+- Restores an explicit `replay rejected` phrase in the conflicting-payload response while retaining the stable `replay` error code.
+- Adds a gateway unit assertion that the replay diagnostic remains useful to callers.
+
+Verification:
+
+- Isolated Quilkin stress test reproduced deterministic packet loss at constrained memlock limits and passed 120 unique UDP clients at 64 MiB.
+- Integration Quilkin container reported `Max locked memory: unlimited` after the Compose change.
+- API Gateway `go test ./...`: passed.
+- Focused identical-retry/idempotency E2E tests: 9 passed.
+- Focused conflicting-payload replay E2E tests: 3 passed.
+- Full Docker Compose E2E suite: 109 passed in 27.48 seconds.
+- Compose configuration validation passed for normal and integration definitions.
+
+The clean observed build was also attempted. Its three bounded build attempts were stopped by repeated local `proxy.golang.org` `unexpected EOF` responses before service startup. Runtime verification therefore reused existing service images plus a locally compiled current gateway binary; this does not affect GitHub Actions, which builds fresh images and now receives the corrected Quilkin runtime limit.
