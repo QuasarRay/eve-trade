@@ -16,18 +16,6 @@ One command from the repository root:
 docker compose up --build
 ```
 
-No CLI on Windows:
-
-1. Double-click `run-eve-trade.cmd`.
-2. Wait for Docker images to build and services to start.
-3. Stop everything by closing the launcher window with `Ctrl+C`, or double-click `stop-eve-trade.cmd`.
-
-VS Code button path:
-
-1. Open the repository in VS Code.
-2. Run `Terminal: Run Build Task`.
-3. Choose `Run eve-trade` if VS Code asks.
-
 The local stack starts:
 
 * Django game-frontend simulator: `http://localhost:8000`
