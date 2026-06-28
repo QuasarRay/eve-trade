@@ -199,6 +199,9 @@ services:
     environment:
       QUILKIN_UDP_HOST: quilkin
       QUILKIN_UDP_PORT: "26001"
+      QUILKIN_UDP_TIMEOUT_SECONDS: "6"
+      QUILKIN_UDP_MAX_ATTEMPTS: "3"
+      QUILKIN_UDP_RETRY_BACKOFF_SECONDS: "0.1"
       GAME_PACKET_HMAC_SECRET: local-game-edge-secret
       GAME_PACKET_HMAC_KEY_ID: primary
       SIMULATOR_ALLOWED_HOSTS: "*"
@@ -228,7 +231,7 @@ services:
       EVE_TRADE_GATEWAY_GRPC: api-gateway:8080
       EVE_TRADE_DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
     command: >
-      sh -c "python -m pip install -r distributed-backend/tests/e2e/requirements.txt &&
+      sh -c "python -m pip install --retries 5 --timeout 60 -r distributed-backend/tests/e2e/requirements.txt &&
       python -c \"import re, subprocess, sys;
       proc = subprocess.run([sys.executable, '-m', 'pytest', 'distributed-backend/tests/e2e', '-q', '-rA'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True);
       print(proc.stdout, end='');

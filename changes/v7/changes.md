@@ -435,3 +435,46 @@ python observability/ci/compare_runs.py `
 - Kubernetes manifests rendered successfully; live cluster evidence collection was not required for the completed local Compose acceptance run.
 
 The credential-free path, local artifacts, reports, parity comparison, Collector file export, service tracing, PostgreSQL snapshots, and full Compose E2E were exercised locally.
+
+## Post-implementation CI resilience correction
+
+GitHub Actions run `28310941084` reported 64 E2E failures at `helpers.py:107`. The failure duration exposed a single repeated transport symptom: 64 simulator UDP waits at the old three-second timeout accounted for 192 of the 223 test seconds. Gateway business errors are raised later in the helper, so this location identified an outer simulator/UDP failure rather than 64 independent trade-rule regressions.
+
+The resilience policy is now explicit:
+
+- Recoverable network, timeout, and downstream-unavailable failures receive bounded retries.
+- Retries preserve the original `interaction_id` and signed payload.
+- API Gateway caches the exact terminal response for an interaction and returns it for an identical retry without calling Market again.
+- Reusing an interaction ID with a different payload remains a terminal replay conflict.
+- An in-flight duplicate receives `request_in_progress`; the simulator waits within its outer timeout budget and retries.
+- Downstream timeout/unavailable responses release the in-memory reservation so the same idempotent request can be attempted again. Durable settlement idempotency and database transactions remain the final correctness boundary if the first downstream attempt committed before its response was lost.
+- Validation, authorization, compiler, migration, startup-configuration, and invariant failures are not treated as transient.
+- Exhausting the bounded retry budget remains a failure so Docker/Kubernetes/GitHub Actions orchestration can restart or reschedule cleanly.
+
+### UDP and replay behavior
+
+- Increased the simulator per-attempt UDP timeout from three to six seconds, which is longer than the API Gateway's five-second Market deadline.
+- Added configurable `QUILKIN_UDP_MAX_ATTEMPTS` and `QUILKIN_UDP_RETRY_BACKOFF_SECONDS` settings to local Compose, integration Compose, and the local Kubernetes simulator overlay.
+- Added transient socket classification for timeout, reset, refused, and unreachable errors.
+- Replaced rejection of identical replays with a fingerprinted response cache in API Gateway.
+- Cached replies are stored before the UDP write, allowing a lost response to be recovered without repeating the Market or settlement operation.
+- Added tests for lost response recovery, identical cached response replay, conflicting payload rejection, and retry after transient downstream unavailability.
+- Updated E2E idempotency assertions to require the same successful response and exactly one settlement batch rather than a replay error.
+
+### CI and image-build resilience
+
+- Corrected `go.mod` metadata for direct `go.opentelemetry.io/otel/trace` imports in API Gateway and the shared observability module.
+- Added transparent transient-failure classification and bounded retries to observed Compose build/start commands.
+- Each retry attempt writes independent logs and metadata plus a portable `retry-summary.json`.
+- Added BuildKit module/registry caches and bounded dependency-download retries to Go, Rust, Quilkin, and simulator images.
+- Added configurable Go proxy selection through the `GO_MODULE_PROXY` build argument.
+- Added bounded pip retries for simulator and E2E dependency installation.
+
+### Verification performed for this correction
+
+- API Gateway `go test ./...`: passed.
+- Shared observability `go test ./...`: passed.
+- Django simulator `python manage.py test trade_gui`: passed with four tests.
+- Observability unit suite: passed with transient and deterministic failure-classification coverage.
+- `go mod tidy -diff` for API Gateway and observability: clean after correction.
+- A full observed E2E attempt could not reach service startup because the local Docker build environment repeatedly failed TLS handshakes to both `proxy.golang.org` and GitHub. The pipeline retained all bounded attempt logs and stopped before migrations or services, demonstrating safe exhaustion behavior. This is an external dependency-network blocker, not an application test result.

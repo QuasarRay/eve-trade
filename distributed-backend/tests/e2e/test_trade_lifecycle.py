@@ -463,13 +463,10 @@ def test_retrying_create_trade_offer_does_not_duplicate_trade(db, gateway):
     key = fresh_key("issue-retry")
     payload = issue_payload(world, idempotency_key=key)
 
-    gateway.issue_trade_instance(payload)
-    expect_rpc_error(
-        lambda: gateway.issue_trade_instance(payload),
-        code="replay",
-        contains="replay",
-    )
+    first = gateway.issue_trade_instance(payload)
+    second = gateway.issue_trade_instance(payload)
 
+    assert second == first
     assert table_count(db, "trade_instance") == 1
     assert settlement_batch_count(db, key) == 1
 
@@ -479,13 +476,10 @@ def test_retrying_create_trade_offer_does_not_duplicate_item_escrow(db, gateway)
     key = fresh_key("issue-retry")
     payload = issue_payload(world, idempotency_key=key)
 
-    gateway.issue_trade_instance(payload)
-    expect_rpc_error(
-        lambda: gateway.issue_trade_instance(payload),
-        code="replay",
-        contains="replay",
-    )
+    first = gateway.issue_trade_instance(payload)
+    second = gateway.issue_trade_instance(payload)
 
+    assert second == first
     assert table_count(db, "item_stack_escrow") == 1
     assert settlement_batch_count(db, key) == 1
 
@@ -497,12 +491,9 @@ def test_retrying_accept_trade_does_not_transfer_items_twice(db, gateway):
     payload = accept_payload(world, trade, idempotency_key=key)
 
     first = gateway.accept_trade_instance(payload)
-    expect_rpc_error(
-        lambda: gateway.accept_trade_instance(payload),
-        code="replay",
-        contains="replay",
-    )
+    second = gateway.accept_trade_instance(payload)
 
+    assert second == first
     assert item_stack_row(db, first["buyerDestinationItemStackId"])["quantity"] == 4
     assert settlement_batch_count(db, key) == 1
 
@@ -513,13 +504,10 @@ def test_retrying_accept_trade_does_not_transfer_isk_twice(db, gateway):
     key = fresh_key("accept-retry")
     payload = accept_payload(world, trade, idempotency_key=key)
 
-    gateway.accept_trade_instance(payload)
-    expect_rpc_error(
-        lambda: gateway.accept_trade_instance(payload),
-        code="replay",
-        contains="replay",
-    )
+    first = gateway.accept_trade_instance(payload)
+    second = gateway.accept_trade_instance(payload)
 
+    assert second == first
     assert wallet_row(db, world.seller_wallet_id)["isk_amount"] == 200
     assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 900
     assert settlement_batch_count(db, key) == 1
@@ -531,13 +519,10 @@ def test_retrying_cancel_trade_does_not_refund_items_twice(db, gateway):
     key = fresh_key("cancel-retry")
     payload = cancel_payload(world, trade, idempotency_key=key)
 
-    gateway.cancel_trade_instance(payload)
-    expect_rpc_error(
-        lambda: gateway.cancel_trade_instance(payload),
-        code="replay",
-        contains="replay",
-    )
+    first = gateway.cancel_trade_instance(payload)
+    second = gateway.cancel_trade_instance(payload)
 
+    assert second == first
     assert item_stack_row(db, world.seller_stack_id)["quantity"] == 10
     assert settlement_batch_count(db, key) == 1
 
@@ -591,19 +576,16 @@ def test_same_interaction_id_with_different_cancel_trade_payload_is_rejected_at_
     assert settlement_batch_count(db, key) == 1
 
 
-def test_retried_successful_request_is_rejected_at_edge_without_second_settlement(db, gateway):
+def test_retried_successful_request_returns_cached_response_without_second_settlement(db, gateway):
     world = seed_world(db)
     key = fresh_key("issue-retry")
     payload = issue_payload(world, idempotency_key=key)
 
     first = gateway.issue_trade_instance(payload)
-    expect_rpc_error(
-        lambda: gateway.issue_trade_instance(payload),
-        code="replay",
-        contains="replay",
-    )
+    second = gateway.issue_trade_instance(payload)
 
     assert first["status"] == "accepted"
+    assert second == first
     assert table_count(db, "trade_instance") == 1
     assert settlement_batch_count(db, key) == 1
 
@@ -1189,13 +1171,10 @@ def test_gateway_retry_create_trade_offer_is_idempotent_end_to_end(db, gateway):
     key = fresh_key("gateway-issue-retry")
     payload = issue_payload(world, idempotency_key=key)
 
-    gateway.issue_trade_instance(payload)
-    expect_rpc_error(
-        lambda: gateway.issue_trade_instance(payload),
-        code="replay",
-        contains="replay",
-    )
+    first = gateway.issue_trade_instance(payload)
+    second = gateway.issue_trade_instance(payload)
 
+    assert second == first
     assert settlement_batch_count(db, key) == 1
     assert table_count(db, "trade_instance") == 1
 
@@ -1207,12 +1186,9 @@ def test_gateway_retry_accept_trade_is_idempotent_end_to_end(db, gateway):
     payload = accept_payload(world, trade, idempotency_key=key)
 
     first = gateway.accept_trade_instance(payload)
-    expect_rpc_error(
-        lambda: gateway.accept_trade_instance(payload),
-        code="replay",
-        contains="replay",
-    )
+    second = gateway.accept_trade_instance(payload)
 
+    assert second == first
     assert item_stack_row(db, first["buyerDestinationItemStackId"])["quantity"] == 4
     assert settlement_batch_count(db, key) == 1
 
@@ -1223,13 +1199,10 @@ def test_gateway_retry_cancel_trade_is_idempotent_end_to_end(db, gateway):
     key = fresh_key("gateway-cancel-retry")
     payload = cancel_payload(world, trade, idempotency_key=key)
 
-    gateway.cancel_trade_instance(payload)
-    expect_rpc_error(
-        lambda: gateway.cancel_trade_instance(payload),
-        code="replay",
-        contains="replay",
-    )
+    first = gateway.cancel_trade_instance(payload)
+    second = gateway.cancel_trade_instance(payload)
 
+    assert second == first
     assert item_stack_row(db, world.seller_stack_id)["quantity"] == 10
     assert settlement_batch_count(db, key) == 1
 

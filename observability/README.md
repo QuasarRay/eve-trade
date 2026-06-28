@@ -40,6 +40,15 @@ python observability/ci/observed_run.py e2e --maxfail 1
 
 `--clean` deliberately executes `docker compose down -v --remove-orphans` before E2E. Use it only when local PostgreSQL and RabbitMQ data may be deleted.
 
+## Retry and failure policy
+
+- Compose build and idempotent start commands retry recognized network, TLS, timeout, and temporary service-unavailability failures up to three times with bounded backoff.
+- Every attempt has its own command log and metadata. `retry-summary.json` records whether the pipeline recovered.
+- Compiler errors, invalid configuration, migration failures, test assertions, and invariant failures are not retried.
+- Docker dependency stages use shared BuildKit caches and bounded package-manager retries so a recovered download continues from cached work.
+- GUI UDP retries reuse the original signed packet and `interaction_id`. The API Gateway returns a cached terminal response for an identical retry, rejects the same ID with a different payload, and never forwards a completed request twice.
+- Once the bounded retry budget is exhausted, the command fails and orchestration remains responsible for restarting the failed workload.
+
 ## Local OpenTelemetry Collector
 
 ```powershell

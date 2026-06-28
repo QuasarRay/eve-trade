@@ -4,7 +4,14 @@ ARG QUILKIN_VERSION=0.10.0
 
 ENV RUSTFLAGS="-C target-feature=+aes,+sse2"
 
-RUN cargo install quilkin --version "${QUILKIN_VERSION}" --locked --root /opt/quilkin
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    for attempt in 1 2 3; do \
+      cargo install quilkin --version "${QUILKIN_VERSION}" --locked --root /opt/quilkin && break; \
+      status=$?; \
+      [ "$attempt" -eq 3 ] && exit "$status"; \
+      sleep $((attempt * 2)); \
+    done
 
 FROM debian:bookworm-slim AS runtime
 

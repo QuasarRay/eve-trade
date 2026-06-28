@@ -12,8 +12,15 @@ COPY . .
 
 # This block builds the  trade-settlement executable in locked mode.
 # It exists so the container cannot silently change dependency versions compared with Cargo.lock.
-RUN cd distributed-backend/src/trade-settlement \
-    && cargo build --locked --release
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    cd distributed-backend/src/trade-settlement \
+    && for attempt in 1 2 3; do \
+         cargo build --locked --release && break; \
+         status=$?; \
+         [ "$attempt" -eq 3 ] && exit "$status"; \
+         sleep $((attempt * 2)); \
+       done
 
 # This block chooses a small Debian runtime image instead of shipping the full Rust compiler image.
 # It exists so the runtime container is closer to a deployable service image.

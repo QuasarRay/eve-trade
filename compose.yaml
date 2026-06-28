@@ -186,6 +186,9 @@ services:
     environment:
       QUILKIN_UDP_HOST: quilkin
       QUILKIN_UDP_PORT: "26001"
+      QUILKIN_UDP_TIMEOUT_SECONDS: "6"
+      QUILKIN_UDP_MAX_ATTEMPTS: "3"
+      QUILKIN_UDP_RETRY_BACKOFF_SECONDS: "0.1"
       GAME_PACKET_HMAC_SECRET: local-game-edge-secret
       GAME_PACKET_HMAC_KEY_ID: primary
       SIMULATOR_ALLOWED_HOSTS: "*"

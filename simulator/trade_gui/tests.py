@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import json
+import socket
 from typing import Any
 from unittest.mock import patch
 
@@ -50,6 +51,26 @@ class CapturingSocket:
         return b'{"interaction_id":"accepted-by-edge","status":"accepted"}', ("127.0.0.1", 26001)
 
 
+class TimeoutThenSuccessSocket(CapturingSocket):
+    recv_calls = 0
+
+    def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
+        type(self).recv_calls += 1
+        if type(self).recv_calls == 1:
+            raise socket.timeout("simulated packet loss")
+        return super().recvfrom(size)
+
+
+class RetryableResponseThenSuccessSocket(CapturingSocket):
+    recv_calls = 0
+
+    def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
+        type(self).recv_calls += 1
+        if type(self).recv_calls == 1:
+            return b'{"code":"downstream_unavailable","message":"retry later"}', ("127.0.0.1", 26001)
+        return super().recvfrom(size)
+
+
 @override_settings(
     GAME_PACKET_HMAC_SECRET="edge-secret",
     GAME_PACKET_HMAC_KEY_ID="primary",
@@ -59,6 +80,10 @@ class CapturingSocket:
 class GameGuiPacketBoundaryTests(TestCase):
     def setUp(self) -> None:
         CapturingSocket.sent = []
+        TimeoutThenSuccessSocket.sent = []
+        TimeoutThenSuccessSocket.recv_calls = 0
+        RetryableResponseThenSuccessSocket.sent = []
+        RetryableResponseThenSuccessSocket.recv_calls = 0
         self.button = GameGuiButton.objects.create(
             window=GameGuiButton.Window.REGIONAL_MARKET,
             label="Sell This Item",
@@ -123,6 +148,54 @@ class GameGuiPacketBoundaryTests(TestCase):
             if packet_contains_term(game_packet, term)
         )
         self.assertEqual(leaked_terms, [])
+
+    @override_settings(
+        QUILKIN_UDP_MAX_ATTEMPTS=2,
+        QUILKIN_UDP_RETRY_BACKOFF_SECONDS=0,
+    )
+    def test_button_press_retries_transient_udp_timeout_with_same_packet(self) -> None:
+        client = Client()
+        request_body = {
+            "interaction_id": "retry-safe-interaction",
+            "player_input": {"quantity": 4},
+        }
+
+        with patch("trade_gui.udp_client.socket.socket", TimeoutThenSuccessSocket):
+            response = client.post(
+                f"/api/gui/buttons/{self.button.id}/press/",
+                data=json.dumps(request_body),
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(len(TimeoutThenSuccessSocket.sent), 2)
+        first_packet, _ = TimeoutThenSuccessSocket.sent[0]
+        second_packet, _ = TimeoutThenSuccessSocket.sent[1]
+        self.assertEqual(first_packet, second_packet)
+
+    @override_settings(
+        QUILKIN_UDP_MAX_ATTEMPTS=2,
+        QUILKIN_UDP_RETRY_BACKOFF_SECONDS=0,
+    )
+    def test_button_press_retries_retryable_gateway_response_with_same_packet(self) -> None:
+        client = Client()
+        request_body = {
+            "interaction_id": "retry-safe-interaction",
+            "player_input": {"quantity": 4},
+        }
+
+        with patch("trade_gui.udp_client.socket.socket", RetryableResponseThenSuccessSocket):
+            response = client.post(
+                f"/api/gui/buttons/{self.button.id}/press/",
+                data=json.dumps(request_body),
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(len(RetryableResponseThenSuccessSocket.sent), 2)
+        first_packet, _ = RetryableResponseThenSuccessSocket.sent[0]
+        second_packet, _ = RetryableResponseThenSuccessSocket.sent[1]
+        self.assertEqual(first_packet, second_packet)
 
 
 class GameGuiIndexTests(TestCase):

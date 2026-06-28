@@ -6,11 +6,13 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net"
 	"sync"
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	marketv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/market/v1"
 )
 
@@ -38,6 +40,31 @@ func (c *recordingMarketClient) count() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return len(c.requests)
+}
+
+type transientMarketClient struct {
+	mu    sync.Mutex
+	calls int
+}
+
+func (c *transientMarketClient) SubmitTradeGuiInteraction(_ context.Context, _ *marketv1.SubmitTradeGuiInteractionRequest) (*marketv1.SubmitTradeGuiInteractionResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.calls++
+	if c.calls == 1 {
+		return nil, connect.NewError(connect.CodeUnavailable, errors.New("simulated transient outage"))
+	}
+	return &marketv1.SubmitTradeGuiInteractionResponse{
+		InteractionId:     "interaction-1",
+		Status:            "accepted",
+		SettlementBatchId: "settlement-batch",
+	}, nil
+}
+
+func (c *transientMarketClient) count() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.calls
 }
 
 type capturePacketConn struct {
@@ -151,7 +178,7 @@ func TestQuilkinUDPServerRejectsInvalidSignature(t *testing.T) {
 	}
 }
 
-func TestQuilkinUDPServerRejectsReplayBeforeSecondMarketCall(t *testing.T) {
+func TestQuilkinUDPServerReturnsCachedResponseWithoutSecondMarketCall(t *testing.T) {
 	market := &recordingMarketClient{}
 	server := testUDPServer(market)
 	conn := &capturePacketConn{}
@@ -165,8 +192,82 @@ func TestQuilkinUDPServerRejectsReplayBeforeSecondMarketCall(t *testing.T) {
 	if market.count() != 1 {
 		t.Fatalf("market calls = %d, want 1", market.count())
 	}
+	if status := conn.lastJSON(t)["status"]; status != "accepted" {
+		t.Fatalf("cached response status = %v, want accepted", status)
+	}
+}
+
+func TestQuilkinUDPServerRejectsInteractionIDReusedWithDifferentPayload(t *testing.T) {
+	market := &recordingMarketClient{}
+	server := testUDPServer(market)
+	conn := &capturePacketConn{}
+	remote := &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}
+	first := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"interaction-1","input":{"quantity":1}}`)
+	conflict := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"interaction-1","input":{"quantity":2}}`)
+
+	server.handlePacket(context.Background(), conn, remote, signedUDPPacket(t, first, "edge-secret", "primary"))
+	server.handlePacket(context.Background(), conn, remote, signedUDPPacket(t, conflict, "edge-secret", "primary"))
+
+	if market.count() != 1 {
+		t.Fatalf("market calls = %d, want 1", market.count())
+	}
 	if code := conn.lastJSON(t)["code"]; code != "replay" {
 		t.Fatalf("error code = %v, want replay", code)
+	}
+}
+
+type failFirstWritePacketConn struct {
+	capturePacketConn
+	failed bool
+}
+
+func (c *failFirstWritePacketConn) WriteTo(payload []byte, remote net.Addr) (int, error) {
+	if !c.failed {
+		c.failed = true
+		return 0, errors.New("simulated response loss")
+	}
+	return c.capturePacketConn.WriteTo(payload, remote)
+}
+
+func TestQuilkinUDPServerRetriesLostResponseWithoutRepeatingMarketCall(t *testing.T) {
+	market := &recordingMarketClient{}
+	server := testUDPServer(market)
+	conn := &failFirstWritePacketConn{}
+	remote := &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}
+	rawPayload := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"interaction-1"}`)
+	packet := signedUDPPacket(t, rawPayload, "edge-secret", "primary")
+
+	server.handlePacket(context.Background(), conn, remote, packet)
+	server.handlePacket(context.Background(), conn, remote, packet)
+
+	if market.count() != 1 {
+		t.Fatalf("market calls = %d, want 1", market.count())
+	}
+	if status := conn.lastJSON(t)["status"]; status != "accepted" {
+		t.Fatalf("retried response status = %v, want accepted", status)
+	}
+}
+
+func TestQuilkinUDPServerAllowsSafeRetryAfterTransientDownstreamFailure(t *testing.T) {
+	market := &transientMarketClient{}
+	server := testUDPServer(market)
+	conn := &capturePacketConn{}
+	remote := &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}
+	rawPayload := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"interaction-1"}`)
+	packet := signedUDPPacket(t, rawPayload, "edge-secret", "primary")
+
+	server.handlePacket(context.Background(), conn, remote, packet)
+	if code := conn.lastJSON(t)["code"]; code != "downstream_unavailable" {
+		t.Fatalf("first response code = %v, want downstream_unavailable", code)
+	}
+
+	server.handlePacket(context.Background(), conn, remote, packet)
+
+	if market.count() != 2 {
+		t.Fatalf("market calls = %d, want 2", market.count())
+	}
+	if status := conn.lastJSON(t)["status"]; status != "accepted" {
+		t.Fatalf("retried response status = %v, want accepted", status)
 	}
 }
 

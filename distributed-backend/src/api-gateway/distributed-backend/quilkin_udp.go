@@ -226,11 +226,29 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 		s.writeError(conn, remote, "missing_interaction_id", "missing interaction_id")
 		return
 	}
-	if s.replay().seenOrStore(interactionID) {
-		receiveSpan.SetAttributes(attribute.String("interaction_id", interactionID), attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", "replay"))
-		slog.Warn("udp packet replay rejected", "remote", remoteKey(remote), "interaction_id", interactionID)
+
+	fingerprint := sha256.Sum256(rawPayload)
+	replayState, cachedResponse := s.replay().begin(interactionID, fingerprint)
+	switch replayState {
+	case replayCached:
+		receiveSpan.SetAttributes(attribute.String("interaction_id", interactionID), attribute.String("validation.result", "cached"))
+		slog.Info("udp retry served from response cache", "remote", remoteKey(remote), "interaction_id", interactionID)
+		recordUDPPacket(parent, "cached", len(packet))
+		if writeErr := s.writeResponse(conn, remote, interactionID, cachedResponse); writeErr != nil {
+			recordUDPPacket(parent, "write_failed", len(packet))
+		}
+		return
+	case replayInFlight:
+		receiveSpan.SetAttributes(attribute.String("interaction_id", interactionID), attribute.String("validation.result", "retry_later"))
+		slog.Info("udp retry is already in progress", "remote", remoteKey(remote), "interaction_id", interactionID)
+		recordUDPPacket(parent, "request_in_progress", len(packet))
+		s.writeError(conn, remote, "request_in_progress", "request is still in progress")
+		return
+	case replayConflict:
+		receiveSpan.SetAttributes(attribute.String("interaction_id", interactionID), attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", "replay_payload_mismatch"))
+		slog.Warn("udp replay payload mismatch rejected", "remote", remoteKey(remote), "interaction_id", interactionID)
 		recordUDPPacket(parent, "replay", len(packet))
-		s.writeError(conn, remote, "replay", "replay rejected")
+		s.writeError(conn, remote, "replay", "interaction_id was already used with a different payload")
 		return
 	}
 
@@ -254,7 +272,12 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 		code := stableDownstreamCode(callErr)
 		slog.Warn("udp downstream call failed", "remote", remoteKey(remote), "interaction_id", interactionID, "code", code, "duration_ms", elapsed.Milliseconds())
 		recordUDPPacket(parent, code, len(packet))
-		s.writeError(conn, remote, code, stableDownstreamMessage(callErr))
+		if isRetryableDownstreamCode(code) {
+			s.replay().release(interactionID, fingerprint)
+			s.writeError(conn, remote, code, stableDownstreamMessage(callErr))
+		} else {
+			s.writeCachedError(conn, remote, interactionID, fingerprint, code, stableDownstreamMessage(callErr))
+		}
 		return
 	}
 
@@ -262,12 +285,12 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 	if marshalErr != nil {
 		slog.Error("udp response marshal failed", "interaction_id", interactionID, "error", marshalErr)
 		recordUDPPacket(parent, "internal", len(packet))
-		s.writeError(conn, remote, "internal", "internal error")
+		s.writeCachedError(conn, remote, interactionID, fingerprint, "internal", "internal error")
 		return
 	}
 
-	if _, writeErr := conn.WriteTo(body, remote); writeErr != nil {
-		slog.Warn("udp response write failed", "remote", remoteKey(remote), "interaction_id", interactionID, "error", writeErr)
+	s.replay().complete(interactionID, fingerprint, body)
+	if writeErr := s.writeResponse(conn, remote, interactionID, body); writeErr != nil {
 		recordUDPPacket(parent, "write_failed", len(packet))
 		return
 	}
@@ -368,7 +391,24 @@ func (s *QuilkinUDPServer) writeError(conn net.PacketConn, remote net.Addr, code
 		"code":    code,
 		"message": message,
 	})
-	_, _ = conn.WriteTo(body, remote)
+	_ = s.writeResponse(conn, remote, "", body)
+}
+
+func (s *QuilkinUDPServer) writeCachedError(conn net.PacketConn, remote net.Addr, interactionID string, fingerprint [sha256.Size]byte, code string, message string) {
+	body, _ := json.Marshal(map[string]string{
+		"code":    code,
+		"message": message,
+	})
+	s.replay().complete(interactionID, fingerprint, body)
+	_ = s.writeResponse(conn, remote, interactionID, body)
+}
+
+func (s *QuilkinUDPServer) writeResponse(conn net.PacketConn, remote net.Addr, interactionID string, body []byte) error {
+	if _, writeErr := conn.WriteTo(body, remote); writeErr != nil {
+		slog.Warn("udp response write failed", "remote", remoteKey(remote), "interaction_id", interactionID, "error", writeErr)
+		return writeErr
+	}
+	return nil
 }
 
 func (s *QuilkinUDPServer) allowRemote(remote net.Addr) bool {
@@ -415,6 +455,10 @@ func stableDownstreamMessage(err error) string {
 	default:
 		return "downstream error"
 	}
+}
+
+func isRetryableDownstreamCode(code string) bool {
+	return code == "downstream_timeout" || code == "downstream_unavailable"
 }
 
 func sanitizeClientMessage(message string) string {
@@ -513,9 +557,24 @@ func minFloat(a float64, b float64) float64 {
 type interactionReplayCache struct {
 	mu    sync.Mutex
 	ttl   time.Duration
-	seen  map[string]time.Time
+	seen  map[string]interactionReplayEntry
 	now   func() time.Time
 	sweep time.Time
+}
+
+type replayDisposition uint8
+
+const (
+	replayNew replayDisposition = iota
+	replayInFlight
+	replayCached
+	replayConflict
+)
+
+type interactionReplayEntry struct {
+	fingerprint [sha256.Size]byte
+	response    []byte
+	expiresAt   time.Time
 }
 
 func newInteractionReplayCache(ttl time.Duration) *interactionReplayCache {
@@ -524,27 +583,59 @@ func newInteractionReplayCache(ttl time.Duration) *interactionReplayCache {
 	}
 	return &interactionReplayCache{
 		ttl:  ttl,
-		seen: make(map[string]time.Time),
+		seen: make(map[string]interactionReplayEntry),
 		now:  time.Now,
 	}
 }
 
-func (c *interactionReplayCache) seenOrStore(interactionID string) bool {
+func (c *interactionReplayCache) begin(interactionID string, fingerprint [sha256.Size]byte) (replayDisposition, []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	now := c.now()
 	if now.After(c.sweep) {
-		for id, expiresAt := range c.seen {
-			if !expiresAt.After(now) {
+		for id, entry := range c.seen {
+			if !entry.expiresAt.After(now) {
 				delete(c.seen, id)
 			}
 		}
 		c.sweep = now.Add(c.ttl / 2)
 	}
-	if expiresAt, ok := c.seen[interactionID]; ok && expiresAt.After(now) {
-		return true
+	if entry, ok := c.seen[interactionID]; ok && entry.expiresAt.After(now) {
+		if entry.fingerprint != fingerprint {
+			return replayConflict, nil
+		}
+		if entry.response == nil {
+			return replayInFlight, nil
+		}
+		return replayCached, append([]byte(nil), entry.response...)
 	}
-	c.seen[interactionID] = now.Add(c.ttl)
-	return false
+	c.seen[interactionID] = interactionReplayEntry{
+		fingerprint: fingerprint,
+		expiresAt:   now.Add(c.ttl),
+	}
+	return replayNew, nil
+}
+
+func (c *interactionReplayCache) complete(interactionID string, fingerprint [sha256.Size]byte, response []byte) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	entry, ok := c.seen[interactionID]
+	if !ok || entry.fingerprint != fingerprint {
+		return
+	}
+	entry.response = append([]byte(nil), response...)
+	entry.expiresAt = c.now().Add(c.ttl)
+	c.seen[interactionID] = entry
+}
+
+func (c *interactionReplayCache) release(interactionID string, fingerprint [sha256.Size]byte) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	entry, ok := c.seen[interactionID]
+	if ok && entry.fingerprint == fingerprint {
+		delete(c.seen, interactionID)
+	}
 }

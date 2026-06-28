@@ -7,6 +7,7 @@ import json
 import os
 import shlex
 import sys
+import time
 import traceback
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,27 @@ from observability.ci.redaction import redact_text
 from observability.ci.run_context import RunContext, create_run_context
 from observability.ci.sentry_reporter import SentryReporter
 from observability.ci.storage import RunStorage
+
+
+_TRANSIENT_COMMAND_MARKERS = (
+    "tls handshake timeout",
+    "gnutls_handshake() failed",
+    "tls connection was non-properly terminated",
+    "timeout was reached",
+    "i/o timeout",
+    "context deadline exceeded",
+    "temporary failure in name resolution",
+    "connection reset by peer",
+    "connection refused",
+    "network is unreachable",
+    "no route to host",
+    "unexpected eof",
+    "proxyconnect tcp",
+    "too many requests",
+    "502 bad gateway",
+    "503 service unavailable",
+    "504 gateway timeout",
+)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -218,33 +240,74 @@ def _run_integration(
     storage.write_json("docker/discovered-services.json", {"compose_file": str(compose_file), "services": services})
     results: list[CommandResult] = []
 
-    def invoke(argv: list[str], name: str, stage: str, *, timeout: float = 900) -> CommandResult:
-        result = run_command(context, argv, name=name, stage=stage, storage=storage, tracer=tracer, sentry=sentry, timeout=timeout, report_failure_to_sentry=False)
+    def invoke(
+        argv: list[str],
+        name: str,
+        stage: str,
+        *,
+        timeout: float = 900,
+        retry_transient: bool = False,
+    ) -> CommandResult:
+        max_attempts = 3 if retry_transient else 1
+        attempts: list[dict[str, object]] = []
+        result: CommandResult | None = None
+        for attempt in range(1, max_attempts + 1):
+            attempt_name = name if max_attempts == 1 else f"{name}-attempt-{attempt}"
+            result = run_command(
+                context,
+                argv,
+                name=attempt_name,
+                stage=stage,
+                storage=storage,
+                tracer=tracer,
+                sentry=sentry,
+                timeout=timeout,
+                report_failure_to_sentry=False,
+            )
+            attempt_metadata = result.to_dict()
+            attempt_metadata["retry.attempt"] = attempt
+            attempt_metadata["retry.max_attempts"] = max_attempts
+            attempt_metadata["retry.transient"] = _is_transient_command_failure(result)
+            attempts.append(attempt_metadata)
+            if result.succeeded or not attempt_metadata["retry.transient"] or attempt >= max_attempts:
+                break
+            time.sleep(float(2 ** (attempt - 1)))
+
+        if max_attempts > 1:
+            storage.write_json(
+                Path("commands") / stage / name / "retry-summary.json",
+                {
+                    "command": name,
+                    "recovered": bool(result and result.succeeded and len(attempts) > 1),
+                    "attempts": attempts,
+                },
+            )
+        assert result is not None
         results.append(result)
         return result
 
     if args.clean:
-        if not invoke([*prefix, "down", "-v", "--remove-orphans"], "compose-clean", "prepare", timeout=180).succeeded:
+        if not invoke([*prefix, "down", "-v", "--remove-orphans"], "compose-clean", "prepare", timeout=180, retry_transient=True).succeeded:
             return _integration_result(context, storage, compose_file, profile_test, results, None, missing)
-    if not invoke([*prefix, "build"], "compose-build", "build", timeout=1800).succeeded:
+    if not invoke([*prefix, "build"], "compose-build", "build", timeout=1800, retry_transient=True).succeeded:
         return _integration_result(context, storage, compose_file, profile_test, results, None, missing)
     dependencies = [
         name
         for name in services
         if name == "otel-collector" or any(token in name.lower() for token in ("postgres", "rabbit", "nats"))
     ]
-    if dependencies and not invoke([*prefix, "up", "-d", *dependencies], "compose-dependencies", "start", timeout=300).succeeded:
+    if dependencies and not invoke([*prefix, "up", "-d", *dependencies], "compose-dependencies", "start", timeout=300, retry_transient=True).succeeded:
         return _integration_result(context, storage, compose_file, profile_test, results, None, missing)
     if "migrate" in services and not invoke([*prefix, "up", "--exit-code-from", "migrate", "migrate"], "compose-migrate", "migrate", timeout=300).succeeded:
         return _integration_result(context, storage, compose_file, profile_test, results, None, missing)
     app_services = [name for name in services if name not in {*dependencies, "migrate", "e2e-tests", "tests"}]
-    if app_services and not invoke([*prefix, "up", "-d", *app_services], "compose-services", "start", timeout=600).succeeded:
+    if app_services and not invoke([*prefix, "up", "-d", *app_services], "compose-services", "start", timeout=600, retry_transient=True).succeeded:
         return _integration_result(context, storage, compose_file, profile_test, results, None, missing)
     invoke([*prefix, "ps"], "compose-readiness", "readiness", timeout=60)
     junit_host = storage.path("pytest/pytest-junit.xml")
     test_path = args.test_path or "distributed-backend/tests/e2e"
     maxfail = f" --maxfail={args.maxfail}" if args.maxfail else ""
-    pytest_command = f"python -m pip install -r distributed-backend/tests/e2e/requirements.txt && python -m pytest {shlex.quote(test_path)} -vv -s --tb=short{maxfail} --junitxml=/workspace/{junit_host.relative_to(context.repo_root).as_posix()}"
+    pytest_command = f"python -m pip install --retries 5 --timeout 60 -r distributed-backend/tests/e2e/requirements.txt && python -m pytest {shlex.quote(test_path)} -vv -s --tb=short{maxfail} --junitxml=/workspace/{junit_host.relative_to(context.repo_root).as_posix()}"
     if "e2e-tests" in services:
         test_argv = [*prefix, "run", "--rm", "--no-deps", "e2e-tests", "sh", "-c", pytest_command]
     else:
@@ -269,6 +332,15 @@ def _host_e2e(
     result = run_command(context, argv, name="pytest-e2e-host", stage="e2e", storage=storage, tracer=tracer, sentry=sentry, timeout=1800, report_failure_to_sentry=False)
     summary = collect_pytest(context, result.stdout + "\n" + result.stderr, junit_path=junit, storage=storage)
     return {"results": [result], "pytest": summary, "docker": {}, "database": {}, "missing": missing}
+
+
+def _is_transient_command_failure(result: CommandResult) -> bool:
+    if result.succeeded:
+        return False
+    if result.timed_out:
+        return True
+    output = f"{result.stdout}\n{result.stderr}".lower()
+    return any(marker in output for marker in _TRANSIENT_COMMAND_MARKERS)
 
 
 def _integration_result(
