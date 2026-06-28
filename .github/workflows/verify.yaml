@@ -398,6 +398,44 @@ jobs:
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
         run: python observability/ci/observed_run.py integration --clean --maxfail 1
 
+      - name: Dump observability diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          shopt -s globstar nullglob
+
+          echo "PWD=$(pwd)"
+          echo "Listing .o11y:"
+          find .o11y -maxdepth 6 -type f -print | sort || true
+
+          latest="$(ls -td .o11y/runs/* 2>/dev/null | head -1 || true)"
+          echo "Latest observed run: $latest"
+
+          if [ -z "$latest" ]; then
+            echo "No .o11y run directory found."
+            exit 0
+          fi
+
+          echo "::group::Observed run files"
+          find "$latest" -maxdepth 8 -type f -print | sort
+          echo "::endgroup::"
+
+          for f in "$latest"/**/*.log "$latest"/**/*.txt "$latest"/**/*.json "$latest"/**/*.xml "$latest"/*; do
+            [ -f "$f" ] || continue
+            echo "::group::$f"
+            sed -n '1,260p' "$f" || true
+            echo "::endgroup::"
+          done
+
+      - name: Upload observability artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: o11y-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .o11y/
+          if-no-files-found: warn
+
       - name: Upload observability run artifacts
         if: always()
         uses: actions/upload-artifact@v4
