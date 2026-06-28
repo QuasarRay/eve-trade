@@ -188,6 +188,13 @@ services:
           --log-format json
     security_opt:
       - seccomp=unconfined
+    # Quilkin's Linux UDP router allocates io_uring resources per active client
+    # session. GitHub-hosted runners otherwise hit Docker's memlock ceiling and
+    # start dropping simulator packets while this container still appears up.
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
 
   simulator:
     build:

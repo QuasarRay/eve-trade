@@ -173,6 +173,14 @@ services:
           --log-format json
     security_opt:
       - seccomp=unconfined
+    # Quilkin 0.10 creates an io_uring-backed upstream socket for each active
+    # UDP client session. Docker's default locked-memory limit is exhausted by
+    # the short-lived client sockets used by the simulator/e2e suite, after
+    # which Quilkin silently drops new sessions while the container stays up.
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     ports:
       - "127.0.0.1:26001:26001/udp"
 

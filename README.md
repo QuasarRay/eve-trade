@@ -1,6 +1,6 @@
 # eve-trade
 
-`eve-trade` is a production-ready distributed backend/platform slice for an EVE-like trade flow. The current production boundary is a game GUI packet path, not a public command RPC path:
+`eve-trade` is a distributed backend/platform slice for an EVE-like trade flow. The current production boundary is a game GUI packet path, not a public command RPC path:
 
 `game frontend -> Quilkin UDP -> API gateway UDP edge -> Market GUI interaction -> settlement operations -> trade-settlement`
 
