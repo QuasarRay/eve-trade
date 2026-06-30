@@ -11,6 +11,7 @@ import sys
 import tempfile
 import time
 import uuid
+from urllib.parse import urlparse
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -181,12 +182,23 @@ class AuthenticatedEdgeClient:
         payload = decoded.get("payload")
         if auth.get("algorithm") != "hmac-sha256" or auth.get("key_id") != self.response_key_id:
             raise AssertionError(f"edge response authentication metadata is invalid: {auth!r}")
-        canonical = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        canonical = response_signing_bytes(
+            decoded["schema_version"],
+            str(auth.get("key_id") or ""),
+            payload,
+        )
         expected = base64.urlsafe_b64encode(
             hmac.new(self.response_secret, canonical, hashlib.sha256).digest()
         ).rstrip(b"=").decode("ascii")
         if not hmac.compare_digest(str(auth.get("signature") or ""), expected):
             raise AssertionError("edge response signature is invalid")
+        expected_interaction_id = packet.get("interaction_id")
+        actual_interaction_id = payload.get("interaction_id") if isinstance(payload, dict) else None
+        if actual_interaction_id != expected_interaction_id:
+            raise AssertionError(
+                "edge response interaction_id does not match request: "
+                f"got {actual_interaction_id!r}, expected {expected_interaction_id!r}, payload={payload!r}"
+            )
         return payload
 
 
@@ -348,6 +360,52 @@ def wait_for_gateway(api_gateway_url: str, timeout_seconds: float = 60.0) -> Non
             last_error = exc
             time.sleep(0.5)
     raise RuntimeError(f"api gateway did not become reachable: {last_error}")
+
+
+def wait_for_market(market_url: str, timeout_seconds: float = 60.0) -> None:
+    wait_for_http_health(market_url.rstrip("/") + "/readyz", "Market", timeout_seconds)
+
+
+def wait_for_http_health(url: str, service: str, timeout_seconds: float) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    last_error: Exception | None = None
+    while time.monotonic() < deadline:
+        try:
+            response = httpx.get(url, timeout=2.0)
+            if response.status_code == 200:
+                return
+            last_error = RuntimeError(f"HTTP {response.status_code}")
+        except Exception as exc:  # noqa: BLE001 - preserve final connection error.
+            last_error = exc
+        time.sleep(0.5)
+    raise RuntimeError(f"{service} did not become ready: {last_error}")
+
+
+def wait_for_settlement(endpoint: str, timeout_seconds: float = 60.0) -> None:
+    host, separator, port_text = endpoint.rpartition(":")
+    if not separator or not host:
+        raise RuntimeError(f"invalid settlement endpoint {endpoint!r}")
+    wait_for_tcp(host, int(port_text), "settlement service", timeout_seconds)
+
+
+def wait_for_rabbitmq(url: str, timeout_seconds: float = 60.0) -> None:
+    parsed = urlparse(url)
+    if not parsed.hostname:
+        raise RuntimeError(f"invalid RabbitMQ URL {url!r}")
+    wait_for_tcp(parsed.hostname, parsed.port or 5672, "RabbitMQ", timeout_seconds)
+
+
+def wait_for_tcp(host: str, port: int, service: str, timeout_seconds: float) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    last_error: Exception | None = None
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=2.0):
+                return
+        except OSError as exc:
+            last_error = exc
+            time.sleep(0.5)
+    raise RuntimeError(f"{service} did not become reachable: {last_error}")
 
 
 def wait_for_simulator(simulator_url: str, timeout_seconds: float = 60.0) -> None:
@@ -930,20 +988,33 @@ def cancel_trade(
 def expect_rpc_error(
     call: Callable[[], Any],
     *,
-    code: str | None = None,
-    contains: str | None = None,
+    code: str,
+    contains: str,
 ) -> RpcFailure:
     try:
         call()
     except RpcFailure as exc:
-        if code is not None and exc.code != code:
+        if exc.code != code:
             raise AssertionError(f"RPC code {exc.code!r}, expected {code!r}") from exc
-        if contains is not None and contains.lower() not in exc.message.lower():
+        if contains.lower() not in exc.message.lower():
             raise AssertionError(
                 f"RPC message {exc.message!r} did not contain {contains!r}"
             ) from exc
         return exc
     raise AssertionError("expected RPC request to fail")
+
+
+def response_signing_bytes(schema_version: str, key_id: str, payload: Any) -> bytes:
+    return json.dumps(
+        {
+            "algorithm": "hmac-sha256",
+            "key_id": key_id,
+            "payload": payload,
+            "schema_version": schema_version,
+        },
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
 
 
 def item_stack_row(db: Database, item_stack_id: str) -> dict[str, Any]:

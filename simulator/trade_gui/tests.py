@@ -13,6 +13,7 @@ from django.test import Client, TestCase, override_settings
 from jsonschema import Draft202012Validator
 
 from .models import GameGuiButton, GameGuiInteraction
+from .udp_client import response_signing_bytes
 from .views import udp_error_http_status
 
 
@@ -73,8 +74,13 @@ class RetryableResponseThenSuccessSocket(CapturingSocket):
     def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
         type(self).recv_calls += 1
         if type(self).recv_calls == 1:
+            request = json.loads(self.sent[-1][0].decode("utf-8"))["payload"]
             return signed_response(
-                {"code": "downstream_unavailable", "message": "retry later"}
+                {
+                    "interaction_id": request["interaction_id"],
+                    "code": "downstream_unavailable",
+                    "message": "retry later",
+                }
             ), ("127.0.0.1", 26001)
         return super().recvfrom(size)
 
@@ -93,13 +99,62 @@ class UnexpectedSourceResponseSocket(CapturingSocket):
         return response, ("127.0.0.2", 26001)
 
 
+class WrongInteractionSuccessSocket(CapturingSocket):
+    def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
+        return signed_response({"interaction_id": "old-request", "status": "accepted"}), ("127.0.0.1", 26001)
+
+
+class WrongInteractionBusinessErrorSocket(CapturingSocket):
+    def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
+        return signed_response({"interaction_id": "old-request", "code": "invalid_argument", "message": "bad quantity"}), ("127.0.0.1", 26001)
+
+
+class WrongInteractionTransientErrorSocket(CapturingSocket):
+    def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
+        return signed_response({"interaction_id": "old-request", "code": "downstream_unavailable", "message": "retry"}), ("127.0.0.1", 26001)
+
+
+class MissingInteractionErrorSocket(CapturingSocket):
+    def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
+        return signed_response({"code": "invalid_argument", "message": "bad quantity"}), ("127.0.0.1", 26001)
+
+
+class WrongResponseKeySocket(CapturingSocket):
+    def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
+        response, address = super().recvfrom(size)
+        envelope = json.loads(response)
+        envelope["auth"]["key_id"] = "wrong-key"
+        return json.dumps(envelope).encode("utf-8"), address
+
+
+class TamperedResponseBodySocket(CapturingSocket):
+    def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
+        response, address = super().recvfrom(size)
+        envelope = json.loads(response)
+        envelope["payload"]["status"] = "rejected"
+        return json.dumps(envelope).encode("utf-8"), address
+
+
+class TamperedResponseVersionSocket(CapturingSocket):
+    def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
+        response, address = super().recvfrom(size)
+        envelope = json.loads(response)
+        envelope["schema_version"] = "eve-trade-edge-response.v2"
+        return json.dumps(envelope).encode("utf-8"), address
+
+
+class MalformedJSONResponseSocket(CapturingSocket):
+    def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
+        return b"{not-json", ("127.0.0.1", 26001)
+
+
 class AlwaysTimeoutSocket(CapturingSocket):
     def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
         raise socket.timeout("simulated persistent packet loss")
 
 
 def signed_response(payload: dict[str, Any]) -> bytes:
-    canonical = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    canonical = response_signing_bytes("eve-trade-edge-response.v1", "primary", payload)
     signature = base64.urlsafe_b64encode(
         hmac.new(b"edge-secret", canonical, hashlib.sha256).digest()
     ).rstrip(b"=").decode("ascii")
@@ -292,6 +347,48 @@ class GameGuiPacketBoundaryTests(TestCase):
         self.assertEqual(response.status_code, 502)
         self.assertIn("unexpected endpoint", response.json()["error_message"])
 
+    def test_every_structured_response_class_requires_the_request_interaction_id(self) -> None:
+        cases = {
+            "success": WrongInteractionSuccessSocket,
+            "business error": WrongInteractionBusinessErrorSocket,
+            "transient error": WrongInteractionTransientErrorSocket,
+            "missing interaction": MissingInteractionErrorSocket,
+        }
+        for name, socket_type in cases.items():
+            with self.subTest(name=name), patch("trade_gui.udp_client.socket.socket", socket_type):
+                response = Client().post(
+                    f"/api/gui/buttons/{self.button.id}/press/",
+                    data=json.dumps({"interaction_id": f"request-{name}", "player_input": {"issued_by_capsuleer_id": 1001, "quantity": 4}}),
+                    content_type="application/json",
+                )
+            self.assertEqual(response.status_code, 502)
+            self.assertIn("interaction_id", response.json()["error_message"])
+
+    def test_response_authentication_binds_key_version_and_body(self) -> None:
+        cases = {
+            "wrong key": WrongResponseKeySocket,
+            "tampered body": TamperedResponseBodySocket,
+            "tampered version": TamperedResponseVersionSocket,
+        }
+        for name, socket_type in cases.items():
+            with self.subTest(name=name), patch("trade_gui.udp_client.socket.socket", socket_type):
+                response = Client().post(
+                    f"/api/gui/buttons/{self.button.id}/press/",
+                    data=json.dumps({"interaction_id": f"auth-{name}", "player_input": {"issued_by_capsuleer_id": 1001, "quantity": 4}}),
+                    content_type="application/json",
+                )
+            self.assertEqual(response.status_code, 502)
+
+    def test_malformed_response_cannot_bypass_authentication_or_interaction_binding(self) -> None:
+        with patch("trade_gui.udp_client.socket.socket", MalformedJSONResponseSocket):
+            response = Client().post(
+                f"/api/gui/buttons/{self.button.id}/press/",
+                data=json.dumps({"interaction_id": "malformed-response", "player_input": {"issued_by_capsuleer_id": 1001, "quantity": 4}}),
+                content_type="application/json",
+            )
+        self.assertEqual(response.status_code, 502)
+        self.assertIn("valid JSON", response.json()["error_message"])
+
 
 class GameGuiIndexTests(TestCase):
     def setUp(self) -> None:
@@ -355,6 +452,21 @@ class GameGuiErrorPropagationTests(TestCase):
         for code, expected in expectations.items():
             with self.subTest(code=code):
                 self.assertEqual(udp_error_http_status(code), expected)
+
+    @patch(
+        "trade_gui.views.send_gui_packet",
+        return_value={"interaction_id": "unknown", "status": "queued"},
+    )
+    def test_http_202_requires_an_explicit_accepted_gateway_status(self, _send) -> None:
+        response = Client().post(
+            f"/api/gui/buttons/{self.button.id}/press/",
+            data=json.dumps({"interaction_id": "unknown", "player_input": {"issued_by_capsuleer_id": 1001}}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(response.json()["code"], "invalid_gateway_response")
+        interaction = GameGuiInteraction.objects.get()
+        self.assertEqual(interaction.status, GameGuiInteraction.Status.FAILED)
 
 
 def packet_contains_term(value: Any, term: str) -> bool:

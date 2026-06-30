@@ -40,9 +40,12 @@ spec:
             - -ec
           args:
             - |
+              # Serialize Quilkin 0.10.0 session creation so one upstream
+              # socket cannot be concurrently assigned to two clients.
               exec /usr/local/bin/quilkin \
                 --service.udp \
                 --service.udp.port 26001 \
+                --service.udp.workers 1 \
                 --provider.static.endpoints "${API_GATEWAY_SERVICE_HOST}:26000" \
                 --admin.enabled=false \
                 --log-format json

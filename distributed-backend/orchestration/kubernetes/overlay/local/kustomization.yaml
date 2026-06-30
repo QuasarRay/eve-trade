@@ -15,6 +15,9 @@ configMapGenerator:
   - name: local-dev-world-seed
     files:
       - local_dev_world.sql
+  - name: local-runtime-database-role
+    files:
+      - runtime-role.sql
 
 generatorOptions:
   disableNameSuffixHash: true

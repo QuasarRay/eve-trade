@@ -165,7 +165,7 @@ func (s *QuilkinUDPServer) ListenAndServe(ctx context.Context) error {
 		if n > s.maxPacket {
 			slog.Warn("udp packet rejected", "reason", "packet_too_large", "remote", remoteKey(remote), "bytes", n, "max_packet_bytes", s.maxPacket)
 			recordUDPPacket(ctx, "packet_too_large", n)
-			s.writeError(conn, remote, "packet_too_large", "packet too large")
+			s.writeError(conn, remote, bestEffortInteractionID(buffer[:n]), "packet_too_large", "packet too large")
 			continue
 		}
 		packet := append([]byte(nil), buffer[:n]...)
@@ -174,22 +174,17 @@ func (s *QuilkinUDPServer) ListenAndServe(ctx context.Context) error {
 		default:
 			slog.Warn("udp packet queue full", "remote", remoteKey(remote), "queue_depth", s.queueDepth)
 			recordUDPPacket(ctx, "queue_full", n)
-			s.writeError(conn, remote, "queue_full", "temporarily overloaded")
+			s.writeError(conn, remote, bestEffortInteractionID(packet), "queue_full", "temporarily overloaded")
 		}
 	}
 }
 
 func (s *QuilkinUDPServer) worker(ctx context.Context, conn net.PacketConn, jobs <-chan udpPacketJob) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case job, ok := <-jobs:
-			if !ok {
-				return
-			}
-			s.handlePacket(ctx, conn, job.remote, job.packet)
-		}
+	for job := range jobs {
+		// Once the listener admits a packet, shutdown drains it under the normal
+		// per-request timeout instead of abandoning it because the listener context
+		// was cancelled.
+		s.handlePacket(context.WithoutCancel(ctx), conn, job.remote, job.packet)
 	}
 }
 
@@ -204,31 +199,35 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 		receiveSpan.SetAttributes(attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", "empty_packet"))
 		slog.Warn("udp packet rejected", "reason", "empty_packet", "remote", remoteKey(remote))
 		recordUDPPacket(parent, "empty_packet", 0)
-		s.writeError(conn, remote, "empty_packet", "empty packet")
+		s.writeError(conn, remote, "", "empty_packet", "empty packet")
 		return
 	}
 
-	rawPayload, interactionID, principalID, err := s.authenticatedPayload(packet)
+	interactionID := bestEffortInteractionID(packet)
+	rawPayload, authenticatedInteractionID, principalID, err := s.authenticatedPayload(packet)
+	if authenticatedInteractionID != "" {
+		interactionID = authenticatedInteractionID
+	}
 	if err != nil {
 		receiveSpan.RecordError(err)
 		receiveSpan.SetAttributes(attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", err.Code))
 		slog.Warn("udp packet rejected", "reason", err.Code, "remote", remoteKey(remote))
 		recordUDPPacket(parent, err.Code, len(packet))
-		s.writeError(conn, remote, err.Code, err.ClientMessage)
+		s.writeError(conn, remote, interactionID, err.Code, err.ClientMessage)
 		return
 	}
 	if !s.allowPrincipal(principalID, remote) {
 		receiveSpan.SetAttributes(attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", "rate_limited"))
 		slog.Warn("udp packet rate limited", "principal_capsuleer_id", principalID)
 		recordUDPPacket(parent, "rate_limited", len(packet))
-		s.writeError(conn, remote, "rate_limited", "rate limited")
+		s.writeError(conn, remote, interactionID, "rate_limited", "rate limited")
 		return
 	}
 	if interactionID == "" {
 		receiveSpan.SetAttributes(attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", "missing_interaction_id"))
 		slog.Warn("udp packet rejected", "reason", "missing_interaction_id", "remote", remoteKey(remote))
 		recordUDPPacket(parent, "missing_interaction_id", len(packet))
-		s.writeError(conn, remote, "missing_interaction_id", "missing interaction_id")
+		s.writeError(conn, remote, interactionID, "missing_interaction_id", "missing interaction_id")
 		return
 	}
 
@@ -247,13 +246,13 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 		receiveSpan.SetAttributes(attribute.String("interaction_id", interactionID), attribute.String("validation.result", "retry_later"))
 		slog.Info("udp retry is already in progress", "remote", remoteKey(remote), "interaction_id", interactionID)
 		recordUDPPacket(parent, "request_in_progress", len(packet))
-		s.writeError(conn, remote, "request_in_progress", "request is still in progress")
+		s.writeError(conn, remote, interactionID, "request_in_progress", "request is still in progress")
 		return
 	case replayConflict:
 		receiveSpan.SetAttributes(attribute.String("interaction_id", interactionID), attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", "replay_payload_mismatch"))
 		slog.Warn("udp replay payload mismatch rejected", "remote", remoteKey(remote), "interaction_id", interactionID)
 		recordUDPPacket(parent, "replay", len(packet))
-		s.writeError(conn, remote, "replay", "replay rejected: interaction_id was already used with a different payload")
+		s.writeError(conn, remote, interactionID, "replay", "replay rejected: interaction_id was already used with a different payload")
 		return
 	}
 
@@ -279,10 +278,16 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 		recordUDPPacket(parent, code, len(packet))
 		if isRetryableDownstreamCode(code) {
 			s.replay().release(interactionID, fingerprint)
-			s.writeError(conn, remote, code, stableDownstreamMessage(callErr))
+			s.writeError(conn, remote, interactionID, code, stableDownstreamMessage(callErr))
 		} else {
 			s.writeCachedError(conn, remote, interactionID, fingerprint, code, stableDownstreamMessage(callErr))
 		}
+		return
+	}
+	if strings.TrimSpace(response.GetInteractionId()) != interactionID {
+		slog.Error("udp downstream response interaction mismatch", "request_interaction_id", interactionID, "response_interaction_id", response.GetInteractionId())
+		recordUDPPacket(parent, "internal", len(packet))
+		s.writeCachedError(conn, remote, interactionID, fingerprint, "internal", "downstream response identity mismatch")
 		return
 	}
 
@@ -379,33 +384,92 @@ func validatePrincipalActor(rawPayload []byte, authenticatedCapsuleerID int64) *
 		UI struct {
 			Action string `json:"action"`
 		} `json:"ui"`
-		Input struct {
-			IssuedByCapsuleerID    int64 `json:"issued_by_capsuleer_id"`
-			BuyerCapsuleerID       int64 `json:"buyer_capsuleer_id"`
-			CancelledByCapsuleerID int64 `json:"cancelled_by_capsuleer_id"`
-		} `json:"input"`
+		Input map[string]json.RawMessage `json:"input"`
 	}
 	if err := json.Unmarshal(rawPayload, &packet); err != nil {
 		return reject("malformed_packet", "malformed packet")
 	}
-	var claimed int64
+	requiredField := ""
 	switch strings.TrimSpace(packet.UI.Action) {
 	case "market_place_sell_order", "contract_create_item_exchange", "direct_trade_offer":
-		claimed = packet.Input.IssuedByCapsuleerID
+		requiredField = "issued_by_capsuleer_id"
 	case "market_buy_from_sell_order", "contract_accept_item_exchange", "direct_trade_accept":
-		claimed = packet.Input.BuyerCapsuleerID
+		requiredField = "buyer_capsuleer_id"
 	case "market_cancel_order", "contract_cancel_item_exchange", "direct_trade_cancel":
-		claimed = packet.Input.CancelledByCapsuleerID
+		requiredField = "cancelled_by_capsuleer_id"
 	default:
 		return reject("unsupported_action", "unsupported trade GUI action")
 	}
-	if claimed <= 0 {
+	claimed, present, err := integerJSONField(packet.Input[requiredField])
+	if err != nil {
+		return reject("malformed_packet", "malformed actor field")
+	}
+	if !present || claimed <= 0 {
 		return reject("missing_principal", "capsuleer identity is required")
 	}
 	if claimed != authenticatedCapsuleerID {
 		return reject("principal_mismatch", "authenticated capsuleer does not match request actor")
 	}
+	actorClaims := make(map[string][]int64)
+	collectActorClaims(packet.Input, "input", actorClaims)
+	for field, values := range actorClaims {
+		for _, value := range values {
+			if value <= 0 || value != authenticatedCapsuleerID {
+				return reject("principal_mismatch", fmt.Sprintf("authenticated capsuleer does not match actor field %s", field))
+			}
+		}
+	}
 	return nil
+}
+
+func integerJSONField(raw json.RawMessage) (int64, bool, error) {
+	if len(raw) == 0 {
+		return 0, false, nil
+	}
+	var value int64
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return 0, true, err
+	}
+	return value, true, nil
+}
+
+func collectActorClaims(value any, path string, claims map[string][]int64) {
+	switch typed := value.(type) {
+	case map[string]json.RawMessage:
+		for key, raw := range typed {
+			var child any
+			decoder := json.NewDecoder(bytes.NewReader(raw))
+			decoder.UseNumber()
+			if err := decoder.Decode(&child); err != nil {
+				continue
+			}
+			fieldPath := path + "." + key
+			if key == "owner_id" || strings.HasSuffix(key, "_capsuleer_id") {
+				actorID := int64(0)
+				if number, ok := child.(json.Number); ok {
+					actorID, _ = number.Int64()
+				}
+				claims[fieldPath] = append(claims[fieldPath], actorID)
+			}
+			collectActorClaims(child, fieldPath, claims)
+		}
+	case map[string]any:
+		for key, child := range typed {
+			fieldPath := path + "." + key
+			if key == "owner_id" || strings.HasSuffix(key, "_capsuleer_id") {
+				actorID := int64(0)
+				if number, ok := child.(json.Number); ok {
+					actorID, _ = number.Int64()
+				}
+				claims[fieldPath] = append(claims[fieldPath], actorID)
+			}
+			collectActorClaims(child, fieldPath, claims)
+		}
+	case []any:
+		for index, child := range typed {
+			collectActorClaims(child, fmt.Sprintf("%s[%d]", path, index), claims)
+		}
+	}
 }
 
 func compactJSON(body []byte) ([]byte, error) {
@@ -428,21 +492,45 @@ func extractInteractionID(rawPayload []byte) (string, error) {
 	return strings.TrimSpace(header.InteractionID), nil
 }
 
-func (s *QuilkinUDPServer) writeError(conn net.PacketConn, remote net.Addr, code string, message string) {
+func bestEffortInteractionID(packet []byte) string {
+	var envelope edgeEnvelope
+	if err := json.Unmarshal(packet, &envelope); err == nil && len(envelope.Payload) > 0 {
+		if interactionID, err := extractInteractionID(envelope.Payload); err == nil {
+			return interactionID
+		}
+	}
+	if interactionID, err := extractInteractionID(packet); err == nil {
+		return interactionID
+	}
+	return ""
+}
+
+func (s *QuilkinUDPServer) writeError(conn net.PacketConn, remote net.Addr, interactionID string, code string, message string) {
 	body, _ := json.Marshal(map[string]string{
-		"code":    code,
-		"message": message,
+		"interaction_id": interactionID,
+		"status":         errorResponseStatus(code),
+		"code":           code,
+		"message":        message,
 	})
-	_ = s.writeResponse(conn, remote, "", body)
+	_ = s.writeResponse(conn, remote, interactionID, body)
 }
 
 func (s *QuilkinUDPServer) writeCachedError(conn net.PacketConn, remote net.Addr, interactionID string, fingerprint [sha256.Size]byte, code string, message string) {
 	body, _ := json.Marshal(map[string]string{
-		"code":    code,
-		"message": message,
+		"interaction_id": interactionID,
+		"status":         errorResponseStatus(code),
+		"code":           code,
+		"message":        message,
 	})
 	s.replay().complete(interactionID, fingerprint, body)
 	_ = s.writeResponse(conn, remote, interactionID, body)
+}
+
+func errorResponseStatus(code string) string {
+	if code == "request_in_progress" || code == "downstream_timeout" || code == "downstream_unavailable" || code == "queue_full" || code == "rate_limited" {
+		return "retryable"
+	}
+	return "rejected"
 }
 
 func (s *QuilkinUDPServer) writeResponse(conn net.PacketConn, remote net.Addr, interactionID string, body []byte) error {
@@ -453,7 +541,11 @@ func (s *QuilkinUDPServer) writeResponse(conn net.PacketConn, remote net.Addr, i
 			return fmt.Errorf("canonicalize UDP response: %w", err)
 		}
 		mac := hmac.New(sha256.New, s.hmacSecret)
-		_, _ = mac.Write(canonicalBody)
+		signingBytes, err := responseSigningBytes(edgeResponseEnvelopeSchema, s.hmacKeyID, canonicalBody)
+		if err != nil {
+			return fmt.Errorf("bind UDP response authentication metadata: %w", err)
+		}
+		_, _ = mac.Write(signingBytes)
 		responseBody, err = json.Marshal(edgeEnvelope{
 			SchemaVersion: edgeResponseEnvelopeSchema,
 			Payload:       json.RawMessage(canonicalBody),
@@ -472,6 +564,21 @@ func (s *QuilkinUDPServer) writeResponse(conn net.PacketConn, remote net.Addr, i
 		return writeErr
 	}
 	return nil
+}
+
+func responseSigningBytes(schemaVersion string, keyID string, canonicalBody []byte) ([]byte, error) {
+	var payload any
+	decoder := json.NewDecoder(bytes.NewReader(canonicalBody))
+	decoder.UseNumber()
+	if err := decoder.Decode(&payload); err != nil {
+		return nil, err
+	}
+	return json.Marshal(map[string]any{
+		"algorithm":      "hmac-sha256",
+		"key_id":         keyID,
+		"payload":        payload,
+		"schema_version": schemaVersion,
+	})
 }
 
 func canonicalJSON(body []byte) ([]byte, error) {

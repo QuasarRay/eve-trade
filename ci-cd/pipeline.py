@@ -757,6 +757,12 @@ kustomize build . > /out/kubernetes.yaml
 
     async def validate_kubernetes_render(self) -> None:
         rendered = self.kubernetes_render_file("registry.local/eve-trade", "ci")
+        await self.run_container(
+            "rendered Kubernetes reliability policy",
+            self.python_e2e_base()
+            .with_file("/tmp/manifest.yaml", rendered)
+            .with_exec(["python", "scripts/verify_rendered_kubernetes.py", "/tmp/manifest.yaml"]),
+        )
         await self.validate_kubernetes_schema("production Kubernetes render", rendered)
 
     async def validate_kubernetes_schema(
@@ -817,9 +823,14 @@ kustomize build . > /out/chaos-litmus.yaml
             raise RuntimeError(
                 "POST_DEPLOY_SMOKE_URL is required for authenticated post-deploy verification"
             )
+        if "{interaction_id}" not in smoke_url:
+            raise RuntimeError("POST_DEPLOY_SMOKE_URL must contain the {interaction_id} placeholder")
+        smoke_token = env("POST_DEPLOY_SMOKE_BEARER_TOKEN")
+        if not smoke_token:
+            raise RuntimeError("POST_DEPLOY_SMOKE_BEARER_TOKEN is required for authenticated post-deploy verification")
         kubeconfig_secret = self.client.set_secret("kubeconfig-b64", kubeconfig)
         smoke_token_secret = self.client.set_secret(
-            "post-deploy-smoke-token", env("POST_DEPLOY_SMOKE_BEARER_TOKEN")
+            "post-deploy-smoke-token", smoke_token
         )
         del registry, tag
         references = self.published_image_references(required=True)
@@ -852,8 +863,11 @@ done
 
 smoke_failed=false
 for attempt in 1 2 3; do
-  response="$(wget -q -T 15 -O - --header="Authorization: Bearer $POST_DEPLOY_SMOKE_BEARER_TOKEN" "$POST_DEPLOY_SMOKE_URL")" || smoke_failed=true
+  request_id="post-deploy-$(date +%s)-$attempt"
+  request_url="$(printf '%s' "$POST_DEPLOY_SMOKE_URL" | sed "s/{{interaction_id}}/$request_id/g")"
+  response="$(wget -q -T 15 -O - --header="Authorization: Bearer $POST_DEPLOY_SMOKE_BEARER_TOKEN" "$request_url")" || smoke_failed=true
   echo "$response" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"accepted"' || smoke_failed=true
+  echo "$response" | grep -Eq '"interaction_id"[[:space:]]*:[[:space:]]*"'"$request_id"'"' || smoke_failed=true
   [ "$smoke_failed" = false ] || break
 done
 if [ "$smoke_failed" = true ]; then
@@ -900,10 +914,15 @@ fi
             raise RuntimeError(
                 "CHAOS_PROBE_URL is required to verify authenticated trade continuity"
             )
+        if "{interaction_id}" not in probe_url:
+            raise RuntimeError("CHAOS_PROBE_URL must contain the {interaction_id} placeholder")
+        probe_token = env("CHAOS_PROBE_BEARER_TOKEN")
+        if not probe_token:
+            raise RuntimeError("CHAOS_PROBE_BEARER_TOKEN is required to verify authenticated trade continuity")
 
         kubeconfig_secret = self.client.set_secret("kubeconfig-b64", kubeconfig)
         probe_token_secret = self.client.set_secret(
-            "chaos-probe-token", env("CHAOS_PROBE_BEARER_TOKEN")
+            "chaos-probe-token", probe_token
         )
         cleanup_value = "true" if cleanup else "false"
         script = r"""
@@ -915,8 +934,11 @@ chmod 600 "$KUBECONFIG_PATH"
 KUBECTL="kubectl --kubeconfig $KUBECONFIG_PATH"
 
 probe_service() {
-  response="$(wget -q -T 15 -O - --header="Authorization: Bearer $CHAOS_PROBE_BEARER_TOKEN" "$CHAOS_PROBE_URL")" || return 1
-  echo "$response" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"accepted"'
+  request_id="chaos-$$-$(date +%s)"
+  request_url="$(printf '%s' "$CHAOS_PROBE_URL" | sed "s/{interaction_id}/$request_id/g")"
+  response="$(wget -q -T 15 -O - --header="Authorization: Bearer $CHAOS_PROBE_BEARER_TOKEN" "$request_url")" || return 1
+  echo "$response" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"accepted"' || return 1
+  echo "$response" | grep -Eq '"interaction_id"[[:space:]]*:[[:space:]]*"'"$request_id"'"'
 }
 
 echo "Checking authenticated trade smoke before chaos"
@@ -995,10 +1017,13 @@ stop_probe() {
 trap 'echo "Chaos run interrupted; stopping probes and engines"; stop_probe; stop_engines' INT TERM
 
 : > /tmp/chaos-probe-failures
+: > /tmp/chaos-probe-successes
 (
   while :; do
     if ! probe_service; then
       date -u +%Y-%m-%dT%H:%M:%SZ >> /tmp/chaos-probe-failures
+    else
+      date -u +%Y-%m-%dT%H:%M:%SZ >> /tmp/chaos-probe-successes
     fi
     sleep 2
   done
@@ -1064,6 +1089,10 @@ print_results
 if [ -s /tmp/chaos-probe-failures ]; then
   echo "Authenticated trade smoke failed during chaos at:" >&2
   cat /tmp/chaos-probe-failures >&2
+  exit 1
+fi
+if [ "$(wc -l < /tmp/chaos-probe-successes)" -lt 3 ]; then
+  echo "Fewer than three authenticated trade probes completed during chaos" >&2
   exit 1
 fi
 echo "Checking authenticated trade smoke after chaos"
@@ -1276,23 +1305,8 @@ for host, port in targets:
                 raise
             time.sleep(1)
 PY
-python - <<'PY'
-import re
-import subprocess
-import sys
-
-result = subprocess.run(
-    [sys.executable, "-m", "pytest", "distributed-backend/tests/e2e", "-q", "-rA"],
-    stdout=subprocess.PIPE,
-    stderr=subprocess.STDOUT,
-    text=True,
-)
-print(result.stdout, end="")
-if re.search(r"(?m)^[0-9]+ skipped in ", result.stdout):
-    print("all e2e tests were skipped", file=sys.stderr)
-    raise SystemExit(1)
-raise SystemExit(result.returncode)
-PY
+python -m coverage run --branch --source=distributed-backend/tests/e2e -m pytest distributed-backend/tests/e2e -q -rA
+python -m coverage report --fail-under=70
 python -m pytest distributed-backend/tests/e2e -q --count=3 -k 'concurrent or authenticated_udp_issue_burst'
 """
         tests = (
@@ -1317,6 +1331,7 @@ python -m pytest distributed-backend/tests/e2e -q --count=3 -k 'concurrent or au
             .with_env_variable("EVE_TRADE_MARKET_GRPC", "market:8081")
             .with_env_variable("EVE_TRADE_GATEWAY_GRPC", "api-gateway:8080")
             .with_env_variable("EVE_TRADE_API_GATEWAY_URL", "http://api-gateway:8080")
+            .with_env_variable("EVE_TRADE_MARKET_URL", "http://market:8081")
             .with_env_variable("EVE_TRADE_SIMULATOR_URL", "http://simulator:8000")
             .with_env_variable("EVE_TRADE_QUILKIN_UDP_HOST", "quilkin")
             .with_env_variable("EVE_TRADE_QUILKIN_UDP_PORT", "26001")
@@ -1326,6 +1341,9 @@ python -m pytest distributed-backend/tests/e2e -q --count=3 -k 'concurrent or au
             .with_env_variable("EVE_TRADE_EDGE_BUYER_SECRET", "buyer-player-secret")
             .with_env_variable("EVE_TRADE_EDGE_SELLER_KEY_ID", "seller")
             .with_env_variable("EVE_TRADE_EDGE_SELLER_SECRET", "seller-player-secret")
+            .with_env_variable("EVE_TRADE_EDGE_OTHER_KEY_ID", "other")
+            .with_env_variable("EVE_TRADE_EDGE_OTHER_SECRET", "other-player-secret")
+            .with_env_variable("EVE_TRADE_RABBITMQ_URL", "amqp://eve_trade:eve_trade@rabbitmq:5672/")
             .with_env_variable("EVE_TRADE_LOAD_REQUESTS", "20")
             .with_env_variable("EVE_TRADE_LOAD_P95_SECONDS", "5")
             .with_env_variable("EVE_TRADE_E2E_PRODUCTION_GATE", "true")

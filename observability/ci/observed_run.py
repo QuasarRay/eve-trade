@@ -307,7 +307,13 @@ def _run_integration(
     junit_host = storage.path("pytest/pytest-junit.xml")
     test_path = args.test_path or "distributed-backend/tests/e2e"
     maxfail = f" --maxfail={args.maxfail}" if args.maxfail else ""
-    pytest_command = f"python -m pip install --retries 5 --timeout 60 -r distributed-backend/tests/e2e/requirements.txt && python -m pytest {shlex.quote(test_path)} -vv -s --tb=short{maxfail} --junitxml=/workspace/{junit_host.relative_to(context.repo_root).as_posix()}"
+    pytest_command = (
+        "python -m pip install --retries 5 --timeout 60 -r distributed-backend/tests/e2e/requirements.txt && "
+        f"python -m coverage run --branch --source=distributed-backend/tests/e2e -m pytest {shlex.quote(test_path)} -vv -s --tb=short{maxfail} "
+        f"--junitxml=/workspace/{junit_host.relative_to(context.repo_root).as_posix()} && "
+        "python -m coverage report --fail-under=70 && "
+        "python -m coverage xml -o /workspace/distributed-backend/tests/e2e/coverage.xml"
+    )
     if "e2e-tests" in services:
         test_argv = [*prefix, "run", "--rm", "--no-deps", "e2e-tests", "sh", "-c", pytest_command]
     else:

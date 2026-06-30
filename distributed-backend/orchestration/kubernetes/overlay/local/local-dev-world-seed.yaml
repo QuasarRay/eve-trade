@@ -23,7 +23,7 @@ spec:
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef:
-                name: trade-settlement-database
+                name: trade-settlement-migration-database
           command:
             - /bin/sh
             - -ec

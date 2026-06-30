@@ -131,7 +131,7 @@
           <div class="actions">
             {% for button in buttons %}
               {% if button.window == "regional_market" or button.window == "wallet_orders" %}
-                <button data-button-id="{{ button.id }}" data-testid="action-{{ button.action }}" class="{% if button.action == 'market_cancel_order' %}cancel{% endif %}" title="{{ button.tooltip }}">{{ button.label }}</button>
+                <button data-button-id="{{ button.id }}" data-action="{{ button.action }}" data-testid="action-{{ button.action }}" class="{% if button.action == 'market_cancel_order' %}cancel{% endif %}" title="{{ button.tooltip }}">{{ button.label }}</button>
               {% endif %}
             {% endfor %}
           </div>
@@ -147,7 +147,7 @@
           <div class="actions">
             {% for button in buttons %}
               {% if button.window == "contracts" or button.window == "direct_trade" %}
-                <button data-button-id="{{ button.id }}" data-testid="action-{{ button.action }}" title="{{ button.tooltip }}">{{ button.label }}</button>
+                <button data-button-id="{{ button.id }}" data-action="{{ button.action }}" data-testid="action-{{ button.action }}" title="{{ button.tooltip }}">{{ button.label }}</button>
               {% endif %}
             {% endfor %}
           </div>
@@ -172,7 +172,7 @@
     const numberValue = (id) => Number(fieldValue(id) || 0);
     const response = document.getElementById("response");
 
-    function payload() {
+    function payload(action) {
       let extra = {};
       try {
         extra = JSON.parse(fieldValue("extra_payload") || "{}");
@@ -180,27 +180,47 @@
         response.textContent = `Invalid JSON in extra payload: ${error}`;
         throw error;
       }
-      return {
+      const common = {
         idempotency_key: fieldValue("idempotency_key"),
         external_request_id: fieldValue("external_request_id"),
-        issued_by_capsuleer_id: numberValue("issued_by_capsuleer_id"),
-        cancelled_by_capsuleer_id: numberValue("issued_by_capsuleer_id"),
-        buyer_capsuleer_id: numberValue("buyer_capsuleer_id"),
-        trade_instance_id: fieldValue("trade_instance_id"),
-        quantity: numberValue("quantity"),
-        quantity_requested: numberValue("quantity"),
-        unit_price_isk: numberValue("unit_price_isk"),
-        buyer_wallet_id: fieldValue("buyer_wallet_id"),
-        buyer_destination_item_stack_id: fieldValue("buyer_destination_item_stack_id"),
-        item_stack: {
-          item_stack_id: fieldValue("item_stack_id"),
-          owner_id: numberValue("issued_by_capsuleer_id"),
-          item_type_id: numberValue("item_type_id"),
-          station_id: numberValue("station_id"),
-          // The market loads canonical quantity from PostgreSQL. Zero avoids sending a
-          // stale client projection that would reject an otherwise valid order.
-          quantity: 0
-        },
+      };
+      let actionPayload;
+      if (["market_place_sell_order", "contract_create_item_exchange", "direct_trade_offer"].includes(action)) {
+        actionPayload = {
+          issued_by_capsuleer_id: numberValue("issued_by_capsuleer_id"),
+          quantity: numberValue("quantity"),
+          unit_price_isk: numberValue("unit_price_isk"),
+          item_stack: {
+            item_stack_id: fieldValue("item_stack_id"),
+            owner_id: numberValue("issued_by_capsuleer_id"),
+            item_type_id: numberValue("item_type_id"),
+            station_id: numberValue("station_id"),
+            // The market loads canonical quantity from PostgreSQL. Zero avoids sending a
+            // stale client projection that would reject an otherwise valid order.
+            quantity: 0
+          }
+        };
+      } else if (["market_buy_from_sell_order", "contract_accept_item_exchange", "direct_trade_accept"].includes(action)) {
+        actionPayload = {
+          buyer_capsuleer_id: numberValue("buyer_capsuleer_id"),
+          trade_instance_id: fieldValue("trade_instance_id"),
+          quantity_requested: numberValue("quantity"),
+          buyer_wallet_id: fieldValue("buyer_wallet_id"),
+          buyer_destination_item_stack_id: fieldValue("buyer_destination_item_stack_id"),
+        };
+      } else if (["market_cancel_order", "contract_cancel_item_exchange", "direct_trade_cancel"].includes(action)) {
+        actionPayload = {
+          cancelled_by_capsuleer_id: numberValue("issued_by_capsuleer_id"),
+          trade_instance_id: fieldValue("trade_instance_id"),
+        };
+      } else {
+        throw new Error(`Unsupported action: ${action}`);
+      }
+      // Action-specific construction deliberately prevents unrelated actor fields
+      // from crossing the authenticated boundary.
+      return {
+        ...common,
+        ...actionPayload,
         ...extra
       };
     }
@@ -217,7 +237,7 @@
         button.disabled = true;
         response.textContent = "Sending UDP packet through Quilkin...";
         try {
-          const body = { player_input: payload() };
+          const body = { player_input: payload(button.dataset.action) };
           const result = await fetch(`/api/gui/buttons/${button.dataset.buttonId}/press/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

@@ -171,3 +171,84 @@ Scope: remediation of every finding recorded in `changes/v8/flaws.md`. The audit
 - Terraform provider lock generation and provider-backed `terraform test` could not complete locally because `releases.hashicorp.com` returned 404 for provider checksum requests. Exact provider constraints and mocked test files are checked in; CI is configured to run init/validate/test and will fail if providers cannot be resolved. No fabricated lock hashes were added.
 - Local kubeconform execution was blocked by external registry/schema access. Both CI implementations contain strict validation with no missing-schema bypass and a commit-pinned CRD catalog.
 - Post-deploy and chaos probes require production kubeconfig, ingress URLs, and bearer tokens; their code paths were not executed against an external cluster in this workspace.
+
+## Reliability hardening follow-up (2026-06-30)
+
+This section supersedes the historical validation counts above. The claim matrix in `test-reliability-claim-matrix.md` is the source of truth for what this revision actually proves. Claims that remain partial or false are not production-readiness evidence.
+
+### Claim accountability
+
+- Added `changes/v8/test-reliability-claim-matrix.md`, with one row per material V8 claim, concrete evidence, the remaining gap, the required gate, and an allowed proof status.
+- Kept the unresolved production database, custom-resource schema, external rollout/chaos, full GUI, Terraform execution, and coverage-depth gaps explicit instead of treating the presence of commands as proof.
+
+### Authenticated edge and UDP integrity
+
+- `distributed-backend/src/api-gateway/distributed-backend/quilkin_udp.go` now recursively binds every actor-like payload field to the authenticated principal, covers every supported action, preserves interaction identity on signed error responses, binds response schema/key/algorithm/body in the MAC, rejects downstream identity mismatch, and drains every admitted UDP job during graceful shutdown.
+- `distributed-backend/src/api-gateway/distributed-backend/quilkin_udp_test.go` now covers unknown keys, wrong HMAC, all 1001/2002/3003 cross-principal permutations, conflicting/unused actor fields, principal-keyed rate limiting, full response MAC metadata, oversized packets, queue overflow, real-listener drain, replay, and a stronger unbound-actor fuzz invariant.
+- `distributed-backend/src/api-gateway/distributed-backend/config.go` now fails startup for missing/blank response signing configuration, malformed or duplicate principal keyrings, duplicate capsuleer identities, unknown credential fields, and malformed critical bool/int/float/duration values instead of falling back.
+- `distributed-backend/src/api-gateway/distributed-backend/config_test.go` adds table-driven fail-fast configuration coverage, including explicit false and duplicate-key/principal cases.
+- `simulator/trade_gui/udp_client.py` now verifies the expected UDP endpoint and requires an authenticated, schema/key/body/interaction-bound response for every response class.
+- `simulator/trade_gui/views.py` returns HTTP 202 only for an explicit accepted response, maps exact business codes, and persists unknown or failed responses as failed interactions.
+- `simulator/trade_gui/tests.py` expands to 13 tests covering success, business, transient, missing/wrong interaction, malformed JSON, wrong source/key/version, tampered body, retries, exhaustion, exact HTTP mapping, and failed persistence.
+- `simulator/trade_gui/templates/trade_gui/index.html` now constructs action-specific payloads. It no longer sends unrelated buyer/seller/canceller identities on every action; hostile extra actor fields still reach the edge and are rejected.
+- `compose.yaml`, `docker-compose.integration.yml`, and both local/production Quilkin Kubernetes manifests constrain Quilkin 0.10.0 to one proxy worker. The live multi-client test exposed a concurrent upstream-socket reservation race that swapped signed responses between clients; one proxy worker removes that race while API processing remains concurrent. This is a correctness mitigation, not capacity evidence.
+
+### E2E and settlement correctness
+
+- `distributed-backend/tests/e2e/conftest.py` now treats `1`, `true`, `yes`, and `on` as production-gate values, fails immediately instead of skipping in that mode, requires every selected live dependency and all three principal credentials, and probes Market, settlement, RabbitMQ, simulator, gateway, Postgres, response signing, and runtime-role inputs.
+- `distributed-backend/tests/e2e/helpers.py` now preserves falsey hostile values, requires exact RPC code and message assertions, verifies source/schema/key/signature/interaction on direct UDP responses, and reports exact correlation mismatches.
+- Added `distributed-backend/tests/e2e/test_suite_contract.py` to prove falsey wire values and fail each missing production dependency/credential independently.
+- `distributed-backend/tests/e2e/test_trade_lifecycle.py` adds the live three-principal hostile matrix, conflicting seller rejection, exact runtime-role grants and forbidden operations, symmetric immutable-ledger denial, exact item-escrow over-release and wallet-escrow over-payment rollback proofs, and a barrier-driven accept/cancel race with exact winner, loser, balances, quantities, escrow, trade state, and ledger conservation.
+- `distributed-backend/tests/e2e/requirements.txt` pins coverage and repeat tooling. Integration Compose and both CI systems now run E2E branch coverage with a 70% floor and upload the XML artifact.
+- `scripts/verify_architecture_boundaries.py` now fails if an `expect_rpc_error` call omits a non-empty literal expected code or message substring and enforces critical suite assertions structurally.
+- `distributed-backend/src/trade-settlement/src/commands.rs` adds explicit signed-64 minimum/zero/maximum validation tests and exposes each command's trade identity for locking.
+- `distributed-backend/src/trade-settlement/src/executor.rs` takes sorted, deduplicated transaction-scoped PostgreSQL advisory locks for all affected trades before idempotency/operation execution. This fixed the real accept/cancel deadlock found by the new forced-overlap test.
+
+### Runtime database role and migrations
+
+- `distributed-backend/tests/migrations/verify_upgrade.sh` now creates a non-superuser runtime role, revokes broad defaults, grants only an exact table/sequence allowlist, reapplies migrations, and compares the actual `information_schema.role_table_grants` set with the expected set.
+- `compose.yaml` and `docker-compose.integration.yml` now separate migration administrator and runtime application URLs; canonical migrations execute the upgrade/role verification harness.
+- `distributed-backend/orchestration/kubernetes/base/migrate.yaml` now consumes `trade-settlement-migration-database`, while application deployments continue to consume `trade-settlement-database`.
+- Local Kubernetes now has separate migration/runtime secrets and `runtime-role.sql`; the seed job uses migration credentials and the app uses the runtime identity.
+- Added `scripts/verify_compose_runtime_credentials.py` to parse rendered Compose JSON and reject privileged app credentials, shared migration/runtime identities, or bypassing the migration harness.
+- Added `scripts/verify_rendered_kubernetes.py` to parse rendered resources and enforce digest images, no production simulator, edge-auth secret wiring, separate runtime/migration DB secrets, internal service exposure limits, and ingress/egress default deny.
+- Remaining limitation: the EKS/GKE Terraform roots still derive the application database secret from the managed database administrator credential. The repository must not claim production-wide least privilege until those roots provision and wire a distinct runtime role.
+
+### RabbitMQ, GUI, rollout, and chaos gates
+
+- `distributed-backend/src/messaging/rabbitmqsettlement/worker.go` now rejects/dead-letters malformed deliveries, keeps admitted execution alive through graceful cancellation, and refuses readiness with a nil executor.
+- `worker_test.go` covers nil and failed executor readiness and admitted-work drain.
+- `rabbitmq_integration_test.go` now uses a live broker to prove success, business rejection, publisher confirmation, unroutable replies, correlation/metadata/delivery properties, malformed nack/dead-letter behavior, acknowledgement, and blocked queued work completing during shutdown.
+- `scripts/gui-simulator-demo.cjs` factors fatal evidence and final gate enforcement into testable functions, normalizes trailing whitespace in captured Compose logs, and fails on browser assertions, severe logs, unhealthy/exited/restarted containers, panic/fatal/OOM/unhandled/stack-trace evidence.
+- Added `scripts/gui-simulator-demo.test.cjs`; `package.json` and `.github/workflows/verify.yaml` run this negative contract before browser evidence can be accepted.
+- Refreshed every tracked file under `artifacts/gui-simulator-demo` produced by the successful canonical run: console/Compose/fatal logs, narration, run results/summary, screenshots 03-19, VTT narration, and WebM video. The refreshed result records 57/57 assertions and a clean service scan for this dirty experimental worktree.
+- `observability/ci/observed_run.py` runs the GUI contract as part of observed CI execution.
+- `ci-cd/pipeline.py` now requires non-empty authenticated probe credentials, unique interaction IDs, matching structured accepted responses, at least three successful in-disruption requests, before/after functional probes, and a Litmus pass verdict. The deployment smoke similarly requires three distinct accepted external interactions and fails into rollback.
+
+### Infrastructure and coverage gates
+
+- The EKS and GKE Terraform tests now inspect concrete database encryption, private networking, HA, backup/PITR, deletion protection, ingress, and secret resources. The Talos/Omni test inspects the absence of in-cluster PostgreSQL and the explicit external database secret.
+- Removed invalid `mock_provider "kubectl"` declarations: Terraform resolves an unqualified test mock as `hashicorp/kubectl`, which is a different provider type from the configured `gavinbunney/kubectl` provider and prevented the tests from starting.
+- `.github/workflows/verify.yaml` and `ci-cd/pipeline.py` add E2E branch coverage/artifacts and semantic/rendered policy commands while retaining strict failure behavior.
+- Go module coverage gates passed locally at 44.4% observability, 28.5% messaging, 33.9% Market, 42.9% settlement-worker, and 68.7% API gateway. Simulator branch coverage was 84%; E2E was 93%; observability was only 35%. Rust's configured line floor remains only 20%. The latter two thresholds are collapse guards, not correctness evidence.
+
+### Validation for this follow-up
+
+- Production-gate Compose E2E: **130 passed, 0 skipped**, 93% branch coverage.
+- Forced settlement accept/cancel overlap: **10/10 passed** after advisory locking.
+- Authenticated multi-client UDP burst: **5/5 passed** after the Quilkin worker mitigation.
+- Exact configured three-pass concurrency/load gate: **12 passed, 375 deselected**.
+- Canonical headless GUI: **57/57 assertions passed**; screenshots/video/results emitted; severe log, health, exit, and restart scan clean.
+- Simulator: **13 passed**, 84% branch coverage.
+- Observability: **14 passed**, 35% branch coverage (configured minimum only).
+- Rust: **19 passed**; format and clippy-with-warnings-denied passed.
+- Live RabbitMQ: passed normally and under Linux `-race`.
+- Go root tests and all configured module coverage floors passed. The strengthened principal-binding fuzz target passed 92,164 executions in 10 seconds with two workers.
+- Compose renders, rendered credential policy, architecture guard, workflow YAML parse, local/production Kubernetes renders, production structural policy, Terraform recursive format, and GUI negative contract passed.
+
+### Validation that did not pass or did not run
+
+- Strict kubeconform did **not** pass: the pinned CRD catalog has no schema for `install.istio.io/v1alpha1 IstioOperator` or `litmuschaos.io/v1alpha1 ChaosEngine`. CI currently fails honestly rather than ignoring missing schemas. Authoritative pinned schemas or authoritative custom-resource validators are still required.
+- Provider-backed Terraform init/validate/test did **not** run to completion locally: Docker access to `registry.terraform.io` returned registry/module service errors. The earlier invalid third-party provider mocks were fixed, but the concrete plan assertions remain only partially proven until CI executes them.
+- Post-deploy and chaos probes were not executed against a real cluster because no production kubeconfig, ingress URL, or bearer token was available.
+- Dagger itself was not installed/executed locally; the equivalent canonical Compose production gate ran instead.

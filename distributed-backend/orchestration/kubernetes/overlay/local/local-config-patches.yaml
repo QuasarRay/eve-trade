@@ -44,3 +44,12 @@ spec:
                 sleep 2;
               done;
               psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /migrations/0001_settlement_schema.sql;
+              psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /runtime-role/runtime-role.sql;
+          volumeMounts:
+            - name: runtime-role
+              mountPath: /runtime-role
+              readOnly: true
+      volumes:
+        - name: runtime-role
+          configMap:
+            name: local-runtime-database-role

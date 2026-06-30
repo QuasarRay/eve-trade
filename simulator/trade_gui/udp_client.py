@@ -91,7 +91,7 @@ def send_gui_packet(packet: dict[str, Any]) -> dict[str, Any]:
             if not response_from_expected_endpoint(response_address, address):
                 raise ValueError(f"UDP response came from unexpected endpoint {response_address!r}")
             decoded = decode_udp_response(response)
-            if decoded.get("status") == "accepted" and decoded.get("interaction_id") != packet.get("interaction_id"):
+            if decoded.get("interaction_id") != packet.get("interaction_id"):
                 raise ValueError("UDP response interaction_id does not match request")
             if decoded.get("code") not in RETRYABLE_RESPONSE_CODES or attempt >= max_attempts:
                 return decoded
@@ -108,8 +108,8 @@ def send_gui_packet(packet: dict[str, Any]) -> dict[str, Any]:
 def decode_udp_response(response: bytes) -> dict[str, Any]:
     try:
         decoded = json.loads(response.decode("utf-8"))
-    except json.JSONDecodeError:
-        return {"raw_response": response.decode("utf-8", errors="replace")}
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("UDP response is not valid JSON") from exc
     if isinstance(decoded, dict):
         if decoded.get("schema_version") == "eve-trade-edge-response.v1":
             payload = decoded.get("payload")
@@ -118,7 +118,11 @@ def decode_udp_response(response: bytes) -> dict[str, Any]:
                 raise ValueError("signed UDP response envelope is malformed")
             if auth.get("algorithm") != "hmac-sha256" or auth.get("key_id") != settings.GAME_PACKET_HMAC_KEY_ID:
                 raise ValueError("signed UDP response uses unexpected authentication metadata")
-            canonical = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+            canonical = response_signing_bytes(
+                decoded["schema_version"],
+                str(auth.get("key_id") or ""),
+                payload,
+            )
             expected = base64.urlsafe_b64encode(
                 hmac.new(settings.GAME_PACKET_HMAC_SECRET.encode("utf-8"), canonical, hashlib.sha256).digest()
             ).rstrip(b"=").decode("ascii")
@@ -126,7 +130,20 @@ def decode_udp_response(response: bytes) -> dict[str, Any]:
                 raise ValueError("signed UDP response signature is invalid")
             return payload
         raise ValueError("UDP response is not an authenticated edge response envelope")
-    return {"raw_response": decoded}
+    raise ValueError("UDP response envelope must be a JSON object")
+
+
+def response_signing_bytes(schema_version: str, key_id: str, payload: dict[str, Any]) -> bytes:
+    return json.dumps(
+        {
+            "algorithm": "hmac-sha256",
+            "key_id": key_id,
+            "payload": payload,
+            "schema_version": schema_version,
+        },
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
 
 
 def response_from_expected_endpoint(actual: tuple[str, int], expected: tuple[str, int]) -> bool:

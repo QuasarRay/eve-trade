@@ -1,5 +1,3 @@
-mock_provider "kubectl" {}
-
 run "production_plan" {
   command = plan
 
@@ -12,5 +10,19 @@ run "production_plan" {
   assert {
     condition     = var.database_mode == "external" && var.external_database_url != ""
     error_message = "the representative Talos/Omni production plan must use an explicit external database"
+  }
+
+  assert {
+    condition     = length(kubectl_manifest.postgres_statefulset) == 0 && length(kubectl_manifest.postgres_service) == 0
+    error_message = "the Talos/Omni external production plan must not create the non-production in-cluster PostgreSQL topology"
+  }
+
+  assert {
+    condition = (
+      length(kubectl_manifest.trade_settlement_database) == 1 &&
+      strcontains(kubectl_manifest.trade_settlement_database[0].yaml_body, "trade-settlement-database") &&
+      strcontains(kubectl_manifest.trade_settlement_database[0].yaml_body, nonsensitive(var.external_database_url))
+    )
+    error_message = "the Talos/Omni plan must deliver the explicit external runtime database URL through the expected secret"
   }
 }

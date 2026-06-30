@@ -370,19 +370,40 @@ function waitForMarketHealthy(timeoutMs = 60000) {
 
 function captureServiceLogs(since) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
-  const logs = command("docker", ["compose", "logs", "--no-color", "--timestamps", "--since", since]).stdout;
+  const rawLogs = command("docker", ["compose", "logs", "--no-color", "--timestamps", "--since", since]).stdout;
+  const logs = rawLogs.split(/\r?\n/).map((line) => line.trimEnd()).join("\n");
   fs.writeFileSync(path.join(LOG_DIR, "compose.log"), logs, "utf8");
-  const issues = logs.split(/\r?\n/).filter((line) => /\b(panic|fatal|out of memory|oomkilled|unhandled exception|stack trace)\b|sql.*(fatal|panic)|rabbitmq.*(fatal|panic)/i.test(line));
   const rows = command("docker", ["compose", "ps", "--format", "json"], { allowFailure: true }).stdout.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+  const restartCounts = {};
+  for (const row of rows) {
+    const restart = command("docker", ["inspect", "--format", "{{.RestartCount}}", row.ID], { allowFailure: true }).stdout.trim();
+    restartCounts[row.ID] = restart;
+  }
+  const issues = serviceEvidenceIssues(logs, rows, restartCounts);
+  fs.writeFileSync(path.join(LOG_DIR, "fatal-scan.txt"), issues.length ? issues.join("\n") : "No panic/fatal/OOM signatures, unhealthy containers, or unexpected restarts were found.\n", "utf8");
+  return issues;
+}
+
+function serviceEvidenceIssues(logs, rows, restartCounts = {}) {
+  const issues = logs.split(/\r?\n/).filter((line) => /\b(panic|fatal|out of memory|oomkilled|unhandled exception|stack trace)\b|sql.*(fatal|panic)|rabbitmq.*(fatal|panic)/i.test(line));
   for (const row of rows) {
     if (row.State !== "running" || (row.Health && row.Health !== "healthy")) {
       issues.push(`container ${row.Service || row.Name} ended state=${row.State} health=${row.Health || "n/a"}`);
     }
-    const restart = command("docker", ["inspect", "--format", "{{.RestartCount}}", row.ID], { allowFailure: true }).stdout.trim();
+    const restart = String(restartCounts[row.ID] || "").trim();
     if (restart && restart !== "0") issues.push(`container ${row.Service || row.Name} restarted ${restart} times`);
   }
-  fs.writeFileSync(path.join(LOG_DIR, "fatal-scan.txt"), issues.length ? issues.join("\n") : "No panic/fatal/OOM signatures, unhealthy containers, or unexpected restarts were found.\n", "utf8");
   return issues;
+}
+
+function enforceSuccessfulGate(runResults, serviceHealthIssues) {
+  const failedResults = runResults.filter((result) => !result.passed);
+  if (serviceHealthIssues.length > 0) {
+    throw new Error(`service health scan found ${serviceHealthIssues.length} severe log or container-state issues`);
+  }
+  if (failedResults.length > 0) {
+    throw new Error(`${failedResults.length} GUI QA assertions failed: ${failedResults.map((result) => result.name).join(", ")}`);
+  }
 }
 
 async function main() {
@@ -699,20 +720,18 @@ async function main() {
   const runData = JSON.parse(fs.readFileSync(path.join(ARTIFACT_ROOT, "run-results.json"), "utf8"));
   writeRunSummary(runData.initial, runData.final, finalVideo, runData.provenance);
   process.stdout.write(`\nArtifacts written to ${ARTIFACT_ROOT}\nVideo: ${finalVideo}\n`);
-  const failedResults = runData.results.filter((result) => !result.passed);
-  if (serviceHealthIssues.length > 0) {
-    throw new Error(`service health scan found ${serviceHealthIssues.length} severe log or container-state issues`);
-  }
-  if (failedResults.length > 0) {
-    throw new Error(`${failedResults.length} GUI QA assertions failed: ${failedResults.map((result) => result.name).join(", ")}`);
-  }
+  enforceSuccessfulGate(runData.results, serviceHealthIssues);
 }
 
-if (process.argv[2] === "--refresh-logs") {
-  captureServiceLogs(process.argv[3] || logSince);
-} else {
-  main().catch((error) => {
-    process.stderr.write(`${error.stack || error}\n`);
-    process.exitCode = 1;
-  });
+module.exports = { enforceSuccessfulGate, serviceEvidenceIssues };
+
+if (require.main === module) {
+  if (process.argv[2] === "--refresh-logs") {
+    captureServiceLogs(process.argv[3] || logSince);
+  } else {
+    main().catch((error) => {
+      process.stderr.write(`${error.stack || error}\n`);
+      process.exitCode = 1;
+    });
+  }
 }

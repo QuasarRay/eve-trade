@@ -16,13 +16,22 @@ import (
 )
 
 type integrationExecutor struct {
-	calls atomic.Int32
+	calls        atomic.Int32
+	drainStarted chan struct{}
+	drainRelease chan struct{}
 }
 
 func (e *integrationExecutor) Ping(context.Context) error { return nil }
 
 func (e *integrationExecutor) ExecuteSettlementBatch(_ context.Context, request *tradesettlementv1.ExecuteSettlementBatchRequest) (*tradesettlementv1.ExecuteSettlementBatchResponse, error) {
 	e.calls.Add(1)
+	if request.GetRequestId() == "shutdown-drain" {
+		select {
+		case e.drainStarted <- struct{}{}:
+		default:
+		}
+		<-e.drainRelease
+	}
 	if request.GetRequestId() == "reject" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("deliberate rejection"))
 	}
@@ -58,13 +67,14 @@ func TestRabbitMQWorkerAndClientReliabilityContract(t *testing.T) {
 		PrefetchCount:        2,
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	executor := &integrationExecutor{}
+	workerCtx, cancelWorker := context.WithCancel(context.Background())
+	clientCtx, cancelClient := context.WithCancel(context.Background())
+	defer cancelClient()
+	executor := &integrationExecutor{drainStarted: make(chan struct{}, 1), drainRelease: make(chan struct{})}
 	ready := make(chan bool, 2)
 	workerDone := make(chan error, 1)
 	go func() {
-		workerDone <- RunSettlementWorker(ctx, config, executor, func(value bool) { ready <- value })
+		workerDone <- RunSettlementWorker(workerCtx, config, executor, func(value bool) { ready <- value })
 	}()
 	select {
 	case value := <-ready:
@@ -75,13 +85,17 @@ func TestRabbitMQWorkerAndClientReliabilityContract(t *testing.T) {
 		t.Fatal("worker did not become ready")
 	}
 
-	client, err := NewRPCClient(ctx, config)
+	auditConnection, auditChannel, auditDeliveries := observeBrokerCommands(t, config)
+	defer auditConnection.Close()
+	defer auditChannel.Close()
+
+	client, err := NewRPCClient(clientCtx, config)
 	if err != nil {
 		t.Fatalf("create RPC client: %v", err)
 	}
 	defer client.Close()
 
-	response, err := client.ExecuteSettlementBatch(ctx, &tradesettlementv1.ExecuteSettlementBatchRequest{
+	response, err := client.ExecuteSettlementBatch(clientCtx, &tradesettlementv1.ExecuteSettlementBatchRequest{
 		RequestId: "success", IdempotencyKey: "success-key",
 	})
 	if err != nil {
@@ -90,8 +104,9 @@ func TestRabbitMQWorkerAndClientReliabilityContract(t *testing.T) {
 	if response.GetSettlementBatchId() != "batch-success" || response.GetBatchState() != "COMPLETED" {
 		t.Fatalf("unexpected brokered response: %v", response)
 	}
+	assertCommandMetadata(t, auditDeliveries, "success", "success-key")
 
-	_, err = client.ExecuteSettlementBatch(ctx, &tradesettlementv1.ExecuteSettlementBatchRequest{
+	_, err = client.ExecuteSettlementBatch(clientCtx, &tradesettlementv1.ExecuteSettlementBatchRequest{
 		RequestId: "reject", IdempotencyKey: "reject-key",
 	})
 	if connect.CodeOf(err) != connect.CodeFailedPrecondition || err.Error() == "" {
@@ -101,10 +116,29 @@ func TestRabbitMQWorkerAndClientReliabilityContract(t *testing.T) {
 		t.Fatalf("executor calls = %d, want 2", executor.calls.Load())
 	}
 
-	assertMalformedCommandGetsErrorReply(t, ctx, config)
-	assertUnavailableReplyTargetIsAcknowledged(t, ctx, config, executor)
+	assertMalformedCommandGetsErrorReplyAndIsDeadLettered(t, clientCtx, config)
+	assertUnavailableReplyTargetIsAcknowledged(t, clientCtx, config, executor)
 
-	cancel()
+	drainResult := make(chan error, 1)
+	go func() {
+		response, err := client.ExecuteSettlementBatch(clientCtx, &tradesettlementv1.ExecuteSettlementBatchRequest{
+			RequestId: "shutdown-drain", IdempotencyKey: "shutdown-drain-key",
+		})
+		if err == nil && (response.GetSettlementBatchId() != "batch-shutdown-drain" || response.GetBatchState() != "COMPLETED") {
+			err = fmt.Errorf("unexpected drained response: %v", response)
+		}
+		drainResult <- err
+	}()
+	select {
+	case <-executor.drainStarted:
+	case <-time.After(5 * time.Second):
+		t.Fatal("queued shutdown request did not reach executor")
+	}
+	cancelWorker()
+	close(executor.drainRelease)
+	if err := <-drainResult; err != nil {
+		t.Fatalf("admitted work did not finish during graceful shutdown: %v", err)
+	}
 	select {
 	case err := <-workerDone:
 		if err != nil {
@@ -112,6 +146,52 @@ func TestRabbitMQWorkerAndClientReliabilityContract(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("worker did not drain and stop after cancellation")
+	}
+}
+
+func observeBrokerCommands(t *testing.T, config Config) (*amqp.Connection, *amqp.Channel, <-chan amqp.Delivery) {
+	t.Helper()
+	connection, err := amqp.Dial(config.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	channel, err := connection.Channel()
+	if err != nil {
+		connection.Close()
+		t.Fatal(err)
+	}
+	queue, err := channel.QueueDeclare("", false, true, true, false, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := channel.QueueBind(queue.Name, config.RoutingKey, config.Exchange, false, nil); err != nil {
+		t.Fatal(err)
+	}
+	deliveries, err := channel.Consume(queue.Name, "", false, true, false, false, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return connection, channel, deliveries
+}
+
+func assertCommandMetadata(t *testing.T, deliveries <-chan amqp.Delivery, requestID string, idempotencyKey string) {
+	t.Helper()
+	select {
+	case delivery := <-deliveries:
+		if delivery.MessageId != requestID || delivery.CorrelationId == "" || delivery.ReplyTo == "" {
+			t.Fatalf("command identifiers were not propagated: %+v", delivery)
+		}
+		if delivery.ContentType != requestContentType || delivery.Type != requestType || delivery.DeliveryMode != amqp.Persistent {
+			t.Fatalf("command transport metadata = type %q content %q mode %d", delivery.Type, delivery.ContentType, delivery.DeliveryMode)
+		}
+		if delivery.Headers["request_id"] != requestID || delivery.Headers["idempotency_key"] != idempotencyKey {
+			t.Fatalf("command headers = %#v", delivery.Headers)
+		}
+		if err := delivery.Ack(false); err != nil {
+			t.Fatalf("ack audit command: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("broker did not route the metadata audit copy; publisher confirm/route contract failed")
 	}
 }
 
@@ -166,7 +246,7 @@ func waitForRabbitMQTestBroker(t *testing.T, url string) {
 	}
 }
 
-func assertMalformedCommandGetsErrorReply(t *testing.T, ctx context.Context, config Config) {
+func assertMalformedCommandGetsErrorReplyAndIsDeadLettered(t *testing.T, ctx context.Context, config Config) {
 	t.Helper()
 	connection, err := amqp.Dial(config.URL)
 	if err != nil {
@@ -206,5 +286,22 @@ func assertMalformedCommandGetsErrorReply(t *testing.T, ctx context.Context, con
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("malformed command did not receive an error reply")
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		delivery, ok, err := channel.Get(config.DeadLetterQueue, true)
+		if err != nil {
+			t.Fatalf("inspect malformed-command dead letter: %v", err)
+		}
+		if ok {
+			if delivery.CorrelationId != correlation || string(delivery.Body) != "not-protobuf" {
+				t.Fatalf("dead letter = correlation %q body %q", delivery.CorrelationId, delivery.Body)
+			}
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("malformed command was acknowledged instead of dead-lettered")
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 }

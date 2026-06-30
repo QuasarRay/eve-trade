@@ -1,338 +1,596 @@
-settlement-worker-1  | 2026-06-27T12:27:53.141780752Z {"time":"2026-06-27T12:27:53.141449281Z","level":"WARN","msg":"settlement command failed","idempotency_key":"gui-demo-20260627122639-insufficient-isk-accept","error":"failed_precondition: wallet 00000000-0000-4000-8000-000000002002 has 999821, requested 1200000"}
-settlement-worker-1  | 2026-06-27T12:28:41.480172772Z {"time":"2026-06-27T12:28:41.479974385Z","level":"WARN","msg":"settlement command failed","idempotency_key":"gui-demo-20260627122639-race-accept-a","error":"failed_precondition: trade_instance 292f16d0-a451-49fe-a542-26ffe3883996 is not OPEN"}
-api-gateway-1        | 2026-06-27T12:26:45.304191019Z {"time":"2026-06-27T12:26:45.303831199Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":808}
-api-gateway-1        | 2026-06-27T12:26:45.395072660Z {"time":"2026-06-27T12:26:45.394890274Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-happy-issue","duration_ms":90}
-api-gateway-1        | 2026-06-27T12:26:48.932740384Z {"time":"2026-06-27T12:26:48.932435375Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":851}
-api-gateway-1        | 2026-06-27T12:26:48.965799079Z {"time":"2026-06-27T12:26:48.965578847Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-happy-accept","duration_ms":32}
-api-gateway-1        | 2026-06-27T12:26:52.661919869Z {"time":"2026-06-27T12:26:52.661573365Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":811}
-api-gateway-1        | 2026-06-27T12:26:52.686806843Z {"time":"2026-06-27T12:26:52.686629362Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-partial-issue","duration_ms":24}
-api-gateway-1        | 2026-06-27T12:26:54.963421140Z {"time":"2026-06-27T12:26:54.963241448Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":855}
-api-gateway-1        | 2026-06-27T12:26:54.984608808Z {"time":"2026-06-27T12:26:54.984410057Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-partial-accept-4","duration_ms":20}
-api-gateway-1        | 2026-06-27T12:26:57.513003149Z {"time":"2026-06-27T12:26:57.512781194Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":855}
-api-gateway-1        | 2026-06-27T12:26:57.537293479Z {"time":"2026-06-27T12:26:57.537136782Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-partial-accept-6","duration_ms":24}
-api-gateway-1        | 2026-06-27T12:27:00.097842887Z {"time":"2026-06-27T12:27:00.097599601Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":808}
-api-gateway-1        | 2026-06-27T12:27:00.114289004Z {"time":"2026-06-27T12:27:00.114075117Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-cancel-issue","duration_ms":16}
-api-gateway-1        | 2026-06-27T12:27:01.591680311Z {"time":"2026-06-27T12:27:01.591282058Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":834}
-api-gateway-1        | 2026-06-27T12:27:01.615448808Z {"time":"2026-06-27T12:27:01.615266214Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-cancel-open","duration_ms":23}
-api-gateway-1        | 2026-06-27T12:27:04.444947701Z {"time":"2026-06-27T12:27:04.444728853Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":816}
-api-gateway-1        | 2026-06-27T12:27:04.459167014Z {"time":"2026-06-27T12:27:04.458957026Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-partial-cancel-issue","duration_ms":14}
-api-gateway-1        | 2026-06-27T12:27:05.912215104Z {"time":"2026-06-27T12:27:05.912022205Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":860}
-api-gateway-1        | 2026-06-27T12:27:05.932157689Z {"time":"2026-06-27T12:27:05.9319208Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-partial-cancel-accept","duration_ms":19}
-api-gateway-1        | 2026-06-27T12:27:07.445304415Z {"time":"2026-06-27T12:27:07.445082898Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":837}
-api-gateway-1        | 2026-06-27T12:27:07.461880253Z {"time":"2026-06-27T12:27:07.461644972Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-partial-cancel","duration_ms":16}
-api-gateway-1        | 2026-06-27T12:27:10.730577259Z {"time":"2026-06-27T12:27:10.73033436Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":823}
-api-gateway-1        | 2026-06-27T12:27:10.732494665Z {"time":"2026-06-27T12:27:10.732309743Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-zero-quantity","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:12.463514516Z {"time":"2026-06-27T12:27:12.463313264Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":829}
-api-gateway-1        | 2026-06-27T12:27:12.465387780Z {"time":"2026-06-27T12:27:12.465208316Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-negative-quantity","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:14.597199161Z {"time":"2026-06-27T12:27:14.596816848Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":820}
-api-gateway-1        | 2026-06-27T12:27:14.599225633Z {"time":"2026-06-27T12:27:14.599030982Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-too-many","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:16.412054361Z {"time":"2026-06-27T12:27:16.411853657Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":820}
-api-gateway-1        | 2026-06-27T12:27:16.414005759Z {"time":"2026-06-27T12:27:16.413848652Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-zero-price","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:18.145142299Z {"time":"2026-06-27T12:27:18.144772708Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":825}
-api-gateway-1        | 2026-06-27T12:27:18.147128899Z {"time":"2026-06-27T12:27:18.146973461Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-negative-price","code":"invalid_argument","duration_ms":2}
-api-gateway-1        | 2026-06-27T12:27:20.083807782Z {"time":"2026-06-27T12:27:20.083574245Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":824}
-api-gateway-1        | 2026-06-27T12:27:20.085416840Z {"time":"2026-06-27T12:27:20.085256408Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-blank-quantity","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:21.912491624Z {"time":"2026-06-27T12:27:21.912291577Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":821}
-api-gateway-1        | 2026-06-27T12:27:21.914609566Z {"time":"2026-06-27T12:27:21.914382014Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-blank-price","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:23.613501067Z {"time":"2026-06-27T12:27:23.613281668Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":815}
-api-gateway-1        | 2026-06-27T12:27:23.615470988Z {"time":"2026-06-27T12:27:23.615323016Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-missing-seller","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:25.313221597Z {"time":"2026-06-27T12:27:25.312999422Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":787}
-api-gateway-1        | 2026-06-27T12:27:25.314874604Z {"time":"2026-06-27T12:27:25.314696817Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-missing-stack","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:27.049066231Z {"time":"2026-06-27T12:27:27.048864951Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":833}
-api-gateway-1        | 2026-06-27T12:27:27.050083003Z {"time":"2026-06-27T12:27:27.049919563Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-nonnumeric","code":"invalid_argument","duration_ms":0}
-api-gateway-1        | 2026-06-27T12:27:28.762248329Z {"time":"2026-06-27T12:27:28.761890943Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":843}
-api-gateway-1        | 2026-06-27T12:27:28.763791384Z {"time":"2026-06-27T12:27:28.763640859Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-huge-quantity","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:30.504950138Z {"time":"2026-06-27T12:27:30.504614777Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":840}
-api-gateway-1        | 2026-06-27T12:27:30.506766079Z {"time":"2026-06-27T12:27:30.506602166Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-huge-price","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:32.227432285Z {"time":"2026-06-27T12:27:32.22722903Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":821}
-api-gateway-1        | 2026-06-27T12:27:32.229237218Z {"time":"2026-06-27T12:27:32.229091971Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-wrong-owner","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:33.989231652Z {"time":"2026-06-27T12:27:33.989015736Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":823}
-api-gateway-1        | 2026-06-27T12:27:33.991128351Z {"time":"2026-06-27T12:27:33.990971694Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-issue-wrong-station","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:38.349902492Z {"time":"2026-06-27T12:27:38.349583173Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":817}
-api-gateway-1        | 2026-06-27T12:27:38.369090254Z {"time":"2026-06-27T12:27:38.36890797Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-accept-target","duration_ms":19}
-api-gateway-1        | 2026-06-27T12:27:39.879665482Z {"time":"2026-06-27T12:27:39.879429793Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":858}
-api-gateway-1        | 2026-06-27T12:27:39.882359912Z {"time":"2026-06-27T12:27:39.882164989Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-accept-zero","code":"invalid_argument","duration_ms":2}
-api-gateway-1        | 2026-06-27T12:27:41.359571740Z {"time":"2026-06-27T12:27:41.359381209Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":864}
-api-gateway-1        | 2026-06-27T12:27:41.362744094Z {"time":"2026-06-27T12:27:41.362572072Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-accept-negative","code":"invalid_argument","duration_ms":2}
-api-gateway-1        | 2026-06-27T12:27:42.894971650Z {"time":"2026-06-27T12:27:42.894818835Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":862}
-api-gateway-1        | 2026-06-27T12:27:42.896954342Z {"time":"2026-06-27T12:27:42.896751534Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-accept-too-many","code":"failed_precondition","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:44.394429253Z {"time":"2026-06-27T12:27:44.394187446Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":858}
-api-gateway-1        | 2026-06-27T12:27:44.396416335Z {"time":"2026-06-27T12:27:44.396196026Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-accept-self","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:45.904417311Z {"time":"2026-06-27T12:27:45.904107427Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":872}
-api-gateway-1        | 2026-06-27T12:27:45.906848823Z {"time":"2026-06-27T12:27:45.906681797Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-accept-wrong-wallet-owner","code":"failed_precondition","duration_ms":2}
-api-gateway-1        | 2026-06-27T12:27:47.378083144Z {"time":"2026-06-27T12:27:47.377894172Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":832}
-api-gateway-1        | 2026-06-27T12:27:47.380820726Z {"time":"2026-06-27T12:27:47.380691416Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-accept-missing-wallet","code":"failed_precondition","duration_ms":2}
-api-gateway-1        | 2026-06-27T12:27:48.912469675Z {"time":"2026-06-27T12:27:48.912214971Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":877}
-api-gateway-1        | 2026-06-27T12:27:48.913931056Z {"time":"2026-06-27T12:27:48.913756808Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-accept-nonnumeric","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:50.379246658Z {"time":"2026-06-27T12:27:50.37904882Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":878}
-api-gateway-1        | 2026-06-27T12:27:50.380656422Z {"time":"2026-06-27T12:27:50.380504404Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-accept-huge","code":"invalid_argument","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:51.914082587Z {"time":"2026-06-27T12:27:51.913833047Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":823}
-api-gateway-1        | 2026-06-27T12:27:51.975042802Z {"time":"2026-06-27T12:27:51.974802449Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-insufficient-isk-issue","duration_ms":60}
-api-gateway-1        | 2026-06-27T12:27:53.128718061Z {"time":"2026-06-27T12:27:53.128547515Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":862}
-api-gateway-1        | 2026-06-27T12:27:53.142901277Z {"time":"2026-06-27T12:27:53.142756781Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-insufficient-isk-accept","code":"failed_precondition","duration_ms":13}
-api-gateway-1        | 2026-06-27T12:27:54.630572713Z {"time":"2026-06-27T12:27:54.630320096Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":847}
-api-gateway-1        | 2026-06-27T12:27:54.648428175Z {"time":"2026-06-27T12:27:54.648136519Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-insufficient-isk-cleanup","duration_ms":17}
-api-gateway-1        | 2026-06-27T12:27:55.877430300Z {"time":"2026-06-27T12:27:55.877247672Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":818}
-api-gateway-1        | 2026-06-27T12:27:55.891288317Z {"time":"2026-06-27T12:27:55.891079103Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-cancelled-accept-issue","duration_ms":13}
-api-gateway-1        | 2026-06-27T12:27:57.109204701Z {"time":"2026-06-27T12:27:57.109028945Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":846}
-api-gateway-1        | 2026-06-27T12:27:57.123387895Z {"time":"2026-06-27T12:27:57.123170278Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-cancelled-accept-cancel","duration_ms":13}
-api-gateway-1        | 2026-06-27T12:27:58.325343942Z {"time":"2026-06-27T12:27:58.325124847Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":855}
-api-gateway-1        | 2026-06-27T12:27:58.326822034Z {"time":"2026-06-27T12:27:58.326642821Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-accept-cancelled","code":"failed_precondition","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:27:59.566256280Z {"time":"2026-06-27T12:27:59.566060012Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":847}
-api-gateway-1        | 2026-06-27T12:27:59.568004764Z {"time":"2026-06-27T12:27:59.567877537Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-cancel-already-cancelled","code":"failed_precondition","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:28:00.811164213Z {"time":"2026-06-27T12:28:00.810982906Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":818}
-api-gateway-1        | 2026-06-27T12:28:00.825028286Z {"time":"2026-06-27T12:28:00.824859351Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-completed-target-issue","duration_ms":13}
-api-gateway-1        | 2026-06-27T12:28:02.045937937Z {"time":"2026-06-27T12:28:02.045787542Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":862}
-api-gateway-1        | 2026-06-27T12:28:02.066698120Z {"time":"2026-06-27T12:28:02.066473535Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-completed-target-accept","duration_ms":20}
-api-gateway-1        | 2026-06-27T12:28:03.258789336Z {"time":"2026-06-27T12:28:03.25859951Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":855}
-api-gateway-1        | 2026-06-27T12:28:03.261303332Z {"time":"2026-06-27T12:28:03.261168581Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-accept-completed","code":"failed_precondition","duration_ms":2}
-api-gateway-1        | 2026-06-27T12:28:04.476321200Z {"time":"2026-06-27T12:28:04.475898826Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":839}
-api-gateway-1        | 2026-06-27T12:28:04.478649978Z {"time":"2026-06-27T12:28:04.478462647Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-cancel-completed","code":"failed_precondition","duration_ms":2}
-api-gateway-1        | 2026-06-27T12:28:05.695750722Z {"time":"2026-06-27T12:28:05.695406696Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":823}
-api-gateway-1        | 2026-06-27T12:28:05.697933472Z {"time":"2026-06-27T12:28:05.697854927Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-accept-missing-trade","code":"invalid_argument","duration_ms":2}
-api-gateway-1        | 2026-06-27T12:28:07.997990650Z {"time":"2026-06-27T12:28:07.997752065Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":813}
-api-gateway-1        | 2026-06-27T12:28:08.015299764Z {"time":"2026-06-27T12:28:08.015098676Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-role-target-issue","duration_ms":16}
-api-gateway-1        | 2026-06-27T12:28:09.230844416Z {"time":"2026-06-27T12:28:09.230570189Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":844}
-api-gateway-1        | 2026-06-27T12:28:09.232922856Z {"time":"2026-06-27T12:28:09.232764295Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-role-nonseller-cancel","code":"permission_denied","duration_ms":1}
-api-gateway-1        | 2026-06-27T12:28:10.749159788Z {"time":"2026-06-27T12:28:10.748868282Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":841}
-api-gateway-1        | 2026-06-27T12:28:10.772588601Z {"time":"2026-06-27T12:28:10.771942837Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-role-owner-cleanup","duration_ms":22}
-api-gateway-1        | 2026-06-27T12:28:13.527056248Z {"time":"2026-06-27T12:28:13.526831966Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":812}
-api-gateway-1        | 2026-06-27T12:28:13.546663995Z {"time":"2026-06-27T12:28:13.546428414Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-duplicate-issue","duration_ms":19}
-api-gateway-1        | 2026-06-27T12:28:17.372071429Z {"time":"2026-06-27T12:28:17.371852937Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":855}
-api-gateway-1        | 2026-06-27T12:28:17.386393010Z {"time":"2026-06-27T12:28:17.386159091Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":855}
-api-gateway-1        | 2026-06-27T12:28:17.386422258Z {"time":"2026-06-27T12:28:17.386337097Z","level":"WARN","msg":"udp packet replay rejected","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-duplicate-accept"}
-api-gateway-1        | 2026-06-27T12:28:17.399326756Z {"time":"2026-06-27T12:28:17.398942225Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-duplicate-accept","duration_ms":26}
-api-gateway-1        | 2026-06-27T12:28:20.109907391Z {"time":"2026-06-27T12:28:20.109697583Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":820}
-api-gateway-1        | 2026-06-27T12:28:20.124315753Z {"time":"2026-06-27T12:28:20.124127838Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-duplicate-cancel-target","duration_ms":14}
-api-gateway-1        | 2026-06-27T12:28:21.599777993Z {"time":"2026-06-27T12:28:21.599495749Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":839}
-api-gateway-1        | 2026-06-27T12:28:21.611259140Z {"time":"2026-06-27T12:28:21.611026375Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":839}
-api-gateway-1        | 2026-06-27T12:28:21.611299503Z {"time":"2026-06-27T12:28:21.611164544Z","level":"WARN","msg":"udp packet replay rejected","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-duplicate-cancel"}
-api-gateway-1        | 2026-06-27T12:28:21.620554756Z {"time":"2026-06-27T12:28:21.620356086Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-duplicate-cancel","duration_ms":20}
-api-gateway-1        | 2026-06-27T12:28:24.377322028Z {"time":"2026-06-27T12:28:24.377110317Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":814}
-api-gateway-1        | 2026-06-27T12:28:24.441422827Z {"time":"2026-06-27T12:28:24.441224015Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-refresh-in-flight","duration_ms":63}
-api-gateway-1        | 2026-06-27T12:28:27.515001681Z {"time":"2026-06-27T12:28:27.5147849Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":838}
-api-gateway-1        | 2026-06-27T12:28:27.530589102Z {"time":"2026-06-27T12:28:27.53033993Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-refresh-cleanup","duration_ms":15}
-api-gateway-1        | 2026-06-27T12:28:29.864848322Z {"time":"2026-06-27T12:28:29.86462324Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":817}
-api-gateway-1        | 2026-06-27T12:28:29.882408091Z {"time":"2026-06-27T12:28:29.882169187Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-contract-issue","duration_ms":17}
-api-gateway-1        | 2026-06-27T12:28:31.112712320Z {"time":"2026-06-27T12:28:31.112410956Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":854}
-api-gateway-1        | 2026-06-27T12:28:31.133494758Z {"time":"2026-06-27T12:28:31.133272152Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-contract-accept","duration_ms":20}
-api-gateway-1        | 2026-06-27T12:28:34.026793295Z {"time":"2026-06-27T12:28:34.026533801Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":796}
-api-gateway-1        | 2026-06-27T12:28:34.041743386Z {"time":"2026-06-27T12:28:34.041507944Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-direct-issue","duration_ms":14}
-rabbitmq-1           | 2026-06-27T12:28:43.824854842Z 2026-06-27 12:28:43.824221+00:00 [info] <0.918.0> closing AMQP connection <0.918.0> (172.19.0.6:51138 -> 172.19.0.3:5672, vhost: '/', user: 'eve_trade')[0m
-api-gateway-1        | 2026-06-27T12:28:35.260211020Z {"time":"2026-06-27T12:28:35.259947208Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":835}
-migrate-1            | 2026-06-27T12:28:51.277231175Z  ?column? 
-api-gateway-1        | 2026-06-27T12:28:35.288061092Z {"time":"2026-06-27T12:28:35.287866077Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-direct-accept","duration_ms":27}
-migrate-1            | 2026-06-27T12:28:51.277261671Z ----------
-migrate-1            | 2026-06-27T12:28:51.277264963Z         1
-rabbitmq-1           | 2026-06-27T12:28:53.006679808Z 2026-06-27 12:28:53.004382+00:00 [info] <0.1088.0> accepting AMQP connection <0.1088.0> (172.19.0.6:45884 -> 172.19.0.3:5672)[0m
-migrate-1            | 2026-06-27T12:28:51.277267499Z (1 row)
-rabbitmq-1           | 2026-06-27T12:28:53.010897686Z 2026-06-27 12:28:53.009503+00:00 [info] <0.1088.0> connection <0.1088.0> (172.19.0.6:45884 -> 172.19.0.3:5672): user 'eve_trade' authenticated and granted access to vhost '/'[0m
-migrate-1            | 2026-06-27T12:28:51.277269908Z 
-migrate-1            | 2026-06-27T12:28:51.330700940Z CREATE EXTENSION
-migrate-1            | 2026-06-27T12:28:51.330720737Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:1: NOTICE:  extension "pgcrypto" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.333328623Z CREATE FUNCTION
-migrate-1            | 2026-06-27T12:28:51.334862036Z CREATE FUNCTION
-migrate-1            | 2026-06-27T12:28:51.335484890Z CREATE TABLE
-api-gateway-1        | 2026-06-27T12:28:38.206389597Z {"time":"2026-06-27T12:28:38.206210316Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":807}
-migrate-1            | 2026-06-27T12:28:51.335509236Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:76: NOTICE:  relation "capsuleer" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.336030636Z CREATE TABLE
-api-gateway-1        | 2026-06-27T12:28:38.219430161Z {"time":"2026-06-27T12:28:38.219139307Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-race-issue","duration_ms":12}
-migrate-1            | 2026-06-27T12:28:51.336031811Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:85: NOTICE:  relation "region" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.336967144Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:95: NOTICE:  relation "station" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.336971431Z CREATE TABLE
-api-gateway-1        | 2026-06-27T12:28:41.445753143Z {"time":"2026-06-27T12:28:41.44553612Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":852}
-api-gateway-1        | 2026-06-27T12:28:41.454943811Z {"time":"2026-06-27T12:28:41.454719549Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":852}
-api-gateway-1        | 2026-06-27T12:28:41.471896254Z {"time":"2026-06-27T12:28:41.471674385Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-race-accept-b","duration_ms":25}
-api-gateway-1        | 2026-06-27T12:28:41.481737714Z {"time":"2026-06-27T12:28:41.481548806Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-race-accept-a","code":"failed_precondition","duration_ms":26}
-api-gateway-1        | 2026-06-27T12:28:46.191837720Z {"time":"2026-06-27T12:28:46.191646491Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":810}
-api-gateway-1        | 2026-06-27T12:28:51.193508948Z {"time":"2026-06-27T12:28:51.193210593Z","level":"WARN","msg":"udp downstream call failed","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-market-outage","code":"downstream_timeout","duration_ms":5001}
-api-gateway-1        | 2026-06-27T12:28:56.897564120Z {"time":"2026-06-27T12:28:56.897225363Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":811}
-api-gateway-1        | 2026-06-27T12:28:56.934983490Z {"time":"2026-06-27T12:28:56.934756968Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-recovery-issue","duration_ms":37}
-api-gateway-1        | 2026-06-27T12:28:58.145819430Z {"time":"2026-06-27T12:28:58.145610779Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":839}
-api-gateway-1        | 2026-06-27T12:28:58.179711533Z {"time":"2026-06-27T12:28:58.179345794Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-recovery-cleanup","duration_ms":33}
-api-gateway-1        | 2026-06-27T12:28:59.392131919Z {"time":"2026-06-27T12:28:59.391878277Z","level":"INFO","msg":"udp packet received","remote":"172.19.0.8","bytes":845}
-api-gateway-1        | 2026-06-27T12:28:59.409754225Z {"time":"2026-06-27T12:28:59.409558528Z","level":"INFO","msg":"udp downstream call succeeded","remote":"172.19.0.8","interaction_id":"gui-demo-20260627122639-invalid-accept-cleanup","duration_ms":17}
-migrate-1            | 2026-06-27T12:28:51.337547123Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:106: NOTICE:  relation "item_type" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.337557814Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.338155281Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.338155556Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:119: NOTICE:  relation "idempotency_record" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.338759934Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:132: NOTICE:  relation "request_attempt" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.338772967Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.339475040Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.339526039Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:146: NOTICE:  relation "settlement_batch" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.341581259Z ALTER TABLE
-migrate-1            | 2026-06-27T12:28:51.345041143Z ALTER TABLE
-migrate-1            | 2026-06-27T12:28:51.345741076Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:170: NOTICE:  relation "settlement_step" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.345747602Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.345997069Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:173: NOTICE:  column "step_output" of relation "settlement_step" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.346802248Z ALTER TABLE
-migrate-1            | 2026-06-27T12:28:51.347486282Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:186: NOTICE:  relation "wallet" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.347513363Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.347887688Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:200: NOTICE:  relation "item_stack" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.347903964Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.348486269Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.348509743Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:216: NOTICE:  relation "trade_instance" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.349097532Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:230: NOTICE:  relation "wallet_escrow" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.349147022Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.349780272Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.349781408Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:246: NOTICE:  relation "item_stack_escrow" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.350354903Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:268: NOTICE:  relation "wallet_ledger" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.350358403Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.351200148Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.351203939Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:302: NOTICE:  relation "item_stack_ledger" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.353459363Z CREATE FUNCTION
-migrate-1            | 2026-06-27T12:28:51.354802840Z ALTER TABLE
-migrate-1            | 2026-06-27T12:28:51.355991859Z ALTER TABLE
-migrate-1            | 2026-06-27T12:28:51.357110968Z ALTER TABLE
-migrate-1            | 2026-06-27T12:28:51.358559012Z ALTER TABLE
-migrate-1            | 2026-06-27T12:28:51.359660427Z ALTER TABLE
-migrate-1            | 2026-06-27T12:28:51.361718786Z ALTER TABLE
-migrate-1            | 2026-06-27T12:28:51.364627249Z CREATE FUNCTION
-migrate-1            | 2026-06-27T12:28:51.366311367Z CREATE FUNCTION
-migrate-1            | 2026-06-27T12:28:51.367545933Z CREATE FUNCTION
-migrate-1            | 2026-06-27T12:28:51.368517288Z DROP TRIGGER
-migrate-1            | 2026-06-27T12:28:51.369709830Z CREATE TRIGGER
-migrate-1            | 2026-06-27T12:28:51.370680658Z DROP TRIGGER
-migrate-1            | 2026-06-27T12:28:51.371667555Z CREATE TRIGGER
-migrate-1            | 2026-06-27T12:28:51.372679626Z DROP TRIGGER
-migrate-1            | 2026-06-27T12:28:51.373808554Z CREATE TRIGGER
-migrate-1            | 2026-06-27T12:28:51.374469392Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:529: NOTICE:  relation "trade_state_change" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.374476530Z CREATE TABLE
-migrate-1            | 2026-06-27T12:28:51.374833436Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:531: NOTICE:  relation "settlement_batch_idempotency_key_idx" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.374874102Z CREATE INDEX
-migrate-1            | 2026-06-27T12:28:51.375086763Z CREATE INDEX
-migrate-1            | 2026-06-27T12:28:51.375110222Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:532: NOTICE:  relation "settlement_step_batch_idx" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.375596150Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:533: NOTICE:  relation "wallet_capsuleer_idx" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.375609530Z CREATE INDEX
-migrate-1            | 2026-06-27T12:28:51.375794389Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:534: NOTICE:  relation "wallet_primary_capsuleer_unique_idx" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.375797699Z CREATE INDEX
-migrate-1            | 2026-06-27T12:28:51.376076799Z CREATE INDEX
-migrate-1            | 2026-06-27T12:28:51.376089065Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:535: NOTICE:  relation "wallet_ledger_wallet_idx" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.376399346Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:536: NOTICE:  relation "item_stack_owner_item_station_idx" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.376453724Z CREATE INDEX
-migrate-1            | 2026-06-27T12:28:51.376766933Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:537: NOTICE:  relation "item_stack_ledger_stack_idx" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.376777811Z CREATE INDEX
-migrate-1            | 2026-06-27T12:28:51.377302175Z CREATE INDEX
-migrate-1            | 2026-06-27T12:28:51.377302628Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:538: NOTICE:  relation "item_stack_ledger_stack_sequence_unique_idx" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.377466456Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:539: NOTICE:  relation "item_stack_ledger_stack_hash_unique_idx" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.377479171Z CREATE INDEX
-migrate-1            | 2026-06-27T12:28:51.377690840Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:540: NOTICE:  relation "trade_instance_lookup_idx" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.377708522Z CREATE INDEX
-migrate-1            | 2026-06-27T12:28:51.377916801Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:541: NOTICE:  relation "trade_instance_open_expires_at_idx" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.377924686Z CREATE INDEX
-migrate-1            | 2026-06-27T12:28:51.378382127Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:542: NOTICE:  relation "item_stack_escrow_active_trade_unique_idx" already exists, skipping
-migrate-1            | 2026-06-27T12:28:51.378385662Z CREATE INDEX
-migrate-1            | 2026-06-27T12:28:51.380304964Z CREATE FUNCTION
-migrate-1            | 2026-06-27T12:28:51.381493088Z CREATE FUNCTION
-migrate-1            | 2026-06-27T12:28:51.382404195Z DROP TRIGGER
-migrate-1            | 2026-06-27T12:28:51.383436034Z CREATE TRIGGER
-migrate-1            | 2026-06-27T12:28:51.384533056Z DROP TRIGGER
-migrate-1            | 2026-06-27T12:28:51.385953272Z CREATE TRIGGER
-migrate-1            | 2026-06-27T12:28:51.387172443Z DROP TRIGGER
-migrate-1            | 2026-06-27T12:28:51.388995971Z CREATE TRIGGER
-migrate-1            | 2026-06-27T12:28:51.390516889Z DROP TRIGGER
-migrate-1            | 2026-06-27T12:28:51.391899348Z CREATE TRIGGER
-migrate-1            | 2026-06-27T12:28:51.393450003Z CREATE FUNCTION
-migrate-1            | 2026-06-27T12:28:51.394899895Z CREATE FUNCTION
-migrate-1            | 2026-06-27T12:28:51.396066136Z DROP TRIGGER
-migrate-1            | 2026-06-27T12:28:51.397232316Z CREATE TRIGGER
-migrate-1            | 2026-06-27T12:28:51.398241951Z DROP TRIGGER
-migrate-1            | 2026-06-27T12:28:51.400370294Z CREATE TRIGGER
-migrate-1            | 2026-06-27T12:28:51.452731597Z INSERT 0 0
-migrate-1            | 2026-06-27T12:28:51.453171112Z INSERT 0 0
-migrate-1            | 2026-06-27T12:28:51.453487289Z INSERT 0 0
-migrate-1            | 2026-06-27T12:28:51.454077619Z INSERT 0 0
-migrate-1            | 2026-06-27T12:28:51.455966711Z INSERT 0 0
-migrate-1            | 2026-06-27T12:28:51.456128129Z BEGIN
-migrate-1            | 2026-06-27T12:28:51.457139671Z INSERT 0 0
-migrate-1            | 2026-06-27T12:28:51.457697412Z INSERT 0 0
-migrate-1            | 2026-06-27T12:28:51.458361597Z INSERT 0 0
-migrate-1            | 2026-06-27T12:28:51.458933046Z INSERT 0 0
-migrate-1            | 2026-06-27T12:28:51.459516643Z INSERT 0 0
-migrate-1            | 2026-06-27T12:28:51.460121429Z UPDATE 0
-migrate-1            | 2026-06-27T12:28:51.463067587Z INSERT 0 0
-migrate-1            | 2026-06-27T12:28:51.463282514Z COMMIT
-market-1             | 2026-06-27T12:28:52.990502426Z {"time":"2026-06-27T12:28:52.990151605Z","level":"ERROR","msg":"failed to initialize OpenTelemetry resource","error":"error detecting resource: user: Current requires cgo or $USER set in environment"}
-market-1             | 2026-06-27T12:28:53.025010104Z {"time":"2026-06-27T12:28:53.02479906Z","level":"INFO","msg":"market service listening","addr":":8081","settlement_transport":"rabbitmq","trade_settlement_url":"http://trade-settlement:9092"}
-postgres-1           | 2026-06-27T12:27:47.380263880Z 2026-06-27 12:27:47.380 UTC [281] ERROR:  invalid input syntax for type uuid: ""
-postgres-1           | 2026-06-27T12:27:47.380305302Z 2026-06-27 12:27:47.380 UTC [281] CONTEXT:  unnamed portal parameter $1 = ''
-postgres-1           | 2026-06-27T12:27:47.380310978Z 2026-06-27 12:27:47.380 UTC [281] STATEMENT:  
-postgres-1           | 2026-06-27T12:27:47.380314174Z 			SELECT wallet_id::text,
-postgres-1           | 2026-06-27T12:27:47.380317496Z 			       capsuleer_id,
-postgres-1           | 2026-06-27T12:27:47.380320271Z 			       isk_amount,
-postgres-1           | 2026-06-27T12:27:47.380323068Z 			       wallet_state
-postgres-1           | 2026-06-27T12:27:47.380325869Z 			FROM wallet
-postgres-1           | 2026-06-27T12:27:47.380340274Z 			WHERE wallet_id = $1::uuid
-postgres-1           | 2026-06-27T12:27:47.380342775Z 		
-simulator-1          | 2026-06-27T12:26:41.941940062Z [27/Jun/2026 12:26:41] "GET / HTTP/1.1" 200 10192
-simulator-1          | 2026-06-27T12:26:43.054473295Z [27/Jun/2026 12:26:43] "GET / HTTP/1.1" 200 10192
-simulator-1          | 2026-06-27T12:26:45.402704055Z [27/Jun/2026 12:26:45] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1641
-simulator-1          | 2026-06-27T12:26:48.971780877Z [27/Jun/2026 12:26:48] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1736
-simulator-1          | 2026-06-27T12:26:52.694340329Z [27/Jun/2026 12:26:52] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1651
-simulator-1          | 2026-06-27T12:26:54.991843421Z [27/Jun/2026 12:26:54] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1752
-simulator-1          | 2026-06-27T12:26:57.545109631Z [27/Jun/2026 12:26:57] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1752
-simulator-1          | 2026-06-27T12:27:00.120555911Z [27/Jun/2026 12:27:00] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1643
-simulator-1          | 2026-06-27T12:27:01.625840184Z [27/Jun/2026 12:27:01] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1578
-simulator-1          | 2026-06-27T12:27:04.464978151Z [27/Jun/2026 12:27:04] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1676
-simulator-1          | 2026-06-27T12:27:05.939990468Z [27/Jun/2026 12:27:05] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1773
-simulator-1          | 2026-06-27T12:27:07.468298886Z [27/Jun/2026 12:27:07] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1591
-simulator-1          | 2026-06-27T12:27:10.739108415Z [27/Jun/2026 12:27:10] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1522
-simulator-1          | 2026-06-27T12:27:12.472199630Z [27/Jun/2026 12:27:12] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1538
-simulator-1          | 2026-06-27T12:27:14.606116349Z [27/Jun/2026 12:27:14] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1535
-simulator-1          | 2026-06-27T12:27:16.421871108Z [27/Jun/2026 12:27:16] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1519
-simulator-1          | 2026-06-27T12:27:18.154832782Z [27/Jun/2026 12:27:18] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1533
-simulator-1          | 2026-06-27T12:27:20.092104132Z [27/Jun/2026 12:27:20] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1525
-simulator-1          | 2026-06-27T12:27:21.921646622Z [27/Jun/2026 12:27:21] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1522
-simulator-1          | 2026-06-27T12:27:23.621008273Z [27/Jun/2026 12:27:23] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1523
-simulator-1          | 2026-06-27T12:27:25.321650313Z [27/Jun/2026 12:27:25] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1441
-simulator-1          | 2026-06-27T12:27:27.056122774Z [27/Jun/2026 12:27:27] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1623
-simulator-1          | 2026-06-27T12:27:28.770081727Z [27/Jun/2026 12:27:28] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1668
-simulator-1          | 2026-06-27T12:27:30.518305288Z [27/Jun/2026 12:27:30] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1665
-simulator-1          | 2026-06-27T12:27:32.235869733Z [27/Jun/2026 12:27:32] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1532
-simulator-1          | 2026-06-27T12:27:33.997468341Z [27/Jun/2026 12:27:33] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1545
-simulator-1          | 2026-06-27T12:27:38.377577629Z [27/Jun/2026 12:27:38] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1680
-simulator-1          | 2026-06-27T12:27:39.888916023Z [27/Jun/2026 12:27:39] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1591
-simulator-1          | 2026-06-27T12:27:41.370149496Z [27/Jun/2026 12:27:41] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1607
-simulator-1          | 2026-06-27T12:27:42.903853440Z [27/Jun/2026 12:27:42] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1638
-simulator-1          | 2026-06-27T12:27:44.403349943Z [27/Jun/2026 12:27:44] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1575
-simulator-1          | 2026-06-27T12:27:45.914419216Z [27/Jun/2026 12:27:45] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1645
-simulator-1          | 2026-06-27T12:27:47.388303583Z [27/Jun/2026 12:27:47] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1589
-simulator-1          | 2026-06-27T12:27:48.922836159Z [27/Jun/2026 12:27:48] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1719
-simulator-1          | 2026-06-27T12:27:50.387651839Z [27/Jun/2026 12:27:50] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1737
-simulator-1          | 2026-06-27T12:27:51.981766469Z [27/Jun/2026 12:27:51] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1694
-simulator-1          | 2026-06-27T12:27:53.149062071Z [27/Jun/2026 12:27:53] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1659
-simulator-1          | 2026-06-27T12:27:54.654979796Z [27/Jun/2026 12:27:54] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1631
-simulator-1          | 2026-06-27T12:27:55.899276200Z [27/Jun/2026 12:27:55] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1684
-simulator-1          | 2026-06-27T12:27:57.130409300Z [27/Jun/2026 12:27:57] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1627
-simulator-1          | 2026-06-27T12:27:58.331998997Z [27/Jun/2026 12:27:58] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1562
-simulator-1          | 2026-06-27T12:27:59.576594642Z [27/Jun/2026 12:27:59] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1563
-simulator-1          | 2026-06-27T12:28:00.832597737Z [27/Jun/2026 12:28:00] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1684
-simulator-1          | 2026-06-27T12:28:02.073412881Z [27/Jun/2026 12:28:02] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1781
-simulator-1          | 2026-06-27T12:28:03.267547780Z [27/Jun/2026 12:28:03] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1562
-simulator-1          | 2026-06-27T12:28:04.484686559Z [27/Jun/2026 12:28:04] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1539
-simulator-1          | 2026-06-27T12:28:05.706732281Z [27/Jun/2026 12:28:05] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1507
-simulator-1          | 2026-06-27T12:28:08.022814613Z [27/Jun/2026 12:28:08] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1664
-simulator-1          | 2026-06-27T12:28:09.241501645Z [27/Jun/2026 12:28:09] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1575
-simulator-1          | 2026-06-27T12:28:10.780216230Z [27/Jun/2026 12:28:10] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1607
-simulator-1          | 2026-06-27T12:28:13.552920354Z [27/Jun/2026 12:28:13] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1658
-simulator-1          | 2026-06-27T12:28:17.394998746Z [27/Jun/2026 12:28:17] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1525
-simulator-1          | 2026-06-27T12:28:17.408113631Z [27/Jun/2026 12:28:17] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1753
-simulator-1          | 2026-06-27T12:28:20.132087215Z [27/Jun/2026 12:28:20] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1690
-simulator-1          | 2026-06-27T12:28:21.624003755Z [27/Jun/2026 12:28:21] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1502
-simulator-1          | 2026-06-27T12:28:21.632242296Z [27/Jun/2026 12:28:21] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1599
-simulator-1          | 2026-06-27T12:28:24.446741039Z [27/Jun/2026 12:28:24] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1666
-simulator-1          | 2026-06-27T12:28:24.456100560Z [27/Jun/2026 12:28:24] "GET / HTTP/1.1" 200 10192
-simulator-1          | 2026-06-27T12:28:27.539220319Z [27/Jun/2026 12:28:27] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1595
-simulator-1          | 2026-06-27T12:28:29.890817384Z [27/Jun/2026 12:28:29] "POST /api/gui/buttons/4/press/ HTTP/1.1" 202 1666
-simulator-1          | 2026-06-27T12:28:31.140728269Z [27/Jun/2026 12:28:31] "POST /api/gui/buttons/5/press/ HTTP/1.1" 202 1752
-simulator-1          | 2026-06-27T12:28:34.048780287Z [27/Jun/2026 12:28:34] "POST /api/gui/buttons/6/press/ HTTP/1.1" 202 1628
-simulator-1          | 2026-06-27T12:28:35.299928024Z [27/Jun/2026 12:28:35] "POST /api/gui/buttons/7/press/ HTTP/1.1" 202 1717
-simulator-1          | 2026-06-27T12:28:38.225458983Z [27/Jun/2026 12:28:38] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1638
-simulator-1          | 2026-06-27T12:28:38.983774694Z [27/Jun/2026 12:28:38] "GET / HTTP/1.1" 200 10192
-simulator-1          | 2026-06-27T12:28:41.479530450Z [27/Jun/2026 12:28:41] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1741
-simulator-1          | 2026-06-27T12:28:41.491982374Z [27/Jun/2026 12:28:41] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1619
-simulator-1          | 2026-06-27T12:28:49.203907374Z Bad Gateway: /api/gui/buttons/1/press/
-simulator-1          | 2026-06-27T12:28:49.204299134Z [27/Jun/2026 12:28:49] "POST /api/gui/buttons/1/press/ HTTP/1.1" 502 1403
-simulator-1          | 2026-06-27T12:28:56.943689459Z [27/Jun/2026 12:28:56] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1654
-simulator-1          | 2026-06-27T12:28:58.186578588Z [27/Jun/2026 12:28:58] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1599
-simulator-1          | 2026-06-27T12:28:59.415871871Z [27/Jun/2026 12:28:59] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 1623
+﻿trade-settlement-1   | 2026-06-30T14:17:44.129935495Z [2m2026-06-30T14:17:44[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: No address associated with hostname\" })) }"
+market-1             | 2026-06-30T14:20:18.002077065Z {"timestamp":"2026-06-30T14:20:18.001724757Z","level":"INFO","msg":"OpenTelemetry SDK disabled","service.name":"market","service.version":"local","service.language":"go","observability.run_id":"local-unobserved"}
+trade-settlement-1   | 2026-06-30T14:17:49.093349804Z [2m2026-06-30T14:17:49[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+trade-settlement-1   | 2026-06-30T14:17:54.100828185Z [2m2026-06-30T14:17:54[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+market-1             | 2026-06-30T14:20:18.039336458Z {"timestamp":"2026-06-30T14:20:18.039042455Z","level":"INFO","msg":"market service listening","service.name":"market","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","addr":":8081","settlement_transport":"rabbitmq","trade_settlement_url":"http://trade-settlement:9092"}
+trade-settlement-1   | 2026-06-30T14:17:59.109325303Z [2m2026-06-30T14:17:59[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+trade-settlement-1   | 2026-06-30T14:18:04.126637668Z [2m2026-06-30T14:18:04[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: No address associated with hostname\" })) }"
+trade-settlement-1   | 2026-06-30T14:18:09.088760719Z [2m2026-06-30T14:18:09[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+settlement-worker-1  | 2026-06-30T14:18:54.966791574Z {"timestamp":"2026-06-30T14:18:54.966507972Z","level":"WARN","msg":"settlement command failed","service.name":"settlement-worker","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","idempotency_key":"gui-demo-20260630141728-insufficient-isk-accept","error.message":"failed_precondition: wallet 00000000-0000-4000-8000-000000002002 has 999545, requested 1200000"}
+postgres-1           | 2026-06-30T14:17:48.043311564Z 2026-06-30 14:17:48.042 UTC [63] LOG:  checkpoint starting: time
+trade-settlement-1   | 2026-06-30T14:18:44.128232807Z [2m2026-06-30T14:18:44[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: No address associated with hostname\" })) }"
+trade-settlement-1   | 2026-06-30T14:18:54.958211646Z [2m2026-06-30T14:18:54[0m [31mERROR[0m [1msettlement.receive_batch[0m:[1msettlement.execute_transaction[0m: [2mtrade_settlement::executor[0m[2m:[0m settlement step failed and business savepoint was rolled back [3msettlement_batch_id[0m[2m=[0mf34a777d-601c-4c51-bcb6-a84f7d768306 [3msettlement_step_id[0m[2m=[0m988849d3-0c49-42ea-b92b-11d65361ab09 [3mfailure_code[0m[2m=[0mINSUFFICIENT_FUNDS [3merror.message[0m[2m=[0minsufficient funds: wallet 00000000-0000-4000-8000-000000002002 has 999545, requested 1200000 [3mrollback.performed[0m[2m=[0mtrue [2m[3midempotency_key[0m[2m=[0mgui-demo-20260630141728-insufficient-isk-accept [3moperation_count[0m[2m=[0m4[0m [2m[3midempotency_key[0m[2m=[0mgui-demo-20260630141728-insufficient-isk-accept [3moperation_count[0m[2m=[0m4 [3msettlement_batch_id[0m[2m=[0m"f34a777d-601c-4c51-bcb6-a84f7d768306"[0m
+trade-settlement-1   | 2026-06-30T14:18:59.110955703Z [2m2026-06-30T14:18:59[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+trade-settlement-1   | 2026-06-30T14:18:59.126362825Z [2m2026-06-30T14:18:59[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchLogProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/logs\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+trade-settlement-1   | 2026-06-30T14:19:04.128236454Z [2m2026-06-30T14:19:04[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: No address associated with hostname\" })) }"
+postgres-1           | 2026-06-30T14:18:03.636047243Z 2026-06-30 14:18:03.635 UTC [63] LOG:  checkpoint complete: wrote 159 buffers (1.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=15.553 s, sync=0.029 s, total=15.594 s; sync files=80, longest=0.003 s, average=0.001 s; distance=931 kB, estimate=1712 kB; lsn=0/1BEEBB8, redo lsn=0/1BC9CA8
+trade-settlement-1   | 2026-06-30T14:19:09.107221394Z [2m2026-06-30T14:19:09[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+trade-settlement-1   | 2026-06-30T14:19:14.121176733Z [2m2026-06-30T14:19:14[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+settlement-worker-1  | 2026-06-30T14:19:51.284694476Z {"timestamp":"2026-06-30T14:19:51.284322395Z","level":"WARN","msg":"settlement command failed","service.name":"settlement-worker","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","idempotency_key":"gui-demo-20260630141728-race-accept-b","error.message":"failed_precondition: trade_instance b948e25a-2fbb-47c3-969c-3873c6162e48 is not OPEN"}
+rabbitmq-1           | 2026-06-30T14:19:54.617442274Z 2026-06-30 14:19:54.602887+00:00 [info] <0.1289.0> closing AMQP connection <0.1289.0> (172.19.0.6:37580 -> 172.19.0.3:5672, vhost: '/', user: 'eve_trade')[0m
+simulator-1          | 2026-06-30T14:17:33.392626995Z [30/Jun/2026 14:17:33] "GET / HTTP/1.1" 200 12202
+rabbitmq-1           | 2026-06-30T14:20:18.024048746Z 2026-06-30 14:20:18.023476+00:00 [info] <0.1553.0> accepting AMQP connection <0.1553.0> (172.19.0.6:47904 -> 172.19.0.3:5672)[0m
+api-gateway-1        | 2026-06-30T14:17:37.573950571Z {"timestamp":"2026-06-30T14:17:37.573566895Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":632}
+migrate-1            | 2026-06-30T14:20:14.430918436Z  ?column?
+migrate-1            | 2026-06-30T14:20:14.432979148Z ----------
+migrate-1            | 2026-06-30T14:20:14.433000440Z         1
+migrate-1            | 2026-06-30T14:20:14.433003054Z (1 row)
+migrate-1            | 2026-06-30T14:20:14.433005288Z
+migrate-1            | 2026-06-30T14:20:14.509346598Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:1: NOTICE:  extension "pgcrypto" already exists, skipping
+simulator-1          | 2026-06-30T14:17:34.977143347Z [30/Jun/2026 14:17:34] "GET / HTTP/1.1" 200 12202
+postgres-1           | 2026-06-30T14:18:48.122709480Z 2026-06-30 14:18:48.122 UTC [3478] ERROR:  invalid input syntax for type uuid: ""
+postgres-1           | 2026-06-30T14:18:48.122757726Z 2026-06-30 14:18:48.122 UTC [3478] CONTEXT:  unnamed portal parameter $1 = ''
+migrate-1            | 2026-06-30T14:20:14.509410334Z CREATE EXTENSION
+api-gateway-1        | 2026-06-30T14:17:37.646668872Z {"timestamp":"2026-06-30T14:17:37.646431949Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-happy-issue","duration_ms":72}
+api-gateway-1        | 2026-06-30T14:17:41.905985684Z {"timestamp":"2026-06-30T14:17:41.905694952Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":675}
+api-gateway-1        | 2026-06-30T14:17:41.940630202Z {"timestamp":"2026-06-30T14:17:41.940414272Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-happy-accept","duration_ms":34}
+api-gateway-1        | 2026-06-30T14:17:45.790915080Z {"timestamp":"2026-06-30T14:17:45.790508454Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":636}
+api-gateway-1        | 2026-06-30T14:17:45.815847274Z {"timestamp":"2026-06-30T14:17:45.815613357Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-partial-issue","duration_ms":24}
+simulator-1          | 2026-06-30T14:17:37.654354185Z [30/Jun/2026 14:17:37] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1232
+migrate-1            | 2026-06-30T14:20:14.533746195Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:14.571238489Z CREATE FUNCTION
+api-gateway-1        | 2026-06-30T14:17:48.276378393Z {"timestamp":"2026-06-30T14:17:48.276026842Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":683}
+api-gateway-1        | 2026-06-30T14:17:48.310825934Z {"timestamp":"2026-06-30T14:17:48.310492857Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-partial-accept-4","duration_ms":33}
+api-gateway-1        | 2026-06-30T14:17:51.103516852Z {"timestamp":"2026-06-30T14:17:51.103302667Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":683}
+rabbitmq-1           | 2026-06-30T14:20:18.027493428Z 2026-06-30 14:20:18.026973+00:00 [info] <0.1553.0> connection <0.1553.0> (172.19.0.6:47904 -> 172.19.0.3:5672): user 'eve_trade' authenticated and granted access to vhost '/'[0m
+simulator-1          | 2026-06-30T14:17:41.950388132Z [30/Jun/2026 14:17:41] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1328
+simulator-1          | 2026-06-30T14:17:45.823814165Z [30/Jun/2026 14:17:45] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1242
+api-gateway-1        | 2026-06-30T14:17:51.134585901Z {"timestamp":"2026-06-30T14:17:51.134368202Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-partial-accept-6","duration_ms":30}
+migrate-1            | 2026-06-30T14:20:14.572206928Z CREATE TABLE
+api-gateway-1        | 2026-06-30T14:17:53.957036808Z {"timestamp":"2026-06-30T14:17:53.9567595Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":633}
+api-gateway-1        | 2026-06-30T14:17:53.974906799Z {"timestamp":"2026-06-30T14:17:53.974570772Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-cancel-issue","duration_ms":17}
+api-gateway-1        | 2026-06-30T14:17:55.605061134Z {"timestamp":"2026-06-30T14:17:55.60480066Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":512}
+api-gateway-1        | 2026-06-30T14:17:55.625496152Z {"timestamp":"2026-06-30T14:17:55.625219447Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-cancel-open","duration_ms":19}
+migrate-1            | 2026-06-30T14:20:14.572655537Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:76: NOTICE:  relation "capsuleer" already exists, skipping
+simulator-1          | 2026-06-30T14:17:48.319140562Z [30/Jun/2026 14:17:48] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1348
+simulator-1          | 2026-06-30T14:17:51.144720884Z [30/Jun/2026 14:17:51] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1348
+simulator-1          | 2026-06-30T14:17:53.983218918Z [30/Jun/2026 14:17:53] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1235
+simulator-1          | 2026-06-30T14:17:55.634341520Z [30/Jun/2026 14:17:55] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 877
+simulator-1          | 2026-06-30T14:17:58.753097494Z [30/Jun/2026 14:17:58] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1275
+simulator-1          | 2026-06-30T14:18:00.577491266Z [30/Jun/2026 14:18:00] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1373
+simulator-1          | 2026-06-30T14:18:02.246468148Z [30/Jun/2026 14:18:02] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 892
+simulator-1          | 2026-06-30T14:18:06.097157290Z Bad Request: /api/gui/buttons/1/press/
+simulator-1          | 2026-06-30T14:18:06.098101319Z [30/Jun/2026 14:18:06] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1471
+simulator-1          | 2026-06-30T14:18:08.174032768Z Bad Request: /api/gui/buttons/1/press/
+simulator-1          | 2026-06-30T14:18:08.174392262Z [30/Jun/2026 14:18:08] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1497
+simulator-1          | 2026-06-30T14:18:10.532671104Z Bad Request: /api/gui/buttons/1/press/
+simulator-1          | 2026-06-30T14:18:10.533232165Z [30/Jun/2026 14:18:10] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1515
+simulator-1          | 2026-06-30T14:18:12.685191549Z Bad Request: /api/gui/buttons/1/press/
+postgres-1           | 2026-06-30T14:18:48.122762052Z 2026-06-30 14:18:48.122 UTC [3478] STATEMENT:
+simulator-1          | 2026-06-30T14:18:12.686200663Z [30/Jun/2026 14:18:12] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1471
+postgres-1           | 2026-06-30T14:18:48.122764427Z 			SELECT wallet_id::text,
+trade-settlement-1   | 2026-06-30T14:19:19.110296668Z [2m2026-06-30T14:19:19[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+trade-settlement-1   | 2026-06-30T14:19:24.127268789Z [2m2026-06-30T14:19:24[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: No address associated with hostname\" })) }"
+postgres-1           | 2026-06-30T14:18:48.122766849Z 			       capsuleer_id,
+postgres-1           | 2026-06-30T14:18:48.122768864Z 			       isk_amount,
+postgres-1           | 2026-06-30T14:18:48.122770867Z 			       wallet_state
+postgres-1           | 2026-06-30T14:18:48.122772881Z 			FROM wallet
+api-gateway-1        | 2026-06-30T14:17:58.722628192Z {"timestamp":"2026-06-30T14:17:58.72236205Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":649}
+migrate-1            | 2026-06-30T14:20:14.573643589Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:14.573652868Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:85: NOTICE:  relation "region" already exists, skipping
+postgres-1           | 2026-06-30T14:18:48.122774929Z 			WHERE wallet_id = $1::uuid
+trade-settlement-1   | 2026-06-30T14:19:29.114121081Z [2m2026-06-30T14:19:29[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+api-gateway-1        | 2026-06-30T14:17:58.742180098Z {"timestamp":"2026-06-30T14:17:58.74192268Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-partial-cancel-issue","duration_ms":19}
+api-gateway-1        | 2026-06-30T14:18:00.543929099Z {"timestamp":"2026-06-30T14:18:00.543561861Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":693}
+simulator-1          | 2026-06-30T14:18:14.693001138Z Bad Request: /api/gui/buttons/1/press/
+api-gateway-1        | 2026-06-30T14:18:00.569672925Z {"timestamp":"2026-06-30T14:18:00.569423031Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-partial-cancel-accept","duration_ms":25}
+api-gateway-1        | 2026-06-30T14:18:02.215796468Z {"timestamp":"2026-06-30T14:18:02.21549527Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":518}
+trade-settlement-1   | 2026-06-30T14:19:34.084160179Z [2m2026-06-30T14:19:34[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+api-gateway-1        | 2026-06-30T14:18:02.234435046Z {"timestamp":"2026-06-30T14:18:02.234172357Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-partial-cancel","duration_ms":17}
+migrate-1            | 2026-06-30T14:20:14.573986049Z CREATE TABLE
+api-gateway-1        | 2026-06-30T14:18:06.080991513Z {"timestamp":"2026-06-30T14:18:06.08066662Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":663}
+simulator-1          | 2026-06-30T14:18:14.693498073Z [30/Jun/2026 14:18:14] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1497
+simulator-1          | 2026-06-30T14:18:16.704625549Z Bad Request: /api/gui/buttons/1/press/
+simulator-1          | 2026-06-30T14:18:16.705190380Z [30/Jun/2026 14:18:16] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1477
+api-gateway-1        | 2026-06-30T14:18:06.084893203Z {"timestamp":"2026-06-30T14:18:06.084635131Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-zero-quantity","code":"invalid_argument","duration_ms":3}
+api-gateway-1        | 2026-06-30T14:18:08.155417538Z {"timestamp":"2026-06-30T14:18:08.155091938Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":672}
+api-gateway-1        | 2026-06-30T14:18:08.165792262Z {"timestamp":"2026-06-30T14:18:08.165493385Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-negative-quantity","code":"invalid_argument","duration_ms":10}
+api-gateway-1        | 2026-06-30T14:18:10.519677489Z {"timestamp":"2026-06-30T14:18:10.519381369Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":654}
+simulator-1          | 2026-06-30T14:18:18.805844790Z Bad Request: /api/gui/buttons/1/press/
+postgres-1           | 2026-06-30T14:18:48.122776995Z
+simulator-1          | 2026-06-30T14:18:18.806329818Z [30/Jun/2026 14:18:18] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1477
+trade-settlement-1   | 2026-06-30T14:19:39.122030391Z [2m2026-06-30T14:19:39[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+api-gateway-1        | 2026-06-30T14:18:10.522688097Z {"timestamp":"2026-06-30T14:18:10.522351107Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-too-many","code":"invalid_argument","duration_ms":2}
+api-gateway-1        | 2026-06-30T14:18:12.669800046Z {"timestamp":"2026-06-30T14:18:12.669503526Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":657}
+api-gateway-1        | 2026-06-30T14:18:12.672683657Z {"timestamp":"2026-06-30T14:18:12.67229029Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-zero-price","code":"invalid_argument","duration_ms":2}
+simulator-1          | 2026-06-30T14:18:20.956581098Z Bad Gateway: /api/gui/buttons/1/press/
+simulator-1          | 2026-06-30T14:18:20.957070975Z [30/Jun/2026 14:18:20] "POST /api/gui/buttons/1/press/ HTTP/1.1" 502 1071
+simulator-1          | 2026-06-30T14:18:23.010135322Z Bad Request: /api/gui/buttons/1/press/
+simulator-1          | 2026-06-30T14:18:23.010383435Z [30/Jun/2026 14:18:23] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1372
+simulator-1          | 2026-06-30T14:18:25.107400852Z Bad Request: /api/gui/buttons/1/press/
+migrate-1            | 2026-06-30T14:20:14.574000452Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:95: NOTICE:  relation "station" already exists, skipping
+api-gateway-1        | 2026-06-30T14:18:14.668306726Z {"timestamp":"2026-06-30T14:18:14.66789296Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":666}
+migrate-1            | 2026-06-30T14:20:14.574547675Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:14.574565935Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:106: NOTICE:  relation "item_type" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.575114679Z CREATE TABLE
+api-gateway-1        | 2026-06-30T14:18:14.673232749Z {"timestamp":"2026-06-30T14:18:14.67288375Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-negative-price","code":"invalid_argument","duration_ms":4}
+api-gateway-1        | 2026-06-30T14:18:16.689921063Z {"timestamp":"2026-06-30T14:18:16.689640523Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":665}
+simulator-1          | 2026-06-30T14:18:25.107910743Z [30/Jun/2026 14:18:25] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1731
+api-gateway-1        | 2026-06-30T14:18:16.692539117Z {"timestamp":"2026-06-30T14:18:16.692310689Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-blank-quantity","code":"invalid_argument","duration_ms":2}
+migrate-1            | 2026-06-30T14:20:14.575144496Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:119: NOTICE:  relation "idempotency_record" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.576833441Z CREATE TABLE
+simulator-1          | 2026-06-30T14:18:27.206738048Z Bad Request: /api/gui/buttons/1/press/
+simulator-1          | 2026-06-30T14:18:27.207306786Z [30/Jun/2026 14:18:27] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1829
+simulator-1          | 2026-06-30T14:18:29.197185673Z Bad Request: /api/gui/buttons/1/press/
+migrate-1            | 2026-06-30T14:20:14.576904792Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:132: NOTICE:  relation "request_attempt" already exists, skipping
+api-gateway-1        | 2026-06-30T14:18:18.786257509Z {"timestamp":"2026-06-30T14:18:18.785396328Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":659}
+migrate-1            | 2026-06-30T14:20:14.577400249Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:146: NOTICE:  relation "settlement_batch" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.577430304Z CREATE TABLE
+simulator-1          | 2026-06-30T14:18:29.197561680Z [30/Jun/2026 14:18:29] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1829
+migrate-1            | 2026-06-30T14:20:14.592050125Z ALTER TABLE
+simulator-1          | 2026-06-30T14:18:31.214535144Z Bad Request: /api/gui/buttons/1/press/
+migrate-1            | 2026-06-30T14:20:14.609262679Z ALTER TABLE
+trade-settlement-1   | 2026-06-30T14:19:44.126087823Z [2m2026-06-30T14:19:44[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: No address associated with hostname\" })) }"
+simulator-1          | 2026-06-30T14:18:31.215138245Z [30/Jun/2026 14:18:31] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1507
+migrate-1            | 2026-06-30T14:20:14.609958829Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:170: NOTICE:  relation "settlement_step" already exists, skipping
+api-gateway-1        | 2026-06-30T14:18:18.788487974Z {"timestamp":"2026-06-30T14:18:18.788152798Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-blank-price","code":"invalid_argument","duration_ms":2}
+trade-settlement-1   | 2026-06-30T14:19:49.083761790Z [2m2026-06-30T14:19:49[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+trade-settlement-1   | 2026-06-30T14:19:51.254811993Z [2m2026-06-30T14:19:51[0m [31mERROR[0m [1msettlement.receive_batch[0m:[1msettlement.execute_transaction[0m: [2mtrade_settlement::executor[0m[2m:[0m settlement step failed and business savepoint was rolled back [3msettlement_batch_id[0m[2m=[0ma98e97c3-3767-4560-a311-0b7e61968c3b [3msettlement_step_id[0m[2m=[0mf6e74d2a-eb5f-4ad9-bb74-54ce126a58fd [3mfailure_code[0m[2m=[0mFAILED_PRECONDITION [3merror.message[0m[2m=[0mfailed precondition: trade_instance b948e25a-2fbb-47c3-969c-3873c6162e48 is not OPEN [3mrollback.performed[0m[2m=[0mtrue [2m[3midempotency_key[0m[2m=[0mgui-demo-20260630141728-race-accept-b [3moperation_count[0m[2m=[0m4[0m [2m[3midempotency_key[0m[2m=[0mgui-demo-20260630141728-race-accept-b [3moperation_count[0m[2m=[0m4 [3msettlement_batch_id[0m[2m=[0m"a98e97c3-3767-4560-a311-0b7e61968c3b"[0m
+migrate-1            | 2026-06-30T14:20:14.609966876Z CREATE TABLE
+api-gateway-1        | 2026-06-30T14:18:23.001816622Z {"timestamp":"2026-06-30T14:18:23.001555618Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":627}
+simulator-1          | 2026-06-30T14:18:33.381623134Z Bad Request: /api/gui/buttons/1/press/
+simulator-1          | 2026-06-30T14:18:33.382118057Z [30/Jun/2026 14:18:33] "POST /api/gui/buttons/1/press/ HTTP/1.1" 400 1540
+simulator-1          | 2026-06-30T14:18:38.164036420Z [30/Jun/2026 14:18:38] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1280
+migrate-1            | 2026-06-30T14:20:14.610419662Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:173: NOTICE:  column "step_output" of relation "settlement_step" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.616680378Z ALTER TABLE
+simulator-1          | 2026-06-30T14:18:39.779352813Z Bad Request: /api/gui/buttons/2/press/
+migrate-1            | 2026-06-30T14:20:14.617879515Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:186: NOTICE:  relation "wallet" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.617930139Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:14.618557820Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:14.618584053Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:200: NOTICE:  relation "item_stack" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.626648376Z CREATE TABLE
+api-gateway-1        | 2026-06-30T14:18:23.003750425Z {"timestamp":"2026-06-30T14:18:23.003554891Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-missing-stack","code":"invalid_argument","duration_ms":1}
+migrate-1            | 2026-06-30T14:20:14.626669609Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:216: NOTICE:  relation "trade_instance" already exists, skipping
+api-gateway-1        | 2026-06-30T14:18:25.095767378Z {"timestamp":"2026-06-30T14:18:25.095525634Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":670}
+migrate-1            | 2026-06-30T14:20:14.628676749Z CREATE TABLE
+api-gateway-1        | 2026-06-30T14:18:25.097629678Z {"timestamp":"2026-06-30T14:18:25.097408887Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-nonnumeric","code":"invalid_argument","duration_ms":1}
+migrate-1            | 2026-06-30T14:20:14.628725963Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:230: NOTICE:  relation "wallet_escrow" already exists, skipping
+trade-settlement-1   | 2026-06-30T14:19:54.111644543Z [2m2026-06-30T14:19:54[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+trade-settlement-1   | 2026-06-30T14:19:56.092392460Z [2m2026-06-30T14:19:56[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchLogProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/logs\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+trade-settlement-1   | 2026-06-30T14:19:59.098682574Z [2m2026-06-30T14:19:59[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+simulator-1          | 2026-06-30T14:18:39.779719192Z [30/Jun/2026 14:18:39] "POST /api/gui/buttons/2/press/ HTTP/1.1" 400 1536
+trade-settlement-1   | 2026-06-30T14:20:29.127349420Z [2m2026-06-30T14:20:29[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: No address associated with hostname\" })) }"
+simulator-1          | 2026-06-30T14:18:41.411829690Z Bad Request: /api/gui/buttons/2/press/
+trade-settlement-1   | 2026-06-30T14:20:34.093634726Z [2m2026-06-30T14:20:34[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+simulator-1          | 2026-06-30T14:18:41.412216096Z [30/Jun/2026 14:18:41] "POST /api/gui/buttons/2/press/ HTTP/1.1" 400 1562
+migrate-1            | 2026-06-30T14:20:14.629683611Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:246: NOTICE:  relation "item_stack_escrow" already exists, skipping
+simulator-1          | 2026-06-30T14:18:43.047852123Z Conflict: /api/gui/buttons/2/press/
+migrate-1            | 2026-06-30T14:20:14.629721633Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:14.630480581Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:268: NOTICE:  relation "wallet_ledger" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.630623868Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:14.633174424Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:14.633175632Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:302: NOTICE:  relation "item_stack_ledger" already exists, skipping
+api-gateway-1        | 2026-06-30T14:18:27.198707617Z {"timestamp":"2026-06-30T14:18:27.198406139Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":683}
+api-gateway-1        | 2026-06-30T14:18:27.199773156Z {"timestamp":"2026-06-30T14:18:27.199618845Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-huge-quantity","code":"invalid_argument","duration_ms":0}
+api-gateway-1        | 2026-06-30T14:18:29.188031804Z {"timestamp":"2026-06-30T14:18:29.187693051Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":677}
+simulator-1          | 2026-06-30T14:18:43.048356409Z [30/Jun/2026 14:18:43] "POST /api/gui/buttons/2/press/ HTTP/1.1" 409 1662
+migrate-1            | 2026-06-30T14:20:14.639343770Z CREATE FUNCTION
+api-gateway-1        | 2026-06-30T14:18:29.189415139Z {"timestamp":"2026-06-30T14:18:29.189233232Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-huge-price","code":"invalid_argument","duration_ms":1}
+migrate-1            | 2026-06-30T14:20:14.649207664Z ALTER TABLE
+api-gateway-1        | 2026-06-30T14:18:31.196843370Z {"timestamp":"2026-06-30T14:18:31.196680186Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":658}
+api-gateway-1        | 2026-06-30T14:18:31.199907434Z {"timestamp":"2026-06-30T14:18:31.199639259Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-wrong-owner","code":"invalid_argument","duration_ms":2}
+simulator-1          | 2026-06-30T14:18:44.811696024Z Bad Request: /api/gui/buttons/2/press/
+api-gateway-1        | 2026-06-30T14:18:33.369229004Z {"timestamp":"2026-06-30T14:18:33.368949184Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":663}
+api-gateway-1        | 2026-06-30T14:18:33.371488141Z {"timestamp":"2026-06-30T14:18:33.3712874Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-issue-wrong-station","code":"invalid_argument","duration_ms":2}
+migrate-1            | 2026-06-30T14:20:14.659654667Z ALTER TABLE
+api-gateway-1        | 2026-06-30T14:18:38.135319738Z {"timestamp":"2026-06-30T14:18:38.134954459Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":651}
+migrate-1            | 2026-06-30T14:20:14.669891911Z ALTER TABLE
+api-gateway-1        | 2026-06-30T14:18:38.156593025Z {"timestamp":"2026-06-30T14:18:38.156348137Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-accept-target","duration_ms":20}
+migrate-1            | 2026-06-30T14:20:14.676711423Z ALTER TABLE
+simulator-1          | 2026-06-30T14:18:44.812024391Z [30/Jun/2026 14:18:44] "POST /api/gui/buttons/2/press/ HTTP/1.1" 400 1488
+simulator-1          | 2026-06-30T14:18:46.468856481Z Conflict: /api/gui/buttons/2/press/
+simulator-1          | 2026-06-30T14:18:46.469476317Z [30/Jun/2026 14:18:46] "POST /api/gui/buttons/2/press/ HTTP/1.1" 409 1653
+migrate-1            | 2026-06-30T14:20:14.687860254Z ALTER TABLE
+simulator-1          | 2026-06-30T14:18:48.130640637Z Conflict: /api/gui/buttons/2/press/
+migrate-1            | 2026-06-30T14:20:14.695088826Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:14.704971810Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:14.715967558Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:14.723369296Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:14.729410878Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:14.739653671Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:14.750922570Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:14.757092595Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:14.764770370Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:14.770858340Z CREATE TRIGGER
+simulator-1          | 2026-06-30T14:18:48.130958661Z [30/Jun/2026 14:18:48] "POST /api/gui/buttons/2/press/ HTTP/1.1" 409 1641
+migrate-1            | 2026-06-30T14:20:14.774184411Z CREATE TABLE
+simulator-1          | 2026-06-30T14:18:49.854668636Z Bad Request: /api/gui/buttons/2/press/
+simulator-1          | 2026-06-30T14:18:49.855069657Z [30/Jun/2026 14:18:49] "POST /api/gui/buttons/2/press/ HTTP/1.1" 400 1850
+simulator-1          | 2026-06-30T14:18:51.698605618Z Bad Request: /api/gui/buttons/2/press/
+migrate-1            | 2026-06-30T14:20:14.774535538Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:529: NOTICE:  relation "trade_state_change" already exists, skipping
+simulator-1          | 2026-06-30T14:18:51.699116291Z [30/Jun/2026 14:18:51] "POST /api/gui/buttons/2/press/ HTTP/1.1" 400 1895
+simulator-1          | 2026-06-30T14:18:53.519696986Z [30/Jun/2026 14:18:53] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1296
+simulator-1          | 2026-06-30T14:18:55.007777323Z Conflict: /api/gui/buttons/2/press/
+simulator-1          | 2026-06-30T14:18:55.008065599Z [30/Jun/2026 14:18:55] "POST /api/gui/buttons/2/press/ HTTP/1.1" 409 1726
+simulator-1          | 2026-06-30T14:18:56.862947379Z [30/Jun/2026 14:18:56] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 943
+migrate-1            | 2026-06-30T14:20:14.774837382Z CREATE INDEX
+simulator-1          | 2026-06-30T14:18:58.277391460Z [30/Jun/2026 14:18:58] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1286
+migrate-1            | 2026-06-30T14:20:14.774857905Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:531: NOTICE:  relation "settlement_batch_idempotency_key_idx" already exists, skipping
+simulator-1          | 2026-06-30T14:18:59.754110417Z [30/Jun/2026 14:18:59] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 938
+simulator-1          | 2026-06-30T14:19:01.149279448Z Conflict: /api/gui/buttons/2/press/
+migrate-1            | 2026-06-30T14:20:14.775264305Z CREATE INDEX
+api-gateway-1        | 2026-06-30T14:18:39.765316790Z {"timestamp":"2026-06-30T14:18:39.765050996Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":689}
+migrate-1            | 2026-06-30T14:20:14.775267564Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:532: NOTICE:  relation "settlement_step_batch_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.776393608Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:14.776441499Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:533: NOTICE:  relation "wallet_capsuleer_idx" already exists, skipping
+simulator-1          | 2026-06-30T14:19:01.149852522Z [30/Jun/2026 14:19:01] "POST /api/gui/buttons/2/press/ HTTP/1.1" 409 1456
+simulator-1          | 2026-06-30T14:19:02.475806812Z Conflict: /api/gui/buttons/3/press/
+migrate-1            | 2026-06-30T14:20:14.776769326Z CREATE INDEX
+simulator-1          | 2026-06-30T14:19:02.476369139Z [30/Jun/2026 14:19:02] "POST /api/gui/buttons/3/press/ HTTP/1.1" 409 1189
+simulator-1          | 2026-06-30T14:19:03.862476032Z [30/Jun/2026 14:19:03] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1286
+simulator-1          | 2026-06-30T14:19:05.349259765Z [30/Jun/2026 14:19:05] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1384
+simulator-1          | 2026-06-30T14:19:06.761972033Z Conflict: /api/gui/buttons/2/press/
+api-gateway-1        | 2026-06-30T14:18:39.772128039Z {"timestamp":"2026-06-30T14:18:39.771864177Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-accept-zero","code":"invalid_argument","duration_ms":6}
+api-gateway-1        | 2026-06-30T14:18:41.399367733Z {"timestamp":"2026-06-30T14:18:41.399087693Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":698}
+migrate-1            | 2026-06-30T14:20:14.776781720Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:534: NOTICE:  relation "wallet_primary_capsuleer_unique_idx" already exists, skipping
+api-gateway-1        | 2026-06-30T14:18:41.403527559Z {"timestamp":"2026-06-30T14:18:41.403249594Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-accept-negative","code":"invalid_argument","duration_ms":3}
+migrate-1            | 2026-06-30T14:20:14.777904317Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:14.777905771Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:535: NOTICE:  relation "wallet_ledger_wallet_idx" already exists, skipping
+api-gateway-1        | 2026-06-30T14:18:43.034736767Z {"timestamp":"2026-06-30T14:18:43.034411794Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":697}
+migrate-1            | 2026-06-30T14:20:14.778308371Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:536: NOTICE:  relation "item_stack_owner_item_station_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.778357584Z CREATE INDEX
+api-gateway-1        | 2026-06-30T14:18:43.039625471Z {"timestamp":"2026-06-30T14:18:43.039316158Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-accept-too-many","code":"failed_precondition","duration_ms":3}
+api-gateway-1        | 2026-06-30T14:18:44.801018553Z {"timestamp":"2026-06-30T14:18:44.800732272Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":690}
+api-gateway-1        | 2026-06-30T14:18:44.804250423Z {"timestamp":"2026-06-30T14:18:44.803966921Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-accept-self","code":"invalid_argument","duration_ms":2}
+migrate-1            | 2026-06-30T14:20:14.778781983Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:14.778812208Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:537: NOTICE:  relation "item_stack_ledger_stack_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.779457265Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:14.779618241Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:538: NOTICE:  relation "item_stack_ledger_stack_sequence_unique_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.779790412Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:539: NOTICE:  relation "item_stack_ledger_stack_hash_unique_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.779834003Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:14.780215855Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:540: NOTICE:  relation "trade_instance_lookup_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.780234881Z CREATE INDEX
+api-gateway-1        | 2026-06-30T14:18:46.456047801Z {"timestamp":"2026-06-30T14:18:46.455543679Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":717}
+migrate-1            | 2026-06-30T14:20:14.780566642Z CREATE INDEX
+simulator-1          | 2026-06-30T14:19:06.762306064Z [30/Jun/2026 14:19:06] "POST /api/gui/buttons/2/press/ HTTP/1.1" 409 1456
+migrate-1            | 2026-06-30T14:20:14.780614297Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:541: NOTICE:  relation "trade_instance_open_expires_at_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.781158366Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:14.781193784Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:542: NOTICE:  relation "item_stack_escrow_active_trade_unique_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:14.790489151Z CREATE FUNCTION
+simulator-1          | 2026-06-30T14:19:08.144564730Z Conflict: /api/gui/buttons/3/press/
+api-gateway-1        | 2026-06-30T14:18:46.460155028Z {"timestamp":"2026-06-30T14:18:46.459869137Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-accept-wrong-wallet-owner","code":"failed_precondition","duration_ms":3}
+simulator-1          | 2026-06-30T14:19:08.144932117Z [30/Jun/2026 14:19:08] "POST /api/gui/buttons/3/press/ HTTP/1.1" 409 1141
+simulator-1          | 2026-06-30T14:19:09.559174068Z Bad Request: /api/gui/buttons/2/press/
+simulator-1          | 2026-06-30T14:19:09.559653863Z [30/Jun/2026 14:19:09] "POST /api/gui/buttons/2/press/ HTTP/1.1" 400 1426
+simulator-1          | 2026-06-30T14:19:12.151372761Z [30/Jun/2026 14:19:12] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1261
+api-gateway-1        | 2026-06-30T14:18:48.120364231Z {"timestamp":"2026-06-30T14:18:48.120135722Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":673}
+simulator-1          | 2026-06-30T14:19:13.539467210Z Forbidden: /api/gui/buttons/3/press/
+simulator-1          | 2026-06-30T14:19:13.539720495Z [30/Jun/2026 14:19:13] "POST /api/gui/buttons/3/press/ HTTP/1.1" 403 1236
+simulator-1          | 2026-06-30T14:19:15.340302544Z [30/Jun/2026 14:19:15] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 913
+api-gateway-1        | 2026-06-30T14:18:48.123263873Z {"timestamp":"2026-06-30T14:18:48.123035478Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-accept-missing-wallet","code":"failed_precondition","duration_ms":2}
+migrate-1            | 2026-06-30T14:20:14.828467460Z CREATE FUNCTION
+api-gateway-1        | 2026-06-30T14:18:49.840343300Z {"timestamp":"2026-06-30T14:18:49.840065555Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":714}
+migrate-1            | 2026-06-30T14:20:14.844157119Z DROP TRIGGER
+api-gateway-1        | 2026-06-30T14:18:49.841623554Z {"timestamp":"2026-06-30T14:18:49.841421087Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-accept-nonnumeric","code":"invalid_argument","duration_ms":1}
+migrate-1            | 2026-06-30T14:20:14.853581134Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:14.874351528Z DROP TRIGGER
+api-gateway-1        | 2026-06-30T14:18:51.686109351Z {"timestamp":"2026-06-30T14:18:51.685777457Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":709}
+migrate-1            | 2026-06-30T14:20:14.897767765Z CREATE TRIGGER
+api-gateway-1        | 2026-06-30T14:18:51.688213378Z {"timestamp":"2026-06-30T14:18:51.68799068Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-accept-huge","code":"invalid_argument","duration_ms":1}
+migrate-1            | 2026-06-30T14:20:14.916559273Z DROP TRIGGER
+api-gateway-1        | 2026-06-30T14:18:53.436472462Z {"timestamp":"2026-06-30T14:18:53.436115056Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":658}
+migrate-1            | 2026-06-30T14:20:14.953604422Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:14.978288815Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.000839930Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.014328156Z CREATE FUNCTION
+api-gateway-1        | 2026-06-30T14:18:53.509050714Z {"timestamp":"2026-06-30T14:18:53.508770672Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-insufficient-isk-issue","duration_ms":72}
+simulator-1          | 2026-06-30T14:19:18.566554819Z [30/Jun/2026 14:19:18] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1253
+simulator-1          | 2026-06-30T14:19:22.621092693Z [30/Jun/2026 14:19:22] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1349
+simulator-1          | 2026-06-30T14:19:25.923883314Z [30/Jun/2026 14:19:25] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1293
+api-gateway-1        | 2026-06-30T14:18:54.923854433Z {"timestamp":"2026-06-30T14:18:54.923528439Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":697}
+api-gateway-1        | 2026-06-30T14:18:54.968231286Z {"timestamp":"2026-06-30T14:18:54.968005793Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-insufficient-isk-accept","code":"failed_precondition","duration_ms":44}
+api-gateway-1        | 2026-06-30T14:18:56.759511414Z {"timestamp":"2026-06-30T14:18:56.759176134Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":538}
+api-gateway-1        | 2026-06-30T14:18:56.819021975Z {"timestamp":"2026-06-30T14:18:56.818738544Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-insufficient-isk-cleanup","duration_ms":58}
+migrate-1            | 2026-06-30T14:20:15.022734579Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.028337697Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.033415554Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.040614264Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.048054066Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.109622631Z INSERT 0 1
+migrate-1            | 2026-06-30T14:20:15.175159629Z CREATE EXTENSION
+simulator-1          | 2026-06-30T14:19:27.596215896Z [30/Jun/2026 14:19:27] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 903
+simulator-1          | 2026-06-30T14:19:31.043070427Z [30/Jun/2026 14:19:31] "GET / HTTP/1.1" 200 12202
+api-gateway-1        | 2026-06-30T14:18:58.182726942Z {"timestamp":"2026-06-30T14:18:58.182468781Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":653}
+simulator-1          | 2026-06-30T14:19:31.120097017Z [30/Jun/2026 14:19:31] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1263
+simulator-1          | 2026-06-30T14:19:34.546442224Z [30/Jun/2026 14:19:34] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 898
+simulator-1          | 2026-06-30T14:19:37.081738551Z [30/Jun/2026 14:19:37] "POST /api/gui/buttons/4/press/ HTTP/1.1" 202 1260
+migrate-1            | 2026-06-30T14:20:15.175189391Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:1: NOTICE:  extension "pgcrypto" already exists, skipping
+api-gateway-1        | 2026-06-30T14:18:58.225418803Z {"timestamp":"2026-06-30T14:18:58.225154389Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-cancelled-accept-issue","duration_ms":42}
+migrate-1            | 2026-06-30T14:20:15.184767078Z CREATE FUNCTION
+api-gateway-1        | 2026-06-30T14:18:59.667880004Z {"timestamp":"2026-06-30T14:18:59.667469124Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":536}
+api-gateway-1        | 2026-06-30T14:18:59.706390157Z {"timestamp":"2026-06-30T14:18:59.706111439Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-cancelled-accept-cancel","duration_ms":38}
+migrate-1            | 2026-06-30T14:20:15.190884927Z CREATE FUNCTION
+api-gateway-1        | 2026-06-30T14:19:01.105970001Z {"timestamp":"2026-06-30T14:19:01.105570634Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":683}
+api-gateway-1        | 2026-06-30T14:19:01.110017420Z {"timestamp":"2026-06-30T14:19:01.109714392Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-accept-cancelled","code":"failed_precondition","duration_ms":3}
+migrate-1            | 2026-06-30T14:20:15.191605206Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:76: NOTICE:  relation "capsuleer" already exists, skipping
+simulator-1          | 2026-06-30T14:19:38.563196535Z [30/Jun/2026 14:19:38] "POST /api/gui/buttons/5/press/ HTTP/1.1" 202 1347
+migrate-1            | 2026-06-30T14:20:15.191612331Z CREATE TABLE
+simulator-1          | 2026-06-30T14:19:41.801159967Z [30/Jun/2026 14:19:41] "POST /api/gui/buttons/6/press/ HTTP/1.1" 202 1220
+migrate-1            | 2026-06-30T14:20:15.192122454Z CREATE TABLE
+api-gateway-1        | 2026-06-30T14:19:02.439902365Z {"timestamp":"2026-06-30T14:19:02.43963878Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":538}
+migrate-1            | 2026-06-30T14:20:15.192192002Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:85: NOTICE:  relation "region" already exists, skipping
+simulator-1          | 2026-06-30T14:19:43.632164062Z [30/Jun/2026 14:19:43] "POST /api/gui/buttons/7/press/ HTTP/1.1" 202 1310
+migrate-1            | 2026-06-30T14:20:15.192340624Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:95: NOTICE:  relation "station" already exists, skipping
+api-gateway-1        | 2026-06-30T14:19:02.443200812Z {"timestamp":"2026-06-30T14:19:02.442936849Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-cancel-already-cancelled","code":"failed_precondition","duration_ms":2}
+migrate-1            | 2026-06-30T14:20:15.192373397Z CREATE TABLE
+simulator-1          | 2026-06-30T14:19:47.103727433Z [30/Jun/2026 14:19:47] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1228
+migrate-1            | 2026-06-30T14:20:15.192803720Z CREATE TABLE
+simulator-1          | 2026-06-30T14:19:48.421186509Z [30/Jun/2026 14:19:48] "GET / HTTP/1.1" 200 12202
+api-gateway-1        | 2026-06-30T14:19:03.763273562Z {"timestamp":"2026-06-30T14:19:03.762310494Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":653}
+migrate-1            | 2026-06-30T14:20:15.192818387Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:106: NOTICE:  relation "item_type" already exists, skipping
+simulator-1          | 2026-06-30T14:19:51.324655428Z [30/Jun/2026 14:19:51] "POST /api/gui/buttons/2/press/ HTTP/1.1" 202 1334
+migrate-1            | 2026-06-30T14:20:15.193319957Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.193323244Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:119: NOTICE:  relation "idempotency_record" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.193869706Z CREATE TABLE
+api-gateway-1        | 2026-06-30T14:19:03.810845111Z {"timestamp":"2026-06-30T14:19:03.81035576Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-completed-target-issue","duration_ms":46}
+migrate-1            | 2026-06-30T14:20:15.193889640Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:132: NOTICE:  relation "request_attempt" already exists, skipping
+api-gateway-1        | 2026-06-30T14:19:05.206352603Z {"timestamp":"2026-06-30T14:19:05.205831047Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":697}
+api-gateway-1        | 2026-06-30T14:19:05.254773234Z {"timestamp":"2026-06-30T14:19:05.254463921Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-completed-target-accept","duration_ms":47}
+simulator-1          | 2026-06-30T14:19:51.380503000Z Conflict: /api/gui/buttons/2/press/
+simulator-1          | 2026-06-30T14:19:51.380784876Z [30/Jun/2026 14:19:51] "POST /api/gui/buttons/2/press/ HTTP/1.1" 409 1636
+simulator-1          | 2026-06-30T14:20:11.601889452Z Service Unavailable: /api/gui/buttons/1/press/
+api-gateway-1        | 2026-06-30T14:19:06.724284815Z {"timestamp":"2026-06-30T14:19:06.724049635Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":683}
+migrate-1            | 2026-06-30T14:20:15.194315140Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.194377084Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:146: NOTICE:  relation "settlement_batch" already exists, skipping
+api-gateway-1        | 2026-06-30T14:19:06.726765332Z {"timestamp":"2026-06-30T14:19:06.726569232Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-accept-completed","code":"failed_precondition","duration_ms":2}
+migrate-1            | 2026-06-30T14:20:15.201584195Z ALTER TABLE
+api-gateway-1        | 2026-06-30T14:19:08.110618883Z {"timestamp":"2026-06-30T14:19:08.110159217Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":522}
+api-gateway-1        | 2026-06-30T14:19:08.113746962Z {"timestamp":"2026-06-30T14:19:08.113493191Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-cancel-completed","code":"failed_precondition","duration_ms":2}
+api-gateway-1        | 2026-06-30T14:19:09.519926438Z {"timestamp":"2026-06-30T14:19:09.519611592Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":655}
+migrate-1            | 2026-06-30T14:20:15.210462264Z ALTER TABLE
+api-gateway-1        | 2026-06-30T14:19:09.522400561Z {"timestamp":"2026-06-30T14:19:09.522033921Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-accept-missing-trade","code":"invalid_argument","duration_ms":2}
+migrate-1            | 2026-06-30T14:20:15.211130779Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.211143800Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:170: NOTICE:  relation "settlement_step" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.211648104Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:173: NOTICE:  column "step_output" of relation "settlement_step" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.220575575Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.221493563Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.221534715Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:186: NOTICE:  relation "wallet" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.222053681Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:200: NOTICE:  relation "item_stack" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.222090051Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.222875222Z CREATE TABLE
+simulator-1          | 2026-06-30T14:20:11.602347996Z [30/Jun/2026 14:20:11] "POST /api/gui/buttons/1/press/ HTTP/1.1" 503 1314
+migrate-1            | 2026-06-30T14:20:15.222882052Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:216: NOTICE:  relation "trade_instance" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.223393801Z CREATE TABLE
+simulator-1          | 2026-06-30T14:20:22.375917012Z [30/Jun/2026 14:20:22] "POST /api/gui/buttons/1/press/ HTTP/1.1" 202 1248
+simulator-1          | 2026-06-30T14:20:23.822621544Z [30/Jun/2026 14:20:23] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 903
+simulator-1          | 2026-06-30T14:20:25.254933982Z [30/Jun/2026 14:20:25] "POST /api/gui/buttons/3/press/ HTTP/1.1" 202 933
+migrate-1            | 2026-06-30T14:20:15.223398340Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:230: NOTICE:  relation "wallet_escrow" already exists, skipping
+api-gateway-1        | 2026-06-30T14:19:12.026608327Z {"timestamp":"2026-06-30T14:19:12.026348078Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":643}
+migrate-1            | 2026-06-30T14:20:15.224226607Z CREATE TABLE
+api-gateway-1        | 2026-06-30T14:19:12.059984749Z {"timestamp":"2026-06-30T14:19:12.059737536Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-role-target-issue","duration_ms":32}
+api-gateway-1        | 2026-06-30T14:19:13.485209648Z {"timestamp":"2026-06-30T14:19:13.484909332Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":531}
+migrate-1            | 2026-06-30T14:20:15.224252496Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:246: NOTICE:  relation "item_stack_escrow" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.225114033Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:268: NOTICE:  relation "wallet_ledger" already exists, skipping
+api-gateway-1        | 2026-06-30T14:19:13.487864881Z {"timestamp":"2026-06-30T14:19:13.487637479Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-role-nonseller-cancel","code":"permission_denied","duration_ms":2}
+api-gateway-1        | 2026-06-30T14:19:15.258567728Z {"timestamp":"2026-06-30T14:19:15.255964588Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":526}
+api-gateway-1        | 2026-06-30T14:19:15.296532150Z {"timestamp":"2026-06-30T14:19:15.296246984Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-role-owner-cleanup","duration_ms":37}
+api-gateway-1        | 2026-06-30T14:19:18.484581337Z {"timestamp":"2026-06-30T14:19:18.484365839Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":640}
+api-gateway-1        | 2026-06-30T14:19:18.526698747Z {"timestamp":"2026-06-30T14:19:18.526395363Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-duplicate-issue","duration_ms":41}
+api-gateway-1        | 2026-06-30T14:19:22.475956808Z {"timestamp":"2026-06-30T14:19:22.475614375Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":683}
+api-gateway-1        | 2026-06-30T14:19:22.552735299Z {"timestamp":"2026-06-30T14:19:22.552472075Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-duplicate-accept","duration_ms":76}
+api-gateway-1        | 2026-06-30T14:19:25.852176411Z {"timestamp":"2026-06-30T14:19:25.851889043Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":656}
+api-gateway-1        | 2026-06-30T14:19:25.888865684Z {"timestamp":"2026-06-30T14:19:25.888590869Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-duplicate-cancel-target","duration_ms":36}
+api-gateway-1        | 2026-06-30T14:19:27.505875340Z {"timestamp":"2026-06-30T14:19:27.505610176Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":522}
+migrate-1            | 2026-06-30T14:20:15.225172778Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.226322304Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:302: NOTICE:  relation "item_stack_ledger" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.226353813Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.233582339Z CREATE FUNCTION
+api-gateway-1        | 2026-06-30T14:19:27.545517695Z {"timestamp":"2026-06-30T14:19:27.545187018Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-duplicate-cancel","duration_ms":39}
+migrate-1            | 2026-06-30T14:20:15.239676616Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.245681539Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.251294681Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.256425600Z ALTER TABLE
+api-gateway-1        | 2026-06-30T14:19:30.989026447Z {"timestamp":"2026-06-30T14:19:30.98858823Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":644}
+api-gateway-1        | 2026-06-30T14:19:31.068348375Z {"timestamp":"2026-06-30T14:19:31.068105658Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-refresh-in-flight","duration_ms":78}
+api-gateway-1        | 2026-06-30T14:19:34.434697268Z {"timestamp":"2026-06-30T14:19:34.434376501Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":520}
+api-gateway-1        | 2026-06-30T14:19:34.482104139Z {"timestamp":"2026-06-30T14:19:34.481852462Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-refresh-cleanup","duration_ms":46}
+api-gateway-1        | 2026-06-30T14:19:37.009379897Z {"timestamp":"2026-06-30T14:19:37.009011905Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":644}
+api-gateway-1        | 2026-06-30T14:19:37.041609373Z {"timestamp":"2026-06-30T14:19:37.041300845Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-contract-issue","duration_ms":31}
+api-gateway-1        | 2026-06-30T14:19:38.463424293Z {"timestamp":"2026-06-30T14:19:38.463034455Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":681}
+api-gateway-1        | 2026-06-30T14:19:38.522793355Z {"timestamp":"2026-06-30T14:19:38.522443948Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-contract-accept","duration_ms":58}
+api-gateway-1        | 2026-06-30T14:19:41.702007852Z {"timestamp":"2026-06-30T14:19:41.701744066Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":621}
+api-gateway-1        | 2026-06-30T14:19:41.754415194Z {"timestamp":"2026-06-30T14:19:41.753844806Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-direct-issue","duration_ms":51}
+api-gateway-1        | 2026-06-30T14:19:43.300223364Z {"timestamp":"2026-06-30T14:19:43.299913471Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":660}
+api-gateway-1        | 2026-06-30T14:19:43.573982948Z {"timestamp":"2026-06-30T14:19:43.573683995Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-direct-accept","duration_ms":272}
+api-gateway-1        | 2026-06-30T14:19:47.011827352Z {"timestamp":"2026-06-30T14:19:47.011431078Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":630}
+api-gateway-1        | 2026-06-30T14:19:47.055837777Z {"timestamp":"2026-06-30T14:19:47.055480203Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-race-issue","duration_ms":43}
+api-gateway-1        | 2026-06-30T14:19:51.126735239Z {"timestamp":"2026-06-30T14:19:51.126410945Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":677}
+api-gateway-1        | 2026-06-30T14:19:51.209755096Z {"timestamp":"2026-06-30T14:19:51.209504025Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":677}
+api-gateway-1        | 2026-06-30T14:19:51.218841931Z {"timestamp":"2026-06-30T14:19:51.218590293Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-race-accept-a","duration_ms":91}
+api-gateway-1        | 2026-06-30T14:19:51.286114621Z {"timestamp":"2026-06-30T14:19:51.28580218Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-race-accept-b","code":"failed_precondition","duration_ms":76}
+api-gateway-1        | 2026-06-30T14:19:57.286804779Z {"timestamp":"2026-06-30T14:19:57.286438313Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":636}
+api-gateway-1        | 2026-06-30T14:20:02.286388421Z {"timestamp":"2026-06-30T14:20:02.286030129Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-market-outage","code":"downstream_timeout","duration_ms":5001}
+api-gateway-1        | 2026-06-30T14:20:02.388917873Z {"timestamp":"2026-06-30T14:20:02.388686887Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":636}
+api-gateway-1        | 2026-06-30T14:20:07.389882251Z {"timestamp":"2026-06-30T14:20:07.389487136Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-market-outage","code":"downstream_timeout","duration_ms":5000}
+api-gateway-1        | 2026-06-30T14:20:07.592545120Z {"timestamp":"2026-06-30T14:20:07.592310827Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":636}
+api-gateway-1        | 2026-06-30T14:20:11.566104279Z {"timestamp":"2026-06-30T14:20:11.565880237Z","level":"WARN","msg":"udp downstream call failed","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-market-outage","code":"downstream_unavailable","duration_ms":3973}
+api-gateway-1        | 2026-06-30T14:20:22.250662368Z {"timestamp":"2026-06-30T14:20:22.25036Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":638}
+api-gateway-1        | 2026-06-30T14:20:22.335996229Z {"timestamp":"2026-06-30T14:20:22.335693046Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-recovery-issue","duration_ms":84}
+api-gateway-1        | 2026-06-30T14:20:23.705103984Z {"timestamp":"2026-06-30T14:20:23.704740433Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":522}
+api-gateway-1        | 2026-06-30T14:20:23.772064861Z {"timestamp":"2026-06-30T14:20:23.771543838Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-recovery-cleanup","duration_ms":66}
+api-gateway-1        | 2026-06-30T14:20:25.167915375Z {"timestamp":"2026-06-30T14:20:25.167614738Z","level":"INFO","msg":"udp packet received","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","bytes":534}
+api-gateway-1        | 2026-06-30T14:20:25.210612730Z {"timestamp":"2026-06-30T14:20:25.210257664Z","level":"INFO","msg":"udp downstream call succeeded","service.name":"api-gateway","service.version":"local","service.language":"go","observability.run_id":"local-unobserved","remote":"172.19.0.8","interaction_id":"gui-demo-20260630141728-invalid-accept-cleanup","duration_ms":42}
+migrate-1            | 2026-06-30T14:20:15.262283775Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.270005102Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.276388743Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.283152730Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.294309222Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.300716453Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.306585797Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.316698344Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.325483717Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.330087338Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.337532240Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.338369126Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:529: NOTICE:  relation "trade_state_change" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.338378397Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.338785822Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.338798906Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:531: NOTICE:  relation "settlement_batch_idempotency_key_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.339055761Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.339107385Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:532: NOTICE:  relation "settlement_step_batch_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.339658969Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.339705913Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:533: NOTICE:  relation "wallet_capsuleer_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.339977511Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.339982378Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:534: NOTICE:  relation "wallet_primary_capsuleer_unique_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.340396678Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:535: NOTICE:  relation "wallet_ledger_wallet_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.340408820Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.340826654Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.340874676Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:536: NOTICE:  relation "item_stack_owner_item_station_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.341130499Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.341132906Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:537: NOTICE:  relation "item_stack_ledger_stack_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.341669673Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:538: NOTICE:  relation "item_stack_ledger_stack_sequence_unique_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.341716724Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.342037275Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.342066174Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:539: NOTICE:  relation "item_stack_ledger_stack_hash_unique_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.342486258Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.342533411Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:540: NOTICE:  relation "trade_instance_lookup_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.342777044Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.342799244Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:541: NOTICE:  relation "trade_instance_open_expires_at_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.344327351Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.344380597Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:542: NOTICE:  relation "item_stack_escrow_active_trade_unique_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.356134468Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.363224327Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.370153554Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.379132628Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.388512788Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.395413598Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.400585156Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.405907694Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.412417181Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.418739367Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.425296813Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.430944197Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.438449251Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.445830616Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.450266777Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.457935347Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.564618390Z DO
+migrate-1            | 2026-06-30T14:20:15.585338938Z ALTER ROLE
+migrate-1            | 2026-06-30T14:20:15.590473144Z REVOKE
+migrate-1            | 2026-06-30T14:20:15.595501680Z DO
+migrate-1            | 2026-06-30T14:20:15.605831742Z GRANT
+migrate-1            | 2026-06-30T14:20:15.613855173Z REVOKE
+migrate-1            | 2026-06-30T14:20:15.619280373Z GRANT
+migrate-1            | 2026-06-30T14:20:15.632682574Z GRANT
+migrate-1            | 2026-06-30T14:20:15.640634483Z GRANT
+migrate-1            | 2026-06-30T14:20:15.640944909Z REVOKE
+migrate-1            | 2026-06-30T14:20:15.641038531Z GRANT
+migrate-1            | 2026-06-30T14:20:15.692884066Z CREATE EXTENSION
+migrate-1            | 2026-06-30T14:20:15.692907132Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:1: NOTICE:  extension "pgcrypto" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.698934062Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.709792390Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.711350202Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.711379842Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:76: NOTICE:  relation "capsuleer" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.712048125Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.712092417Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:85: NOTICE:  relation "region" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.712397231Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:95: NOTICE:  relation "station" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.712431623Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.713086279Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.713050545Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:106: NOTICE:  relation "item_type" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.713515994Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:119: NOTICE:  relation "idempotency_record" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.713515967Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.714005488Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.714039760Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:132: NOTICE:  relation "request_attempt" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.714519110Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:146: NOTICE:  relation "settlement_batch" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.714550608Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.725117336Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.733381182Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.733922188Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.733954926Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:170: NOTICE:  relation "settlement_step" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.734298061Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:173: NOTICE:  column "step_output" of relation "settlement_step" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.743431179Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.744279156Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.744311051Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:186: NOTICE:  relation "wallet" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.744826541Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.744868596Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:200: NOTICE:  relation "item_stack" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.745581654Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.745601776Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:216: NOTICE:  relation "trade_instance" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.746165939Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.746178552Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:230: NOTICE:  relation "wallet_escrow" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.746797995Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:246: NOTICE:  relation "item_stack_escrow" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.746874261Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.747559268Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:268: NOTICE:  relation "wallet_ledger" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.747587876Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.748329579Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.748372909Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:302: NOTICE:  relation "item_stack_ledger" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.759414300Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.768791949Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.776709453Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.782391154Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.790417174Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.802754480Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.812840199Z ALTER TABLE
+migrate-1            | 2026-06-30T14:20:15.820731302Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.826341410Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.834727843Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.842079548Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.848586077Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.859175629Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.867072107Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.872163186Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.877342920Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.878180925Z CREATE TABLE
+migrate-1            | 2026-06-30T14:20:15.878209312Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:529: NOTICE:  relation "trade_state_change" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.878650788Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:531: NOTICE:  relation "settlement_batch_idempotency_key_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.878706450Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.879073006Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.879101423Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:532: NOTICE:  relation "settlement_step_batch_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.879689228Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.879714098Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:533: NOTICE:  relation "wallet_capsuleer_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.879977040Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.879986447Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:534: NOTICE:  relation "wallet_primary_capsuleer_unique_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.880405465Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.880451268Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:535: NOTICE:  relation "wallet_ledger_wallet_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.880743987Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.880762579Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:536: NOTICE:  relation "item_stack_owner_item_station_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.881182242Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.881186487Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:537: NOTICE:  relation "item_stack_ledger_stack_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.881868445Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.881913609Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:538: NOTICE:  relation "item_stack_ledger_stack_sequence_unique_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.882133671Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.882154511Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:539: NOTICE:  relation "item_stack_ledger_stack_hash_unique_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.882614724Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.882663971Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:540: NOTICE:  relation "trade_instance_lookup_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.882926228Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.882958996Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:541: NOTICE:  relation "trade_instance_open_expires_at_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.884230040Z CREATE INDEX
+migrate-1            | 2026-06-30T14:20:15.884247615Z psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:542: NOTICE:  relation "item_stack_escrow_active_trade_unique_idx" already exists, skipping
+migrate-1            | 2026-06-30T14:20:15.894694502Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.901671267Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.912261682Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.923227121Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.934208879Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.942647893Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.951144137Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.960423161Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.967800394Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:15.973751890Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:15.981243051Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.991918596Z CREATE FUNCTION
+migrate-1            | 2026-06-30T14:20:15.997669825Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:16.004138742Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:16.013265258Z DROP TRIGGER
+migrate-1            | 2026-06-30T14:20:16.020631232Z CREATE TRIGGER
+migrate-1            | 2026-06-30T14:20:16.124644657Z INSERT 0 0
+migrate-1            | 2026-06-30T14:20:16.124986540Z INSERT 0 0
+migrate-1            | 2026-06-30T14:20:16.125395909Z INSERT 0 0
+migrate-1            | 2026-06-30T14:20:16.126029114Z INSERT 0 0
+migrate-1            | 2026-06-30T14:20:16.128597513Z INSERT 0 0
+migrate-1            | 2026-06-30T14:20:16.128789157Z BEGIN
+migrate-1            | 2026-06-30T14:20:16.130191158Z INSERT 0 0
+migrate-1            | 2026-06-30T14:20:16.130636700Z INSERT 0 0
+migrate-1            | 2026-06-30T14:20:16.131270170Z INSERT 0 0
+migrate-1            | 2026-06-30T14:20:16.131818748Z INSERT 0 0
+migrate-1            | 2026-06-30T14:20:16.132962524Z INSERT 0 0
+migrate-1            | 2026-06-30T14:20:16.133730719Z UPDATE 0
+migrate-1            | 2026-06-30T14:20:16.136513313Z INSERT 0 0
+migrate-1            | 2026-06-30T14:20:16.136738830Z COMMIT

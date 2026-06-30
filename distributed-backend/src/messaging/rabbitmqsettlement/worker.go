@@ -134,7 +134,7 @@ func runSettlementWorkerSession(ctx context.Context, config Config, executor Set
 			go func(delivery amqp.Delivery) {
 				defer workers.Done()
 				defer func() { <-workerSlots }()
-				if err := handleDelivery(ctx, config, executor, channel, confirms, &channelMu, delivery); err != nil {
+				if err := handleDelivery(context.WithoutCancel(ctx), config, executor, channel, confirms, &channelMu, delivery); err != nil {
 					select {
 					case workerErrs <- err:
 					default:
@@ -148,6 +148,9 @@ func runSettlementWorkerSession(ctx context.Context, config Config, executor Set
 }
 
 func waitForExecutorReady(ctx context.Context, executor SettlementExecutor, timeout time.Duration, retryInterval time.Duration) error {
+	if executor == nil {
+		return errors.New("settlement executor is required")
+	}
 	if timeout <= 0 {
 		timeout = DefaultRequestTimeout
 	}
@@ -202,7 +205,9 @@ func handleDelivery(
 			}
 			return errors.Join(publishErr, nackDelivery(channelMu, delivery, true))
 		}
-		return ackDelivery(channelMu, delivery)
+		// Malformed commands are terminal and are dead-lettered for inspection even
+		// when the caller receives a precise INVALID_ARGUMENT reply.
+		return nackDelivery(channelMu, delivery, false)
 	}
 
 	callCtx, cancel := context.WithTimeout(ctx, config.RequestTimeout)

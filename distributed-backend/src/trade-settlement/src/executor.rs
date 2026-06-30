@@ -116,6 +116,15 @@ impl SettlementExecutor {
 
         let mut tx = self.db.begin().await?;
 
+        let mut trade_instance_ids: Vec<Uuid> = command
+            .operations
+            .iter()
+            .filter_map(SettlementCommand::trade_instance_id)
+            .collect();
+        trade_instance_ids.sort_unstable();
+        trade_instance_ids.dedup();
+        lock_trade_instances(&mut tx, &trade_instance_ids).await?;
+
         if let Some(existing) = lock_idempotency_record(&mut tx, &command.idempotency_key).await? {
             if existing.request_fingerprint != request_fingerprint {
                 return Err(SettlementError::Conflict(format!(
@@ -307,6 +316,19 @@ impl SettlementExecutor {
             })
             .collect()
     }
+}
+
+async fn lock_trade_instances(
+    tx: &mut Transaction<'_, Postgres>,
+    trade_instance_ids: &[Uuid],
+) -> Result<()> {
+    for trade_instance_id in trade_instance_ids {
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+            .bind(trade_instance_id.to_string())
+            .execute(&mut **tx)
+            .await?;
+    }
+    Ok(())
 }
 
 async fn complete_execution(

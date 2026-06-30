@@ -45,16 +45,103 @@ def test_creating_trade_offer_makes_requested_item_quantity_unavailable_to_selle
     assert item_stack_row(db, world.seller_stack_id)["quantity"] == 6
 
 
-def test_runtime_database_role_can_transact_but_cannot_create_schema_objects(db):
-    runtime_url = os.environ.get("EVE_TRADE_RUNTIME_DATABASE_URL")
-    if not runtime_url:
-        pytest.skip("set EVE_TRADE_RUNTIME_DATABASE_URL to run least-privilege database tests")
-    with psycopg.connect(runtime_url, autocommit=True) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT count(*) FROM capsuleer")
-            assert cursor.fetchone()[0] >= 0
-            with pytest.raises(psycopg.errors.InsufficientPrivilege):
-                cursor.execute("CREATE TABLE runtime_role_must_not_create_tables (id bigint)")
+def test_runtime_database_role_has_exact_required_privileges_and_no_administration_rights(db, runtime_db, gateway):
+    role = runtime_db.fetchone(
+        """
+        SELECT current_user AS role_name, rolsuper, rolcreatedb, rolcreaterole,
+               rolreplication, rolbypassrls
+        FROM pg_roles
+        WHERE rolname = current_user
+        """
+    )
+    assert role == {
+        "role_name": "eve_trade_runtime",
+        "rolsuper": False,
+        "rolcreatedb": False,
+        "rolcreaterole": False,
+        "rolreplication": False,
+        "rolbypassrls": False,
+    }
+
+    expected_insert = {
+        "idempotency_record", "request_attempt", "settlement_batch", "settlement_step",
+        "wallet", "item_stack", "trade_instance", "wallet_escrow", "item_stack_escrow",
+        "wallet_ledger", "item_stack_ledger", "trade_state_change",
+    }
+    expected_update = {
+        "idempotency_record", "request_attempt", "settlement_batch", "settlement_step",
+        "wallet", "item_stack", "trade_instance", "wallet_escrow", "item_stack_escrow",
+    }
+    all_tables = {
+        row["table_name"]
+        for row in db.fetchall(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
+        )
+    }
+    expected = (
+        {(table, "SELECT") for table in all_tables}
+        | {(table, "INSERT") for table in expected_insert}
+        | {(table, "UPDATE") for table in expected_update}
+    )
+    actual = {
+        (row["table_name"], row["privilege_type"])
+        for row in runtime_db.fetchall(
+            """
+            SELECT table_name, privilege_type
+            FROM information_schema.role_table_grants
+            WHERE grantee = current_user AND table_schema = 'public'
+            """
+        )
+    }
+    assert actual == expected
+
+    forbidden_statements = {
+        "create schema": "CREATE SCHEMA runtime_role_must_not_create_schema",
+        "create table": "CREATE TABLE runtime_role_must_not_create_table (id bigint)",
+        "alter table": "ALTER TABLE capsuleer ADD COLUMN runtime_role_forbidden bigint",
+        "drop table": "DROP TABLE capsuleer",
+        "mutate catalog": "UPDATE capsuleer SET capsuleer_name = capsuleer_name",
+    }
+    for name, statement in forbidden_statements.items():
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            runtime_db.execute(statement)
+
+    public_grants_before = db.scalar(
+        """
+        SELECT count(*) FROM information_schema.table_privileges
+        WHERE grantee = 'PUBLIC' AND table_schema = 'public'
+          AND table_name = 'capsuleer' AND privilege_type = 'SELECT'
+        """
+    )
+    runtime_db.execute("GRANT SELECT ON capsuleer TO PUBLIC")
+    public_grants_after = db.scalar(
+        """
+        SELECT count(*) FROM information_schema.table_privileges
+        WHERE grantee = 'PUBLIC' AND table_schema = 'public'
+          AND table_name = 'capsuleer' AND privilege_type = 'SELECT'
+        """
+    )
+    assert public_grants_before == 0
+    assert public_grants_after == public_grants_before
+
+    world = seed_world(db)
+    trade = create_trade(gateway, world, quantity=1, unit_price_isk=1)
+    accept_trade(gateway, world, trade)
+    ledger_id = db.scalar("SELECT item_stack_ledger_id FROM item_stack_ledger LIMIT 1")
+    for statement in (
+        "UPDATE item_stack_ledger SET quantity_after = quantity_after WHERE item_stack_ledger_id = %s",
+        "DELETE FROM item_stack_ledger WHERE item_stack_ledger_id = %s",
+    ):
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            runtime_db.execute(statement, (ledger_id,))
+    wallet_ledger_id = db.scalar("SELECT wallet_ledger_id FROM wallet_ledger LIMIT 1")
+    for statement in (
+        "UPDATE wallet_ledger SET isk_amount_after = isk_amount_after WHERE wallet_ledger_id = %s",
+        "DELETE FROM wallet_ledger WHERE wallet_ledger_id = %s",
+    ):
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            runtime_db.execute(statement, (wallet_ledger_id,))
+    assert item_stack_row(db, world.seller_stack_id)["quantity"] == 9
 
 
 def test_creating_trade_offer_keeps_seller_non_offered_item_quantity_available(db, gateway):
@@ -116,7 +203,7 @@ def test_creating_trade_offer_rejects_item_stack_not_owned_by_seller(db, gateway
         lambda: gateway.issue_trade_instance(
             issue_payload(world, item_stack_owner_id=world.other_id)
         ),
-        code="invalid_argument",
+        code="principal_mismatch",
         contains="owner",
     )
     assert table_count(db, "trade_instance") == 0
@@ -906,6 +993,72 @@ def test_concurrent_accepts_cannot_make_buyer_wallet_negative(db, gateway):
     assert trade_row(db, trade)["remaining_quantity"] == 5
 
 
+def test_concurrent_full_accept_and_cancel_have_exactly_one_winner_and_conserve_state(db, gateway):
+    world = seed_world(db, seller_quantity=10, seller_isk=100, buyer_isk=1_000)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+    items_before = total_item_quantity(db)
+    isk_before = total_isk_amount(db)
+    start = Barrier(2)
+
+    def run(name, call):
+        start.wait(timeout=5)
+        try:
+            return name, call(), None
+        except Exception as exc:  # noqa: BLE001 - exact failure is asserted below.
+            return name, None, exc
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(
+                run,
+                "accept",
+                lambda: accept_trade(
+                    gateway,
+                    world,
+                    trade,
+                    quantity=4,
+                    idempotency_key=fresh_key("accept-cancel-accept"),
+                ),
+            ),
+            executor.submit(
+                run,
+                "cancel",
+                lambda: cancel_trade(
+                    gateway,
+                    world,
+                    trade,
+                    idempotency_key=fresh_key("accept-cancel-cancel"),
+                ),
+            ),
+        ]
+        outcomes = [future.result() for future in futures]
+
+    successes = [(name, result) for name, result, error in outcomes if error is None]
+    failures = [(name, error) for name, result, error in outcomes if error is not None]
+    assert len(successes) == 1
+    assert len(failures) == 1
+    assert isinstance(failures[0][1], RpcFailure)
+    assert failures[0][1].code == "failed_precondition"
+    assert total_item_quantity(db) == items_before
+    assert total_isk_amount(db) == isk_before
+
+    final_trade = trade_row(db, trade)
+    if successes[0][0] == "accept":
+        assert final_trade["trade_state"] == "COMPLETED"
+        assert final_trade["remaining_quantity"] == 0
+        assert item_escrow_row(db, trade)["quantity"] == 0
+        assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 900
+        assert wallet_row(db, world.seller_wallet_id)["isk_amount"] == 200
+        assert item_stack_row(db, world.seller_stack_id)["quantity"] == 6
+    else:
+        assert final_trade["trade_state"] == "CANCELLED"
+        assert final_trade["remaining_quantity"] == 0
+        assert item_escrow_row(db, trade)["quantity"] == 0
+        assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 1_000
+        assert wallet_row(db, world.seller_wallet_id)["isk_amount"] == 100
+        assert item_stack_row(db, world.seller_stack_id)["quantity"] == 10
+
+
 def test_total_item_quantity_is_preserved_after_trade_offer_creation(db, gateway):
     world = seed_world(db, seller_quantity=10)
     before = total_item_quantity(db)
@@ -1099,20 +1252,26 @@ def test_trade_acceptance_uses_trade_station_not_client_supplied_station(db, gat
     assert item_stack_row(db, response["buyerDestinationItemStackId"])["station_id"] == world.station_id
 
 
-def test_trade_acceptance_uses_trade_seller_not_client_supplied_seller(db, gateway):
+def test_trade_acceptance_rejects_conflicting_client_supplied_seller_actor(db, gateway):
     world = seed_world(db, seller_isk=100)
     trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
 
-    accept_trade(
-        gateway,
-        world,
-        trade,
-        seller_capsuleer_id=world.other_id,
-        seller_wallet_id=world.other_wallet_id,
+    expect_rpc_error(
+        lambda: accept_trade(
+            gateway,
+            world,
+            trade,
+            seller_capsuleer_id=world.other_id,
+            seller_wallet_id=world.other_wallet_id,
+        ),
+        code="principal_mismatch",
+        contains="seller_capsuleer_id",
     )
 
-    assert wallet_row(db, world.seller_wallet_id)["isk_amount"] == 200
+    assert wallet_row(db, world.seller_wallet_id)["isk_amount"] == 100
     assert wallet_row(db, world.other_wallet_id)["isk_amount"] == 1_000
+    assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 1_000
+    assert item_escrow_row(db, trade)["quantity"] == 4
 
 
 def test_create_trade_offer_returns_clear_error_for_insufficient_item_quantity(db, gateway):
@@ -1123,6 +1282,7 @@ def test_create_trade_offer_returns_clear_error_for_insufficient_item_quantity(d
             issue_payload(world, quantity=6, item_stack_quantity=5)
         ),
         code="invalid_argument",
+        contains="item stack quantity",
     )
     assert "item stack quantity" in error.message
 
@@ -1134,7 +1294,8 @@ def test_create_trade_offer_returns_clear_error_for_invalid_item_stack_owner(db,
         lambda: gateway.issue_trade_instance(
             issue_payload(world, item_stack_owner_id=world.other_id)
         ),
-        code="invalid_argument",
+        code="principal_mismatch",
+        contains="owner",
     )
     assert "owner" in error.message
 
@@ -1263,6 +1424,58 @@ def test_authenticated_buyer_cannot_impersonate_seller_at_udp_edge(db, authentic
     assert item_stack_row(db, world.seller_stack_id)["quantity"] == 10
 
 
+def test_authenticated_udp_edge_rejects_unknown_wrong_key_and_cross_principal_actions(db, authenticated_edge):
+    world = seed_world(db)
+    required_names = (
+        "EVE_TRADE_EDGE_SELLER_KEY_ID",
+        "EVE_TRADE_EDGE_SELLER_SECRET",
+        "EVE_TRADE_EDGE_BUYER_KEY_ID",
+        "EVE_TRADE_EDGE_BUYER_SECRET",
+        "EVE_TRADE_EDGE_OTHER_KEY_ID",
+        "EVE_TRADE_EDGE_OTHER_SECRET",
+    )
+    if any(not os.environ.get(name) for name in required_names):
+        pytest.skip("set seller, buyer, and other edge credentials to run the principal matrix")
+    credentials = {
+        "seller": (
+            os.environ["EVE_TRADE_EDGE_SELLER_KEY_ID"],
+            os.environ["EVE_TRADE_EDGE_SELLER_SECRET"],
+        ),
+        "buyer": (
+            os.environ["EVE_TRADE_EDGE_BUYER_KEY_ID"],
+            os.environ["EVE_TRADE_EDGE_BUYER_SECRET"],
+        ),
+        "other": (
+            os.environ["EVE_TRADE_EDGE_OTHER_KEY_ID"],
+            os.environ["EVE_TRADE_EDGE_OTHER_SECRET"],
+        ),
+    }
+
+    def packet(action, actor_field, actor_id, suffix):
+        return {
+            "schema_version": "eve-trade-gui.v1",
+            "interaction_id": fresh_key(suffix),
+            "ui": {"window": "regional_market", "action": action},
+            "input": {actor_field: actor_id, "quantity": 1},
+        }
+
+    cases = [
+        ("unknown key", packet("market_place_sell_order", "issued_by_capsuleer_id", world.seller_id, "unknown-key"), "unknown", "wrong", "invalid_signature"),
+        ("seller key wrong HMAC", packet("market_place_sell_order", "issued_by_capsuleer_id", world.seller_id, "wrong-hmac"), credentials["seller"][0], "wrong", "invalid_signature"),
+        ("seller cannot act as buyer", packet("market_buy_from_sell_order", "buyer_capsuleer_id", world.buyer_id, "seller-as-buyer"), *credentials["seller"], "principal_mismatch"),
+        ("buyer cannot act as seller", packet("market_place_sell_order", "issued_by_capsuleer_id", world.seller_id, "buyer-as-seller"), *credentials["buyer"], "principal_mismatch"),
+        ("other cannot act as seller", packet("market_place_sell_order", "issued_by_capsuleer_id", world.seller_id, "other-as-seller"), *credentials["other"], "principal_mismatch"),
+        ("other cannot act as buyer", packet("market_buy_from_sell_order", "buyer_capsuleer_id", world.buyer_id, "other-as-buyer"), *credentials["other"], "principal_mismatch"),
+    ]
+    for name, request, key_id, secret, expected_code in cases:
+        response = authenticated_edge.submit(request, key_id, secret)
+        assert response["code"] == expected_code, name
+        assert response["interaction_id"] == request["interaction_id"], name
+
+    assert table_count(db, "trade_instance") == 0
+    assert item_stack_row(db, world.seller_stack_id)["quantity"] == 10
+
+
 def test_settlement_rejects_completing_trade_while_item_escrow_quantity_remains_positive(db, gateway, settlement):
     world = seed_world(db)
     trade = create_trade(gateway, world, quantity=4)
@@ -1299,17 +1512,26 @@ def test_settlement_rejects_releasing_more_item_quantity_than_escrow_contains(db
     world = seed_world(db, buyer_isk=1_000, buyer_stack_quantity=0)
     trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
     pb = settlement.pb
+    request = _settlement_accept_request(pb, world, trade, quantity=5, isk_amount=100)
+    wallet_escrow_id = request.operations[0].transfer_isk_amount_from_wallet_to_wallet_escrow.wallet_escrow_id
+    buyer_isk_before = wallet_row(db, world.buyer_wallet_id)["isk_amount"]
+    seller_isk_before = wallet_row(db, world.seller_wallet_id)["isk_amount"]
+    wallet_ledger_before = table_count(db, "wallet_ledger")
+    item_ledger_before = table_count(db, "item_stack_ledger")
 
     expect_grpc_error(
-        lambda: settlement.execute_settlement_batch(
-            _settlement_accept_request(pb, world, trade, quantity=5, isk_amount=100)
-        ),
+        lambda: settlement.execute_settlement_batch(request),
         code="FAILED_PRECONDITION",
         contains="requested 5",
     )
 
+    assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == buyer_isk_before
+    assert wallet_row(db, world.seller_wallet_id)["isk_amount"] == seller_isk_before
     assert item_escrow_row(db, trade)["quantity"] == 4
     assert trade_row(db, trade)["remaining_quantity"] == 4
+    assert db.scalar("SELECT count(*) FROM wallet_escrow WHERE wallet_escrow_id = %s", (wallet_escrow_id,)) == 0
+    assert table_count(db, "wallet_ledger") == wallet_ledger_before
+    assert table_count(db, "item_stack_ledger") == item_ledger_before
 
 
 def test_settlement_rejects_releasing_same_item_escrow_twice(db, gateway, settlement):
@@ -1363,6 +1585,62 @@ def test_settlement_rejects_wallet_payment_that_exceeds_remaining_trade_quantity
     assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 1_000
     assert item_escrow_row(db, trade)["quantity"] == 4
     assert trade_row(db, trade)["remaining_quantity"] == 4
+
+
+def test_settlement_rejects_paying_more_than_wallet_escrow_and_rolls_back_every_prior_step(db, gateway, settlement):
+    world = seed_world(db, buyer_isk=1_000, buyer_stack_quantity=0)
+    trade = create_trade(gateway, world, quantity=4, unit_price_isk=25)
+    pb = settlement.pb
+    wallet_escrow_id = uuid_str()
+    buyer_isk_before = wallet_row(db, world.buyer_wallet_id)["isk_amount"]
+    seller_isk_before = wallet_row(db, world.seller_wallet_id)["isk_amount"]
+    wallet_ledger_before = table_count(db, "wallet_ledger")
+    item_ledger_before = table_count(db, "item_stack_ledger")
+
+    expect_grpc_error(
+        lambda: settlement.execute_settlement_batch(
+            pb.ExecuteSettlementBatchRequest(
+                idempotency_key=fresh_key("settlement-wallet-over-release"),
+                external_request_id="settlement-wallet-over-release",
+                caused_by_capsuleer_id=world.buyer_id,
+                created_by_service="settlement-e2e",
+                operations=[
+                    pb.SettlementOperation(
+                        transfer_isk_amount_from_wallet_to_wallet_escrow=pb.TransferIskAmountFromWalletToWalletEscrow(
+                            source_wallet_id=world.buyer_wallet_id,
+                            wallet_escrow_id=wallet_escrow_id,
+                            trade_instance_id=trade.trade_instance_id,
+                            isk_amount=100,
+                        )
+                    ),
+                    pb.SettlementOperation(
+                        transfer_quantity_from_item_stack_escrow_to_item_stack_with_new_owner=pb.TransferQuantityFromItemStackEscrowToItemStackWithNewOwner(
+                            item_stack_escrow_id=trade.item_stack_escrow_id,
+                            destination_item_stack_id=world.buyer_stack_id,
+                            quantity=4,
+                        )
+                    ),
+                    pb.SettlementOperation(
+                        transfer_isk_amount_from_wallet_escrow_to_wallet_with_new_owner=pb.TransferIskAmountFromWalletEscrowToWalletWithNewOwner(
+                            wallet_escrow_id=wallet_escrow_id,
+                            destination_wallet_id=world.seller_wallet_id,
+                            isk_amount=101,
+                        )
+                    ),
+                ],
+            )
+        ),
+        code="FAILED_PRECONDITION",
+        contains="requested 101",
+    )
+
+    assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == buyer_isk_before
+    assert wallet_row(db, world.seller_wallet_id)["isk_amount"] == seller_isk_before
+    assert item_escrow_row(db, trade)["quantity"] == 4
+    assert trade_row(db, trade)["remaining_quantity"] == 4
+    assert db.scalar("SELECT count(*) FROM wallet_escrow WHERE wallet_escrow_id = %s", (wallet_escrow_id,)) == 0
+    assert table_count(db, "wallet_ledger") == wallet_ledger_before
+    assert table_count(db, "item_stack_ledger") == item_ledger_before
 
 
 def test_settlement_rejects_completing_trade_while_wallet_escrow_remains_active(db, gateway, settlement):

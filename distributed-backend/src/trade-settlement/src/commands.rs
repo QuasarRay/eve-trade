@@ -53,6 +53,20 @@ pub enum SettlementCommand {
 }
 
 impl SettlementCommand {
+    pub fn trade_instance_id(&self) -> Option<Uuid> {
+        match self {
+            SettlementCommand::CreateNewTradeInstanceRow(command) => command.trade_instance_id,
+            SettlementCommand::ModifyTradeInstanceState(command) => Some(command.trade_instance_id),
+            SettlementCommand::TransferQuantityFromItemStackToItemStackEscrow(command) => {
+                Some(command.trade_instance_id)
+            }
+            SettlementCommand::CreateNewEmptyWalletEscrow(command) => {
+                Some(command.trade_instance_id)
+            }
+            _ => None,
+        }
+    }
+
     pub fn kind_name(&self) -> &'static str {
         match self {
             SettlementCommand::CreateNewTradeInstanceRow(_) => "create_new_trade_instance_row",
@@ -540,6 +554,27 @@ fn ensure_positive(value: i64, field_name: &str) -> Result<()> {
     }
 }
 
+fn ensure_supported(field_name: &str, value: &str, supported: &[&str]) -> Result<()> {
+    if supported.contains(&value) {
+        Ok(())
+    } else {
+        Err(SettlementError::InvalidArgument(format!(
+            "{field_name} {value} is not supported"
+        )))
+    }
+}
+
+fn ensure_future_timestamp(value: Option<&DateTime<Utc>>, field_name: &str) -> Result<()> {
+    if let Some(value) = value {
+        if *value <= Utc::now() {
+            return Err(SettlementError::InvalidArgument(format!(
+                "{field_name} must be in the future"
+            )));
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -678,6 +713,28 @@ mod tests {
     }
 
     #[test]
+    fn quantity_validation_is_explicit_at_i64_min_zero_and_max() {
+        let command = |quantity| {
+            SettlementCommand::TransferQuantityFromItemStackToItemStackEscrow(
+                TransferQuantityFromItemStackToItemStackEscrow {
+                    source_item_stack_id: uuid(1),
+                    item_stack_escrow_id: Some(uuid(2)),
+                    trade_instance_id: uuid(3),
+                    quantity,
+                },
+            )
+        };
+        for rejected in [i64::MIN, -1, 0] {
+            let error = command(rejected).validate().unwrap_err();
+            assert!(matches!(error, SettlementError::InvalidArgument(_)));
+            assert!(error
+                .to_string()
+                .contains("quantity must be greater than zero"));
+        }
+        command(i64::MAX).validate().unwrap();
+    }
+
+    #[test]
     fn merge_rejects_same_source_and_destination() {
         let id = uuid(1);
         let command = SettlementCommand::MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner(
@@ -757,25 +814,46 @@ mod tests {
         assert_eq!(command.request_id, Some(request_id));
         assert_eq!(command.operations.len(), 1);
     }
-}
 
-fn ensure_supported(field_name: &str, value: &str, supported: &[&str]) -> Result<()> {
-    if supported.contains(&value) {
-        Ok(())
-    } else {
-        Err(SettlementError::InvalidArgument(format!(
-            "{field_name} {value} is not supported"
-        )))
-    }
-}
-
-fn ensure_future_timestamp(value: Option<&DateTime<Utc>>, field_name: &str) -> Result<()> {
-    if let Some(value) = value {
-        if *value <= Utc::now() {
-            return Err(SettlementError::InvalidArgument(format!(
-                "{field_name} must be in the future"
-            )));
+    #[test]
+    fn trade_lock_identity_is_extracted_from_every_operation_that_carries_it() {
+        let trade_id = uuid(3);
+        let commands = [
+            valid_create_trade(),
+            SettlementCommand::ModifyTradeInstanceState(ModifyTradeInstanceState {
+                trade_instance_id: trade_id,
+                to_trade_state: "CANCELLED".into(),
+                trade_state_change_kind: "CANCELLED_BY_ISSUER".into(),
+                changed_by_service: "market".into(),
+            }),
+            SettlementCommand::TransferQuantityFromItemStackToItemStackEscrow(
+                TransferQuantityFromItemStackToItemStackEscrow {
+                    source_item_stack_id: uuid(1),
+                    item_stack_escrow_id: Some(uuid(2)),
+                    trade_instance_id: trade_id,
+                    quantity: 1,
+                },
+            ),
+            SettlementCommand::CreateNewEmptyWalletEscrow(CreateNewEmptyWalletEscrow {
+                wallet_escrow_id: Some(uuid(4)),
+                trade_instance_id: trade_id,
+                owner_id: 2002,
+                source_wallet_id: uuid(5),
+            }),
+        ];
+        assert_eq!(commands[0].trade_instance_id(), Some(uuid(1)));
+        for command in &commands[1..] {
+            assert_eq!(command.trade_instance_id(), Some(trade_id));
         }
+        assert_eq!(
+            SettlementCommand::CreateNewEmptyItemStack(CreateNewEmptyItemStack {
+                item_stack_id: Some(uuid(6)),
+                owner_id: 2002,
+                item_type_id: 34,
+                station_id: 60003760,
+            })
+            .trade_instance_id(),
+            None
+        );
     }
-    Ok(())
 }

@@ -27,12 +27,13 @@ services:
       - ./:/workspace
     environment:
       PGPASSWORD: postgres
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
     command: >
       bash -lc "
       until psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -c 'SELECT 1'; do
         sleep 1;
       done &&
-      psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql;
+      bash distributed-backend/tests/migrations/verify_upgrade.sh;
       psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/src/trade-settlement/seeds/local_dev_world.sql;
       "
 
@@ -62,7 +63,7 @@ services:
         condition: service_completed_successfully
     environment:
       SUMMER_ENV: prod
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
+      DATABASE_URL: postgres://eve_trade_runtime:runtime-password@postgres:5432/eve_trade
       OTEL_SERVICE_NAME: trade-settlement
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -108,7 +109,7 @@ services:
       SETTLEMENT_TRANSPORT: rabbitmq
       TRADE_SETTLEMENT_URL: http://trade-settlement:9092
       RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
+      DATABASE_URL: postgres://eve_trade_runtime:runtime-password@postgres:5432/eve_trade
       OTEL_SERVICE_NAME: market
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -166,9 +167,13 @@ services:
     command:
       - |
         endpoint="$$(getent hosts api-gateway | awk '{print $$1; exit}'):26000"
+        # Quilkin 0.10.0 can race while reserving upstream sockets when several
+        # proxy workers create sessions for one endpoint. One ingress worker
+        # prevents cross-client response routing; API work remains concurrent.
         exec /usr/local/bin/quilkin \
           --service.udp \
           --service.udp.port 26001 \
+          --service.udp.workers 1 \
           --provider.static.endpoints "$${endpoint}" \
           --admin.enabled=false \
           --log-format json

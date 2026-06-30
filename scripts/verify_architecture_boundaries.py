@@ -170,6 +170,49 @@ def check_kubernetes(errors: list[str]) -> None:
             fail(errors, f"{path.relative_to(ROOT)} exposes removed API Gateway RPC route")
 
 
+def check_test_reliability_contracts(errors: list[str]) -> None:
+    critical_roots = (
+        ROOT / "distributed-backend" / "tests" / "e2e",
+        ROOT / "simulator" / "trade_gui",
+        ROOT / "observability" / "tests",
+    )
+    assertion_helpers = {"expect_rpc_error", "expect_grpc_error"}
+    for root in critical_roots:
+        for path in iter_files(root, "test*.py"):
+            source = read(path)
+            tree = ast.parse(source, filename=str(path))
+            for node in ast.walk(tree):
+                if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) or not node.name.startswith("test_"):
+                    continue
+                has_assertion = any(
+                    isinstance(child, ast.Assert)
+                    or (
+                        isinstance(child, ast.Call)
+                        and (
+                            isinstance(child.func, ast.Name)
+                            and child.func.id in assertion_helpers
+                            or isinstance(child.func, ast.Attribute)
+                            and (child.func.attr.startswith(("assert", "fail")) or child.func.attr == "raises")
+                        )
+                    )
+                    for child in ast.walk(node)
+                )
+                if not has_assertion:
+                    fail(errors, f"{path.relative_to(ROOT)}:{node.lineno} test {node.name} has no executable assertion")
+
+                for call in (child for child in ast.walk(node) if isinstance(child, ast.Call)):
+                    if not isinstance(call.func, ast.Name) or call.func.id != "expect_rpc_error":
+                        continue
+                    keywords = {keyword.arg: keyword.value for keyword in call.keywords if keyword.arg}
+                    for required in ("code", "contains"):
+                        value = keywords.get(required)
+                        if not isinstance(value, ast.Constant) or not isinstance(value.value, str) or not value.value.strip():
+                            fail(
+                                errors,
+                                f"{path.relative_to(ROOT)}:{call.lineno} expect_rpc_error must supply a non-empty literal {required}",
+                            )
+
+
 def kustomize_resource_graph(root: Path) -> list[Path]:
     pending = [root]
     seen_directories: set[Path] = set()
@@ -210,6 +253,7 @@ def main() -> int:
     check_simulator_packet_test(errors)
     check_docs(errors)
     check_kubernetes(errors)
+    check_test_reliability_contracts(errors)
     if errors:
         for error in errors:
             print(f"architecture boundary violation: {error}", file=sys.stderr)

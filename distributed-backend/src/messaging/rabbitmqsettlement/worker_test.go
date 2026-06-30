@@ -73,3 +73,10 @@ func TestWaitForExecutorReadyReturnsLastPingErrorOnTimeout(t *testing.T) {
 		t.Fatal("Ping was not called")
 	}
 }
+
+func TestWaitForExecutorReadyRejectsNilDependency(t *testing.T) {
+	err := waitForExecutorReady(context.Background(), nil, time.Second, time.Millisecond)
+	if err == nil || err.Error() != "settlement executor is required" {
+		t.Fatalf("nil executor error = %v, want exact required-dependency error", err)
+	}
+}

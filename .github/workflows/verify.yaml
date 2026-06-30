@@ -3,6 +3,7 @@ name: verify
 on:
   push:
     branches: [main]
+    branches: [experimental]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -87,6 +88,12 @@ jobs:
 
       - name: Verify production architecture boundaries
         run: python scripts/verify_architecture_boundaries.py
+
+      - name: Verify rendered Compose runtime credentials
+        run: |
+          docker compose -f compose.yaml config --format json >/tmp/compose.json
+          docker compose -f docker-compose.integration.yml --profile test config --format json >/tmp/integration-compose.json
+          python scripts/verify_compose_runtime_credentials.py /tmp/compose.json /tmp/integration-compose.json
 
   security:
     name: security / history and filesystem
@@ -397,6 +404,11 @@ jobs:
           kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/prod >/tmp/eve-trade-prod.yaml
           kubectl kustomize distributed-backend/orchestration/kubernetes/chaos/litmus/overlays/prod >/tmp/eve-trade-chaos.yaml
 
+      - name: Enforce rendered production reliability policies
+        run: |
+          python -m pip install PyYAML==6.0.3
+          python scripts/verify_rendered_kubernetes.py /tmp/eve-trade-prod.yaml
+
       - name: Install kubeconform
         run: |
           curl -fsSL -o /tmp/kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
@@ -576,6 +588,14 @@ jobs:
           python -m pytest distributed-backend/tests/e2e -q --count=3
           -k 'concurrent or authenticated_udp_issue_burst'"
 
+      - name: Upload E2E branch coverage
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: e2e-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: distributed-backend/tests/e2e/coverage.xml
+          if-no-files-found: error
+
       - name: Dump observability diagnostics
         if: failure()
         shell: bash
@@ -650,6 +670,9 @@ jobs:
           npm install --global pnpm@10.12.1
           pnpm install --frozen-lockfile
           pnpm exec playwright install --with-deps chromium
+
+      - name: Verify GUI runner failure contracts
+        run: pnpm gui:test-contract
 
       - name: Start canonical local topology
         run: docker compose up -d --build --wait --wait-timeout 300

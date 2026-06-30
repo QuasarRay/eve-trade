@@ -33,13 +33,14 @@ services:
       - ./:/workspace
     environment:
       PGPASSWORD: postgres
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
     command: >
       bash -lc "
       until psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -c 'SELECT 1'; do
         sleep 1;
       done &&
       psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' &&
-      DATABASE_URL=postgres://postgres:postgres@postgres:5432/eve_trade bash distributed-backend/tests/migrations/verify_upgrade.sh
+      bash distributed-backend/tests/migrations/verify_upgrade.sh
       "
 
   rabbitmq:
@@ -181,9 +182,12 @@ services:
       - -ec
       - |
         endpoint="$$(getent hosts api-gateway | awk '{print $$1; exit}'):26000"
+        # Keep session creation single-threaded. The authenticated burst gate
+        # detects cross-client response swaps with Quilkin 0.10.0 workers > 1.
         exec /usr/local/bin/quilkin \
           --service.udp \
           --service.udp.port 26001 \
+          --service.udp.workers 1 \
           --provider.static.endpoints "$${endpoint}" \
           --admin.enabled=false \
           --log-format json
@@ -235,6 +239,7 @@ services:
       - pip_cache:/root/.cache/pip
     environment:
       EVE_TRADE_API_GATEWAY_URL: http://api-gateway:8080
+      EVE_TRADE_MARKET_URL: http://market:8081
       EVE_TRADE_SIMULATOR_URL: http://simulator:8000
       EVE_TRADE_QUILKIN_UDP_HOST: quilkin
       EVE_TRADE_QUILKIN_UDP_PORT: "26001"
@@ -244,19 +249,21 @@ services:
       EVE_TRADE_EDGE_BUYER_SECRET: buyer-player-secret
       EVE_TRADE_EDGE_SELLER_KEY_ID: seller
       EVE_TRADE_EDGE_SELLER_SECRET: seller-player-secret
+      EVE_TRADE_EDGE_OTHER_KEY_ID: other
+      EVE_TRADE_EDGE_OTHER_SECRET: other-player-secret
       EVE_TRADE_LOAD_REQUESTS: "20"
       EVE_TRADE_LOAD_P95_SECONDS: "5"
       EVE_TRADE_SETTLEMENT_GRPC: trade-settlement:9092
+      EVE_TRADE_RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
       EVE_TRADE_GATEWAY_GRPC: api-gateway:8080
       EVE_TRADE_DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
       EVE_TRADE_RUNTIME_DATABASE_URL: postgres://eve_trade_runtime:runtime-password@postgres:5432/eve_trade
       EVE_TRADE_E2E_PRODUCTION_GATE: "true"
     command: >
       sh -c "python -m pip install --retries 5 --timeout 60 -r distributed-backend/tests/e2e/requirements.txt &&
-      python -c \"import re, subprocess, sys;
-      proc = subprocess.run([sys.executable, '-m', 'pytest', 'distributed-backend/tests/e2e', '-q', '-rA'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True);
-      print(proc.stdout, end='');
-      sys.exit(1 if re.search(r'(?m)^[0-9]+ skipped in ', proc.stdout) else proc.returncode)\""
+      python -m coverage run --branch --source=distributed-backend/tests/e2e -m pytest distributed-backend/tests/e2e -q -rA &&
+      python -m coverage report --fail-under=70 &&
+      python -m coverage xml -o distributed-backend/tests/e2e/coverage.xml"
 
   otel-collector:
     image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.153.0@sha256:93aad750175cbf1a973ae1c5886c3371f4d800f61be25cdd26870b8441ffe9fa

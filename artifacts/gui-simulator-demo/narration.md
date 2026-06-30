@@ -1,6 +1,6 @@
 # GUI simulator QA narration
 
-Run: 20260627122639
+Run: 20260630141728
 
 ## 1. 1. Simulator loaded
 
@@ -48,7 +48,7 @@ Invalid quantities, ownership, wallet, funds, missing IDs, cancelled trades, and
 
 ## 12. 12. Identity and authorization
 
-Backend authorization blocks a non-seller cancel and self-purchase, but the simulator has no real role switcher and never changes button visibility.
+The authenticated UDP edge rejects a principal mismatch; this development-only harness intentionally keeps every seeded test action visible.
 
 ## 13. 13. Duplicate and retry safety
 
@@ -68,8 +68,8 @@ Two browser tabs submit different acceptance IDs against the same order. One suc
 
 ## 17. 17. Dependency outage
 
-With Market stopped, the raw response reports downstream unavailability. The action button remains enabled while the request is pending — a duplicate-click UX defect.
+With Market stopped, the response reports downstream unavailability and the action button stays disabled until the request completes.
 
 ## 18. 18. QA summary
 
-53 checks pass. 4 GUI/UX checks expose real gaps; backend conservation and duplicate-settlement checks hold.
+57 checks pass. 0 GUI/UX checks expose real gaps; backend conservation and duplicate-settlement checks hold.

@@ -19,6 +19,7 @@ BEGIN
   END IF;
 END
 $role$;
+ALTER ROLE eve_trade_runtime NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 DO $grant$
 BEGIN
@@ -26,6 +27,66 @@ BEGIN
 END
 $grant$;
 GRANT USAGE ON SCHEMA public TO eve_trade_runtime;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO eve_trade_runtime;
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM eve_trade_runtime;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO eve_trade_runtime;
+GRANT INSERT ON
+  idempotency_record,
+  request_attempt,
+  settlement_batch,
+  settlement_step,
+  wallet,
+  item_stack,
+  trade_instance,
+  wallet_escrow,
+  item_stack_escrow,
+  wallet_ledger,
+  item_stack_ledger,
+  trade_state_change
+TO eve_trade_runtime;
+GRANT UPDATE ON
+  idempotency_record,
+  request_attempt,
+  settlement_batch,
+  settlement_step,
+  wallet,
+  item_stack,
+  trade_instance,
+  wallet_escrow,
+  item_stack_escrow
+TO eve_trade_runtime;
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM eve_trade_runtime;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO eve_trade_runtime;
+SQL
+
+# Reapplying the migration after grants proves rerun safety does not widen the
+# runtime role. The following catalog check is an allowlist, not a spot check.
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$MIGRATION"
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -At <<'SQL' | grep -qx 0
+WITH expected(table_name, privilege_type) AS (
+  SELECT table_name, 'SELECT'
+  FROM information_schema.tables
+  WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+  UNION ALL
+  SELECT table_name, 'INSERT'
+  FROM unnest(ARRAY[
+    'idempotency_record', 'request_attempt', 'settlement_batch', 'settlement_step',
+    'wallet', 'item_stack', 'trade_instance', 'wallet_escrow', 'item_stack_escrow',
+    'wallet_ledger', 'item_stack_ledger', 'trade_state_change'
+  ]) AS table_name
+  UNION ALL
+  SELECT table_name, 'UPDATE'
+  FROM unnest(ARRAY[
+    'idempotency_record', 'request_attempt', 'settlement_batch', 'settlement_step',
+    'wallet', 'item_stack', 'trade_instance', 'wallet_escrow', 'item_stack_escrow'
+  ]) AS table_name
+), actual AS (
+  SELECT table_name, privilege_type
+  FROM information_schema.role_table_grants
+  WHERE grantee = 'eve_trade_runtime' AND table_schema = 'public'
+), differences AS (
+  (SELECT * FROM expected EXCEPT SELECT * FROM actual)
+  UNION ALL
+  (SELECT * FROM actual EXCEPT SELECT * FROM expected)
+)
+SELECT count(*) FROM differences;
 SQL

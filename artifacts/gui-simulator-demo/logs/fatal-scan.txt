@@ -1,1 +1,1 @@
-No panic/fatal SQL/RabbitMQ/settlement signatures found during the recorded run.
+No panic/fatal/OOM signatures, unhealthy containers, or unexpected restarts were found.

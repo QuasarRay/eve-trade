@@ -1,45 +1,178 @@
 {
-  "runId": "20260627122639",
+  "runId": "20260630141728",
   "baseUrl": "http://127.0.0.1:8000",
-  "initial": {
-    "sellerStack": {
-      "item_stack_id": "11111111-1111-4111-8111-111111111111",
-      "owner_id": 1001,
-      "item_type_id": 34,
-      "station_id": 60003760,
-      "quantity": 100,
-      "stack_state": "ACTIVE",
-      "stack_version": 1
-    },
-    "buyerStack": {
-      "item_stack_id": "33333333-3333-4333-8333-333333333333",
-      "owner_id": 2002,
-      "item_type_id": 34,
-      "station_id": 60003760,
-      "quantity": 5,
-      "stack_state": "ACTIVE",
-      "stack_version": 1
-    },
-    "sellerWallet": {
-      "wallet_id": "00000000-0000-4000-8000-000000001001",
-      "capsuleer_id": 1001,
-      "isk_amount": 1000000,
-      "wallet_state": "ACTIVE",
-      "wallet_version": 1
-    },
-    "buyerWallet": {
-      "wallet_id": "00000000-0000-4000-8000-000000002002",
-      "capsuleer_id": 2002,
-      "isk_amount": 1000000,
-      "wallet_state": "ACTIVE",
-      "wallet_version": 1
-    },
-    "tradeCount": 0,
-    "openTrades": 0,
-    "totalWalletISK": 4000000,
-    "totalItemQuantity": 180
+  "provenance": {
+    "gitCommit": "a04220d11ab6185edd84a3bbc0cebdf9f3cec225",
+    "dirty": true,
+    "dirtyFiles": [
+      "M .github/workflows/verify.yaml",
+      " D artifacts/gui-simulator-demo/logs/browser-console.log",
+      " D artifacts/gui-simulator-demo/logs/compose.log",
+      " D artifacts/gui-simulator-demo/logs/fatal-scan.txt",
+      " D artifacts/gui-simulator-demo/screenshots/01-1-simulator-loaded.png",
+      " D artifacts/gui-simulator-demo/screenshots/02-2-refresh-stability.png",
+      " D artifacts/gui-simulator-demo/screenshots/03-3-happy-path-order-issued.png",
+      " D artifacts/gui-simulator-demo/screenshots/04-4-happy-path-completed.png",
+      " D artifacts/gui-simulator-demo/screenshots/05-5-partial-fill-order-issued.png",
+      " D artifacts/gui-simulator-demo/screenshots/06-6-partial-fill-six-remain.png",
+      " D artifacts/gui-simulator-demo/screenshots/07-7-partial-fill-completed.png",
+      " D artifacts/gui-simulator-demo/screenshots/08-8-cancel-outstanding-order.png",
+      " D artifacts/gui-simulator-demo/screenshots/09-9-cancel-after-partial-fill.png",
+      " D artifacts/gui-simulator-demo/screenshots/10-10-invalid-issue-matrix.png",
+      " D artifacts/gui-simulator-demo/screenshots/11-11-invalid-accept-matrix.png",
+      " D artifacts/gui-simulator-demo/screenshots/12-12-identity-and-authorization.png",
+      " D artifacts/gui-simulator-demo/screenshots/13-13-duplicate-and-retry-safety.png",
+      " D artifacts/gui-simulator-demo/screenshots/14-14-item-exchange-controls.png",
+      " D artifacts/gui-simulator-demo/screenshots/15-15-direct-trade-controls.png",
+      " D artifacts/gui-simulator-demo/screenshots/16-two-tab-race-second-tab.png",
+      " D artifacts/gui-simulator-demo/screenshots/17-16-two-tab-acceptance-race.png",
+      " D artifacts/gui-simulator-demo/screenshots/18-17-dependency-outage.png",
+      " D artifacts/gui-simulator-demo/screenshots/19-18-qa-summary.png",
+      " D artifacts/gui-simulator-demo/video/gui-simulator-qa.vtt",
+      " D artifacts/gui-simulator-demo/video/gui-simulator-qa.webm",
+      " M changes/v8/changes.md",
+      " M ci-cd/pipeline.py",
+      " M compose.yaml",
+      " M distributed-backend/orchestration/kubernetes/base/migrate.yaml",
+      " M distributed-backend/orchestration/kubernetes/overlay/local/kustomization.yaml",
+      " M distributed-backend/orchestration/kubernetes/overlay/local/local-config-patches.yaml",
+      " M distributed-backend/orchestration/kubernetes/overlay/local/local-dev-world-seed.yaml",
+      " M distributed-backend/orchestration/kubernetes/overlay/local/quilkin.yaml",
+      " M distributed-backend/orchestration/kubernetes/overlay/local/secrets.yaml",
+      " M distributed-backend/orchestration/kubernetes/overlay/prod/quilkin.yaml",
+      " M distributed-backend/src/api-gateway/distributed-backend/config.go",
+      " M distributed-backend/src/api-gateway/distributed-backend/config_test.go",
+      " M distributed-backend/src/api-gateway/distributed-backend/quilkin_udp.go",
+      " M distributed-backend/src/api-gateway/distributed-backend/quilkin_udp_test.go",
+      " M distributed-backend/src/messaging/rabbitmqsettlement/rabbitmq_integration_test.go",
+      " M distributed-backend/src/messaging/rabbitmqsettlement/worker.go",
+      " M distributed-backend/src/messaging/rabbitmqsettlement/worker_test.go",
+      " M distributed-backend/src/trade-settlement/src/commands.rs",
+      " M distributed-backend/src/trade-settlement/src/executor.rs",
+      " M distributed-backend/terraform/eks/tests/production.tftest.hcl",
+      " M distributed-backend/terraform/gke/tests/production.tftest.hcl",
+      " M distributed-backend/terraform/talos-omni/tests/production.tftest.hcl",
+      " M distributed-backend/tests/e2e/conftest.py",
+      " M distributed-backend/tests/e2e/helpers.py",
+      " M distributed-backend/tests/e2e/requirements.txt",
+      " M distributed-backend/tests/e2e/test_trade_lifecycle.py",
+      " M distributed-backend/tests/migrations/verify_upgrade.sh",
+      " M docker-compose.integration.yml",
+      " M observability/ci/observed_run.py",
+      " M package.json",
+      " M scripts/gui-simulator-demo.cjs",
+      " M scripts/verify_architecture_boundaries.py",
+      " M simulator/trade_gui/templates/trade_gui/index.html",
+      " M simulator/trade_gui/tests.py",
+      " M simulator/trade_gui/udp_client.py",
+      " M simulator/trade_gui/views.py",
+      "?? changes/v8/test-reliability-claim-matrix.md",
+      "?? distributed-backend/orchestration/kubernetes/overlay/local/runtime-role.sql",
+      "?? distributed-backend/tests/e2e/test_suite_contract.py",
+      "?? scripts/gui-simulator-demo.test.cjs",
+      "?? scripts/verify_compose_runtime_credentials.py",
+      "?? scripts/verify_rendered_kubernetes.py"
+    ],
+    "ciRun": null,
+    "pnpmLockSha256": "0d546381f184c8e4c6ff05fe331723e3a60ae672f3933fb24676523d40f90754",
+    "composeImages": [
+      [
+        {
+          "ID": "sha256:f5b6309a72392229c9e94c0314987e1ba8a22b0cf2a04cfb4948f47312a47416",
+          "ContainerName": "eve-trade-settlement-worker-1",
+          "Repository": "eve-trade-settlement-worker",
+          "Tag": "latest",
+          "Platform": "linux/amd64",
+          "Size": 9140650,
+          "Created": "2026-06-30T03:07:11.093701228Z",
+          "LastTagTime": "2026-06-30T08:13:12.218429808Z"
+        },
+        {
+          "ID": "sha256:4091cd9d4125c287185a7fa7aff7e08d2487f11db8d60dd42560c1bf2f8ce6f8",
+          "ContainerName": "eve-trade-market-1",
+          "Repository": "eve-trade-market",
+          "Tag": "latest",
+          "Platform": "linux/amd64",
+          "Size": 10360896,
+          "Created": "2026-06-30T03:07:27.407933268Z",
+          "LastTagTime": "2026-06-30T08:13:12.22687115Z"
+        },
+        {
+          "ID": "sha256:61cc7f9bcccaf2fd0cc19fffb260b795757ef3a840ea9382624c7f7521bd54bf",
+          "ContainerName": "eve-trade-trade-settlement-1",
+          "Repository": "eve-trade-trade-settlement",
+          "Tag": "latest",
+          "Platform": "linux/amd64",
+          "Size": 34209768,
+          "Created": "2026-06-30T03:00:23.48241239Z",
+          "LastTagTime": "2026-06-30T03:30:30.415994346Z"
+        },
+        {
+          "ID": "sha256:081f1bc7bd5e143dbb6e487b710bbc27712cdcfaced4c071b8e47349aa1b4171",
+          "ContainerName": "eve-trade-postgres-1",
+          "Repository": "postgres",
+          "Tag": "",
+          "Platform": "linux/amd64",
+          "Size": 160197799,
+          "Created": "2026-06-11T00:35:31.305250945Z",
+          "LastTagTime": "2026-06-24T01:47:55.087224415Z"
+        },
+        {
+          "ID": "sha256:90bb1b72fd955a0713601742f202088ab8d926249aa6eda2786d89486ea6dc56",
+          "ContainerName": "eve-trade-quilkin-1",
+          "Repository": "eve-trade/quilkin",
+          "Tag": "dev",
+          "Platform": "linux/amd64",
+          "Size": 39101050,
+          "Created": "2026-06-24T10:40:33.86053008Z",
+          "LastTagTime": "2026-06-30T14:06:36.999888085Z"
+        },
+        {
+          "ID": "sha256:78fecf5c4a3a4736f793a416ded0f333f598c111f68f96e23dfd22da2eafc368",
+          "ContainerName": "eve-trade-api-gateway-1",
+          "Repository": "eve-trade-api-gateway",
+          "Tag": "latest",
+          "Platform": "linux/amd64",
+          "Size": 9026685,
+          "Created": "2026-06-30T10:20:46.032897278Z",
+          "LastTagTime": "2026-06-30T14:06:39.254083762Z"
+        },
+        {
+          "ID": "sha256:45f28fb895db2f2152884764aa404c7a0652876c89711641dfda87efd83c3fbc",
+          "ContainerName": "eve-trade-simulator-1",
+          "Repository": "eve-trade-simulator",
+          "Tag": "latest",
+          "Platform": "linux/amd64",
+          "Size": 70848234,
+          "Created": "2026-06-30T14:11:30.923462108Z",
+          "LastTagTime": "2026-06-30T14:11:33.98897981Z"
+        },
+        {
+          "ID": "sha256:e582c0bc7766f3342496d8485efb5a1df782b5ce3886ad017e2eaae442311f69",
+          "ContainerName": "eve-trade-rabbitmq-1",
+          "Repository": "rabbitmq",
+          "Tag": "",
+          "Platform": "linux/amd64",
+          "Size": 114479602,
+          "Created": "2025-12-02T03:07:49.756246158Z",
+          "LastTagTime": "2026-06-24T01:37:35.880358278Z"
+        },
+        {
+          "ID": "sha256:081f1bc7bd5e143dbb6e487b710bbc27712cdcfaced4c071b8e47349aa1b4171",
+          "ContainerName": "eve-trade-migrate-1",
+          "Repository": "postgres",
+          "Tag": "",
+          "Platform": "linux/amd64",
+          "Size": 160197799,
+          "Created": "2026-06-11T00:35:31.305250945Z",
+          "LastTagTime": "2026-06-24T01:47:55.087224415Z"
+        }
+      ]
+    ],
+    "playwrightVersion": "1.55.0",
+    "nodeVersion": "v24.14.0"
   },
-  "final": {
+  "initial": {
     "sellerStack": {
       "item_stack_id": "11111111-1111-4111-8111-111111111111",
       "owner_id": 1001,
@@ -77,6 +210,44 @@
     "totalWalletISK": 4000000,
     "totalItemQuantity": 180
   },
+  "final": {
+    "sellerStack": {
+      "item_stack_id": "11111111-1111-4111-8111-111111111111",
+      "owner_id": 1001,
+      "item_type_id": 34,
+      "station_id": 60003760,
+      "quantity": 50,
+      "stack_state": "ACTIVE",
+      "stack_version": 51
+    },
+    "buyerStack": {
+      "item_stack_id": "33333333-3333-4333-8333-333333333333",
+      "owner_id": 2002,
+      "item_type_id": 34,
+      "station_id": 60003760,
+      "quantity": 55,
+      "stack_state": "ACTIVE",
+      "stack_version": 19
+    },
+    "sellerWallet": {
+      "wallet_id": "00000000-0000-4000-8000-000000001001",
+      "capsuleer_id": 1001,
+      "isk_amount": 1000552,
+      "wallet_state": "ACTIVE",
+      "wallet_version": 19
+    },
+    "buyerWallet": {
+      "wallet_id": "00000000-0000-4000-8000-000000002002",
+      "capsuleer_id": 2002,
+      "isk_amount": 999448,
+      "wallet_state": "ACTIVE",
+      "wallet_version": 19
+    },
+    "tradeCount": 32,
+    "openTrades": 0,
+    "totalWalletISK": 4000000,
+    "totalItemQuantity": 180
+  },
   "results": [
     {
       "name": "Homepage loads with all seven seeded actions",
@@ -90,8 +261,8 @@
     },
     {
       "name": "Neocom shortcuts are functional controls",
-      "passed": false,
-      "evidence": "[{\"tag\":\"DIV\",\"role\":null,\"tabIndex\":-1},{\"tag\":\"DIV\",\"role\":null,\"tabIndex\":-1},{\"tag\":\"DIV\",\"role\":null,\"tabIndex\":-1},{\"tag\":\"DIV\",\"role\":null,\"tabIndex\":-1}]"
+      "passed": true,
+      "evidence": "[{\"tag\":\"BUTTON\",\"role\":null,\"tabIndex\":0},{\"tag\":\"BUTTON\",\"role\":null,\"tabIndex\":0},{\"tag\":\"BUTTON\",\"role\":null,\"tabIndex\":0},{\"tag\":\"BUTTON\",\"role\":null,\"tabIndex\":0}]"
     },
     {
       "name": "Initial state has a readable empty response",
@@ -106,17 +277,17 @@
     {
       "name": "Seller issues a valid market sell order",
       "passed": true,
-      "evidence": "{\"trade_instance_id\":\"84e1c535-61a6-46db-a3de-497d761f14d0\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":4,\"remaining_quantity\":4,\"unit_price_isk\":25,\"trade_state\":\"OPEN\"}"
+      "evidence": "{\"trade_instance_id\":\"68a58e65-7a78-491b-b552-d4899edcffe7\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":4,\"remaining_quantity\":4,\"unit_price_isk\":25,\"trade_state\":\"OPEN\"}"
     },
     {
       "name": "External Request ID field is propagated by the GUI packet",
-      "passed": false,
-      "evidence": "raw packet external_request_id=absent"
+      "passed": true,
+      "evidence": "raw packet external_request_id=gui-demo-20260630141728-happy-issue"
     },
     {
       "name": "Buyer accepts the full market order",
       "passed": true,
-      "evidence": "{\"trade_instance_id\":\"84e1c535-61a6-46db-a3de-497d761f14d0\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":4,\"remaining_quantity\":0,\"unit_price_isk\":25,\"trade_state\":\"COMPLETED\"}"
+      "evidence": "{\"trade_instance_id\":\"68a58e65-7a78-491b-b552-d4899edcffe7\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":4,\"remaining_quantity\":0,\"unit_price_isk\":25,\"trade_state\":\"COMPLETED\"}"
     },
     {
       "name": "Full acceptance transfers items and ISK exactly once",
@@ -126,17 +297,17 @@
     {
       "name": "Partial acceptance keeps the order open",
       "passed": true,
-      "evidence": "{\"trade_instance_id\":\"1f142bb8-dc29-4c86-bc93-863fb8053346\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":10,\"remaining_quantity\":6,\"unit_price_isk\":7,\"trade_state\":\"OPEN\"}"
+      "evidence": "{\"trade_instance_id\":\"761abd79-9243-435a-86f5-a8111f1a9638\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":10,\"remaining_quantity\":6,\"unit_price_isk\":7,\"trade_state\":\"OPEN\"}"
     },
     {
       "name": "Final partial acceptance completes without a phantom order",
       "passed": true,
-      "evidence": "{\"trade_instance_id\":\"1f142bb8-dc29-4c86-bc93-863fb8053346\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":10,\"remaining_quantity\":0,\"unit_price_isk\":7,\"trade_state\":\"COMPLETED\"}"
+      "evidence": "{\"trade_instance_id\":\"761abd79-9243-435a-86f5-a8111f1a9638\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":10,\"remaining_quantity\":0,\"unit_price_isk\":7,\"trade_state\":\"COMPLETED\"}"
     },
     {
       "name": "Seller cancels an outstanding order",
       "passed": true,
-      "evidence": "{\"trade_instance_id\":\"4d0e27e8-994b-459f-86c1-72353bba596b\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":5,\"remaining_quantity\":0,\"unit_price_isk\":9,\"trade_state\":\"CANCELLED\"}; seller refund=5"
+      "evidence": "{\"trade_instance_id\":\"ef24acd0-cfbb-4ba8-afac-7a3000d4009f\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":5,\"remaining_quantity\":0,\"unit_price_isk\":9,\"trade_state\":\"CANCELLED\"}; seller refund=5"
     },
     {
       "name": "Cancel after partial fill preserves accepted quantity",
@@ -181,7 +352,7 @@
     {
       "name": "Reject issue with missing seller",
       "passed": true,
-      "evidence": "invalid_argument: invalid_argument: item stack owner must match issued_by_capsuleer_id"
+      "evidence": "failed: issued_by_capsuleer_id must be positive"
     },
     {
       "name": "Reject issue with missing item stack",
@@ -231,7 +402,7 @@
     {
       "name": "Reject accept above remaining quantity",
       "passed": true,
-      "evidence": "failed_precondition: failed_precondition: item_stack_escrow 0bbe4d40-f506-4d14-9db3-3b98b557321c has 3, requested 4"
+      "evidence": "failed_precondition: failed_precondition: item_stack_escrow 37a9a5a2-647e-47a2-ab7b-84a4acbb1308 has 3, requested 4"
     },
     {
       "name": "Reject seller accepting own order",
@@ -261,7 +432,7 @@
     {
       "name": "Reject accept with insufficient ISK",
       "passed": true,
-      "evidence": "failed_precondition: failed_precondition: failed_precondition: wallet 00000000-0000-4000-8000-000000002002 has 999821, requested 1200000"
+      "evidence": "failed_precondition: failed_precondition: failed_precondition: wallet 00000000-0000-4000-8000-000000002002 has 999545, requested 1200000"
     },
     {
       "name": "Reject accept of a cancelled trade",
@@ -294,9 +465,9 @@
       "evidence": "permission_denied: permission_denied: only the trade issuer can cancel this trade"
     },
     {
-      "name": "Role-based controls are enforced in GUI visibility",
-      "passed": false,
-      "evidence": "all 7 action buttons remain visible for every typed capsuleer ID"
+      "name": "Multi-principal test controls remain available",
+      "passed": true,
+      "evidence": "7/7 test actions visible"
     },
     {
       "name": "Double-click issue creates one trade and one settlement",
@@ -314,19 +485,19 @@
       "evidence": "seller items +3; settlements=1"
     },
     {
-      "name": "Immediate refresh cannot duplicate an in-flight issue",
+      "name": "Immediate refresh commits exactly one idempotent issue",
       "passed": true,
       "evidence": "settlements=1; trade delta=1"
     },
     {
       "name": "Contract create and accept controls execute the lifecycle",
       "passed": true,
-      "evidence": "{\"trade_instance_id\":\"049de09a-fb98-4e21-b85b-c08b8d024e23\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":1,\"remaining_quantity\":0,\"unit_price_isk\":10,\"trade_state\":\"COMPLETED\"}"
+      "evidence": "{\"trade_instance_id\":\"28bcadd5-1bca-41e3-8dfd-111e78eeaa2f\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":1,\"remaining_quantity\":0,\"unit_price_isk\":10,\"trade_state\":\"COMPLETED\"}"
     },
     {
       "name": "Direct offer and accept controls execute the lifecycle",
       "passed": true,
-      "evidence": "{\"trade_instance_id\":\"dac5bcdb-c289-4874-b605-3088f6016dff\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":1,\"remaining_quantity\":0,\"unit_price_isk\":11,\"trade_state\":\"COMPLETED\"}"
+      "evidence": "{\"trade_instance_id\":\"8b621b0c-7f96-40e5-9f18-651cf52f28f5\",\"issuer_id\":1001,\"item_type_id\":34,\"station_id\":60003760,\"total_quantity\":1,\"remaining_quantity\":0,\"unit_price_isk\":11,\"trade_state\":\"COMPLETED\"}"
     },
     {
       "name": "Two tabs racing to accept settle exactly once",
@@ -336,17 +507,17 @@
     {
       "name": "Market outage produces visible GUI feedback",
       "passed": true,
-      "evidence": "failed: timed out"
+      "evidence": "downstream_unavailable: downstream unavailable"
     },
     {
       "name": "Action button disables while a request is in flight",
-      "passed": false,
-      "evidence": "button enabled=true"
+      "passed": true,
+      "evidence": "button enabled=false"
     },
     {
       "name": "GUI recovers after Market restarts",
       "passed": true,
-      "evidence": "accepted; settlement=3549ba33-e94b-4e25-948f-2d526fd3965f"
+      "evidence": "accepted; settlement=0bd85d16-379a-4d8c-b0dd-8b19f829f77b"
     },
     {
       "name": "Wallet conservation invariant holds",

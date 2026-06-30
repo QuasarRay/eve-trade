@@ -34,8 +34,12 @@ func (c *recordingMarketClient) SubmitTradeGuiInteraction(_ context.Context, req
 	if c.err != nil {
 		return nil, c.err
 	}
+	interactionID, err := extractInteractionID(request.GetRawPayload())
+	if err != nil {
+		return nil, err
+	}
 	return &marketv1.SubmitTradeGuiInteractionResponse{
-		InteractionId:     "interaction-1",
+		InteractionId:     interactionID,
 		Status:            "accepted",
 		SettlementBatchId: "settlement-batch",
 	}, nil
@@ -149,7 +153,11 @@ func (c *capturePacketConn) lastJSON(t *testing.T) map[string]any {
 			t.Fatalf("canonicalize UDP response: %v", err)
 		}
 		mac := hmac.New(sha256.New, []byte("edge-secret"))
-		_, _ = mac.Write(canonical)
+		signingBytes, err := responseSigningBytes(envelope.SchemaVersion, envelope.Auth.KeyID, canonical)
+		if err != nil {
+			t.Fatalf("build UDP response signing bytes: %v", err)
+		}
+		_, _ = mac.Write(signingBytes)
 		want := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 		if envelope.Auth.Signature != want {
 			t.Fatalf("UDP response signature = %q, want %q", envelope.Auth.Signature, want)
@@ -344,6 +352,9 @@ func TestQuilkinUDPServerListenAndServeRejectsQueueOverflow(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("server did not drain queued work during shutdown")
 	}
+	if market.calls.Load() != 2 {
+		t.Fatalf("admitted downstream calls after shutdown = %d, want exactly 2", market.calls.Load())
+	}
 }
 
 func readSignedUDPResponse(t *testing.T, conn net.PacketConn) map[string]any {
@@ -360,14 +371,21 @@ func readSignedUDPResponse(t *testing.T, conn net.PacketConn) map[string]any {
 	if err := json.Unmarshal(buffer[:n], &envelope); err != nil {
 		t.Fatalf("decode response envelope: %v", err)
 	}
+	if envelope.Auth == nil {
+		t.Fatal("response envelope has no authentication metadata")
+	}
 	canonical, err := canonicalJSON(envelope.Payload)
 	if err != nil {
 		t.Fatalf("canonicalize response: %v", err)
 	}
 	mac := hmac.New(sha256.New, []byte("edge-secret"))
-	_, _ = mac.Write(canonical)
+	signingBytes, err := responseSigningBytes(envelope.SchemaVersion, envelope.Auth.KeyID, canonical)
+	if err != nil {
+		t.Fatalf("build response signing bytes: %v", err)
+	}
+	_, _ = mac.Write(signingBytes)
 	want := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-	if envelope.Auth == nil || envelope.Auth.Signature != want {
+	if envelope.Auth.Signature != want {
 		t.Fatalf("response is not correctly signed: %+v", envelope.Auth)
 	}
 	var response map[string]any
@@ -414,6 +432,113 @@ func TestQuilkinUDPServerRejectsInvalidSignature(t *testing.T) {
 	}
 	if code := conn.lastJSON(t)["code"]; code != "invalid_signature" {
 		t.Fatalf("error code = %v, want invalid_signature", code)
+	}
+}
+
+func TestQuilkinUDPServerRejectsUnknownKeyIDAndKnownKeyWithWrongHMAC(t *testing.T) {
+	tests := []struct {
+		name   string
+		keyID  string
+		secret string
+	}{
+		{name: "unknown key ID", keyID: "unknown", secret: "edge-secret"},
+		{name: "known key wrong HMAC", keyID: "primary", secret: "wrong-secret"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			market := &recordingMarketClient{}
+			server := testUDPServer(market)
+			conn := &capturePacketConn{}
+			server.handlePacket(
+				context.Background(),
+				conn,
+				&net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000},
+				signedUDPPacket(t, authenticatedTestPayload("interaction-1", 1), test.secret, test.keyID),
+			)
+			if market.count() != 0 {
+				t.Fatalf("market calls = %d, want 0", market.count())
+			}
+			response := conn.lastJSON(t)
+			if response["code"] != "invalid_signature" || response["interaction_id"] != "interaction-1" {
+				t.Fatalf("response = %#v, want interaction-bound invalid_signature", response)
+			}
+		})
+	}
+}
+
+func TestQuilkinUDPServerBindsEveryActionAndActorLikeFieldToAuthenticatedPrincipal(t *testing.T) {
+	actions := []struct {
+		name       string
+		action     string
+		actorField string
+	}{
+		{name: "issue market", action: "market_place_sell_order", actorField: "issued_by_capsuleer_id"},
+		{name: "issue contract", action: "contract_create_item_exchange", actorField: "issued_by_capsuleer_id"},
+		{name: "issue direct", action: "direct_trade_offer", actorField: "issued_by_capsuleer_id"},
+		{name: "buy market", action: "market_buy_from_sell_order", actorField: "buyer_capsuleer_id"},
+		{name: "accept contract", action: "contract_accept_item_exchange", actorField: "buyer_capsuleer_id"},
+		{name: "accept direct", action: "direct_trade_accept", actorField: "buyer_capsuleer_id"},
+		{name: "cancel market", action: "market_cancel_order", actorField: "cancelled_by_capsuleer_id"},
+		{name: "cancel contract", action: "contract_cancel_item_exchange", actorField: "cancelled_by_capsuleer_id"},
+		{name: "cancel direct", action: "direct_trade_cancel", actorField: "cancelled_by_capsuleer_id"},
+	}
+	principals := []struct {
+		keyID string
+		id    int64
+		key   string
+	}{
+		{keyID: "seller", id: 1001, key: "seller-secret"},
+		{keyID: "buyer", id: 2002, key: "buyer-secret"},
+		{keyID: "other", id: 3003, key: "other-secret"},
+	}
+	for _, action := range actions {
+		for _, principal := range principals {
+			t.Run(action.name+"/"+principal.keyID, func(t *testing.T) {
+				server := testUDPServer(&recordingMarketClient{})
+				server.principals = map[string]UDPPrincipalCredential{
+					principal.keyID: {CapsuleerID: principal.id, Secret: principal.key},
+				}
+				for _, hostileID := range []int64{1001, 2002, 3003} {
+					if hostileID == principal.id {
+						continue
+					}
+					hostileFields := map[string]map[string]any{
+						"issue actor":    {"issued_by_capsuleer_id": hostileID},
+						"buyer actor":    {"buyer_capsuleer_id": hostileID},
+						"seller actor":   {"seller_capsuleer_id": hostileID},
+						"cancel actor":   {"cancelled_by_capsuleer_id": hostileID},
+						"accepted actor": {"accepted_by_capsuleer_id": hostileID},
+						"nested owner":   {"item_stack": map[string]any{"owner_id": hostileID}},
+						"unknown actor":  {"delegated_capsuleer_id": hostileID},
+					}
+					for fieldName, hostile := range hostileFields {
+						input := map[string]any{action.actorField: principal.id}
+						for name, value := range hostile {
+							input[name] = value
+						}
+						payload := actorTestPayload(t, "actor-binding", action.action, input)
+						_, _, _, rejection := server.authenticatedPayload(signedUDPPacket(t, payload, principal.key, principal.keyID))
+						if rejection == nil || rejection.Code != "principal_mismatch" {
+							t.Fatalf("principal %d action %s accepted hostile %s=%d: %#v", principal.id, action.action, fieldName, hostileID, rejection)
+						}
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestQuilkinUDPServerAcceptsActorAliasesOnlyWhenTheyMatchPrincipal(t *testing.T) {
+	server := testUDPServer(&recordingMarketClient{})
+	payload := actorTestPayload(t, "all-bound", "market_place_sell_order", map[string]any{
+		"issued_by_capsuleer_id":   1001,
+		"seller_capsuleer_id":      1001,
+		"accepted_by_capsuleer_id": 1001,
+		"item_stack":               map[string]any{"owner_id": 1001},
+	})
+	_, interactionID, principalID, rejection := server.authenticatedPayload(signedUDPPacket(t, payload, "edge-secret", "primary"))
+	if rejection != nil || interactionID != "all-bound" || principalID != 1001 {
+		t.Fatalf("fully bound actor payload rejected: interaction=%q principal=%d rejection=%v", interactionID, principalID, rejection)
 	}
 }
 
@@ -612,8 +737,37 @@ func FuzzAuthenticatedPayloadNeverAcceptsAnUnboundPrincipal(f *testing.F) {
 			if len(raw) == 0 || interactionID == "" || principalID != 1001 {
 				t.Fatalf("accepted packet without complete authenticated binding: raw=%q interaction=%q principal=%d", raw, interactionID, principalID)
 			}
+			var payload struct {
+				Input map[string]json.RawMessage `json:"input"`
+			}
+			if err := json.Unmarshal(raw, &payload); err != nil {
+				t.Fatalf("accepted malformed payload: %v", err)
+			}
+			claims := make(map[string][]int64)
+			collectActorClaims(payload.Input, "input", claims)
+			for field, values := range claims {
+				for _, value := range values {
+					if value != principalID {
+						t.Fatalf("accepted unbound actor %s=%d for principal %d", field, value, principalID)
+					}
+				}
+			}
 		}
 	})
+}
+
+func actorTestPayload(t *testing.T, interactionID string, action string, input map[string]any) []byte {
+	t.Helper()
+	payload, err := json.Marshal(map[string]any{
+		"schema_version": "eve-trade-gui.v1",
+		"interaction_id": interactionID,
+		"ui":             map[string]any{"action": action},
+		"input":          input,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return payload
 }
 
 func testUDPServer(market MarketClient) *QuilkinUDPServer {

@@ -71,6 +71,19 @@ class GameGuiButtonViewSet(viewsets.ModelViewSet):
                 status=udp_error_http_status(error_code),
             )
 
+        if response_payload.get("status") != "accepted":
+            interaction.status = GameGuiInteraction.Status.FAILED
+            interaction.error_message = "gateway did not return an accepted interaction"
+            interaction.save(update_fields=["response_payload", "status", "error_message"])
+            return Response(
+                {
+                    "code": "invalid_gateway_response",
+                    "message": interaction.error_message,
+                    "interaction": GameGuiInteractionSerializer(interaction).data,
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
         interaction.status = GameGuiInteraction.Status.SENT
         interaction.save(update_fields=["response_payload", "status"])
         return Response(GameGuiInteractionSerializer(interaction).data, status=status.HTTP_202_ACCEPTED)
