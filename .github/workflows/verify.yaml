@@ -3,7 +3,6 @@ name: verify
 on:
   push:
     branches: [main]
-    branches: [experimental]
   pull_request:
     branches: [main]
   workflow_dispatch:
