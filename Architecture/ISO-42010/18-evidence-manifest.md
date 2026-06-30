@@ -23,7 +23,7 @@ recorded in `changes/v6/changes.md`.
 | --- | --- | --- |
 | VAL-010 | API Gateway Go unit tests: `go test ./...` in `distributed-backend/src/api-gateway` | Passed locally during v6 work |
 | VAL-011 | Market Go unit tests: `go test ./...` in `distributed-backend/src/market` | Passed locally during v6 work |
-| VAL-012 | Generated proto Go tests: `go test ./...` in `distributed-backend/proto` | Passed locally during v6 work |
+| VAL-012 | Generated proto compilation plus Buf build/lint/format/generation drift and breaking-change checks | Gated in CI; generated packages contain no direct unit tests |
 | VAL-020 | Simulator packet boundary test: `python manage.py test trade_gui` in `simulator` | Passed locally during v6 work |
 | VAL-030 | Python compile check: `python -m compileall simulator distributed-backend/tests/e2e` | Passed locally during v6 work |
 | VAL-040 | Protobuf lint/generation freshness | Enforced by `.github/workflows/verify.yaml`; local final run recorded in `changes/v6/changes.md` |
@@ -46,7 +46,7 @@ recorded in `changes/v6/changes.md`.
 | EVID-008 | Settlement service low-level operation contract | `distributed-backend/proto/eve/trade_settlement/v1/trade_settlement.proto` |
 | EVID-009 | trade-settlement executor and idempotency behavior | `distributed-backend/src/trade-settlement/src/executor.rs` |
 | EVID-010 | Settlement schema, ledgers, idempotency, and metadata | `distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql` |
-| EVID-011 | Simulator production-identical packet construction | `simulator/trade_gui/views.py`, `simulator/trade_gui/udp_client.py` |
+| EVID-011 | Simulator protocol-schema and golden-packet conformance | `distributed-backend/protocol`, `simulator/trade_gui/tests.py`, API Gateway golden-packet test |
 | EVID-012 | Simulator outbound packet leak test | `simulator/trade_gui/tests.py` |
 | EVID-013 | E2E simulator-driven gateway client | `distributed-backend/tests/e2e/helpers.py`, `distributed-backend/tests/e2e/conftest.py` |
 | EVID-014 | Local compose simulator/Quilkin/API Gateway path | `compose.yaml`, `docker-compose.integration.yml` |

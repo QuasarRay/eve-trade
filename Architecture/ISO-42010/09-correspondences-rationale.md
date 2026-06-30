@@ -71,7 +71,7 @@ command-shaped public API model.
 | ADR-01 | Accepted | 2026-06-25 | Backend maintainers | Public production command-shaped trade RPCs were deleted from API Gateway and Market. |
 | ADR-02 | Accepted | 2026-06-25 | Backend maintainers | Market receives one raw GUI interaction payload RPC and owns game trade interpretation. |
 | ADR-03 | Accepted | 2026-06-25 | Backend maintainers and security reviewer | API Gateway keeps transport metadata internal and forwards no `source_transport` or `source_address` business fields to Market. |
-| ADR-04 | Accepted | 2026-06-25 | Simulator owner | The Django simulator emits production-identical signed game UDP packets and may identify itself only in private local records. |
+| ADR-04 | Accepted | 2026-06-25 | Simulator owner | The Django simulator emits packets conforming to the versioned repository protocol schema and may identify itself only in private local records; external-client identity requires an external compatibility corpus. |
 | ADR-05 | Accepted | 2026-06-25 | Settlement/data owner | trade-settlement receives only low-level settlement operation batches plus infrastructure idempotency/audit metadata. |
 | ADR-06 | Accepted with limitations | 2026-06-25 | SRE/platform operator | UDP gateway resilience uses bounded queue/workers, per-remote rate limits, process-local replay cache, HMAC integrity, and downstream timeouts. |
 | ADR-07 | Accepted | 2026-06-25 | SRE/platform operator | Production overlays include Quilkin UDP and exclude local simulator resources. |

@@ -39,7 +39,7 @@ func healthHandler(response http.ResponseWriter, request *http.Request) {
 
 func readyHandler(status *HealthStatus) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
-		if status == nil || status.Ready() {
+		if status != nil && status.Ready() {
 			writePlainStatus(response, request, http.StatusOK, "ready\n")
 			return
 		}

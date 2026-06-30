@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
+import base64
 import importlib
+import json
 import re
+import socket
 import sys
 import tempfile
 import time
@@ -77,6 +81,10 @@ class GatewayClient:
         self.http = httpx.Client(timeout=httpx.Timeout(20.0))
         self._buttons_by_action: dict[str, int] | None = None
 
+    def close(self) -> None:
+        self.http.close()
+
+
     def issue_trade_instance(self, payload: dict[str, Any]) -> dict[str, Any]:
         return self._press("market_place_sell_order", payload)
 
@@ -134,6 +142,52 @@ class GatewayClient:
             return self._buttons_by_action[action]
         except KeyError as exc:
             raise RuntimeError(f"simulator button for action {action!r} was not seeded") from exc
+
+
+class AuthenticatedEdgeClient:
+    def __init__(self, host: str, port: int, response_secret: str, response_key_id: str):
+        self.endpoint = (host, port)
+        self.response_secret = response_secret.encode("utf-8")
+        self.response_key_id = response_key_id
+
+    def submit(self, packet: dict[str, Any], key_id: str, principal_secret: str) -> dict[str, Any]:
+        raw_payload = json.dumps(packet, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        signature = base64.urlsafe_b64encode(
+            hmac.new(principal_secret.encode("utf-8"), raw_payload, hashlib.sha256).digest()
+        ).rstrip(b"=").decode("ascii")
+        envelope = json.dumps(
+            {
+                "schema_version": "eve-trade-edge.v1",
+                "payload": packet,
+                "auth": {"algorithm": "hmac-sha256", "key_id": key_id, "signature": signature},
+            },
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
+            udp.settimeout(10)
+            udp.sendto(envelope, self.endpoint)
+            response, source = udp.recvfrom(65535)
+        expected_ips = {
+            row[4][0]
+            for row in socket.getaddrinfo(self.endpoint[0], self.endpoint[1], socket.AF_INET, socket.SOCK_DGRAM)
+        }
+        if source[0] not in expected_ips or source[1] != self.endpoint[1]:
+            raise AssertionError(f"edge response source {source!r} does not match {self.endpoint!r}")
+        decoded = json.loads(response)
+        if decoded.get("schema_version") != "eve-trade-edge-response.v1":
+            raise AssertionError(f"edge response is unsigned: {decoded!r}")
+        auth = decoded.get("auth") or {}
+        payload = decoded.get("payload")
+        if auth.get("algorithm") != "hmac-sha256" or auth.get("key_id") != self.response_key_id:
+            raise AssertionError(f"edge response authentication metadata is invalid: {auth!r}")
+        canonical = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        expected = base64.urlsafe_b64encode(
+            hmac.new(self.response_secret, canonical, hashlib.sha256).digest()
+        ).rstrip(b"=").decode("ascii")
+        if not hmac.compare_digest(str(auth.get("signature") or ""), expected):
+            raise AssertionError("edge response signature is invalid")
+        return payload
 
 
 class SettlementClient:
@@ -754,13 +808,15 @@ def issue_payload(
     station_id: int | None = None,
     item_stack_quantity: int = 10,
 ) -> dict[str, Any]:
-    key = idempotency_key or fresh_key("issue")
+    key = fresh_key("issue") if idempotency_key is None else idempotency_key
     return {
         "idempotencyKey": key,
         "externalRequestId": f"external-{key}",
-        "issuedByCapsuleerId": issued_by_capsuleer_id or world.seller_id,
+        "issuedByCapsuleerId": world.seller_id
+        if issued_by_capsuleer_id is None
+        else issued_by_capsuleer_id,
         "itemStack": {
-            "itemStackId": item_stack_id or world.seller_stack_id,
+            "itemStackId": world.seller_stack_id if item_stack_id is None else item_stack_id,
             "ownerId": item_stack_owner_id
             if item_stack_owner_id is not None
             else world.seller_id,
@@ -782,7 +838,7 @@ def create_trade(
     idempotency_key: str | None = None,
     **payload_overrides: Any,
 ) -> Trade:
-    key = idempotency_key or fresh_key("issue")
+    key = fresh_key("issue") if idempotency_key is None else idempotency_key
     payload = issue_payload(
         world,
         quantity=quantity,
@@ -811,19 +867,25 @@ def accept_payload(
     buyer_capsuleer_id: int | None = None,
     buyer_wallet_id: str | None = None,
     buyer_destination_item_stack_id: str | None = None,
-    **_ignored_client_facts: Any,
+    **client_facts: Any,
 ) -> dict[str, Any]:
     requested = trade.quantity if quantity is None else quantity
-    key = idempotency_key or fresh_key("accept")
-    return {
+    key = fresh_key("accept") if idempotency_key is None else idempotency_key
+    payload = {
         "idempotencyKey": key,
         "externalRequestId": f"external-{key}",
         "tradeInstanceId": trade.trade_instance_id,
-        "buyerCapsuleerId": buyer_capsuleer_id or world.buyer_id,
+        "buyerCapsuleerId": world.buyer_id
+        if buyer_capsuleer_id is None
+        else buyer_capsuleer_id,
         "quantityRequested": requested,
-        "buyerWalletId": buyer_wallet_id or world.buyer_wallet_id,
-        "buyerDestinationItemStackId": buyer_destination_item_stack_id or "",
+        "buyerWalletId": world.buyer_wallet_id if buyer_wallet_id is None else buyer_wallet_id,
+        "buyerDestinationItemStackId": ""
+        if buyer_destination_item_stack_id is None
+        else buyer_destination_item_stack_id,
     }
+    payload.update({snake_name_to_camel(name): value for name, value in client_facts.items()})
+    return payload
 
 
 def accept_trade(
@@ -841,15 +903,19 @@ def cancel_payload(
     *,
     idempotency_key: str | None = None,
     cancelled_by_capsuleer_id: int | None = None,
-    **_ignored_client_facts: Any,
+    **client_facts: Any,
 ) -> dict[str, Any]:
-    key = idempotency_key or fresh_key("cancel")
-    return {
+    key = fresh_key("cancel") if idempotency_key is None else idempotency_key
+    payload = {
         "idempotencyKey": key,
         "externalRequestId": f"external-{key}",
         "tradeInstanceId": trade.trade_instance_id,
-        "cancelledByCapsuleerId": cancelled_by_capsuleer_id or world.seller_id,
+        "cancelledByCapsuleerId": world.seller_id
+        if cancelled_by_capsuleer_id is None
+        else cancelled_by_capsuleer_id,
     }
+    payload.update({snake_name_to_camel(name): value for name, value in client_facts.items()})
+    return payload
 
 
 def cancel_trade(

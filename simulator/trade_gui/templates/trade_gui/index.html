@@ -107,10 +107,10 @@
 <body>
   <div class="shell" data-testid="simulator-shell">
     <nav class="neocom" aria-label="Neocom">
-      <div class="neo-btn" title="Inventory">Inv</div>
-      <div class="neo-btn" title="Regional Market">Mkt</div>
-      <div class="neo-btn" title="Contracts">Ctr</div>
-      <div class="neo-btn" title="Wallet">ISK</div>
+      <button type="button" class="neo-btn" title="Inventory" data-target="regional-market-panel">Inv</button>
+      <button type="button" class="neo-btn" title="Regional Market" data-target="regional-market-panel">Mkt</button>
+      <button type="button" class="neo-btn" title="Contracts" data-target="alternate-trade-panel">Ctr</button>
+      <button type="button" class="neo-btn" title="Wallet" data-target="packet-payload-panel">ISK</button>
     </nav>
     <main>
       <header data-testid="simulator-header">
@@ -205,20 +205,36 @@
       };
     }
 
+    document.querySelectorAll("button[data-target]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelector(`[data-testid="${button.dataset.target}"]`)?.scrollIntoView({ behavior: "smooth" });
+      });
+    });
+
     document.querySelectorAll("button[data-button-id]").forEach((button) => {
       button.addEventListener("click", async () => {
+        if (button.disabled) return;
+        button.disabled = true;
         response.textContent = "Sending UDP packet through Quilkin...";
-        const body = { player_input: payload() };
-        const result = await fetch(`/api/gui/buttons/${button.dataset.buttonId}/press/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body)
-        });
-        const text = await result.text();
         try {
-          response.textContent = JSON.stringify(JSON.parse(text), null, 2);
-        } catch {
-          response.textContent = text;
+          const body = { player_input: payload() };
+          const result = await fetch(`/api/gui/buttons/${button.dataset.buttonId}/press/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+          });
+          const text = await result.text();
+          try {
+            response.textContent = JSON.stringify(JSON.parse(text), null, 2);
+          } catch {
+            response.textContent = text;
+          }
+        } catch (error) {
+          if (!response.textContent.startsWith("Invalid JSON in extra payload")) {
+            response.textContent = `Request failed: ${error}`;
+          }
+        } finally {
+          button.disabled = false;
         }
       });
     });

@@ -14,6 +14,7 @@ stages:
 
 variables:
   DAGGER_VERSION: "0.21.7"
+  GIT_DEPTH: "0"
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
   CHAOS_NAMESPACE: eve-trade
@@ -52,6 +53,11 @@ validate:check:
   script:
     - . .ci-venv/bin/activate
     - python ci-cd/pipeline.py check
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - ci-cd/out/sbom/
 
 validate:chaos:
   extends: .dagger
@@ -107,6 +113,10 @@ publish:images:
   script:
     - . .ci-venv/bin/activate
     - python ci-cd/pipeline.py publish --cloud-provider "$EVE_TRADE_CLOUD_PROVIDER" --tag "$IMAGE_TAG"
+  artifacts:
+    expire_in: 30 days
+    paths:
+      - ci-cd/out/image-digests.json
 
 deploy:render:
   extends: .dagger
@@ -127,6 +137,7 @@ deploy:render:
     expire_in: 30 days
     paths:
       - ci-cd/out/kubernetes.yaml
+      - ci-cd/out/image-digests.json
 
 deploy:production:
   extends: .dagger

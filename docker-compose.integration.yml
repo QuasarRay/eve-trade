@@ -8,7 +8,7 @@ services:
   # This block starts the only durable storage dependency required by the MVP trade path.
   # It exists so settlement writes against a  PostgreSQL engine,  enum types,  constraints, and  transactions.
   postgres:
-    image: postgres:16
+    image: postgres:16@sha256:081f1bc7bd5e143dbb6e487b710bbc27712cdcfaced4c071b8e47349aa1b4171
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -24,7 +24,7 @@ services:
   # This block applies the canonical SQL migrations before either service accepts traffic.
   # It exists so the test database is recreated deterministically from the same migration files the project owns.
   migrate:
-    image: postgres:16
+    image: postgres:16@sha256:081f1bc7bd5e143dbb6e487b710bbc27712cdcfaced4c071b8e47349aa1b4171
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,11 +39,11 @@ services:
         sleep 1;
       done &&
       psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' &&
-      psql -h postgres -U postgres -d eve_trade -v ON_ERROR_STOP=1 -f distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql
+      DATABASE_URL=postgres://postgres:postgres@postgres:5432/eve_trade bash distributed-backend/tests/migrations/verify_upgrade.sh
       "
 
   rabbitmq:
-    image: rabbitmq:3.13.7-management
+    image: rabbitmq:3.13.7-management@sha256:e582c0bc7766f3342496d8485efb5a1df782b5ce3886ad017e2eaae442311f69
     environment:
       RABBITMQ_DEFAULT_USER: eve_trade
       RABBITMQ_DEFAULT_PASS: eve_trade
@@ -67,7 +67,7 @@ services:
         condition: service_completed_successfully
     environment:
       SUMMER_ENV: prod
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
+      DATABASE_URL: postgres://eve_trade_runtime:runtime-password@postgres:5432/eve_trade
       OTEL_SERVICE_NAME: trade-settlement
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -121,7 +121,7 @@ services:
       SETTLEMENT_TRANSPORT: rabbitmq
       TRADE_SETTLEMENT_URL: http://trade-settlement:9092
       RABBITMQ_URL: amqp://eve_trade:eve_trade@rabbitmq:5672/
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
+      DATABASE_URL: postgres://eve_trade_runtime:runtime-password@postgres:5432/eve_trade
       OTEL_SERVICE_NAME: market
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -153,6 +153,7 @@ services:
       API_GATEWAY_UDP_AUTH_REQUIRED: "true"
       API_GATEWAY_UDP_HMAC_SECRET: local-game-edge-secret
       API_GATEWAY_UDP_HMAC_KEY_ID: primary
+      API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON: '{"seller":{"capsuleer_id":1001,"secret":"seller-player-secret"},"buyer":{"capsuleer_id":2002,"secret":"buyer-player-secret"},"other":{"capsuleer_id":3003,"secret":"other-player-secret"}}'
       MARKET_URL: http://market:8081
       OTEL_SERVICE_NAME: api-gateway
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
@@ -211,6 +212,7 @@ services:
       QUILKIN_UDP_RETRY_BACKOFF_SECONDS: "0.1"
       GAME_PACKET_HMAC_SECRET: local-game-edge-secret
       GAME_PACKET_HMAC_KEY_ID: primary
+      GAME_PACKET_PRINCIPAL_KEYS_JSON: '{"1001":{"key_id":"seller","secret":"seller-player-secret"},"2002":{"key_id":"buyer","secret":"buyer-player-secret"},"3003":{"key_id":"other","secret":"other-player-secret"}}'
       SIMULATOR_ALLOWED_HOSTS: "*"
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/gui/buttons/', timeout=2).read()\""]
@@ -221,7 +223,7 @@ services:
   # This block runs the Python e2e test package inside the same Docker network as market, settlement, and PostgreSQL.
   # It exists so CI and local runs use the same network names and do not depend on host-specific service discovery.
   e2e-tests:
-    image: python:3.13-slim
+    image: python:3.13-slim@sha256:c33f0bc4364a6881bed1ec0cc2665e6c53c87a43e774aaeab88e6f17af105e4f
     profiles:
       - test
     depends_on:
@@ -234,9 +236,21 @@ services:
     environment:
       EVE_TRADE_API_GATEWAY_URL: http://api-gateway:8080
       EVE_TRADE_SIMULATOR_URL: http://simulator:8000
+      EVE_TRADE_QUILKIN_UDP_HOST: quilkin
+      EVE_TRADE_QUILKIN_UDP_PORT: "26001"
+      EVE_TRADE_EDGE_RESPONSE_SECRET: local-game-edge-secret
+      EVE_TRADE_EDGE_RESPONSE_KEY_ID: primary
+      EVE_TRADE_EDGE_BUYER_KEY_ID: buyer
+      EVE_TRADE_EDGE_BUYER_SECRET: buyer-player-secret
+      EVE_TRADE_EDGE_SELLER_KEY_ID: seller
+      EVE_TRADE_EDGE_SELLER_SECRET: seller-player-secret
+      EVE_TRADE_LOAD_REQUESTS: "20"
+      EVE_TRADE_LOAD_P95_SECONDS: "5"
       EVE_TRADE_SETTLEMENT_GRPC: trade-settlement:9092
       EVE_TRADE_GATEWAY_GRPC: api-gateway:8080
       EVE_TRADE_DATABASE_URL: postgres://postgres:postgres@postgres:5432/eve_trade
+      EVE_TRADE_RUNTIME_DATABASE_URL: postgres://eve_trade_runtime:runtime-password@postgres:5432/eve_trade
+      EVE_TRADE_E2E_PRODUCTION_GATE: "true"
     command: >
       sh -c "python -m pip install --retries 5 --timeout 60 -r distributed-backend/tests/e2e/requirements.txt &&
       python -c \"import re, subprocess, sys;

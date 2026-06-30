@@ -1,0 +1,12 @@
+[run]
+branch = True
+source = trade_gui
+omit =
+    trade_gui/tests.py
+    trade_gui/migrations/*
+    trade_gui/admin.py
+    trade_gui/apps.py
+
+[report]
+show_missing = True
+skip_covered = True

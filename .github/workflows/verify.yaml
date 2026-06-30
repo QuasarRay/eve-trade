@@ -21,20 +21,23 @@ env:
 jobs:
   proto:
     name: proto / buf
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
 
       - name: Install Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: distributed-backend/proto/go.mod
           cache: true
 
       - name: Install Buf
-        uses: bufbuild/buf-action@v1
+        uses: bufbuild/buf-action@fd21066df7214747548607aaa45548ba2b9bc1ff # v1
         with:
           setup_only: true
           version: "1.70.0"
@@ -62,6 +65,10 @@ jobs:
       - name: Check protobuf formatting
         run: buf format --diff --exit-code
 
+      - name: Reject protobuf breaking changes
+        if: github.event_name == 'pull_request'
+        run: buf breaking --against '.git#branch=main'
+
       - name: Regenerate protobuf output
         run: buf generate
 
@@ -70,19 +77,40 @@ jobs:
 
   architecture-boundaries:
     name: architecture / boundaries
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     needs: [proto]
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Verify production architecture boundaries
         run: python scripts/verify_architecture_boundaries.py
 
+  security:
+    name: security / history and filesystem
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+      - name: Scan complete Git history for secrets
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.27.2 detect --source /repo --redact
+      - name: Fail on all known high or critical filesystem vulnerabilities
+        run: >-
+          docker run --rm -v "$PWD:/repo" aquasec/trivy:0.64.1 fs
+          --exit-code 1 --severity HIGH,CRITICAL
+          --skip-dirs /repo/target
+          --skip-dirs /repo/distributed-backend/src/trade-settlement/target /repo
+
   go:
     name: go / ${{ matrix.name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -91,41 +119,47 @@ jobs:
             module: distributed-backend/proto
             build_package: ""
             build_tags: ""
+            coverage_min: "0"
           - name: observability
             module: distributed-backend/src/observability
             build_package: ""
             build_tags: ""
+            coverage_min: "40"
           - name: messaging
             module: distributed-backend/src/messaging
             build_package: ""
             build_tags: ""
+            coverage_min: "25"
           - name: market
             module: distributed-backend/src/market
             build_package: ./cmd/market
             build_tags: ""
+            coverage_min: "30"
           - name: settlement-worker
             module: distributed-backend/src/settlement-worker
             build_package: ./cmd/settlement-worker
             build_tags: ""
+            coverage_min: "35"
           - name: api-gateway
             module: distributed-backend/src/api-gateway
             build_package: ./cmd/api-gateway
             build_tags: ""
+            coverage_min: "50"
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: ${{ matrix.module }}/go.mod
           cache: true
 
       - name: Install Go analysis tools
         run: |
-          go install honnef.co/go/tools/cmd/staticcheck@latest
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install honnef.co/go/tools/cmd/staticcheck@v0.7.0
+          go install golang.org/x/vuln/cmd/govulncheck@v1.5.0
 
       - name: Check Go module metadata
         working-directory: ${{ matrix.module }}
@@ -144,15 +178,28 @@ jobs:
             exit 1
           fi
 
-      - name: Test Go packages
+      - name: Test Go packages with coverage gate
         working-directory: ${{ matrix.module }}
         shell: bash
         run: |
+          set -euo pipefail
           if [ -n "${{ matrix.build_tags }}" ]; then
-            go test -tags "${{ matrix.build_tags }}" ./...
+            go test -count=1 -covermode=atomic -coverprofile=coverage.out -tags "${{ matrix.build_tags }}" ./...
           else
-            go test ./...
+            go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
           fi
+          if [ "${{ matrix.coverage_min }}" != "0" ]; then
+            total="$(go tool cover -func=coverage.out | awk '/^total:/ {gsub(/%/, "", $3); print $3}')"
+            awk -v actual="$total" -v minimum="${{ matrix.coverage_min }}" 'BEGIN { if (actual + 0 < minimum + 0) { printf "coverage %.1f%% is below %.1f%%\n", actual, minimum; exit 1 } }'
+          fi
+
+      - name: Upload Go coverage
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: go-coverage-${{ matrix.name }}
+          path: ${{ matrix.module }}/coverage.out
+          if-no-files-found: error
 
       - name: Vet Go packages
         working-directory: ${{ matrix.module }}
@@ -173,6 +220,11 @@ jobs:
           else
             go test -race ./...
           fi
+
+      - name: Fuzz untrusted UDP parser
+        if: matrix.name == 'api-gateway'
+        working-directory: ${{ matrix.module }}
+        run: go test -run '^$' -fuzz '^FuzzAuthenticatedPayload' -fuzztime 10s ./distributed-backend
 
       - name: Staticcheck Go packages
         working-directory: ${{ matrix.module }}
@@ -201,14 +253,15 @@ jobs:
 
   go-root:
     name: go / root workspace
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
           cache: true
@@ -216,12 +269,18 @@ jobs:
       - name: Test root workspace
         run: go test ./...
 
+      - name: Reject vendored workspace dependency drift
+        run: |
+          go work vendor
+          git diff --exit-code -- vendor
+
       - name: Vet root workspace
         run: go vet ./...
 
   rust-trade-settlement:
     name: rust / trade-settlement
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
 
     defaults:
       run:
@@ -229,11 +288,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
+          toolchain: "1.95.0"
           components: rustfmt, clippy
 
       - name: Install protoc
@@ -248,20 +308,39 @@ jobs:
       - name: Test Rust crate
         run: cargo test --locked --all-features
 
+      - name: Gate Rust line coverage
+        run: |
+          rustup component add llvm-tools-preview
+          cargo install cargo-llvm-cov --version 0.8.4 --locked
+          cargo llvm-cov --locked --all-features --lcov --output-path lcov.info --fail-under-lines 20
+
+      - name: Upload Rust coverage
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: rust-coverage-trade-settlement
+          path: distributed-backend/src/trade-settlement/lcov.info
+          if-no-files-found: error
+
       - name: Lint Rust crate
         run: cargo clippy --locked --all-targets --all-features -- -D warnings
 
       - name: Audit Rust dependencies
         run: |
-          cargo install cargo-audit --locked
+          cargo install cargo-audit --version 0.22.2 --locked
           # sqlx currently leaves rsa 0.9.x in Cargo.lock through optional MySQL support even
           # though trade-settlement is PostgreSQL-only and `cargo tree -i rsa` is empty.
           # RUSTSEC-2023-0071 has no fixed upgrade; keep this ignore explicit and reviewed.
+          if cargo tree -i rsa --locked | grep -q '^rsa '; then
+            echo "ignored RUSTSEC-2023-0071 is reachable in the active PostgreSQL feature graph" >&2
+            exit 1
+          fi
           cargo audit --ignore RUSTSEC-2023-0071
 
   terraform:
     name: terraform / ${{ matrix.provider }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
 
     strategy:
       fail-fast: false
@@ -276,10 +355,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
         with:
           terraform_version: 1.10.5
 
@@ -292,16 +371,20 @@ jobs:
       - name: Validate Terraform
         run: terraform -chdir=${{ matrix.root }} validate
 
+      - name: Plan representative production topology with mocked providers
+        run: terraform -chdir=${{ matrix.root }} test
+
   kubernetes:
     name: kubernetes / render
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4
         with:
           version: v1.33.0
 
@@ -312,6 +395,7 @@ jobs:
           kubectl kustomize distributed-backend/orchestration/kubernetes/base/observability >/tmp/eve-trade-observability.yaml
           kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/local >/tmp/eve-trade-local.yaml
           kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/prod >/tmp/eve-trade-prod.yaml
+          kubectl kustomize distributed-backend/orchestration/kubernetes/chaos/litmus/overlays/prod >/tmp/eve-trade-chaos.yaml
 
       - name: Install kubeconform
         run: |
@@ -320,15 +404,22 @@ jobs:
 
       - name: Validate Kubernetes manifests
         run: |
-          /tmp/kubeconform -strict -ignore-missing-schemas /tmp/eve-trade-istio.yaml
-          /tmp/kubeconform -strict -ignore-missing-schemas /tmp/eve-trade-gateway.yaml
-          /tmp/kubeconform -strict -ignore-missing-schemas /tmp/eve-trade-observability.yaml
-          /tmp/kubeconform -strict -ignore-missing-schemas /tmp/eve-trade-local.yaml
-          /tmp/kubeconform -strict -ignore-missing-schemas /tmp/eve-trade-prod.yaml
+          schema_args=(
+            -strict
+            -schema-location default
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/ae1ca1acca30963fa0141abfcbc47ceadbf345c8/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+          )
+          /tmp/kubeconform "${schema_args[@]}" /tmp/eve-trade-istio.yaml
+          /tmp/kubeconform "${schema_args[@]}" /tmp/eve-trade-gateway.yaml
+          /tmp/kubeconform "${schema_args[@]}" /tmp/eve-trade-observability.yaml
+          /tmp/kubeconform "${schema_args[@]}" /tmp/eve-trade-local.yaml
+          /tmp/kubeconform "${schema_args[@]}" /tmp/eve-trade-prod.yaml
+          /tmp/kubeconform "${schema_args[@]}" /tmp/eve-trade-chaos.yaml
 
   python-simulator:
     name: python / simulator
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     defaults:
       run:
@@ -336,19 +427,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
           cache: pip
-          cache-dependency-path: simulator/requirements.txt
+          cache-dependency-path: simulator/requirements-test.txt
 
       - name: Install simulator dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-test.txt
 
       - name: Check installed Python dependencies
         run: python -m pip check
@@ -357,25 +448,105 @@ jobs:
         working-directory: .
         run: python -m compileall simulator/eve_trade_simulator simulator/trade_gui distributed-backend/tests/e2e
 
-      - name: Test simulator packet construction
-        run: python manage.py test trade_gui
+      - name: Test simulator with coverage gate
+        run: |
+          python -m coverage run --rcfile=.coveragerc manage.py test trade_gui
+          python -m coverage report --rcfile=.coveragerc --fail-under=80
+          python -m coverage xml -o coverage.xml
+
+      - name: Upload simulator coverage
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: python-coverage-simulator
+          path: simulator/coverage.xml
+          if-no-files-found: error
 
       - name: Audit simulator dependencies
         run: |
-          python -m pip install pip-audit
           python -m pip_audit -r requirements.txt
 
-  e2e:
-    name: e2e / compose
-    runs-on: ubuntu-latest
-    needs: [proto, architecture-boundaries, go, go-root, rust-trade-settlement, kubernetes, python-simulator]
+  python-observability:
+    name: python / observability control plane
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: observability/requirements-test.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r observability/requirements-test.txt
+
+      - name: Test observability control plane with coverage gate
+        run: |
+          python -m coverage run --rcfile=observability/.coveragerc -m unittest discover -s observability/tests -v
+          python -m coverage report --rcfile=observability/.coveragerc --fail-under=35
+          python -m coverage xml --rcfile=observability/.coveragerc -o observability/coverage.xml
+
+      - name: Audit observability dependencies
+        run: python -m pip_audit -r observability/requirements.txt
+
+      - name: Upload observability coverage
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: python-coverage-observability
+          path: observability/coverage.xml
+          if-no-files-found: error
+
+  messaging-live:
+    name: messaging / live RabbitMQ reliability
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      rabbitmq:
+        image: rabbitmq:3.13.7-management@sha256:e582c0bc7766f3342496d8485efb5a1df782b5ce3886ad017e2eaae442311f69
+        env:
+          RABBITMQ_DEFAULT_USER: eve_trade
+          RABBITMQ_DEFAULT_PASS: eve_trade
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Install Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: distributed-backend/src/messaging/go.mod
+          cache: true
+      - name: Exercise publisher confirms, replies, rejects, and shutdown against RabbitMQ
+        working-directory: distributed-backend/src/messaging
+        env:
+          RABBITMQ_TEST_URL: amqp://eve_trade:eve_trade@127.0.0.1:5672/
+          EVE_TRADE_REQUIRE_LIVE_TESTS: "true"
+        run: go test -count=1 -race -run TestRabbitMQWorkerAndClientReliabilityContract ./rabbitmqsettlement
+
+  e2e:
+    name: e2e / compose
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    needs: [proto, architecture-boundaries, security, go, go-root, rust-trade-settlement, kubernetes, python-simulator, python-observability, messaging-live]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
           cache: pip
@@ -387,7 +558,7 @@ jobs:
       - name: Run observed live Python e2e tests
         env:
           OBSERVABILITY_ENV: github-actions
-          OBSERVABILITY_STRICT: "false"
+          OBSERVABILITY_STRICT: "true"
           HONEYCOMB_API_KEY: ${{ secrets.HONEYCOMB_API_KEY }}
           HONEYCOMB_CONFIGURATION_KEY: ${{ secrets.HONEYCOMB_CONFIGURATION_KEY }}
           HONEYCOMB_DATASET: eve-trade-ci
@@ -396,7 +567,14 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-        run: python observability/ci/observed_run.py integration --clean --maxfail 1
+        run: python observability/ci/observed_run.py integration --clean
+
+      - name: Repeat concurrency and load-sensitive E2E scenarios
+        run: >-
+          docker compose -f docker-compose.integration.yml --profile test run --rm --no-deps e2e-tests
+          sh -c "python -m pip install -r distributed-backend/tests/e2e/requirements.txt &&
+          python -m pytest distributed-backend/tests/e2e -q --count=3
+          -k 'concurrent or authenticated_udp_issue_burst'"
 
       - name: Dump observability diagnostics
         if: failure()
@@ -430,22 +608,64 @@ jobs:
 
       - name: Upload observability artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: o11y-${{ github.run_id }}-${{ github.run_attempt }}
           path: .o11y/
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload observability run artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: eve-trade-observability-${{ github.run_id }}-${{ github.run_attempt }}
           path: .o11y/runs/
           include-hidden-files: true
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
 
       - name: Clean up compose resources
         if: always()
         run: docker compose -f docker-compose.integration.yml --profile test down -v --remove-orphans
+
+  gui-browser:
+    name: browser / simulator reliability gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    needs: [e2e]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.19.0"
+
+      - name: Install pnpm and browser dependencies
+        run: |
+          npm install --global pnpm@10.12.1
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Start canonical local topology
+        run: docker compose up -d --build --wait --wait-timeout 300
+
+      - name: Run gating Playwright reliability suite
+        run: pnpm gui:test
+
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gui-reliability-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/gui-simulator-demo/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Clean up compose resources
+        if: always()
+        run: docker compose down -v --remove-orphans

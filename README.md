@@ -4,7 +4,7 @@
 
 `game frontend -> Quilkin UDP -> API gateway UDP edge -> Market GUI interaction -> settlement operations -> trade-settlement`
 
-The checked-in Django simulator is a local game-frontend simulator. From the packet boundary outward, its UDP payload is production-identical to a real game frontend interaction and does not identify itself as Django, browser, test, simulator, or framework traffic.
+The checked-in Django simulator is a local game-frontend simulator. Its UDP payload conforms to the versioned repository protocol schema and cross-language golden packet, and does not identify itself as Django, browser, test, simulator, or framework traffic. This establishes protocol conformance, not identity with an external unreleased game client.
 
 ## Run Locally
 
@@ -43,7 +43,7 @@ The project focuses on the backend and platform engineering problems behind play
 
 `eve-trade` is currently capable of performing a trade lifecycle starting from a game GUI interaction packet sent over UDP through Quilkin.
 
-The API Gateway is a UDP edge and UDP-to-gRPC forwarder only. It enforces transport-level safety such as packet size, empty-packet rejection, bounded worker/queue limits, per-remote rate limits, HMAC integrity, replay protection, downstream timeouts, compact UDP responses, and structured telemetry. It forwards the exact raw game GUI payload to Market using `MarketService.SubmitTradeGuiInteraction` and does not send gateway-only source metadata as part of the Market business request.
+The API Gateway is a UDP edge and UDP-to-gRPC forwarder only. It enforces transport-level safety such as packet size, empty-packet rejection, bounded worker/queue limits, authenticated-principal rate limits, principal-bound HMAC integrity, replay protection, signed responses, downstream timeouts, compact UDP responses, and structured telemetry. It forwards the exact raw game GUI payload to Market using `MarketService.SubmitTradeGuiInteraction` and does not send gateway-only source metadata as part of the Market business request.
 
 The Market service owns game trade interpretation. It maps GUI actions and player-provided trade inputs into internal issue, accept, or cancel decisions, then publishes low-level settlement operation batches through RabbitMQ. `settlement-worker` consumes those commands and calls `trade-settlement`.
 

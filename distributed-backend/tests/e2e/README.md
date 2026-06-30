@@ -1,203 +1,23 @@
-# Test Names:
-
-#
-
-def test_creating_trade_offer_makes_requested_item_quantity_unavailable_to_seller()
-
-def test_creating_trade_offer_keeps_seller_non_offered_item_quantity_available()
-
-def test_creating_trade_offer_exposes_trade_as_outstanding_to_other_players()
-
-def test_creating_trade_offer_rejects_zero_item_quantity()
-
-def test_creating_trade_offer_rejects_negative_item_quantity()
-
-def test_creating_trade_offer_rejects_more_items_than_seller_owns()
-
-def test_creating_trade_offer_rejects_item_stack_not_owned_by_seller()
-
-def test_creating_trade_offer_rejects_item_stack_in_wrong_station()
-
-def test_creating_trade_offer_rejects_invalid_unit_price()
-
-def test_creating_trade_offer_does_not_change_wallet_balances()
-
-#
-
-def test_accepting_trade_transfers_requested_item_quantity_to_buyer()
-
-def test_accepting_trade_transfers_correct_isk_amount_to_seller()
-
-def test_accepting_trade_debits_buyer_wallet_by_quantity_times_unit_price()
-
-def test_accepting_trade_creates_buyer_item_stack_when_buyer_has_no_matching_stack()
-
-def test_accepting_trade_merges_items_into_existing_buyer_stack_when_matching_stack_exists()
-
-def test_accepting_partial_trade_keeps_trade_outstanding()
-
-def test_accepting_partial_trade_reduces_available_trade_quantity()
-
-def test_accepting_full_remaining_trade_quantity_marks_trade_completed()
-
-def test_accepting_trade_does_not_complete_trade_while_item_escrow_quantity_remains_positive()
-
-def test_accepting_trade_completes_trade_when_item_escrow_quantity_becomes_zero()
-
-def test_accepting_trade_rejects_quantity_above_available_trade_quantity()
-
-def test_accepting_trade_rejects_zero_quantity()
-
-def test_accepting_trade_rejects_negative_quantity()
-
-def test_accepting_trade_rejects_when_buyer_has_insufficient_isk()
-
-def test_accepting_trade_rejects_when_trade_is_cancelled()
-
-def test_accepting_trade_rejects_when_trade_is_already_completed()
-
-def test_accepting_trade_rejects_when_buyer_is_seller_if_self_purchase_is_disallowed()
-
-#
-
-def test_cancelling_trade_returns_remaining_item_quantity_to_seller()
-
-def test_cancelling_trade_makes_remaining_item_quantity_available_to_seller()
-
-def test_cancelling_trade_marks_trade_unavailable_to_buyers()
-
-def test_cancelling_partially_accepted_trade_refunds_only_remaining_item_quantity()
-
-def test_cancelling_partially_accepted_trade_does_not_reverse_already_completed_purchase()
-
-def test_cancelling_trade_rejects_non_seller_caller()
-
-def test_cancelling_trade_rejects_already_completed_trade()
-
-def test_cancelling_trade_rejects_already_cancelled_trade()
-
-def test_cancelling_trade_does_not_change_wallet_balances()
-
-#
-
-def test_retrying_create_trade_offer_does_not_duplicate_trade()
-
-def test_retrying_create_trade_offer_does_not_duplicate_item_escrow()
-
-def test_retrying_accept_trade_does_not_transfer_items_twice()
-
-def test_retrying_accept_trade_does_not_transfer_isk_twice()
-
-def test_retrying_cancel_trade_does_not_refund_items_twice()
-
-def test_same_idempotency_key_with_different_create_trade_payload_is_rejected()
-
-def test_same_idempotency_key_with_different_accept_trade_payload_is_rejected()
-
-def test_same_idempotency_key_with_different_cancel_trade_payload_is_rejected()
-
-def test_retried_successful_request_returns_same_business_outcome()
-
-#
-
-def test_failed_create_trade_offer_does_not_create_visible_trade()
-
-def test_failed_create_trade_offer_does_not_remove_items_from_seller()
-
-def test_failed_accept_trade_does_not_debit_buyer_wallet()
-
-def test_failed_accept_trade_does_not_credit_seller_wallet()
-
-def test_failed_accept_trade_does_not_transfer_items_to_buyer()
-
-def test_failed_accept_trade_does_not_reduce_available_trade_quantity()
-
-def test_failed_accept_trade_does_not_complete_trade()
-
-def test_failed_cancel_trade_does_not_refund_partial_item_quantity()
-
-def test_failed_cancel_trade_does_not_hide_trade_from_buyers_unless_refund_succeeds()
-
-def test_concurrent_accepts_cannot_sell_more_than_available_quantity()
-
-def test_concurrent_accepts_cannot_make_buyer_wallet_negative()
-
-#
-
-def test_total_item_quantity_is_preserved_after_trade_offer_creation()
-
-def test_total_item_quantity_is_preserved_after_trade_acceptance()
-
-def test_total_item_quantity_is_preserved_after_trade_cancellation()
-
-def test_total_isk_amount_is_preserved_after_trade_acceptance()
-
-def test_no_wallet_balance_becomes_negative_after_successful_request()
-
-def test_no_item_stack_quantity_becomes_negative_after_successful_request()
-
-def test_available_trade_quantity_never_becomes_negative()
-
-def test_completed_trade_has_zero_available_item_quantity()
-
-def test_outstanding_trade_can_have_positive_available_item_quantity()
-
-def test_cancelled_trade_has_no_available_quantity_for_buyers()
-
-#
-
-def test_player_cannot_offer_item_stack_owned_by_another_player()
-
-def test_player_cannot_cancel_trade_created_by_another_player()
-
-def test_buyer_cannot_receive_more_items_than_requested()
-
-def test_seller_cannot_receive_more_isk_than_trade_price_requires()
-
-def test_trade_acceptance_uses_trade_price_not_client_supplied_price()
-
-def test_trade_acceptance_uses_trade_item_type_not_client_supplied_item_type()
-
-def test_trade_acceptance_uses_trade_station_not_client_supplied_station()
-
-def test_trade_acceptance_uses_trade_seller_not_client_supplied_seller()
-
-#
-
-def test_create_trade_offer_returns_clear_error_for_insufficient_item_quantity()
-
-def test_create_trade_offer_returns_clear_error_for_invalid_item_stack_owner()
-
-def test_accept_trade_returns_clear_error_for_insufficient_wallet_balance()
-
-def test_accept_trade_returns_clear_error_for_unavailable_trade_quantity()
-
-def test_accept_trade_returns_clear_error_for_cancelled_trade()
-
-def test_accept_trade_returns_clear_error_for_completed_trade()
-
-def test_cancel_trade_returns_clear_error_for_non_seller_caller()
-
-def test_rejected_request_does_not_return_success_status()
-
-#
-
-def test_gateway_create_trade_offer_makes_trade_available_end_to_end()
-
-def test_gateway_accept_partial_trade_keeps_trade_outstanding_end_to_end()
-
-def test_gateway_accept_full_remaining_trade_completes_trade_end_to_end()
-
-def test_gateway_cancel_trade_returns_remaining_items_end_to_end()
-
-def test_gateway_retry_create_trade_offer_is_idempotent_end_to_end()
-
-def test_gateway_retry_accept_trade_is_idempotent_end_to_end()
-
-def test_gateway_retry_cancel_trade_is_idempotent_end_to_end()
-
-def test_gateway_rejects_invalid_create_trade_offer_without_changing_state_end_to_end()
-
-def test_gateway_rejects_invalid_accept_trade_without_changing_state_end_to_end()
-
-def test_gateway_rejects_invalid_cancel_trade_without_changing_state_end_to_end()
+# Live end-to-end tests
+
+This package exercises the canonical simulator -> Quilkin UDP -> API Gateway
+-> Market -> RabbitMQ worker -> trade-settlement -> PostgreSQL path. The test
+names are intentionally not copied into this file because a hand-maintained
+list previously drifted and exaggerated the active suite.
+
+Generate the authoritative catalog from collected executable tests:
+
+```sh
+python -m pytest distributed-backend/tests/e2e --collect-only -q
+```
+
+Production-gate runs set `EVE_TRADE_E2E_PRODUCTION_GATE=true`. In that mode,
+any skipped test fails the session. The live gate also provides authenticated
+seller/buyer edge credentials, the runtime database role, the direct
+trade-settlement endpoint, and the simulator/Quilkin endpoints, so none of the
+security, privilege, load, or settlement-contract groups may disappear behind
+a skip.
+
+Concurrency and load-sensitive scenarios are repeated three times in CI after
+the complete suite. The full suite remains the source of truth; neither a raw
+test count nor this document is presented as a count of independent risks.

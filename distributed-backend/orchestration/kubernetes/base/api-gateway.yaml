@@ -47,6 +47,11 @@ spec:
                 secretKeyRef:
                   name: api-gateway-edge-auth
                   key: GAME_PACKET_HMAC_SECRET
+            - name: API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: api-gateway-edge-auth
+                  key: GAME_PACKET_PRINCIPAL_KEYS_JSON
           readinessProbe:
             httpGet:
               path: /readyz

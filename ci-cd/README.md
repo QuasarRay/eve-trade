@@ -87,12 +87,18 @@ Optional variables:
   `GAR_*`, `TALOS_OMNI_*`, or `OMNI_*` credential variables override them when
   present.
 - `KUBE_CONFIG_B64`: base64-encoded kubeconfig for the manual deploy job.
+- `POST_DEPLOY_SMOKE_URL` and `POST_DEPLOY_SMOKE_BEARER_TOKEN`: required
+  external authenticated trade probe endpoint and token for production deploy
+  verification.
 - `DEPLOY_ENVIRONMENT`: GitLab environment name, default `production`.
 - `CHAOS_NAMESPACE`: target namespace for production chaos, default `eve-trade`.
 - `CHAOS_SELECTOR`: label selector for Litmus `ChaosEngine` resources, default
   `chaos.eve-trade.io/suite=pod-resilience`.
 - `CHAOS_TIMEOUT_SECONDS`: maximum wait for Litmus `ChaosResult` verdicts,
   default `900`.
+- `CHAOS_PROBE_URL` and `CHAOS_PROBE_BEARER_TOKEN`: required external
+  authenticated trade probe endpoint and token used continuously around the
+  chaos window.
 - `CHAOS_CLEANUP`: set to `true` to delete selected `ChaosEngine` and
   `ChaosResult` resources after a successful run.
 - `RUN_PRODUCTION_CHAOS`: set to `true` on scheduled default-branch pipelines to
@@ -102,15 +108,25 @@ Optional variables:
 
 - `check` validates protobuf contracts, generated proto drift, Kubernetes
   rendering, all Terraform roots, and secret/filesystem scanning.
-- `test` runs Go, Rust, and Python contract tests.
+- `test` runs Go formatting/module drift, coverage, unit/live-RabbitMQ, vet,
+  race, fuzz, static analysis and vulnerability checks; Rust format/build,
+  clippy, unit/property tests, coverage and audit; and executable Django and
+  observability Python suites with coverage and dependency audits. It does not
+  count test collection as execution.
 - `integration` starts PostgreSQL, RabbitMQ, trade-settlement,
-  settlement-worker, Market, and API Gateway inside Dagger and runs the Python
-  e2e suite through the message-driven settlement path.
+  settlement-worker, Market, API Gateway, Quilkin, and the simulator inside
+  Dagger, then runs the Python e2e suite through the authenticated canonical
+  UDP and message-driven settlement path. Production-gate mode fails on any
+  skip and repeats concurrency/load-sensitive scenarios three times.
 - `terraform` validates one selected Terraform root or all deployment roots.
 - `publish` publishes service images to the selected provider registry or the
-  explicit `--registry` value.
-- `deploy` applies the rendered kustomize tree after image tags are injected and
-  waits for the public service deployments to roll out.
-- `chaos` applies stopped Litmus engines, activates the selected suite, waits for
-  all `ChaosResult` verdicts to pass, stops engines on failure or timeout, and
-  verifies deployments recover.
+  explicit `--registry` value and records immutable digest references in
+  `ci-cd/out/image-digests.json`.
+- `deploy` accepts digest references only, applies the rendered kustomize tree,
+  waits for rollout, and requires an authenticated post-deploy trade smoke.
+  Smoke failure triggers `kubectl rollout undo` for every application
+  deployment and makes the job fail.
+- `chaos` requires an authenticated external trade probe before, continuously
+  during, and after disruption; applies Litmus engines with functional probes;
+  requires all `ChaosResult` verdicts to pass; verifies actual recovery; and
+  fails when service continuity is lost.

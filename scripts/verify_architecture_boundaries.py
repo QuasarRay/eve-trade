@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import ast
 import re
 import sys
 from pathlib import Path
@@ -94,18 +95,41 @@ def check_simulator_packet_test(errors: list[str]) -> None:
     if not test_path.exists():
         fail(errors, "simulator/trade_gui/tests.py is missing the outbound packet boundary test")
         return
-    text = read(test_path)
-    required = (
-        "test_button_press_sends_production_identical_signed_game_packet",
-        "CapturingSocket",
+    tree = ast.parse(read(test_path), filename=str(test_path))
+    test_name = "test_button_press_conforms_to_versioned_protocol_schema_and_golden_packet"
+    test = next(
+        (node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == test_name),
+        None,
+    )
+    if test is None:
+        fail(errors, f"simulator packet boundary test {test_name} is missing")
+        return
+    decorators = {ast.unparse(node) for node in test.decorator_list}
+    if any("skip" in decorator.lower() for decorator in decorators):
+        fail(errors, "simulator packet boundary test must not be skipped")
+    calls = [node for node in ast.walk(test) if isinstance(node, ast.Call)]
+    assert_calls = [
+        call for call in calls
+        if isinstance(call.func, ast.Attribute) and call.func.attr.startswith("assert")
+    ]
+    if len(assert_calls) < 8:
+        fail(errors, "simulator packet boundary test must contain executable protocol assertions")
+    test_source = ast.get_source_segment(read(test_path), test) or ""
+    for required in (
+        "Draft202012Validator(schema).validate(game_packet)",
+        "sell-order.packet.json",
         "trade_gui.udp_client.socket.socket",
         "FORBIDDEN_PACKET_TERMS",
-    )
-    for marker in required:
-        if marker not in text:
-            fail(errors, f"simulator packet test is missing marker {marker}")
+    ):
+        if required not in test_source:
+            fail(errors, f"simulator packet boundary test is missing executable contract {required}")
+    forbidden_values = {
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
     for term in SIMULATOR_FORBIDDEN_TERMS:
-        if f'"{term}"' not in text:
+        if term not in forbidden_values:
             fail(errors, f"simulator packet boundary test does not assert forbidden term {term}")
 
 
@@ -138,12 +162,45 @@ def check_docs(errors: list[str]) -> None:
 
 def check_kubernetes(errors: list[str]) -> None:
     prod_root = ROOT / "distributed-backend" / "orchestration" / "kubernetes" / "overlay" / "prod"
-    for path in iter_files(prod_root, "*.yaml") + iter_files(prod_root, "*.yml"):
+    for path in kustomize_resource_graph(prod_root):
         text = read(path)
         if "app.kubernetes.io/name: simulator" in text or "name: simulator" in text:
             fail(errors, f"{path.relative_to(ROOT)} includes simulator in production overlay")
         if "/eve.api_gateway.v1.GameTradeGatewayService/" in text:
             fail(errors, f"{path.relative_to(ROOT)} exposes removed API Gateway RPC route")
+
+
+def kustomize_resource_graph(root: Path) -> list[Path]:
+    pending = [root]
+    seen_directories: set[Path] = set()
+    resources: set[Path] = set()
+    while pending:
+        directory = pending.pop().resolve()
+        if directory in seen_directories:
+            continue
+        seen_directories.add(directory)
+        kustomization = next(
+            (candidate for candidate in (directory / "kustomization.yaml", directory / "kustomization.yml") if candidate.exists()),
+            None,
+        )
+        if kustomization is None:
+            continue
+        lines = read(kustomization).splitlines()
+        in_resources = False
+        for line in lines:
+            if line and not line.startswith((" ", "\t", "#")):
+                in_resources = line.rstrip() in {"resources:", "bases:", "components:"}
+                continue
+            match = re.match(r"^\s+-\s+([^#]+?)\s*$", line) if in_resources else None
+            if not match:
+                continue
+            target = (directory / match.group(1).strip()).resolve()
+            if target.is_dir():
+                pending.append(target)
+            elif target.suffix in {".yaml", ".yml"} and target.exists():
+                resources.add(target)
+        resources.add(kustomization.resolve())
+    return sorted(resources)
 
 
 def main() -> int:

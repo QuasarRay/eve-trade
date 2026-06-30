@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
+import json
 import os
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,16 +13,17 @@ from pathlib import Path
 import dagger
 
 
-GO_IMAGE = "golang:1.26-bookworm"
-RUST_IMAGE = "rust:1-bookworm"
-PYTHON_IMAGE = "python:3.13-slim-bookworm"
-DEBIAN_IMAGE = "debian:bookworm-slim"
-POSTGRES_IMAGE = "postgres:16"
-RABBITMQ_IMAGE = "rabbitmq:3.13.7-management"
+GO_IMAGE = "golang:1.26-bookworm@sha256:5f68ec6805843bd3981a951ffada82a26a0bd2631045c8f7dba483fa868f5ec5"
+RUST_IMAGE = "rust:1-bookworm@sha256:19817ead3289c8c631c73df281e18b59b172f6a31f4f563290f69cddd06c30e9"
+PYTHON_IMAGE = "python:3.13-slim@sha256:c33f0bc4364a6881bed1ec0cc2665e6c53c87a43e774aaeab88e6f17af105e4f"
+DEBIAN_IMAGE = "debian:bookworm-slim@sha256:96e378d7e6531ac9a15ad505478fcc2e69f371b10f5cdf87857c4b8188404716"
+POSTGRES_IMAGE = "postgres:16@sha256:081f1bc7bd5e143dbb6e487b710bbc27712cdcfaced4c071b8e47349aa1b4171"
+RABBITMQ_IMAGE = "rabbitmq:3.13.7-management@sha256:e582c0bc7766f3342496d8485efb5a1df782b5ce3886ad017e2eaae442311f69"
 KUSTOMIZE_IMAGE = "alpine/k8s:1.33.1"
 GITLEAKS_IMAGE = "zricethezav/gitleaks:v8.27.2"
 TRIVY_IMAGE = "aquasec/trivy:0.64.1"
-TERRAFORM_IMAGE = "hashicorp/terraform:1.10.5"
+TERRAFORM_IMAGE = "hashicorp/terraform:1.10.5@sha256:679ac5e095bf550bc726742cd12efa6050f0913080df479fdabfeb202953af28"
+KUBECONFORM_IMAGE = "ghcr.io/yannh/kubeconform:v0.6.7"
 
 BUF_VERSION = "1.70.0"
 PROTOC_GEN_GO_VERSION = "1.36.11"
@@ -349,48 +353,118 @@ fi
     async def go_checks(self) -> None:
         script = r"""
 set -euo pipefail
+GOBIN=/usr/local/bin go install honnef.co/go/tools/cmd/staticcheck@v0.7.0
+GOBIN=/usr/local/bin go install golang.org/x/vuln/cmd/govulncheck@v1.5.0
 unformatted="$(gofmt -l distributed-backend/src/api-gateway distributed-backend/src/market distributed-backend/src/messaging distributed-backend/src/settlement-worker distributed-backend/proto/gen)"
 if [ -n "$unformatted" ]; then
   echo "Go files need gofmt:"
   echo "$unformatted"
   exit 1
 fi
+vendor_snapshot() {
+  find vendor -type f -print0 | sort -z | xargs -0 sha256sum
+}
+vendor_before="$(vendor_snapshot)"
 for module in distributed-backend/proto distributed-backend/src/observability distributed-backend/src/messaging distributed-backend/src/market distributed-backend/src/settlement-worker distributed-backend/src/api-gateway; do
-  (cd "$module" && go test ./...)
+  (
+    cd "$module"
+    before="$(sha256sum go.mod go.sum 2>/dev/null || true)"
+    go mod tidy
+    after="$(sha256sum go.mod go.sum 2>/dev/null || true)"
+    if [ "$before" != "$after" ]; then
+      echo "$module module metadata changed after go mod tidy" >&2
+      exit 1
+    fi
+    go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
+    go vet ./...
+    go test -count=1 -race ./...
+    staticcheck ./...
+    govulncheck ./...
+    if [ "$module" = distributed-backend/src/api-gateway ]; then
+      go test -run '^$' -fuzz '^FuzzAuthenticatedPayload' -fuzztime 10s ./distributed-backend
+    fi
+    case "$module" in
+      distributed-backend/src/observability) minimum=40 ;;
+      distributed-backend/src/messaging) minimum=25 ;;
+      distributed-backend/src/market) minimum=30 ;;
+      distributed-backend/src/settlement-worker) minimum=35 ;;
+      distributed-backend/src/api-gateway) minimum=50 ;;
+      *) minimum=0 ;;
+    esac
+    if [ "$minimum" != 0 ]; then
+      total="$(go tool cover -func=coverage.out | awk '/^total:/ {gsub(/%/, "", $3); print $3}')"
+      awk -v actual="$total" -v minimum="$minimum" 'BEGIN { if (actual + 0 < minimum + 0) { printf "coverage %.1f%% is below %.1f%%\n", actual, minimum; exit 1 } }'
+    fi
+  )
 done
+go work vendor
+vendor_after="$(vendor_snapshot)"
+if [ "$vendor_before" != "$vendor_after" ]; then
+  echo "workspace vendor directory is stale; run go work vendor" >&2
+  exit 1
+fi
 """
+        rabbitmq = (
+            self.client.container()
+            .from_(RABBITMQ_IMAGE)
+            .with_env_variable("RABBITMQ_DEFAULT_USER", "eve_trade")
+            .with_env_variable("RABBITMQ_DEFAULT_PASS", "eve_trade")
+            .with_exposed_port(5672)
+            .as_service()
+        )
         await self.run_container(
-            "Go format and tests",
-            self.go_base().with_exec(["bash", "-lc", script]),
+            "Go format, metadata, coverage, vet, race, static analysis, vulnerability, and live broker tests",
+            self.go_base()
+            .with_service_binding("rabbitmq", rabbitmq)
+            .with_env_variable(
+                "RABBITMQ_TEST_URL", "amqp://eve_trade:eve_trade@rabbitmq:5672/"
+            )
+            .with_env_variable("EVE_TRADE_REQUIRE_LIVE_TESTS", "true")
+            .with_exec(["bash", "-lc", script]),
         )
 
     async def rust_checks(self) -> None:
+        script = r"""
+set -euo pipefail
+rustup component add llvm-tools-preview
+cargo install cargo-llvm-cov --version 0.8.4 --locked
+cargo install cargo-audit --version 0.22.2 --locked
+cargo fmt --all -- --check
+cargo check --locked --all-targets --all-features
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked --all-features
+cargo llvm-cov --locked --all-features --fail-under-lines 20
+if cargo tree -i rsa --locked | grep -q '^rsa '; then
+  echo "ignored RUSTSEC-2023-0071 is reachable in the active PostgreSQL feature graph" >&2
+  exit 1
+fi
+cargo audit --ignore RUSTSEC-2023-0071
+"""
         await self.run_container(
-            "Rust fmt, clippy, and tests",
-            self.rust_base().with_exec(
-                [
-                    "bash",
-                    "-lc",
-                    "cargo fmt -- --check && "
-                    "cargo clippy --locked --all-targets -- -D warnings && "
-                    "cargo test --locked",
-                ]
-            ),
+            "Rust format, build, clippy, tests, coverage, and dependency audit",
+            self.rust_base().with_exec(["bash", "-lc", script]),
         )
 
     async def python_static_tests(self) -> None:
+        script = r"""
+set -euo pipefail
+python -m pip install -r simulator/requirements-test.txt -r observability/requirements-test.txt
+python -m compileall simulator/eve_trade_simulator simulator/trade_gui distributed-backend/tests/e2e observability
+(
+  cd simulator
+  python -m coverage run --rcfile=.coveragerc manage.py test trade_gui
+  python -m coverage report --rcfile=.coveragerc --fail-under=80
+)
+python -m coverage erase
+python -m coverage run --rcfile=observability/.coveragerc -m unittest discover -s observability/tests -v
+python -m coverage report --rcfile=observability/.coveragerc --fail-under=35
+python -m pip_audit -r simulator/requirements.txt
+python -m pip_audit -r observability/requirements.txt
+python -m pip_audit -r distributed-backend/tests/e2e/requirements.txt
+"""
         await self.run_container(
-            "Python e2e collection tests",
-            self.python_e2e_base().with_exec(
-                [
-                    "python",
-                    "-m",
-                    "pytest",
-                    "distributed-backend/tests/e2e",
-                    "--collect-only",
-                    "-q",
-                ]
-            ),
+            "Python simulator and observability tests with coverage and audits",
+            self.python_e2e_base().with_exec(["bash", "-lc", script]),
         )
 
     async def security_scan(self) -> None:
@@ -398,9 +472,13 @@ done
             self.client.container()
             .from_(GITLEAKS_IMAGE)
             .with_directory("/workspace", self.source)
+            .with_directory(
+                "/workspace/.git",
+                self.client.host().directory(".git", gitignore=False),
+            )
             .with_workdir("/workspace")
             .with_exec(
-                ["detect", "--source", "/workspace", "--no-git", "--redact"],
+                ["detect", "--source", "/workspace", "--redact"],
                 use_entrypoint=True,
             )
         )
@@ -416,7 +494,6 @@ done
                     "1",
                     "--severity",
                     "HIGH,CRITICAL",
-                    "--ignore-unfixed",
                     "--skip-dirs",
                     "target",
                     "--skip-dirs",
@@ -428,9 +505,46 @@ done
         )
         await self.run_container("secret scan", gitleaks)
         await self.run_container("dependency and filesystem vulnerability scan", trivy)
+        for name in SERVICE_IMAGE_NAMES:
+            image_tar = self.service_image(name).as_tarball()
+            scanner = (
+                self.client.container()
+                .from_(TRIVY_IMAGE)
+                .with_file("/tmp/image.tar", image_tar)
+            )
+            await self.run_container(
+                f"final image vulnerability scan {name}",
+                scanner.with_exec(
+                    [
+                        "image",
+                        "--input",
+                        "/tmp/image.tar",
+                        "--exit-code",
+                        "1",
+                        "--severity",
+                        "HIGH,CRITICAL",
+                    ],
+                    use_entrypoint=True,
+                ),
+            )
+            sbom = scanner.with_exec(
+                [
+                    "image",
+                    "--input",
+                    "/tmp/image.tar",
+                    "--format",
+                    "cyclonedx",
+                    "--output",
+                    f"/tmp/{name}.cdx.json",
+                ],
+                use_entrypoint=True,
+            ).file(f"/tmp/{name}.cdx.json")
+            output = f"ci-cd/out/sbom/{name}.cdx.json"
+            Path(output).parent.mkdir(parents=True, exist_ok=True)
+            await sbom.export(output, allow_parent_dir_path=True)
 
     def go_runtime_image(self, spec: GoService) -> dagger.Container:
-        build_command = ["go", "build"]
+        build_command = ["go", "build", "-mod=vendor"]
         if spec.build_tags:
             build_command.extend(["-tags", spec.build_tags])
         build_command.extend(
@@ -532,6 +646,7 @@ done
         registry_host, username, password = registry_auth(provider, registry)
         password_secret = self.client.set_secret("ci-registry-password", password)
 
+        published: dict[str, str] = {}
         for name in SERVICE_IMAGE_NAMES:
             reference = f"{registry}/{name}:{tag}"
             container = self.service_image(name).with_registry_auth(
@@ -540,7 +655,11 @@ done
                 password_secret,
             )
             digest = await container.publish(reference)
+            published[name] = digest
             print(f"published {name}: {digest}", flush=True)
+        output = Path("ci-cd/out/image-digests.json")
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(published, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     def terraform_base(self) -> dagger.Container:
         return (
@@ -566,16 +685,50 @@ done
             root = TERRAFORM_ROOTS[provider]
             script = (
                 f"terraform -chdir={root} init -backend=false && "
-                f"terraform -chdir={root} validate"
+                f"terraform -chdir={root} validate && "
+                f"terraform -chdir={root} test"
             )
             await self.run_container(
-                f"Terraform validate {provider}",
+                f"Terraform validate and representative mocked plan {provider}",
                 self.terraform_base().with_exec(["sh", "-c", script]),
             )
 
-    def kubernetes_render_file(self, registry: str, tag: str) -> dagger.File:
+    def published_image_references(self, required: bool) -> dict[str, str]:
+        inline = env("IMAGE_DIGESTS_JSON")
+        digest_file = Path("ci-cd/out/image-digests.json")
+        if inline:
+            references = json.loads(inline)
+        elif digest_file.exists():
+            references = json.loads(digest_file.read_text(encoding="utf-8"))
+        elif required:
+            raise RuntimeError(
+                "published image digests are required; run publish first or set IMAGE_DIGESTS_JSON"
+            )
+        else:
+            references = {
+                name: f"registry.local/eve-trade/{name}@sha256:{hashlib.sha256(name.encode()).hexdigest()}"
+                for name in SERVICE_IMAGE_NAMES
+            }
+        missing = set(SERVICE_IMAGE_NAMES) - set(references)
+        invalid = {
+            name: reference
+            for name, reference in references.items()
+            if name in SERVICE_IMAGE_NAMES
+            and not re.fullmatch(r"[^\s]+@sha256:[0-9a-f]{64}", str(reference))
+        }
+        if missing or invalid:
+            raise RuntimeError(
+                f"image digest manifest is incomplete or mutable: missing={sorted(missing)} invalid={invalid}"
+            )
+        return {name: str(references[name]) for name in SERVICE_IMAGE_NAMES}
+
+    def kubernetes_render_file(
+        self, registry: str, tag: str, require_published_digests: bool = False
+    ) -> dagger.File:
+        del registry, tag
+        references = self.published_image_references(require_published_digests)
         image_commands = " && ".join(
-            f"kustomize edit set image eve-trade/{name}={registry}/{name}:{tag}"
+            f"kustomize edit set image eve-trade/{name}={references[name]}"
             for name in SERVICE_IMAGE_NAMES
         )
         script = f"""
@@ -604,7 +757,28 @@ kustomize build . > /out/kubernetes.yaml
 
     async def validate_kubernetes_render(self) -> None:
         rendered = self.kubernetes_render_file("registry.local/eve-trade", "ci")
-        await rendered.contents()
+        await self.validate_kubernetes_schema("production Kubernetes render", rendered)
+
+    async def validate_kubernetes_schema(
+        self, title: str, rendered: dagger.File
+    ) -> None:
+        await self.run_container(
+            title,
+            self.client.container()
+            .from_(KUBECONFORM_IMAGE)
+            .with_file("/tmp/manifest.yaml", rendered)
+            .with_exec(
+                [
+                    "-strict",
+                    "-schema-location",
+                    "default",
+                    "-schema-location",
+                    "https://raw.githubusercontent.com/datreeio/CRDs-catalog/ae1ca1acca30963fa0141abfcbc47ceadbf345c8/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json",
+                    "/tmp/manifest.yaml",
+                ],
+                use_entrypoint=True,
+            ),
+        )
 
     def chaos_render_file(self) -> dagger.File:
         script = r"""
@@ -632,15 +806,25 @@ kustomize build . > /out/chaos-litmus.yaml
 
     async def validate_chaos_render(self) -> None:
         rendered = self.chaos_render_file()
-        await rendered.contents()
+        await self.validate_kubernetes_schema("Litmus chaos schema validation", rendered)
 
     async def deploy(self, registry: str, tag: str) -> None:
         kubeconfig = env("KUBE_CONFIG_B64")
         if not kubeconfig:
             raise RuntimeError("KUBE_CONFIG_B64 is required for deploy")
+        smoke_url = env("POST_DEPLOY_SMOKE_URL")
+        if not smoke_url:
+            raise RuntimeError(
+                "POST_DEPLOY_SMOKE_URL is required for authenticated post-deploy verification"
+            )
         kubeconfig_secret = self.client.set_secret("kubeconfig-b64", kubeconfig)
+        smoke_token_secret = self.client.set_secret(
+            "post-deploy-smoke-token", env("POST_DEPLOY_SMOKE_BEARER_TOKEN")
+        )
+        del registry, tag
+        references = self.published_image_references(required=True)
         image_commands = " && ".join(
-            f"kustomize edit set image eve-trade/{name}={registry}/{name}:{tag}"
+            f"kustomize edit set image eve-trade/{name}={references[name]}"
             for name in SERVICE_IMAGE_NAMES
         )
         deployments = deployment_names_shell()
@@ -665,6 +849,23 @@ done
 for deploy in {deployments}; do
   $KUBECTL -n {KUBERNETES_NAMESPACE} rollout status "deployment/$deploy" --timeout=240s
 done
+
+smoke_failed=false
+for attempt in 1 2 3; do
+  response="$(wget -q -T 15 -O - --header="Authorization: Bearer $POST_DEPLOY_SMOKE_BEARER_TOKEN" "$POST_DEPLOY_SMOKE_URL")" || smoke_failed=true
+  echo "$response" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"accepted"' || smoke_failed=true
+  [ "$smoke_failed" = false ] || break
+done
+if [ "$smoke_failed" = true ]; then
+  echo "Post-deploy authenticated trade smoke failed; rolling deployments back" >&2
+  for deploy in {deployments}; do
+    $KUBECTL -n {KUBERNETES_NAMESPACE} rollout undo "deployment/$deploy" || true
+  done
+  for deploy in {deployments}; do
+    $KUBECTL -n {KUBERNETES_NAMESPACE} rollout status "deployment/$deploy" --timeout=240s || true
+  done
+  exit 1
+fi
 """
         container = (
             self.client.container()
@@ -672,6 +873,10 @@ done
             .with_directory("/workspace", self.source)
             .with_workdir("/workspace")
             .with_secret_variable("KUBE_CONFIG_B64", kubeconfig_secret)
+            .with_secret_variable(
+                "POST_DEPLOY_SMOKE_BEARER_TOKEN", smoke_token_secret
+            )
+            .with_env_variable("POST_DEPLOY_SMOKE_URL", smoke_url)
         )
         await self.run_container(
             "deploy Kubernetes manifests",
@@ -690,8 +895,16 @@ done
             raise RuntimeError("KUBE_CONFIG_B64 is required for chaos")
         if timeout_seconds < 300:
             raise ValueError("chaos timeout must be at least 300 seconds")
+        probe_url = env("CHAOS_PROBE_URL")
+        if not probe_url:
+            raise RuntimeError(
+                "CHAOS_PROBE_URL is required to verify authenticated trade continuity"
+            )
 
         kubeconfig_secret = self.client.set_secret("kubeconfig-b64", kubeconfig)
+        probe_token_secret = self.client.set_secret(
+            "chaos-probe-token", env("CHAOS_PROBE_BEARER_TOKEN")
+        )
         cleanup_value = "true" if cleanup else "false"
         script = r"""
 set -eu
@@ -700,6 +913,14 @@ KUBECONFIG_PATH=/tmp/kubeconfig
 printf '%s' "$KUBE_CONFIG_B64" | base64 -d > "$KUBECONFIG_PATH"
 chmod 600 "$KUBECONFIG_PATH"
 KUBECTL="kubectl --kubeconfig $KUBECONFIG_PATH"
+
+probe_service() {
+  response="$(wget -q -T 15 -O - --header="Authorization: Bearer $CHAOS_PROBE_BEARER_TOKEN" "$CHAOS_PROBE_URL")" || return 1
+  echo "$response" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"accepted"'
+}
+
+echo "Checking authenticated trade smoke before chaos"
+probe_service
 
 rm -rf /tmp/kubernetes
 cp -R distributed-backend/orchestration/kubernetes /tmp/kubernetes
@@ -763,7 +984,26 @@ print_results() {
   done < /tmp/chaos-results
 }
 
-trap 'echo "Chaos run interrupted; stopping engines"; stop_engines' INT TERM
+probe_pid=""
+stop_probe() {
+  if [ -n "$probe_pid" ]; then
+    kill "$probe_pid" >/dev/null 2>&1 || true
+    wait "$probe_pid" 2>/dev/null || true
+    probe_pid=""
+  fi
+}
+trap 'echo "Chaos run interrupted; stopping probes and engines"; stop_probe; stop_engines' INT TERM
+
+: > /tmp/chaos-probe-failures
+(
+  while :; do
+    if ! probe_service; then
+      date -u +%Y-%m-%dT%H:%M:%SZ >> /tmp/chaos-probe-failures
+    fi
+    sleep 2
+  done
+) &
+probe_pid=$!
 
 echo "Activating selected ChaosEngines"
 for engine in $engines; do
@@ -815,11 +1055,19 @@ while :; do
 done
 
 echo "Litmus chaos verdicts passed; stopping engines and checking recovery"
+stop_probe
 stop_engines
 for deploy in $DEPLOYMENT_NAMES; do
   $KUBECTL -n "$CHAOS_NAMESPACE" rollout status "deployment/$deploy" --timeout=240s
 done
 print_results
+if [ -s /tmp/chaos-probe-failures ]; then
+  echo "Authenticated trade smoke failed during chaos at:" >&2
+  cat /tmp/chaos-probe-failures >&2
+  exit 1
+fi
+echo "Checking authenticated trade smoke after chaos"
+probe_service
 
 if [ "$CHAOS_CLEANUP" = "true" ]; then
   echo "Cleaning up selected Litmus chaos resources"
@@ -836,6 +1084,8 @@ fi
             .with_directory("/workspace", self.source)
             .with_workdir("/workspace")
             .with_secret_variable("KUBE_CONFIG_B64", kubeconfig_secret)
+            .with_secret_variable("CHAOS_PROBE_BEARER_TOKEN", probe_token_secret)
+            .with_env_variable("CHAOS_PROBE_URL", probe_url)
             .with_env_variable("CHAOS_NAMESPACE", namespace)
             .with_env_variable("CHAOS_SELECTOR", selector)
             .with_env_variable("CHAOS_TIMEOUT_SECONDS", str(timeout_seconds))
@@ -860,8 +1110,8 @@ set -euo pipefail
 until pg_isready -h postgres -U postgres -d eve_trade_e2e; do sleep 1; done
 psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
   -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
-psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
-  -f distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql
+DATABASE_URL=postgres://postgres:postgres@postgres:5432/eve_trade_e2e \
+  bash distributed-backend/tests/migrations/verify_upgrade.sh
 """
         migrator = (
             self.client.container()
@@ -909,7 +1159,7 @@ psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
             .with_env_variable("SUMMER_ENV", "prod")
             .with_env_variable(
                 "DATABASE_URL",
-                "postgres://postgres:postgres@postgres:5432/eve_trade_e2e",
+                "postgres://eve_trade_runtime:runtime-password@postgres:5432/eve_trade_e2e",
             )
             .as_service()
         )
@@ -934,7 +1184,7 @@ psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
             .with_env_variable("RABBITMQ_URL", "amqp://eve_trade:eve_trade@rabbitmq:5672/")
             .with_env_variable(
                 "DATABASE_URL",
-                "postgres://postgres:postgres@postgres:5432/eve_trade_e2e",
+                "postgres://eve_trade_runtime:runtime-password@postgres:5432/eve_trade_e2e",
             )
             .as_service()
         )
@@ -942,7 +1192,61 @@ psql -h postgres -U postgres -d eve_trade_e2e -v ON_ERROR_STOP=1 \
             self.go_runtime_image(GO_SERVICES["api-gateway"])
             .with_service_binding("market", market)
             .with_env_variable("API_GATEWAY_HTTP_ADDR", ":8080")
+            .with_env_variable("API_GATEWAY_QUILKIN_UDP_ADDR", ":26000")
+            .with_env_variable("API_GATEWAY_QUILKIN_UDP_ENABLED", "true")
+            .with_env_variable("API_GATEWAY_QUILKIN_WORKERS", "4")
+            .with_env_variable("API_GATEWAY_QUILKIN_QUEUE_DEPTH", "64")
+            .with_env_variable("API_GATEWAY_UDP_AUTH_REQUIRED", "true")
+            .with_env_variable(
+                "API_GATEWAY_UDP_HMAC_SECRET", "local-game-edge-secret"
+            )
+            .with_env_variable("API_GATEWAY_UDP_HMAC_KEY_ID", "primary")
+            .with_env_variable(
+                "API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON",
+                '{"seller":{"capsuleer_id":1001,"secret":"seller-player-secret"},'
+                '"buyer":{"capsuleer_id":2002,"secret":"buyer-player-secret"},'
+                '"other":{"capsuleer_id":3003,"secret":"other-player-secret"}}',
+            )
             .with_env_variable("MARKET_URL", "http://market:8081")
+            .with_exposed_port(26000, protocol=dagger.NetworkProtocol.UDP)
+            .as_service()
+        )
+
+        quilkin_command = r"""
+endpoint="$(getent hosts api-gateway | awk '{print $1; exit}')":26000
+exec /usr/local/bin/quilkin \
+  --service.udp \
+  --service.udp.port 26001 \
+  --provider.static.endpoints "$endpoint" \
+  --admin.enabled=false \
+  --log-format json
+"""
+        quilkin = (
+            self.source.docker_build(
+                dockerfile="distributed-backend/docker/quilkin.Dockerfile"
+            )
+            .with_service_binding("api-gateway", gateway)
+            .with_entrypoint(["/bin/sh", "-ec"])
+            .with_default_args([quilkin_command])
+            .as_service()
+        )
+        simulator = (
+            self.source.docker_build(dockerfile="simulator/Dockerfile")
+            .with_service_binding("quilkin", quilkin)
+            .with_env_variable("QUILKIN_UDP_HOST", "quilkin")
+            .with_env_variable("QUILKIN_UDP_PORT", "26001")
+            .with_env_variable("QUILKIN_UDP_TIMEOUT_SECONDS", "6")
+            .with_env_variable("QUILKIN_UDP_MAX_ATTEMPTS", "3")
+            .with_env_variable("QUILKIN_UDP_RETRY_BACKOFF_SECONDS", "0.1")
+            .with_env_variable("GAME_PACKET_HMAC_SECRET", "local-game-edge-secret")
+            .with_env_variable("GAME_PACKET_HMAC_KEY_ID", "primary")
+            .with_env_variable(
+                "GAME_PACKET_PRINCIPAL_KEYS_JSON",
+                '{"1001":{"key_id":"seller","secret":"seller-player-secret"},'
+                '"2002":{"key_id":"buyer","secret":"buyer-player-secret"},'
+                '"3003":{"key_id":"other","secret":"other-player-secret"}}',
+            )
+            .with_env_variable("SIMULATOR_ALLOWED_HOSTS", "*")
             .as_service()
         )
 
@@ -959,6 +1263,7 @@ targets = [
     ("settlement-worker", 8082),
     ("market", 8081),
     ("api-gateway", 8080),
+    ("simulator", 8000),
 ]
 deadline = time.time() + 90
 for host, port in targets:
@@ -988,6 +1293,7 @@ if re.search(r"(?m)^[0-9]+ skipped in ", result.stdout):
     raise SystemExit(1)
 raise SystemExit(result.returncode)
 PY
+python -m pytest distributed-backend/tests/e2e -q --count=3 -k 'concurrent or authenticated_udp_issue_burst'
 """
         tests = (
             self.python_e2e_base()
@@ -997,14 +1303,31 @@ PY
             .with_service_binding("settlement-worker", settlement_worker)
             .with_service_binding("market", market)
             .with_service_binding("api-gateway", gateway)
+            .with_service_binding("quilkin", quilkin)
+            .with_service_binding("simulator", simulator)
             .with_env_variable(
                 "EVE_TRADE_DATABASE_URL",
                 "postgres://postgres:postgres@postgres:5432/eve_trade_e2e",
+            )
+            .with_env_variable(
+                "EVE_TRADE_RUNTIME_DATABASE_URL",
+                "postgres://eve_trade_runtime:runtime-password@postgres:5432/eve_trade_e2e",
             )
             .with_env_variable("EVE_TRADE_SETTLEMENT_GRPC", "trade-settlement:9092")
             .with_env_variable("EVE_TRADE_MARKET_GRPC", "market:8081")
             .with_env_variable("EVE_TRADE_GATEWAY_GRPC", "api-gateway:8080")
             .with_env_variable("EVE_TRADE_API_GATEWAY_URL", "http://api-gateway:8080")
+            .with_env_variable("EVE_TRADE_SIMULATOR_URL", "http://simulator:8000")
+            .with_env_variable("EVE_TRADE_QUILKIN_UDP_HOST", "quilkin")
+            .with_env_variable("EVE_TRADE_QUILKIN_UDP_PORT", "26001")
+            .with_env_variable("EVE_TRADE_EDGE_RESPONSE_SECRET", "local-game-edge-secret")
+            .with_env_variable("EVE_TRADE_EDGE_RESPONSE_KEY_ID", "primary")
+            .with_env_variable("EVE_TRADE_EDGE_BUYER_KEY_ID", "buyer")
+            .with_env_variable("EVE_TRADE_EDGE_BUYER_SECRET", "buyer-player-secret")
+            .with_env_variable("EVE_TRADE_EDGE_SELLER_KEY_ID", "seller")
+            .with_env_variable("EVE_TRADE_EDGE_SELLER_SECRET", "seller-player-secret")
+            .with_env_variable("EVE_TRADE_LOAD_REQUESTS", "20")
+            .with_env_variable("EVE_TRADE_LOAD_P95_SECONDS", "5")
             .with_env_variable("EVE_TRADE_E2E_PRODUCTION_GATE", "true")
             .with_env_variable(
                 "EVE_TRADE_E2E_ARTIFACT_DIR",

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"auth\":{\"algorithmy_capsuleer_id\":1001,\"quantity\":1}},\"schema_version\":\"eve-trade-edge.v1\"e")

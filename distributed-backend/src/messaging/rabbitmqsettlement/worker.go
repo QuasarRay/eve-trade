@@ -17,9 +17,6 @@ import (
 
 type SettlementExecutor interface {
 	ExecuteSettlementBatch(context.Context, *tradesettlementv1.ExecuteSettlementBatchRequest) (*tradesettlementv1.ExecuteSettlementBatchResponse, error)
-}
-
-type readinessChecker interface {
 	Ping(context.Context) error
 }
 
@@ -151,10 +148,6 @@ func runSettlementWorkerSession(ctx context.Context, config Config, executor Set
 }
 
 func waitForExecutorReady(ctx context.Context, executor SettlementExecutor, timeout time.Duration, retryInterval time.Duration) error {
-	checker, ok := executor.(readinessChecker)
-	if !ok {
-		return nil
-	}
 	if timeout <= 0 {
 		timeout = DefaultRequestTimeout
 	}
@@ -167,7 +160,7 @@ func waitForExecutorReady(ctx context.Context, executor SettlementExecutor, time
 
 	var lastErr error
 	for {
-		if err := checker.Ping(readyCtx); err == nil {
+		if err := executor.Ping(readyCtx); err == nil {
 			return nil
 		} else {
 			lastErr = err

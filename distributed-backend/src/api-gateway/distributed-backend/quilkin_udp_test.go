@@ -7,9 +7,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -46,6 +50,26 @@ func (c *recordingMarketClient) count() int {
 type transientMarketClient struct {
 	mu    sync.Mutex
 	calls int
+}
+
+type blockingMarketClient struct {
+	started chan struct{}
+	release chan struct{}
+	calls   atomic.Int32
+}
+
+func (c *blockingMarketClient) SubmitTradeGuiInteraction(ctx context.Context, _ *marketv1.SubmitTradeGuiInteractionRequest) (*marketv1.SubmitTradeGuiInteractionResponse, error) {
+	c.calls.Add(1)
+	select {
+	case c.started <- struct{}{}:
+	default:
+	}
+	select {
+	case <-c.release:
+		return &marketv1.SubmitTradeGuiInteractionResponse{InteractionId: "interaction-1", Status: "accepted"}, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }
 
 func (c *transientMarketClient) SubmitTradeGuiInteraction(_ context.Context, _ *marketv1.SubmitTradeGuiInteractionRequest) (*marketv1.SubmitTradeGuiInteractionResponse, error) {
@@ -111,11 +135,46 @@ func (c *capturePacketConn) lastJSON(t *testing.T) map[string]any {
 	if len(c.writes) == 0 {
 		t.Fatalf("no UDP response was written")
 	}
-	var body map[string]any
-	if err := json.Unmarshal(c.writes[len(c.writes)-1], &body); err != nil {
+	responseBytes := c.writes[len(c.writes)-1]
+	var envelope edgeEnvelope
+	if err := json.Unmarshal(responseBytes, &envelope); err != nil {
 		t.Fatalf("decode UDP response: %v", err)
 	}
+	if envelope.SchemaVersion == edgeResponseEnvelopeSchema {
+		if envelope.Auth == nil {
+			t.Fatal("signed UDP response has no auth block")
+		}
+		canonical, err := canonicalJSON(envelope.Payload)
+		if err != nil {
+			t.Fatalf("canonicalize UDP response: %v", err)
+		}
+		mac := hmac.New(sha256.New, []byte("edge-secret"))
+		_, _ = mac.Write(canonical)
+		want := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+		if envelope.Auth.Signature != want {
+			t.Fatalf("UDP response signature = %q, want %q", envelope.Auth.Signature, want)
+		}
+		responseBytes = envelope.Payload
+	}
+	var body map[string]any
+	if err := json.Unmarshal(responseBytes, &body); err != nil {
+		t.Fatalf("decode UDP response payload: %v", err)
+	}
 	return body
+}
+
+func (c *capturePacketConn) lastEnvelope(t *testing.T) edgeEnvelope {
+	t.Helper()
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if len(c.writes) == 0 {
+		t.Fatal("no UDP response was written")
+	}
+	var envelope edgeEnvelope
+	if err := json.Unmarshal(c.writes[len(c.writes)-1], &envelope); err != nil {
+		t.Fatalf("decode UDP response envelope: %v", err)
+	}
+	return envelope
 }
 
 func TestQuilkinUDPServerForwardsOnlyRawPayloadToMarket(t *testing.T) {
@@ -123,7 +182,7 @@ func TestQuilkinUDPServerForwardsOnlyRawPayloadToMarket(t *testing.T) {
 	server := testUDPServer(market)
 	conn := &capturePacketConn{}
 	remote := &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}
-	rawPayload := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"interaction-1","ui":{"window":"regional_market","action":"market_place_sell_order"},"input":{"idempotency_key":"issue-1"}}`)
+	rawPayload := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"interaction-1","ui":{"window":"regional_market","action":"market_place_sell_order"},"input":{"idempotency_key":"issue-1","issued_by_capsuleer_id":1001}}`)
 
 	server.handlePacket(context.Background(), conn, remote, signedUDPPacket(t, rawPayload, "edge-secret", "primary"))
 
@@ -137,6 +196,185 @@ func TestQuilkinUDPServerForwardsOnlyRawPayloadToMarket(t *testing.T) {
 	if response["status"] != "accepted" {
 		t.Fatalf("response status = %v, want accepted", response["status"])
 	}
+	envelope := conn.lastEnvelope(t)
+	if envelope.SchemaVersion != edgeResponseEnvelopeSchema || envelope.Auth == nil {
+		t.Fatalf("response was not authenticated: %+v", envelope)
+	}
+}
+
+func TestQuilkinUDPServerAcceptsVersionedProtocolGoldenPacket(t *testing.T) {
+	rawPayload, err := os.ReadFile(filepath.Join("..", "..", "..", "protocol", "fixtures", "sell-order.packet.json"))
+	if err != nil {
+		t.Fatalf("read protocol golden packet: %v", err)
+	}
+	canonical, err := canonicalJSON(rawPayload)
+	if err != nil {
+		t.Fatalf("canonicalize golden packet: %v", err)
+	}
+	market := &recordingMarketClient{}
+	server := testUDPServer(market)
+	conn := &capturePacketConn{}
+
+	server.handlePacket(context.Background(), conn, &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}, signedUDPPacket(t, canonical, "edge-secret", "primary"))
+
+	if market.count() != 1 || conn.lastJSON(t)["status"] != "accepted" {
+		t.Fatalf("golden packet was not accepted; market calls=%d response=%v", market.count(), conn.lastJSON(t))
+	}
+}
+
+func TestQuilkinUDPServerListenAndServeProcessesRealSocketAndShutsDown(t *testing.T) {
+	listener, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen UDP: %v", err)
+	}
+	market := &recordingMarketClient{}
+	server := testUDPServer(market)
+	server.listenFunc = func(network string, address string) (net.PacketConn, error) {
+		if network != "udp" {
+			t.Fatalf("listen network = %q, want udp", network)
+		}
+		return listener, nil
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- server.ListenAndServe(ctx) }()
+
+	client, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		cancel()
+		t.Fatalf("listen client UDP: %v", err)
+	}
+	defer client.Close()
+	packet := signedUDPPacket(t, authenticatedTestPayload("socket-1", 1), "edge-secret", "primary")
+	if _, err := client.WriteTo(packet, listener.LocalAddr()); err != nil {
+		cancel()
+		t.Fatalf("write UDP packet: %v", err)
+	}
+	response := readSignedUDPResponse(t, client)
+	if response["status"] != "accepted" || market.count() != 1 {
+		t.Fatalf("socket response = %v; market calls = %d", response, market.count())
+	}
+
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("ListenAndServe returned error during shutdown: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("ListenAndServe did not shut down after context cancellation")
+	}
+}
+
+func TestQuilkinUDPServerListenAndServeRejectsOversizedDatagram(t *testing.T) {
+	listener, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen UDP: %v", err)
+	}
+	server := testUDPServer(&recordingMarketClient{})
+	server.maxPacket = 32
+	server.listenFunc = func(string, string) (net.PacketConn, error) { return listener, nil }
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- server.ListenAndServe(ctx) }()
+	client, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		cancel()
+		t.Fatalf("listen client UDP: %v", err)
+	}
+	defer client.Close()
+	if _, err := client.WriteTo(make([]byte, 33), listener.LocalAddr()); err != nil {
+		cancel()
+		t.Fatalf("write oversized packet: %v", err)
+	}
+	if response := readSignedUDPResponse(t, client); response["code"] != "packet_too_large" {
+		t.Fatalf("oversized response = %v", response)
+	}
+	cancel()
+	if err := <-done; err != nil {
+		t.Fatalf("ListenAndServe returned error during shutdown: %v", err)
+	}
+}
+
+func TestQuilkinUDPServerListenAndServeRejectsQueueOverflow(t *testing.T) {
+	listener, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	market := &blockingMarketClient{started: make(chan struct{}, 1), release: make(chan struct{})}
+	server := testUDPServer(market)
+	server.queueDepth = 1
+	server.workers = 1
+	server.listenFunc = func(string, string) (net.PacketConn, error) { return listener, nil }
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- server.ListenAndServe(ctx) }()
+	client, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		cancel()
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	write := func(id string) {
+		t.Helper()
+		packet := signedUDPPacket(t, authenticatedTestPayload(id, 1), "edge-secret", "primary")
+		if _, err := client.WriteTo(packet, listener.LocalAddr()); err != nil {
+			t.Fatalf("write %s: %v", id, err)
+		}
+	}
+	write("queue-1")
+	select {
+	case <-market.started:
+	case <-time.After(time.Second):
+		t.Fatal("first queued packet did not reach worker")
+	}
+	write("queue-2")
+	write("queue-3")
+	if response := readSignedUDPResponse(t, client); response["code"] != "queue_full" {
+		t.Fatalf("overflow response = %v", response)
+	}
+	close(market.release)
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("server shutdown: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("server did not drain queued work during shutdown")
+	}
+}
+
+func readSignedUDPResponse(t *testing.T, conn net.PacketConn) map[string]any {
+	t.Helper()
+	if err := conn.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
+		t.Fatalf("set UDP deadline: %v", err)
+	}
+	buffer := make([]byte, 65535)
+	n, _, err := conn.ReadFrom(buffer)
+	if err != nil {
+		t.Fatalf("read UDP response: %v", err)
+	}
+	var envelope edgeEnvelope
+	if err := json.Unmarshal(buffer[:n], &envelope); err != nil {
+		t.Fatalf("decode response envelope: %v", err)
+	}
+	canonical, err := canonicalJSON(envelope.Payload)
+	if err != nil {
+		t.Fatalf("canonicalize response: %v", err)
+	}
+	mac := hmac.New(sha256.New, []byte("edge-secret"))
+	_, _ = mac.Write(canonical)
+	want := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	if envelope.Auth == nil || envelope.Auth.Signature != want {
+		t.Fatalf("response is not correctly signed: %+v", envelope.Auth)
+	}
+	var response map[string]any
+	if err := json.Unmarshal(envelope.Payload, &response); err != nil {
+		t.Fatalf("decode response payload: %v", err)
+	}
+	return response
 }
 
 func TestQuilkinUDPServerRejectsMissingSignature(t *testing.T) {
@@ -166,7 +404,7 @@ func TestQuilkinUDPServerRejectsInvalidSignature(t *testing.T) {
 	market := &recordingMarketClient{}
 	server := testUDPServer(market)
 	conn := &capturePacketConn{}
-	rawPayload := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"interaction-1"}`)
+	rawPayload := authenticatedTestPayload("interaction-1", 1)
 	packet := signedUDPPacket(t, rawPayload, "wrong-secret", "primary")
 
 	server.handlePacket(context.Background(), conn, &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}, packet)
@@ -179,12 +417,31 @@ func TestQuilkinUDPServerRejectsInvalidSignature(t *testing.T) {
 	}
 }
 
+func TestQuilkinUDPServerRejectsActorClaimThatDoesNotMatchAuthenticatedPrincipal(t *testing.T) {
+	market := &recordingMarketClient{}
+	server := testUDPServer(market)
+	server.principals = map[string]UDPPrincipalCredential{
+		"attacker": {CapsuleerID: 2002, Secret: "attacker-secret"},
+	}
+	conn := &capturePacketConn{}
+	packet := signedUDPPacket(t, authenticatedTestPayload("impersonation-1", 1), "attacker-secret", "attacker")
+
+	server.handlePacket(context.Background(), conn, &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}, packet)
+
+	if market.count() != 0 {
+		t.Fatalf("market calls = %d, want 0", market.count())
+	}
+	if code := conn.lastJSON(t)["code"]; code != "principal_mismatch" {
+		t.Fatalf("error code = %v, want principal_mismatch", code)
+	}
+}
+
 func TestQuilkinUDPServerReturnsCachedResponseWithoutSecondMarketCall(t *testing.T) {
 	market := &recordingMarketClient{}
 	server := testUDPServer(market)
 	conn := &capturePacketConn{}
 	remote := &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}
-	rawPayload := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"interaction-1"}`)
+	rawPayload := authenticatedTestPayload("interaction-1", 1)
 	packet := signedUDPPacket(t, rawPayload, "edge-secret", "primary")
 
 	server.handlePacket(context.Background(), conn, remote, packet)
@@ -198,13 +455,63 @@ func TestQuilkinUDPServerReturnsCachedResponseWithoutSecondMarketCall(t *testing
 	}
 }
 
+func TestQuilkinUDPServerConcurrentDuplicateHasOneDownstreamCall(t *testing.T) {
+	market := &blockingMarketClient{started: make(chan struct{}, 1), release: make(chan struct{})}
+	server := testUDPServer(market)
+	firstConn := &capturePacketConn{}
+	secondConn := &capturePacketConn{}
+	packet := signedUDPPacket(t, authenticatedTestPayload("interaction-1", 1), "edge-secret", "primary")
+	firstDone := make(chan struct{})
+	go func() {
+		defer close(firstDone)
+		server.handlePacket(context.Background(), firstConn, &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}, packet)
+	}()
+	select {
+	case <-market.started:
+	case <-time.After(time.Second):
+		t.Fatal("first request did not reach downstream")
+	}
+
+	server.handlePacket(context.Background(), secondConn, &net.UDPAddr{IP: net.ParseIP("203.0.113.11"), Port: 40001}, packet)
+	if code := secondConn.lastJSON(t)["code"]; code != "request_in_progress" {
+		t.Fatalf("concurrent duplicate response code = %v", code)
+	}
+	close(market.release)
+	select {
+	case <-firstDone:
+	case <-time.After(time.Second):
+		t.Fatal("first request did not finish")
+	}
+	if market.calls.Load() != 1 || firstConn.lastJSON(t)["status"] != "accepted" {
+		t.Fatalf("downstream calls=%d first response=%v", market.calls.Load(), firstConn.lastJSON(t))
+	}
+}
+
+func TestInteractionReplayCacheExpiresAndDoesNotReturnStaleResponse(t *testing.T) {
+	now := time.Unix(100, 0)
+	cache := newInteractionReplayCache(time.Second)
+	cache.now = func() time.Time { return now }
+	fingerprint := sha256.Sum256([]byte("payload"))
+	if state, _ := cache.begin("interaction", fingerprint); state != replayNew {
+		t.Fatalf("first state = %v", state)
+	}
+	cache.complete("interaction", fingerprint, []byte(`{"status":"accepted"}`))
+	if state, _ := cache.begin("interaction", fingerprint); state != replayCached {
+		t.Fatalf("cached state = %v", state)
+	}
+	now = now.Add(2 * time.Second)
+	if state, response := cache.begin("interaction", fingerprint); state != replayNew || response != nil {
+		t.Fatalf("expired state=%v response=%q", state, response)
+	}
+}
+
 func TestQuilkinUDPServerRejectsInteractionIDReusedWithDifferentPayload(t *testing.T) {
 	market := &recordingMarketClient{}
 	server := testUDPServer(market)
 	conn := &capturePacketConn{}
 	remote := &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}
-	first := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"interaction-1","input":{"quantity":1}}`)
-	conflict := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"interaction-1","input":{"quantity":2}}`)
+	first := authenticatedTestPayload("interaction-1", 1)
+	conflict := authenticatedTestPayload("interaction-1", 2)
 
 	server.handlePacket(context.Background(), conn, remote, signedUDPPacket(t, first, "edge-secret", "primary"))
 	server.handlePacket(context.Background(), conn, remote, signedUDPPacket(t, conflict, "edge-secret", "primary"))
@@ -239,7 +546,7 @@ func TestQuilkinUDPServerRetriesLostResponseWithoutRepeatingMarketCall(t *testin
 	server := testUDPServer(market)
 	conn := &failFirstWritePacketConn{}
 	remote := &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}
-	rawPayload := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"interaction-1"}`)
+	rawPayload := authenticatedTestPayload("interaction-1", 1)
 	packet := signedUDPPacket(t, rawPayload, "edge-secret", "primary")
 
 	server.handlePacket(context.Background(), conn, remote, packet)
@@ -258,7 +565,7 @@ func TestQuilkinUDPServerAllowsSafeRetryAfterTransientDownstreamFailure(t *testi
 	server := testUDPServer(market)
 	conn := &capturePacketConn{}
 	remote := &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}
-	rawPayload := []byte(`{"schema_version":"eve-trade-gui.v1","interaction_id":"interaction-1"}`)
+	rawPayload := authenticatedTestPayload("interaction-1", 1)
 	packet := signedUDPPacket(t, rawPayload, "edge-secret", "primary")
 
 	server.handlePacket(context.Background(), conn, remote, packet)
@@ -276,17 +583,37 @@ func TestQuilkinUDPServerAllowsSafeRetryAfterTransientDownstreamFailure(t *testi
 	}
 }
 
-func TestQuilkinUDPServerRateLimitsRemoteAddress(t *testing.T) {
+func TestQuilkinUDPServerRateLimitsAuthenticatedPrincipalAcrossProxyAddresses(t *testing.T) {
 	server := testUDPServer(&recordingMarketClient{})
 	server.rateLimiter = newRemoteRateLimiter(1, 1)
-	remote := &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}
+	firstProxy := &net.UDPAddr{IP: net.ParseIP("203.0.113.10"), Port: 40000}
+	secondProxy := &net.UDPAddr{IP: net.ParseIP("203.0.113.11"), Port: 40001}
 
-	if !server.allowRemote(remote) {
+	if !server.allowPrincipal(1001, firstProxy) {
 		t.Fatalf("first packet should be allowed")
 	}
-	if server.allowRemote(remote) {
+	if server.allowPrincipal(1001, secondProxy) {
 		t.Fatalf("second packet should be rate limited")
 	}
+	if !server.allowPrincipal(2002, firstProxy) {
+		t.Fatalf("different authenticated principal should have an independent bucket")
+	}
+}
+
+func FuzzAuthenticatedPayloadNeverAcceptsAnUnboundPrincipal(f *testing.F) {
+	server := testUDPServer(&recordingMarketClient{})
+	validPayload := authenticatedTestPayload("fuzz-seed", 1)
+	f.Add(signedUDPPacketForFuzz(validPayload, "edge-secret", "primary"))
+	f.Add([]byte(`{"schema_version":"eve-trade-edge.v1"}`))
+	f.Add([]byte{})
+	f.Fuzz(func(t *testing.T, packet []byte) {
+		raw, interactionID, principalID, rejection := server.authenticatedPayload(packet)
+		if rejection == nil {
+			if len(raw) == 0 || interactionID == "" || principalID != 1001 {
+				t.Fatalf("accepted packet without complete authenticated binding: raw=%q interaction=%q principal=%d", raw, interactionID, principalID)
+			}
+		}
+	})
 }
 
 func testUDPServer(market MarketClient) *QuilkinUDPServer {
@@ -298,14 +625,25 @@ func testUDPServer(market MarketClient) *QuilkinUDPServer {
 		authRequired: true,
 		hmacSecret:   []byte("edge-secret"),
 		hmacKeyID:    "primary",
-		market:       market,
-		rateLimiter:  newRemoteRateLimiter(100, 100),
-		replayCache:  newInteractionReplayCache(time.Minute),
+		principals: map[string]UDPPrincipalCredential{
+			"primary": {CapsuleerID: 1001, Secret: "edge-secret"},
+		},
+		market:      market,
+		rateLimiter: newRemoteRateLimiter(100, 100),
+		replayCache: newInteractionReplayCache(time.Minute),
 	}
+}
+
+func authenticatedTestPayload(interactionID string, quantity int) []byte {
+	return fmt.Appendf(nil, `{"schema_version":"eve-trade-gui.v1","interaction_id":%q,"ui":{"action":"market_place_sell_order"},"input":{"issued_by_capsuleer_id":1001,"quantity":%d}}`, interactionID, quantity)
 }
 
 func signedUDPPacket(t *testing.T, rawPayload []byte, secret string, keyID string) []byte {
 	t.Helper()
+	return signedUDPPacketForFuzz(rawPayload, secret, keyID)
+}
+
+func signedUDPPacketForFuzz(rawPayload []byte, secret string, keyID string) []byte {
 	mac := hmac.New(sha256.New, []byte(secret))
 	_, _ = mac.Write(rawPayload)
 	signature := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
@@ -319,7 +657,7 @@ func signedUDPPacket(t *testing.T, rawPayload []byte, secret string, keyID strin
 		},
 	})
 	if err != nil {
-		t.Fatalf("marshal packet: %v", err)
+		panic(err)
 	}
 	return packet
 }

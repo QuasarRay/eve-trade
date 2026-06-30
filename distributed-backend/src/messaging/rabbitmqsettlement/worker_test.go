@@ -16,6 +16,8 @@ func (fakeSettlementExecutor) ExecuteSettlementBatch(context.Context, *tradesett
 	return &tradesettlementv1.ExecuteSettlementBatchResponse{}, nil
 }
 
+func (fakeSettlementExecutor) Ping(context.Context) error { return nil }
+
 type fakeReadinessExecutor struct {
 	fakeSettlementExecutor
 	failuresBeforeReady int
@@ -43,13 +45,6 @@ type alwaysFailingReadinessExecutor struct {
 func (e *alwaysFailingReadinessExecutor) Ping(context.Context) error {
 	e.calls++
 	return e.err
-}
-
-func TestWaitForExecutorReadySkipsExecutorWithoutPing(t *testing.T) {
-	err := waitForExecutorReady(context.Background(), fakeSettlementExecutor{}, time.Millisecond, time.Millisecond)
-	if err != nil {
-		t.Fatalf("waitForExecutorReady returned error for executor without Ping: %v", err)
-	}
 }
 
 func TestWaitForExecutorReadyRetriesUntilPingSucceeds(t *testing.T) {

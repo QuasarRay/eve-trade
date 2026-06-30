@@ -1,5 +1,9 @@
 # GUI simulator first-draft QA coverage report
 
+> Historical, non-gating draft only. This report records four failures and is
+> not evidence for the current source. The current browser gate must pass with
+> zero failed assertions and emits provenance-bound artifacts in CI.
+
 Run ID: `20260627122639`  
 Result: **53 passed checks, 4 detected GUI contract gaps**  
 Video: `video/gui-simulator-qa.webm` (1440×900, 25 fps, 2:47)  

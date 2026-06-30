@@ -1,6 +1,6 @@
 ﻿# This block chooses the Rust toolchain image used to compile the settlement binary.
 # It exists because the service is Rust and builds protobuf bindings through the vendored protoc crate.
-FROM rust:1-bookworm AS build
+FROM rust:1-bookworm@sha256:19817ead3289c8c631c73df281e18b59b172f6a31f4f563290f69cddd06c30e9 AS build
 
 # This block sets the repository root as the build working directory.
 # It exists so relative paths inside build.rs continue to resolve exactly as they do in the repo.
@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
 
 # This block chooses a small Debian runtime image instead of shipping the full Rust compiler image.
 # It exists so the runtime container is closer to a deployable service image.
-FROM debian:bookworm-slim AS runtime
+FROM debian:bookworm-slim@sha256:96e378d7e6531ac9a15ad505478fcc2e69f371b10f5cdf87857c4b8188404716 AS runtime
 
 # This block creates the runtime working directory.
 # It exists so the Summer config file can live beside the binary in a stable location.

@@ -153,7 +153,7 @@ The system of interest excludes:
   integration point;
 - the Django simulator as a backend production component. The simulator is a
   local game-frontend simulator only; its outbound UDP packet is
-  production-identical to real frontend traffic once it leaves the process;
+  conformant to the versioned repository packet contract once it leaves the process (not claimed identical to an external client);
 - identity provider implementation;
 - external observability SaaS behavior;
 - cloud provider managed-service internals;

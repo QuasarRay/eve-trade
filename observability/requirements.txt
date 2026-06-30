@@ -1,6 +1,6 @@
-opentelemetry-api>=1.38,<2
-opentelemetry-sdk>=1.38,<2
-opentelemetry-exporter-otlp-proto-http>=1.38,<2
-sentry-sdk>=2.40,<3
+opentelemetry-api==1.38.0
+opentelemetry-sdk==1.38.0
+opentelemetry-exporter-otlp-proto-http==1.38.0
+sentry-sdk==2.40.0
 
 # Optional S3 storage: install boto3 separately when OBS_STORAGE_BACKEND=s3.

@@ -76,3 +76,8 @@ QUILKIN_UDP_MAX_ATTEMPTS = int(os.environ.get("QUILKIN_UDP_MAX_ATTEMPTS", "3"))
 QUILKIN_UDP_RETRY_BACKOFF_SECONDS = float(os.environ.get("QUILKIN_UDP_RETRY_BACKOFF_SECONDS", "0.1"))
 GAME_PACKET_HMAC_SECRET = os.environ.get("GAME_PACKET_HMAC_SECRET", "local-game-edge-secret")
 GAME_PACKET_HMAC_KEY_ID = os.environ.get("GAME_PACKET_HMAC_KEY_ID", "primary")
+GAME_PACKET_PRINCIPAL_KEYS_JSON = os.environ.get(
+    "GAME_PACKET_PRINCIPAL_KEYS_JSON",
+    '{"1001":{"key_id":"seller","secret":"seller-player-secret"},'
+    '"2002":{"key_id":"buyer","secret":"buyer-player-secret"}}',
+)

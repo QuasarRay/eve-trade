@@ -28,7 +28,11 @@ func main() {
 		}
 	}()
 
-	config := distributedbackend.LoadConfig()
+	config, err := distributedbackend.LoadConfig()
+	if err != nil {
+		slog.Error("api-gateway configuration invalid", "error", err)
+		os.Exit(1)
+	}
 	market := distributedbackend.NewConnectMarketClient(
 		config.MarketURL,
 		config.DownstreamTimeout,

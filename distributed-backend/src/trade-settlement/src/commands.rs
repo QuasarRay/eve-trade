@@ -540,6 +540,225 @@ fn ensure_positive(value: i64, field_name: &str) -> Result<()> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pb::settlement_operation::Operation;
+
+    fn uuid(value: u8) -> Uuid {
+        Uuid::parse_str(&format!("00000000-0000-4000-8000-{value:012}")).unwrap()
+    }
+
+    fn valid_create_trade() -> SettlementCommand {
+        SettlementCommand::CreateNewTradeInstanceRow(CreateNewTradeInstanceRow {
+            trade_instance_id: Some(uuid(1)),
+            trade_kind: "SELL".into(),
+            trade_state: "OPEN".into(),
+            issuer_id: 1001,
+            item_type_id: 34,
+            station_id: 60003760,
+            total_quantity: 4,
+            unit_price_isk: 25,
+            expires_at: Some(Utc::now() + chrono::Duration::minutes(5)),
+        })
+    }
+
+    #[test]
+    fn execute_batch_rejects_blank_idempotency_key() {
+        let error = ExecuteBatchCommand::try_from(pb::ExecuteSettlementBatchRequest::default())
+            .unwrap_err();
+        assert!(matches!(error, SettlementError::InvalidArgument(_)));
+        assert!(error.to_string().contains("idempotency_key"));
+    }
+
+    #[test]
+    fn settlement_operation_rejects_missing_variant() {
+        let error = SettlementCommand::try_from(pb::SettlementOperation::default()).unwrap_err();
+        assert!(error.to_string().contains("operation is missing"));
+    }
+
+    #[test]
+    fn invalid_uuid_is_rejected_at_the_proto_boundary() {
+        let operation = pb::SettlementOperation {
+            operation: Some(Operation::ModifyTradeInstanceState(
+                pb::ModifyTradeInstanceState {
+                    trade_instance_id: "not-a-uuid".into(),
+                    to_trade_state: "CANCELLED".into(),
+                    trade_state_change_kind: "CANCELLED_BY_ISSUER".into(),
+                    changed_by_service: "market".into(),
+                },
+            )),
+        };
+        let error = SettlementCommand::try_from(operation).unwrap_err();
+        assert!(error.to_string().contains("valid UUID"));
+    }
+
+    #[test]
+    fn create_trade_rejects_expired_timestamp() {
+        let mut command = valid_create_trade();
+        if let SettlementCommand::CreateNewTradeInstanceRow(value) = &mut command {
+            value.expires_at = Some(Utc::now() - chrono::Duration::seconds(1));
+        }
+        assert!(command
+            .validate()
+            .unwrap_err()
+            .to_string()
+            .contains("future"));
+    }
+
+    #[test]
+    fn create_trade_rejects_unsupported_kind_and_state() {
+        let mut command = valid_create_trade();
+        if let SettlementCommand::CreateNewTradeInstanceRow(value) = &mut command {
+            value.trade_kind = "BUY".into();
+        }
+        assert!(command.validate().is_err());
+
+        let mut command = valid_create_trade();
+        if let SettlementCommand::CreateNewTradeInstanceRow(value) = &mut command {
+            value.trade_state = "COMPLETED".into();
+        }
+        assert!(command.validate().is_err());
+    }
+
+    #[test]
+    fn every_positive_financial_and_quantity_field_rejects_zero() {
+        let commands = vec![
+            SettlementCommand::TransferQuantityFromItemStackToItemStackEscrow(
+                TransferQuantityFromItemStackToItemStackEscrow {
+                    source_item_stack_id: uuid(1),
+                    item_stack_escrow_id: Some(uuid(2)),
+                    trade_instance_id: uuid(3),
+                    quantity: 0,
+                },
+            ),
+            SettlementCommand::TransferQuantityFromItemStackEscrowToItemStackWithNewOwner(
+                TransferQuantityFromItemStackEscrowToItemStackWithNewOwner {
+                    item_stack_escrow_id: uuid(2),
+                    destination_item_stack_id: uuid(4),
+                    quantity: 0,
+                },
+            ),
+            SettlementCommand::TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner(
+                TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner {
+                    item_stack_escrow_id: uuid(2),
+                    destination_item_stack_id: uuid(1),
+                    quantity: 0,
+                },
+            ),
+            SettlementCommand::TransferIskAmountFromWalletToWalletEscrow(
+                TransferIskAmountFromWalletToWalletEscrow {
+                    source_wallet_id: uuid(5),
+                    wallet_escrow_id: Some(uuid(6)),
+                    trade_instance_id: uuid(3),
+                    isk_amount: 0,
+                },
+            ),
+            SettlementCommand::TransferIskAmountFromWalletEscrowToWalletWithNewOwner(
+                TransferIskAmountFromWalletEscrowToWalletWithNewOwner {
+                    wallet_escrow_id: uuid(6),
+                    destination_wallet_id: uuid(7),
+                    isk_amount: 0,
+                },
+            ),
+            SettlementCommand::TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner(
+                TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner {
+                    wallet_escrow_id: uuid(6),
+                    destination_wallet_id: uuid(5),
+                    isk_amount: 0,
+                },
+            ),
+        ];
+        for command in commands {
+            assert!(matches!(
+                command.validate(),
+                Err(SettlementError::InvalidArgument(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn merge_rejects_same_source_and_destination() {
+        let id = uuid(1);
+        let command = SettlementCommand::MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner(
+            MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner {
+                source_item_stack_id: id,
+                destination_item_stack_id: id,
+            },
+        );
+        assert!(command
+            .validate()
+            .unwrap_err()
+            .to_string()
+            .contains("must differ"));
+    }
+
+    #[test]
+    fn command_kind_names_and_proto_kinds_are_exhaustive() {
+        let commands = vec![
+            valid_create_trade(),
+            SettlementCommand::ModifyTradeInstanceState(ModifyTradeInstanceState {
+                trade_instance_id: uuid(1),
+                to_trade_state: "CANCELLED".into(),
+                trade_state_change_kind: "CANCELLED_BY_ISSUER".into(),
+                changed_by_service: "market".into(),
+            }),
+            SettlementCommand::CreateNewEmptyItemStack(CreateNewEmptyItemStack {
+                item_stack_id: Some(uuid(2)),
+                owner_id: 1,
+                item_type_id: 34,
+                station_id: 2,
+            }),
+            SettlementCommand::CreateNewEmptyWalletEscrow(CreateNewEmptyWalletEscrow {
+                wallet_escrow_id: Some(uuid(3)),
+                trade_instance_id: uuid(1),
+                owner_id: 1,
+                source_wallet_id: uuid(4),
+            }),
+        ];
+        for command in commands {
+            assert!(!command.kind_name().is_empty());
+            assert_ne!(command.proto_kind(), SettlementOperationKind::Unspecified);
+            command.validate().unwrap();
+        }
+    }
+
+    #[test]
+    fn execute_batch_preserves_fingerprint_and_request_id() {
+        let request_id = uuid(9);
+        let request = pb::ExecuteSettlementBatchRequest {
+            idempotency_key: "key-1".into(),
+            request_fingerprint: "sha256:fingerprint".into(),
+            external_request_id: "external-1".into(),
+            caused_by_capsuleer_id: Some(1001),
+            operations: vec![pb::SettlementOperation {
+                operation: Some(Operation::CreateNewTradeInstanceRow(
+                    pb::CreateNewTradeInstanceRow {
+                        trade_instance_id: uuid(1).to_string(),
+                        trade_kind: "SELL".into(),
+                        trade_state: "OPEN".into(),
+                        issuer_id: 1001,
+                        item_type_id: 34,
+                        station_id: 60003760,
+                        total_quantity: 4,
+                        unit_price_isk: 25,
+                        expires_at: None,
+                    },
+                )),
+            }],
+            created_by_service: "market".into(),
+            request_id: request_id.to_string(),
+        };
+        let command = ExecuteBatchCommand::try_from(request).unwrap();
+        assert_eq!(
+            command.request_fingerprint.as_deref(),
+            Some("sha256:fingerprint")
+        );
+        assert_eq!(command.request_id, Some(request_id));
+        assert_eq!(command.operations.len(), 1);
+    }
+}
+
 fn ensure_supported(field_name: &str, value: &str, supported: &[&str]) -> Result<()> {
     if supported.contains(&value) {
         Ok(())

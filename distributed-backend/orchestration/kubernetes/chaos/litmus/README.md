@@ -19,9 +19,11 @@ The production overlay renders three stopped `pod-delete` engines:
 - `eve-trade-market`
 - `eve-trade-trade-settlement`
 
-Each engine gracefully deletes one pod at a time, keeps the blast radius to one
-replica, and lets the Dagger pipeline verify that all deployments are available
-before and after the experiment.
+Each engine gracefully deletes 50% of the selected pods, runs a continuous
+API-gateway readiness probe, and is wrapped by the Dagger pipeline's
+authenticated trade smoke before, throughout, and after the experiment. Any
+failed business probe fails the chaos gate even if Litmus reports that fault
+injection itself succeeded.
 
 Render locally with:
 

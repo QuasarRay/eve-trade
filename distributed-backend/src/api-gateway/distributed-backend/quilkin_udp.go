@@ -24,7 +24,10 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-const edgeEnvelopeSchema = "eve-trade-edge.v1"
+const (
+	edgeEnvelopeSchema         = "eve-trade-edge.v1"
+	edgeResponseEnvelopeSchema = "eve-trade-edge-response.v1"
+)
 
 var (
 	udpMeter           = otel.Meter("github.com/QuasarRay/eve-trade/api-gateway/udp")
@@ -59,6 +62,7 @@ type QuilkinUDPServer struct {
 	authRequired bool
 	hmacSecret   []byte
 	hmacKeyID    string
+	principals   map[string]UDPPrincipalCredential
 	market       MarketClient
 	listenFunc   func(network string, address string) (net.PacketConn, error)
 	rateLimiter  *remoteRateLimiter
@@ -97,6 +101,7 @@ func NewQuilkinUDPServer(config Config, market MarketClient) *QuilkinUDPServer {
 		authRequired: config.UDPAuthRequired,
 		hmacSecret:   []byte(config.UDPHMACSecret),
 		hmacKeyID:    config.UDPHMACKeyID,
+		principals:   config.UDPPrincipalKeys,
 		market:       market,
 		listenFunc:   net.ListenPacket,
 		rateLimiter:  newRemoteRateLimiter(config.UDPRatePerSecond, config.UDPRateBurst),
@@ -163,13 +168,6 @@ func (s *QuilkinUDPServer) ListenAndServe(ctx context.Context) error {
 			s.writeError(conn, remote, "packet_too_large", "packet too large")
 			continue
 		}
-		if !s.allowRemote(remote) {
-			slog.Warn("udp packet rate limited", "remote", remoteKey(remote))
-			recordUDPPacket(ctx, "rate_limited", n)
-			s.writeError(conn, remote, "rate_limited", "rate limited")
-			continue
-		}
-
 		packet := append([]byte(nil), buffer[:n]...)
 		select {
 		case jobs <- udpPacketJob{remote: remote, packet: packet}:
@@ -210,13 +208,20 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 		return
 	}
 
-	rawPayload, interactionID, err := s.authenticatedPayload(packet)
+	rawPayload, interactionID, principalID, err := s.authenticatedPayload(packet)
 	if err != nil {
 		receiveSpan.RecordError(err)
 		receiveSpan.SetAttributes(attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", err.Code))
 		slog.Warn("udp packet rejected", "reason", err.Code, "remote", remoteKey(remote))
 		recordUDPPacket(parent, err.Code, len(packet))
 		s.writeError(conn, remote, err.Code, err.ClientMessage)
+		return
+	}
+	if !s.allowPrincipal(principalID, remote) {
+		receiveSpan.SetAttributes(attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", "rate_limited"))
+		slog.Warn("udp packet rate limited", "principal_capsuleer_id", principalID)
+		recordUDPPacket(parent, "rate_limited", len(packet))
+		s.writeError(conn, remote, "rate_limited", "rate limited")
 		return
 	}
 	if interactionID == "" {
@@ -312,58 +317,95 @@ func reject(code string, message string) *packetRejection {
 	return &packetRejection{Code: code, ClientMessage: message}
 }
 
-func (s *QuilkinUDPServer) authenticatedPayload(packet []byte) ([]byte, string, *packetRejection) {
+func (s *QuilkinUDPServer) authenticatedPayload(packet []byte) ([]byte, string, int64, *packetRejection) {
 	if !s.authRequired && len(s.hmacSecret) == 0 {
 		interactionID, err := extractInteractionID(packet)
 		if err != nil {
-			return nil, "", reject("malformed_packet", "malformed packet")
+			return nil, "", 0, reject("malformed_packet", "malformed packet")
 		}
-		return packet, interactionID, nil
+		return packet, interactionID, 0, nil
 	}
 	if len(s.hmacSecret) == 0 {
-		return nil, "", reject("auth_not_configured", "authentication unavailable")
+		return nil, "", 0, reject("auth_not_configured", "authentication unavailable")
 	}
 
 	var envelope edgeEnvelope
 	decoder := json.NewDecoder(bytes.NewReader(packet))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&envelope); err != nil {
-		return nil, "", reject("malformed_packet", "malformed packet")
+		return nil, "", 0, reject("malformed_packet", "malformed packet")
 	}
 	if envelope.SchemaVersion != edgeEnvelopeSchema {
-		return nil, "", reject("unsupported_envelope", "unsupported packet envelope")
+		return nil, "", 0, reject("unsupported_envelope", "unsupported packet envelope")
 	}
 	if len(envelope.Payload) == 0 {
-		return nil, "", reject("empty_payload", "empty payload")
+		return nil, "", 0, reject("empty_payload", "empty payload")
 	}
 	if envelope.Auth == nil {
-		return nil, "", reject("missing_signature", "missing signature")
+		return nil, "", 0, reject("missing_signature", "missing signature")
 	}
 	if envelope.Auth.Algorithm != "hmac-sha256" {
-		return nil, "", reject("unsupported_signature", "unsupported signature")
+		return nil, "", 0, reject("unsupported_signature", "unsupported signature")
 	}
-	if s.hmacKeyID != "" && envelope.Auth.KeyID != s.hmacKeyID {
-		return nil, "", reject("invalid_signature", "invalid signature")
-	}
-
 	rawPayload, err := compactJSON(envelope.Payload)
 	if err != nil {
-		return nil, "", reject("malformed_packet", "malformed packet")
+		return nil, "", 0, reject("malformed_packet", "malformed packet")
 	}
 	signature, err := base64.RawURLEncoding.DecodeString(envelope.Auth.Signature)
 	if err != nil {
-		return nil, "", reject("invalid_signature", "invalid signature")
+		return nil, "", 0, reject("invalid_signature", "invalid signature")
 	}
-	mac := hmac.New(sha256.New, s.hmacSecret)
+	credential, exists := s.principals[envelope.Auth.KeyID]
+	if !exists || credential.CapsuleerID <= 0 || strings.TrimSpace(credential.Secret) == "" {
+		return nil, "", 0, reject("invalid_signature", "invalid signature")
+	}
+	mac := hmac.New(sha256.New, []byte(credential.Secret))
 	_, _ = mac.Write(rawPayload)
 	if !hmac.Equal(signature, mac.Sum(nil)) {
-		return nil, "", reject("invalid_signature", "invalid signature")
+		return nil, "", 0, reject("invalid_signature", "invalid signature")
 	}
 	interactionID, err := extractInteractionID(rawPayload)
 	if err != nil {
-		return nil, "", reject("malformed_packet", "malformed packet")
+		return nil, "", 0, reject("malformed_packet", "malformed packet")
 	}
-	return rawPayload, interactionID, nil
+	if err := validatePrincipalActor(rawPayload, credential.CapsuleerID); err != nil {
+		return nil, "", 0, err
+	}
+	return rawPayload, interactionID, credential.CapsuleerID, nil
+}
+
+func validatePrincipalActor(rawPayload []byte, authenticatedCapsuleerID int64) *packetRejection {
+	var packet struct {
+		UI struct {
+			Action string `json:"action"`
+		} `json:"ui"`
+		Input struct {
+			IssuedByCapsuleerID    int64 `json:"issued_by_capsuleer_id"`
+			BuyerCapsuleerID       int64 `json:"buyer_capsuleer_id"`
+			CancelledByCapsuleerID int64 `json:"cancelled_by_capsuleer_id"`
+		} `json:"input"`
+	}
+	if err := json.Unmarshal(rawPayload, &packet); err != nil {
+		return reject("malformed_packet", "malformed packet")
+	}
+	var claimed int64
+	switch strings.TrimSpace(packet.UI.Action) {
+	case "market_place_sell_order", "contract_create_item_exchange", "direct_trade_offer":
+		claimed = packet.Input.IssuedByCapsuleerID
+	case "market_buy_from_sell_order", "contract_accept_item_exchange", "direct_trade_accept":
+		claimed = packet.Input.BuyerCapsuleerID
+	case "market_cancel_order", "contract_cancel_item_exchange", "direct_trade_cancel":
+		claimed = packet.Input.CancelledByCapsuleerID
+	default:
+		return reject("unsupported_action", "unsupported trade GUI action")
+	}
+	if claimed <= 0 {
+		return reject("missing_principal", "capsuleer identity is required")
+	}
+	if claimed != authenticatedCapsuleerID {
+		return reject("principal_mismatch", "authenticated capsuleer does not match request actor")
+	}
+	return nil
 }
 
 func compactJSON(body []byte) ([]byte, error) {
@@ -404,18 +446,53 @@ func (s *QuilkinUDPServer) writeCachedError(conn net.PacketConn, remote net.Addr
 }
 
 func (s *QuilkinUDPServer) writeResponse(conn net.PacketConn, remote net.Addr, interactionID string, body []byte) error {
-	if _, writeErr := conn.WriteTo(body, remote); writeErr != nil {
+	responseBody := body
+	if len(s.hmacSecret) > 0 {
+		canonicalBody, err := canonicalJSON(body)
+		if err != nil {
+			return fmt.Errorf("canonicalize UDP response: %w", err)
+		}
+		mac := hmac.New(sha256.New, s.hmacSecret)
+		_, _ = mac.Write(canonicalBody)
+		responseBody, err = json.Marshal(edgeEnvelope{
+			SchemaVersion: edgeResponseEnvelopeSchema,
+			Payload:       json.RawMessage(canonicalBody),
+			Auth: &edgeAuth{
+				Algorithm: "hmac-sha256",
+				KeyID:     s.hmacKeyID,
+				Signature: base64.RawURLEncoding.EncodeToString(mac.Sum(nil)),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("encode signed UDP response: %w", err)
+		}
+	}
+	if _, writeErr := conn.WriteTo(responseBody, remote); writeErr != nil {
 		slog.Warn("udp response write failed", "remote", remoteKey(remote), "interaction_id", interactionID, "error", writeErr)
 		return writeErr
 	}
 	return nil
 }
 
-func (s *QuilkinUDPServer) allowRemote(remote net.Addr) bool {
+func canonicalJSON(body []byte) ([]byte, error) {
+	var value any
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	decoder.UseNumber()
+	if err := decoder.Decode(&value); err != nil {
+		return nil, err
+	}
+	return json.Marshal(value)
+}
+
+func (s *QuilkinUDPServer) allowPrincipal(principalID int64, remote net.Addr) bool {
 	if s.rateLimiter == nil {
 		return true
 	}
-	return s.rateLimiter.allow(remoteKey(remote))
+	key := remoteKey(remote)
+	if principalID > 0 {
+		key = fmt.Sprintf("capsuleer:%d", principalID)
+	}
+	return s.rateLimiter.allow(key)
 }
 
 func (s *QuilkinUDPServer) replay() *interactionReplayCache {

@@ -1731,3 +1731,29 @@ fn checked_sub(left: i64, right: i64, label: &str) -> Result<i64> {
     left.checked_sub(right)
         .ok_or_else(|| SettlementError::FailedPrecondition(format!("{label} underflow")))
 }
+
+#[cfg(test)]
+mod arithmetic_tests {
+    use super::{checked_add, checked_sub};
+    use proptest::prelude::*;
+
+    #[test]
+    fn checked_arithmetic_rejects_every_i64_boundary_overflow() {
+        assert!(checked_add(i64::MAX, 1, "amount").is_err());
+        assert!(checked_add(i64::MIN, -1, "amount").is_err());
+        assert!(checked_sub(i64::MIN, 1, "amount").is_err());
+        assert!(checked_sub(i64::MAX, -1, "amount").is_err());
+    }
+
+    proptest! {
+        #[test]
+        fn checked_add_and_subtract_round_trip_for_financial_domain(
+            balance in 0_i64..=i64::MAX / 2,
+            delta in 0_i64..=i64::MAX / 2,
+        ) {
+            if let Ok(sum) = checked_add(balance, delta, "amount") {
+                prop_assert_eq!(checked_sub(sum, delta, "amount").unwrap(), balance);
+            }
+        }
+    }
+}

@@ -1,6 +1,12 @@
 # GUI simulator QA demo artifacts
 
-This directory contains the first-draft recorded manual-QA pass for the GUI simulator.
+The checked-in media is a historical 2026-06-27 draft and is **not current
+reliability evidence**. It predates authenticated per-capsuleer signing,
+response authentication, gating browser exits, and provenance capture, and it
+contains four recorded failures. CI now runs `pnpm gui:test`; only an artifact
+bundle produced by that passing job and containing a commit, dirty-state,
+lockfile hash, CI run, Playwright/Node versions, and Compose image identities
+is admissible as evidence.
 
 ## Artifacts
 

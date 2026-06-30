@@ -31,11 +31,26 @@ spec:
             - name: FORCE
               value: "false"
             - name: PODS_AFFECTED_PERC
-              value: "0"
+              value: "50"
             - name: SEQUENCE
               value: "serial"
             - name: RAMP_TIME
               value: "10"
+        probe:
+          - name: api-gateway-ready-during-pod-delete
+            type: httpProbe
+            mode: Continuous
+            httpProbe/inputs:
+              url: http://api-gateway.eve-trade.svc.cluster.local:8080/readyz
+              method:
+                get:
+                  criteria: "=="
+                  responseCode: "200"
+            runProperties:
+              probeTimeout: 5
+              interval: 2
+              retry: 3
+              stopOnFailure: true
 ---
 apiVersion: litmuschaos.io/v1alpha1
 kind: ChaosEngine
@@ -70,11 +85,26 @@ spec:
             - name: FORCE
               value: "false"
             - name: PODS_AFFECTED_PERC
-              value: "0"
+              value: "50"
             - name: SEQUENCE
               value: "serial"
             - name: RAMP_TIME
               value: "10"
+        probe:
+          - name: api-gateway-ready-during-pod-delete
+            type: httpProbe
+            mode: Continuous
+            httpProbe/inputs:
+              url: http://api-gateway.eve-trade.svc.cluster.local:8080/readyz
+              method:
+                get:
+                  criteria: "=="
+                  responseCode: "200"
+            runProperties:
+              probeTimeout: 5
+              interval: 2
+              retry: 3
+              stopOnFailure: true
 ---
 apiVersion: litmuschaos.io/v1alpha1
 kind: ChaosEngine
@@ -109,8 +139,23 @@ spec:
             - name: FORCE
               value: "false"
             - name: PODS_AFFECTED_PERC
-              value: "0"
+              value: "50"
             - name: SEQUENCE
               value: "serial"
             - name: RAMP_TIME
               value: "10"
+        probe:
+          - name: api-gateway-ready-during-pod-delete
+            type: httpProbe
+            mode: Continuous
+            httpProbe/inputs:
+              url: http://api-gateway.eve-trade.svc.cluster.local:8080/readyz
+              method:
+                get:
+                  criteria: "=="
+                  responseCode: "200"
+            runProperties:
+              probeTimeout: 5
+              interval: 2
+              retry: 3
+              stopOnFailure: true

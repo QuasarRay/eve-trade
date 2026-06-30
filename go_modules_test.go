@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
+	"regexp"
 	"testing"
 )
 
@@ -60,28 +60,28 @@ func TestKubernetesMigrationCopiesMatchSource(t *testing.T) {
 	}
 }
 
-func TestKubernetesManifestsAvoidMutableProductionTags(t *testing.T) {
-	root := filepath.FromSlash("distributed-backend/orchestration/kubernetes")
-	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() || !(strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
-			return nil
-		}
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		text := string(content)
-		for _, forbidden := range []string{":latest", "newTag: latest", "newTag: prod"} {
-			if strings.Contains(text, forbidden) {
-				t.Fatalf("%s contains mutable image marker %q", path, forbidden)
-			}
-		}
-		return nil
-	})
+func TestProductionOverlayTemplatesDigestsAndDeployRequiresPublishedDigests(t *testing.T) {
+	manifest, err := os.ReadFile(filepath.FromSlash("distributed-backend/orchestration/kubernetes/overlay/prod/kustomization.yaml"))
 	if err != nil {
 		t.Fatal(err)
+	}
+	digestPattern := regexp.MustCompile(`(?m)^\s+digest:\s+sha256:[0-9a-f]{64}\s*$`)
+	if count := len(digestPattern.FindAll(manifest, -1)); count != 5 {
+		t.Fatalf("production overlay digest templates = %d, want 5", count)
+	}
+	if regexp.MustCompile(`(?m)^\s+newTag:`).Match(manifest) {
+		t.Fatal("production overlay contains a mutable newTag entry")
+	}
+	pipeline, err := os.ReadFile(filepath.FromSlash("ci-cd/pipeline.py"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, contract := range []*regexp.Regexp{
+		regexp.MustCompile(`published_image_references\(required=True\)`),
+		regexp.MustCompile(`@sha256:\[0-9a-f\]\{64\}`),
+	} {
+		if !contract.Match(pipeline) {
+			t.Fatalf("deployment pipeline is missing immutable-image contract %s", contract)
+		}
 	}
 }

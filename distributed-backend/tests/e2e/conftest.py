@@ -4,6 +4,7 @@ import pytest
 
 from helpers import (
     Database,
+    AuthenticatedEdgeClient,
     GatewayClient,
     SettlementClient,
     wait_for_database,
@@ -21,7 +22,8 @@ def pytest_sessionfinish(session, exitstatus):
     if reporter is None:
         return
     skipped = len(reporter.stats.get("skipped", []))
-    if skipped == session.testscollected:
+    production_gate = os.environ.get("EVE_TRADE_E2E_PRODUCTION_GATE") == "true"
+    if skipped == session.testscollected or (production_gate and skipped > 0):
         session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 
@@ -59,7 +61,11 @@ def db(service_urls, services_ready):
 @pytest.fixture
 def gateway(service_urls, services_ready):
     _, simulator_url, _ = service_urls
-    return GatewayClient(simulator_url)
+    client = GatewayClient(simulator_url)
+    try:
+        yield client
+    finally:
+        client.close()
 
 
 @pytest.fixture
@@ -72,3 +78,19 @@ def settlement(service_urls, services_ready):
         yield client
     finally:
         client.close()
+
+
+@pytest.fixture
+def authenticated_edge(services_ready):
+    required = {
+        "host": os.environ.get("EVE_TRADE_QUILKIN_UDP_HOST"),
+        "response_secret": os.environ.get("EVE_TRADE_EDGE_RESPONSE_SECRET"),
+    }
+    if not all(required.values()):
+        pytest.skip("set authenticated edge test credentials to run principal-binding tests")
+    return AuthenticatedEdgeClient(
+        required["host"],
+        int(os.environ.get("EVE_TRADE_QUILKIN_UDP_PORT", "26001")),
+        required["response_secret"],
+        os.environ.get("EVE_TRADE_EDGE_RESPONSE_KEY_ID", "primary"),
+    )

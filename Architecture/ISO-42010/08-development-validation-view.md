@@ -22,7 +22,7 @@ Governed by: [VP-07 Development And Validation Viewpoint](./02-viewpoints.md#vp-
 | Messaging library | `distributed-backend/src/messaging/rabbitmqsettlement` | RabbitMQ topology, publish, consume, reply, and dead-letter behavior. |
 | settlement-worker service | `distributed-backend/src/settlement-worker` | RabbitMQ consumer and trade-settlement client. |
 | trade-settlement crate | `distributed-backend/src/trade-settlement` | Rust settlement service, SQL operations, migrations, configuration, and seed data. |
-| Simulator | `simulator/trade_gui` | Local game-frontend simulator that emits production-identical signed UDP packets. |
+| Simulator | `simulator/trade_gui` | Local game-frontend simulator that emits authenticated packets conforming to the versioned repository protocol. |
 | E2E tests | `distributed-backend/tests/e2e` | Simulator-driven end-to-end trade lifecycle tests. |
 | Compose runtime | `compose.yaml`, `docker-compose.integration.yml` | Local and CI runtime topology including simulator, Quilkin, API Gateway UDP, Market, settlement-worker, trade-settlement, RabbitMQ, and PostgreSQL. |
 | Kubernetes manifests | `distributed-backend/orchestration/kubernetes` | Local and production overlays, Quilkin/API Gateway UDP routing, network policy, mesh policy, observability, and platform resources. |
@@ -35,7 +35,7 @@ Governed by: [VP-07 Development And Validation Viewpoint](./02-viewpoints.md#vp-
 | --- | --- | --- |
 | Game GUI packet field or envelope | Simulator packet builder/signer, API Gateway UDP parser, Market GUI parser, packet leak test, docs | Production-identical packet shape, HMAC compatibility, forbidden identity leakage. |
 | Market GUI action mapping | Market handler/private helpers, Market tests, e2e tests, docs | Market-owned interpretation, no gateway business parsing, settlement operation correctness. |
-| API Gateway edge behavior | UDP server, config, tests, Compose/Kubernetes config, observability docs | Bounded concurrency, queue overflow, rate limit, HMAC, replay, timeout, compact responses. |
+| API Gateway edge behavior | UDP server, config, real-socket/queue/auth/replay/fuzz tests, Compose/Kubernetes config, observability docs | Bounded concurrency, queue overflow, principal rate limit, HMAC request/response authentication, replay, timeout, compact responses. |
 | Settlement operation kind | trade-settlement protobuf, generated Go/Rust code, Market settlement planner, worker, Rust operations, SQL invariants | Operation semantics, atomicity, idempotency, and game-mechanic agnosticism. |
 | Database schema | SQL migrations, Market repository reads, Rust operations, seed data, Kubernetes migration manifests | Migration order, compatibility, constraints, and local seed validity. |
 | RabbitMQ topology | Messaging library, Market config, settlement-worker config, Compose, Kubernetes ConfigMaps/Secrets | Publish/consume/reply behavior and dead-letter behavior. |
@@ -95,6 +95,6 @@ Governed by: [VP-07 Development And Validation Viewpoint](./02-viewpoints.md#vp-
 | --- | --- | --- |
 | API contracts, generated code, service implementation, tests, docs, and CI must change together. | Enforced by CI | `verify.yaml` and boundary guard. |
 | Gateway is not a business service. | Enforced by tests/guard | Gateway has no production command service and forwards raw payload only. |
-| Simulator packet shape is production-identical from the UDP boundary outward. | Enforced by test | `simulator/trade_gui/tests.py` captures the actual socket payload. |
+| Simulator packet shape conforms to the versioned repository contract. | Enforced by cross-language test | Python validates the actual socket payload against JSON Schema and a golden packet; Go consumes the same golden packet. External-client identity is not claimed. |
 | trade-settlement remains game-mechanic agnostic. | Enforced by contract review | Settlement proto exposes low-level operation batches only. |
 | A change is not architecture-consistent until its runtime path and validation path are both known. | Governance rule | Change Impact Matrix and CI gates. |

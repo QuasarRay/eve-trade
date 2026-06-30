@@ -2,7 +2,7 @@ name: eve-trade
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:16@sha256:081f1bc7bd5e143dbb6e487b710bbc27712cdcfaced4c071b8e47349aa1b4171
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -18,7 +18,7 @@ services:
       - eve_trade_pgdata:/var/lib/postgresql/data
 
   migrate:
-    image: postgres:16
+    image: postgres:16@sha256:081f1bc7bd5e143dbb6e487b710bbc27712cdcfaced4c071b8e47349aa1b4171
     depends_on:
       postgres:
         condition: service_healthy
@@ -37,7 +37,7 @@ services:
       "
 
   rabbitmq:
-    image: rabbitmq:3.13.7-management
+    image: rabbitmq:3.13.7-management@sha256:e582c0bc7766f3342496d8485efb5a1df782b5ce3886ad017e2eaae442311f69
     environment:
       RABBITMQ_DEFAULT_USER: eve_trade
       RABBITMQ_DEFAULT_PASS: eve_trade
@@ -137,6 +137,7 @@ services:
       API_GATEWAY_UDP_AUTH_REQUIRED: "true"
       API_GATEWAY_UDP_HMAC_SECRET: local-game-edge-secret
       API_GATEWAY_UDP_HMAC_KEY_ID: primary
+      API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON: '{"seller":{"capsuleer_id":1001,"secret":"seller-player-secret"},"buyer":{"capsuleer_id":2002,"secret":"buyer-player-secret"},"other":{"capsuleer_id":3003,"secret":"other-player-secret"}}'
       MARKET_URL: http://market:8081
       OTEL_SERVICE_NAME: api-gateway
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
@@ -199,6 +200,7 @@ services:
       QUILKIN_UDP_RETRY_BACKOFF_SECONDS: "0.1"
       GAME_PACKET_HMAC_SECRET: local-game-edge-secret
       GAME_PACKET_HMAC_KEY_ID: primary
+      GAME_PACKET_PRINCIPAL_KEYS_JSON: '{"1001":{"key_id":"seller","secret":"seller-player-secret"},"2002":{"key_id":"buyer","secret":"buyer-player-secret"},"3003":{"key_id":"other","secret":"other-player-secret"}}'
       SIMULATOR_ALLOWED_HOSTS: "*"
     ports:
       - "127.0.0.1:8000:8000"

@@ -48,7 +48,7 @@ class GameGuiButtonViewSet(viewsets.ModelViewSet):
 
         try:
             response_payload = send_gui_packet(packet)
-        except OSError as exc:
+        except (OSError, ValueError) as exc:
             interaction.status = GameGuiInteraction.Status.FAILED
             interaction.error_message = str(exc)
             interaction.save(update_fields=["status", "error_message"])
@@ -58,6 +58,19 @@ class GameGuiButtonViewSet(viewsets.ModelViewSet):
             )
 
         interaction.response_payload = response_payload
+        error_code = str(response_payload.get("code") or "").strip()
+        if error_code:
+            interaction.status = GameGuiInteraction.Status.FAILED
+            interaction.error_message = str(response_payload.get("message") or error_code)
+            interaction.save(update_fields=["response_payload", "status", "error_message"])
+            return Response(
+                {
+                    **response_payload,
+                    "interaction": GameGuiInteractionSerializer(interaction).data,
+                },
+                status=udp_error_http_status(error_code),
+            )
+
         interaction.status = GameGuiInteraction.Status.SENT
         interaction.save(update_fields=["response_payload", "status"])
         return Response(GameGuiInteractionSerializer(interaction).data, status=status.HTTP_202_ACCEPTED)
@@ -66,6 +79,23 @@ class GameGuiButtonViewSet(viewsets.ModelViewSet):
 class GameGuiInteractionViewSet(viewsets.ModelViewSet):
     queryset = GameGuiInteraction.objects.all()
     serializer_class = GameGuiInteractionSerializer
+
+
+def udp_error_http_status(code: str) -> int:
+    return {
+        "invalid_argument": status.HTTP_400_BAD_REQUEST,
+        "unauthenticated": status.HTTP_401_UNAUTHORIZED,
+        "permission_denied": status.HTTP_403_FORBIDDEN,
+        "not_found": status.HTTP_404_NOT_FOUND,
+        "already_exists": status.HTTP_409_CONFLICT,
+        "replay": status.HTTP_409_CONFLICT,
+        "failed_precondition": status.HTTP_409_CONFLICT,
+        "request_in_progress": status.HTTP_409_CONFLICT,
+        "resource_exhausted": status.HTTP_429_TOO_MANY_REQUESTS,
+        "rate_limited": status.HTTP_429_TOO_MANY_REQUESTS,
+        "downstream_timeout": status.HTTP_504_GATEWAY_TIMEOUT,
+        "downstream_unavailable": status.HTTP_503_SERVICE_UNAVAILABLE,
+    }.get(code, status.HTTP_502_BAD_GATEWAY)
 
 
 def build_gui_packet(button: GameGuiButton, player_input: dict, interaction_id: str | None = None) -> dict:
@@ -77,7 +107,6 @@ def build_gui_packet(button: GameGuiButton, player_input: dict, interaction_id: 
         or str(uuid4())
     )
     interaction_id = str(interaction_id).strip() or str(uuid4())
-    player_input.pop("external_request_id", None)
     return {
         "schema_version": "eve-trade-gui.v1",
         "interaction_id": interaction_id,
