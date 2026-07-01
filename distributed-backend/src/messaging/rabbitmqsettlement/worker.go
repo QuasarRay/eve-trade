@@ -80,8 +80,12 @@ func runSettlementWorkerSession(ctx context.Context, config Config, executor Set
 		return err
 	}
 
-	deliveries, err := channel.ConsumeWithContext(
-		ctx,
+	// Do not bind the broker consumer lifecycle directly to ctx. The worker loop
+	// stops admitting deliveries when ctx is canceled, then workers.Wait drains
+	// already-admitted work before the deferred channel close cancels consumption.
+	// ConsumeWithContext would send basic.cancel concurrently with those workers'
+	// reply publishes and acknowledgements on this same channel.
+	deliveries, err := channel.Consume(
 		config.CommandQueue,
 		"",
 		false,
