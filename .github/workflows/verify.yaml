@@ -633,7 +633,26 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: o11y-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .o11y/
+          # Observability producers redact environment, log, and database evidence. Keep
+          # defense-in-depth exclusions for credential-shaped files if one is introduced.
+          path: |
+            .o11y/
+            !.o11y/**/.env
+            !.o11y/**/.env.*
+            !.o11y/**/credentials
+            !.o11y/**/credentials.*
+            !.o11y/**/*credential*.json
+            !.o11y/**/*token*
+            !.o11y/**/*secret*
+            !.o11y/**/*.pem
+            !.o11y/**/*.key
+            !.o11y/**/*.p12
+            !.o11y/**/*.pfx
+            !.o11y/**/id_rsa
+            !.o11y/**/id_ed25519
+            !.o11y/**/kubeconfig
+            !.o11y/**/application_default_credentials.json
+          include-hidden-files: true
           if-no-files-found: error
 
       - name: Upload observability run artifacts
@@ -641,7 +660,23 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: eve-trade-observability-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .o11y/runs/
+          path: |
+            .o11y/runs/
+            !.o11y/runs/**/.env
+            !.o11y/runs/**/.env.*
+            !.o11y/runs/**/credentials
+            !.o11y/runs/**/credentials.*
+            !.o11y/runs/**/*credential*.json
+            !.o11y/runs/**/*token*
+            !.o11y/runs/**/*secret*
+            !.o11y/runs/**/*.pem
+            !.o11y/runs/**/*.key
+            !.o11y/runs/**/*.p12
+            !.o11y/runs/**/*.pfx
+            !.o11y/runs/**/id_rsa
+            !.o11y/runs/**/id_ed25519
+            !.o11y/runs/**/kubeconfig
+            !.o11y/runs/**/application_default_credentials.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 14

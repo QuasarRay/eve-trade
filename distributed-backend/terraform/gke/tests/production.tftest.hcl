@@ -1,4 +1,29 @@
-mock_provider "google" {}
+# Terraform's generated computed values are schema-shaped but do not satisfy every
+# Google provider format validator, so production dependencies use deterministic IDs.
+mock_provider "google" {
+  mock_resource "google_compute_network" {
+    defaults = {
+      id        = "projects/eve-trade-ci-project/global/networks/eve-trade-ci-vpc"
+      self_link = "https://www.googleapis.com/compute/v1/projects/eve-trade-ci-project/global/networks/eve-trade-ci-vpc"
+    }
+  }
+
+  mock_resource "google_compute_subnetwork" {
+    defaults = {
+      id        = "projects/eve-trade-ci-project/regions/us-central1/subnetworks/eve-trade-ci-primary"
+      self_link = "https://www.googleapis.com/compute/v1/projects/eve-trade-ci-project/regions/us-central1/subnetworks/eve-trade-ci-primary"
+    }
+  }
+
+  mock_resource "google_container_cluster" {
+    defaults = {
+      endpoint = "127.0.0.1"
+      master_auth = {
+        cluster_ca_certificate = "dGVzdA=="
+      }
+    }
+  }
+}
 mock_provider "kubernetes" {}
 mock_provider "helm" {}
 mock_provider "kubectl" {}

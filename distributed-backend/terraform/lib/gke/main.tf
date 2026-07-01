@@ -57,6 +57,14 @@ resource "google_container_cluster" "this" {
     master_ipv4_cidr_block  = var.master_ipv4_cidr_block
   }
 
+  # Disable legacy client-certificate authentication. Workloads and operators use
+  # Google credentials and Workload Identity instead of long-lived client keys.
+  master_auth {
+    client_certificate_config {
+      issue_client_certificate = false
+    }
+  }
+
   dynamic "master_authorized_networks_config" {
     for_each = length(var.master_authorized_networks) > 0 ? [1] : []
 
