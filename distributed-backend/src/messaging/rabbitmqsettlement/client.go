@@ -55,8 +55,12 @@ type pendingResult struct {
 func NewRPCClient(ctx context.Context, config Config) (*RPCClient, error) {
 	config = config.WithDefaults()
 	consumerCtx, consumerCancel := context.WithCancel(ctx)
+	if err := consumerCtx.Err(); err != nil {
+		consumerCancel()
+		return nil, fmt.Errorf("rabbitmq settlement client context closed: %w", err)
+	}
 
-	session, err := openRPCSession(consumerCtx, config)
+	session, err := openRPCSession(config)
 	if err != nil {
 		consumerCancel()
 		return nil, err
@@ -74,7 +78,7 @@ func NewRPCClient(ctx context.Context, config Config) (*RPCClient, error) {
 	return client, nil
 }
 
-func openRPCSession(ctx context.Context, config Config) (*rpcSession, error) {
+func openRPCSession(config Config) (*rpcSession, error) {
 	connection, err := amqp.DialConfig(config.URL, amqp.Config{
 		Heartbeat: 30 * time.Second,
 		Locale:    "en_US",
@@ -113,8 +117,10 @@ func openRPCSession(ctx context.Context, config Config) (*rpcSession, error) {
 		_ = connection.Close()
 		return nil, fmt.Errorf("declare rabbitmq settlement reply queue: %w", err)
 	}
-	replies, err := channel.ConsumeWithContext(
-		ctx,
+	// The reply loop owns application cancellation and closes the entire AMQP
+	// session. Binding the consumer to that context would race basic.cancel with
+	// Channel.Close during shutdown and can leave Close waiting indefinitely.
+	replies, err := channel.Consume(
 		replyQueue.Name,
 		"",
 		true,
@@ -221,12 +227,12 @@ func (c *RPCClient) Close() error {
 	var err error
 	c.closeOnce.Do(func() {
 		close(c.done)
-		c.consumerCancel()
 		c.sessionMu.Lock()
 		session := c.session
 		c.session = nil
 		c.sessionMu.Unlock()
 		err = closeRPCSession(session)
+		c.consumerCancel()
 		c.failPending(errors.New("rabbitmq settlement client closed"))
 	})
 	return err
@@ -249,7 +255,7 @@ func (c *RPCClient) ensureSession() (*rpcSession, error) {
 		return c.session, nil
 	}
 
-	session, err := openRPCSession(c.consumerCtx, c.config)
+	session, err := openRPCSession(c.config)
 	if err != nil {
 		return nil, err
 	}
@@ -294,6 +300,9 @@ func (c *RPCClient) consumeReplies(session *rpcSession) {
 				return
 			}
 			c.invalidateSession(session, fmt.Errorf("rabbitmq settlement connection closed: %w", rabbitErr))
+			return
+		case <-c.consumerCtx.Done():
+			c.invalidateSession(session, fmt.Errorf("rabbitmq settlement client context closed: %w", c.consumerCtx.Err()))
 			return
 		case <-c.done:
 			return
