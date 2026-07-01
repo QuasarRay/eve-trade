@@ -219,7 +219,14 @@ func assertUnavailableReplyTargetIsAcknowledged(t *testing.T, ctx context.Contex
 	}
 	deadline := time.Now().Add(5 * time.Second)
 	for {
-		queue, err := channel.QueueInspect(config.CommandQueue)
+		queue, err := channel.QueueDeclarePassive(
+			config.CommandQueue,
+			true,
+			false,
+			false,
+			false,
+			commandQueueArguments(config),
+		)
 		if err == nil && queue.Messages == 0 && executor.calls.Load() == before+1 {
 			return
 		}

@@ -1,6 +1,7 @@
 mock_provider "google" {}
 mock_provider "kubernetes" {}
 mock_provider "helm" {}
+mock_provider "kubectl" {}
 mock_provider "null" {}
 mock_provider "random" {}
 mock_provider "time" {}

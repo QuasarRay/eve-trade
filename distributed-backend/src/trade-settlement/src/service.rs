@@ -70,3 +70,92 @@ impl From<BatchExecutionResult> for pb::ExecuteSettlementBatchResponse {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::executor::StepExecutionResult;
+    use crate::operations::{EntityReferenceOutput, OperationOutput};
+    use pb::SettlementOperationKind;
+    use uuid::Uuid;
+
+    fn uuid(value: u128) -> Uuid {
+        Uuid::from_u128(value)
+    }
+
+    #[test]
+    fn response_conversion_preserves_batch_steps_and_entity_references() {
+        let batch_id = uuid(1);
+        let first_step_id = uuid(2);
+        let second_step_id = uuid(3);
+        let entity_id = uuid(4);
+        let response: pb::ExecuteSettlementBatchResponse = BatchExecutionResult {
+            settlement_batch_id: batch_id,
+            idempotency_key: "settlement-key".to_string(),
+            batch_state: "COMPLETED".to_string(),
+            idempotent_replay: true,
+            step_results: vec![
+                StepExecutionResult {
+                    step_index: 7,
+                    settlement_step_id: first_step_id,
+                    step_kind: SettlementOperationKind::CreateNewTradeInstanceRow,
+                    output: OperationOutput {
+                        entity_references: vec![EntityReferenceOutput {
+                            entity_kind: "trade_instance".to_string(),
+                            entity_id,
+                        }],
+                    },
+                },
+                StepExecutionResult {
+                    step_index: 8,
+                    settlement_step_id: second_step_id,
+                    step_kind: SettlementOperationKind::ModifyTradeInstanceState,
+                    output: OperationOutput::default(),
+                },
+            ],
+        }
+        .into();
+
+        assert_eq!(response.settlement_batch_id, batch_id.to_string());
+        assert_eq!(response.idempotency_key, "settlement-key");
+        assert_eq!(response.batch_state, "COMPLETED");
+        assert!(response.idempotent_replay);
+        assert_eq!(response.step_results.len(), 2);
+
+        let first = &response.step_results[0];
+        assert_eq!(first.step_index, 7);
+        assert_eq!(first.settlement_step_id, first_step_id.to_string());
+        assert_eq!(
+            first.step_kind,
+            SettlementOperationKind::CreateNewTradeInstanceRow as i32
+        );
+        assert_eq!(first.outputs.len(), 1);
+        assert_eq!(first.outputs[0].entity_kind, "trade_instance");
+        assert_eq!(first.outputs[0].entity_id, entity_id.to_string());
+
+        let second = &response.step_results[1];
+        assert_eq!(second.step_index, 8);
+        assert_eq!(second.settlement_step_id, second_step_id.to_string());
+        assert_eq!(
+            second.step_kind,
+            SettlementOperationKind::ModifyTradeInstanceState as i32
+        );
+        assert!(second.outputs.is_empty());
+    }
+
+    #[test]
+    fn response_conversion_does_not_invent_steps_for_an_empty_result() {
+        let response: pb::ExecuteSettlementBatchResponse = BatchExecutionResult {
+            settlement_batch_id: uuid(5),
+            idempotency_key: "empty-key".to_string(),
+            batch_state: "COMPLETED".to_string(),
+            idempotent_replay: false,
+            step_results: Vec::new(),
+        }
+        .into();
+
+        assert_eq!(response.idempotency_key, "empty-key");
+        assert!(!response.idempotent_replay);
+        assert!(response.step_results.is_empty());
+    }
+}

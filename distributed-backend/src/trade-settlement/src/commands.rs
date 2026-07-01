@@ -752,30 +752,125 @@ mod tests {
 
     #[test]
     fn command_kind_names_and_proto_kinds_are_exhaustive() {
-        let commands = vec![
-            valid_create_trade(),
-            SettlementCommand::ModifyTradeInstanceState(ModifyTradeInstanceState {
-                trade_instance_id: uuid(1),
-                to_trade_state: "CANCELLED".into(),
-                trade_state_change_kind: "CANCELLED_BY_ISSUER".into(),
-                changed_by_service: "market".into(),
-            }),
-            SettlementCommand::CreateNewEmptyItemStack(CreateNewEmptyItemStack {
-                item_stack_id: Some(uuid(2)),
-                owner_id: 1,
-                item_type_id: 34,
-                station_id: 2,
-            }),
-            SettlementCommand::CreateNewEmptyWalletEscrow(CreateNewEmptyWalletEscrow {
-                wallet_escrow_id: Some(uuid(3)),
-                trade_instance_id: uuid(1),
-                owner_id: 1,
-                source_wallet_id: uuid(4),
-            }),
+        let cases = [
+            (
+                valid_create_trade(),
+                "create_new_trade_instance_row",
+                SettlementOperationKind::CreateNewTradeInstanceRow,
+            ),
+            (
+                SettlementCommand::ModifyTradeInstanceState(ModifyTradeInstanceState {
+                    trade_instance_id: uuid(1),
+                    to_trade_state: "CANCELLED".into(),
+                    trade_state_change_kind: "CANCELLED_BY_ISSUER".into(),
+                    changed_by_service: "market".into(),
+                }),
+                "modify_trade_instance_state",
+                SettlementOperationKind::ModifyTradeInstanceState,
+            ),
+            (
+                SettlementCommand::CreateNewEmptyItemStack(CreateNewEmptyItemStack {
+                    item_stack_id: Some(uuid(2)),
+                    owner_id: 1,
+                    item_type_id: 34,
+                    station_id: 2,
+                }),
+                "create_new_empty_item_stack",
+                SettlementOperationKind::CreateNewEmptyItemStack,
+            ),
+            (
+                SettlementCommand::TransferQuantityFromItemStackToItemStackEscrow(
+                    TransferQuantityFromItemStackToItemStackEscrow {
+                        source_item_stack_id: uuid(3),
+                        item_stack_escrow_id: Some(uuid(4)),
+                        trade_instance_id: uuid(1),
+                        quantity: 5,
+                    },
+                ),
+                "transfer_quantity_from_item_stack_to_item_stack_escrow",
+                SettlementOperationKind::TransferQuantityFromItemStackToItemStackEscrow,
+            ),
+            (
+                SettlementCommand::TransferQuantityFromItemStackEscrowToItemStackWithNewOwner(
+                    TransferQuantityFromItemStackEscrowToItemStackWithNewOwner {
+                        item_stack_escrow_id: uuid(4),
+                        destination_item_stack_id: uuid(5),
+                        quantity: 5,
+                    },
+                ),
+                "transfer_quantity_from_item_stack_escrow_to_item_stack_with_new_owner",
+                SettlementOperationKind::TransferQuantityFromItemStackEscrowToItemStackWithNewOwner,
+            ),
+            (
+                SettlementCommand::TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner(
+                    TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner {
+                        item_stack_escrow_id: uuid(4),
+                        destination_item_stack_id: uuid(6),
+                        quantity: 5,
+                    },
+                ),
+                "transfer_quantity_from_item_stack_escrow_to_item_stack_with_previous_owner",
+                SettlementOperationKind::TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner,
+            ),
+            (
+                SettlementCommand::MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner(
+                    MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner {
+                        source_item_stack_id: uuid(5),
+                        destination_item_stack_id: uuid(6),
+                    },
+                ),
+                "merge_item_stacks_with_identical_item_type_and_identical_owner",
+                SettlementOperationKind::MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner,
+            ),
+            (
+                SettlementCommand::CreateNewEmptyWalletEscrow(CreateNewEmptyWalletEscrow {
+                    wallet_escrow_id: Some(uuid(7)),
+                    trade_instance_id: uuid(1),
+                    owner_id: 1,
+                    source_wallet_id: uuid(8),
+                }),
+                "create_new_empty_wallet_escrow",
+                SettlementOperationKind::CreateNewEmptyWalletEscrow,
+            ),
+            (
+                SettlementCommand::TransferIskAmountFromWalletToWalletEscrow(
+                    TransferIskAmountFromWalletToWalletEscrow {
+                        source_wallet_id: uuid(8),
+                        wallet_escrow_id: Some(uuid(7)),
+                        trade_instance_id: uuid(1),
+                        isk_amount: 25,
+                    },
+                ),
+                "transfer_isk_amount_from_wallet_to_wallet_escrow",
+                SettlementOperationKind::TransferIskAmountFromWalletToWalletEscrow,
+            ),
+            (
+                SettlementCommand::TransferIskAmountFromWalletEscrowToWalletWithNewOwner(
+                    TransferIskAmountFromWalletEscrowToWalletWithNewOwner {
+                        wallet_escrow_id: uuid(7),
+                        destination_wallet_id: uuid(9),
+                        isk_amount: 25,
+                    },
+                ),
+                "transfer_isk_amount_from_wallet_escrow_to_wallet_with_new_owner",
+                SettlementOperationKind::TransferIskAmountFromWalletEscrowToWalletWithNewOwner,
+            ),
+            (
+                SettlementCommand::TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner(
+                    TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner {
+                        wallet_escrow_id: uuid(7),
+                        destination_wallet_id: uuid(8),
+                        isk_amount: 25,
+                    },
+                ),
+                "transfer_isk_amount_from_wallet_escrow_to_wallet_with_previous_owner",
+                SettlementOperationKind::TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner,
+            ),
         ];
-        for command in commands {
-            assert!(!command.kind_name().is_empty());
-            assert_ne!(command.proto_kind(), SettlementOperationKind::Unspecified);
+
+        for (command, expected_name, expected_kind) in cases {
+            assert_eq!(command.kind_name(), expected_name);
+            assert_eq!(command.proto_kind(), expected_kind);
             command.validate().unwrap();
         }
     }

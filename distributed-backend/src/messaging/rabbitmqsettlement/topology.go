@@ -52,18 +52,13 @@ func setupTopology(channel *amqp.Channel, config Config) error {
 		return fmt.Errorf("bind settlement dead-letter queue: %w", err)
 	}
 
-	commandArgs := amqp.Table{
-		"x-queue-type":              "quorum",
-		"x-dead-letter-exchange":    config.DeadLetterExchange,
-		"x-dead-letter-routing-key": config.DeadLetterRoutingKey,
-	}
 	if _, err := channel.QueueDeclare(
 		config.CommandQueue,
 		true,
 		false,
 		false,
 		false,
-		commandArgs,
+		commandQueueArguments(config),
 	); err != nil {
 		return fmt.Errorf("declare settlement command queue: %w", err)
 	}
@@ -78,4 +73,12 @@ func setupTopology(channel *amqp.Channel, config Config) error {
 	}
 
 	return nil
+}
+
+func commandQueueArguments(config Config) amqp.Table {
+	return amqp.Table{
+		"x-queue-type":              "quorum",
+		"x-dead-letter-exchange":    config.DeadLetterExchange,
+		"x-dead-letter-routing-key": config.DeadLetterRoutingKey,
+	}
 }
