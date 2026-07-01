@@ -25,7 +25,6 @@ __pycache__/
 /simulator/.venv/
 /.idea/
 .terraform
-docker-compose.integration.local.yml
-trade-settlement.local.dockerfile
-go-service.local.dockerfile
-eve_trade_local_ci_k8s.py
+
+
+
