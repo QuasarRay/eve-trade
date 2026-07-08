@@ -47,7 +47,7 @@ class RunContext:
 def repository_root(start: Path | None = None) -> Path:
     current = (start or Path.cwd()).resolve()
     for candidate in (current, *current.parents):
-        if (candidate / ".git").exists() or (candidate / "go.work").exists():
+        if (candidate / ".git").exists() or (candidate / "encore.app").exists() or (candidate / "go.mod").exists():
             return candidate
     return current
 
@@ -127,8 +127,8 @@ def collect_tool_versions(root: Path) -> dict[str, Any]:
         "go": ["go", "version"],
         "rustc": ["rustc", "--version"],
         "cargo": ["cargo", "--version"],
+        "encore": ["encore", "version"],
         "docker": ["docker", "version", "--format", "{{.Server.Version}}"],
-        "docker_compose": ["docker", "compose", "version", "--short"],
         "kubectl": ["kubectl", "version", "--client"],
     }
     versions = {name: _capture(argv, root) for name, argv in commands.items()}

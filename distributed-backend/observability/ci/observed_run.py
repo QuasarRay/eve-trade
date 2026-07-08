@@ -1,11 +1,10 @@
-"""Observed local/CI runner for checks, tests, Compose E2E, and evidence collection."""
+"""Observed local/CI runner for checks, tests, Encore E2E, and evidence collection."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import os
-import shlex
 import sys
 import time
 import traceback
@@ -17,7 +16,6 @@ if __package__ in (None, ""):
 
 from observability.ci.classify_failure import FailureClassification, classify_failure
 from observability.ci.collect_db import collect_db
-from observability.ci.collect_docker import collect_docker, compose_prefix, compose_services, detect_compose_file
 from observability.ci.collect_environment import collect_environment
 from observability.ci.collect_kubernetes import collect_kubernetes
 from observability.ci.collect_pytest import PytestSummary, collect_pytest
@@ -56,7 +54,7 @@ _TRANSIENT_COMMAND_MARKERS = (
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run Eve Trade checks with durable observability artifacts")
     parser.add_argument("command", choices=("check", "test", "integration", "e2e", "collect-only"))
-    parser.add_argument("--clean", action="store_true", help="Delete Compose resources and volumes before integration/E2E")
+    parser.add_argument("--clean", action="store_true", help="Accepted for compatibility; Encore E2E does not delete local resources")
     parser.add_argument("--maxfail", type=int, default=0)
     parser.add_argument("--test-path", default="")
     parser.add_argument("--no-sentry", action="store_true")
@@ -77,7 +75,6 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
     sentry = SentryReporter(context, enabled=not args.no_sentry, strict=args.strict)
     results: list[CommandResult] = []
     pytest_summary: PytestSummary | None = None
-    docker_metadata: dict[str, Any] = {}
     db_metadata: dict[str, Any] = {}
     kubernetes_metadata: dict[str, Any] = {}
     missing_evidence: list[str] = []
@@ -97,19 +94,16 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
                 integration = _run_integration(context, storage, tracer, sentry, args)
                 results.extend(integration["results"])
                 pytest_summary = integration["pytest"]
-                docker_metadata = integration["docker"]
                 db_metadata = integration["database"]
                 missing_evidence.extend(integration["missing"])
             elif args.command == "collect-only":
-                compose_file = detect_compose_file(context.repo_root)
-                docker_metadata = _safe_collect("docker", missing_evidence, args.strict, lambda: collect_docker(context, storage, compose_file=compose_file))
-                db_metadata = _safe_collect("database", missing_evidence, args.strict, lambda: collect_db(context, storage, compose_file=compose_file))
+                db_metadata = _safe_collect("database", missing_evidence, args.strict, lambda: collect_db(context, storage))
                 kubernetes_metadata = _safe_collect("kubernetes", missing_evidence, args.strict, lambda: collect_kubernetes(context, storage))
             failed = next((result for result in results if not result.succeeded), None)
             exit_code = failed.exit_code if failed else 0
             run_span.set_attribute("command.exit_code", exit_code)
             run_span.set_attribute("error", exit_code != 0)
-            with tracer.span("pipeline.evidence", _evidence_attributes(docker_metadata, db_metadata, kubernetes_metadata)):
+            with tracer.span("pipeline.evidence", _evidence_attributes(db_metadata, kubernetes_metadata)):
                 pass
             storage.write_json(
                 "run-summary.json",
@@ -124,13 +118,13 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
                         for result in results
                         if "readiness" in result.name or result.stage == "start"
                     },
-                    "service_urls": {**_service_urls(environment["environment"]), **docker_metadata.get("service_urls", {})},
+                    "service_urls": _service_urls(environment["environment"]),
                     "missing_evidence": missing_evidence,
                 },
             )
             if failed:
                 pytest_summary = pytest_summary or collect_pytest(context, failed.stdout + "\n" + failed.stderr, storage=storage)
-                logs = _read_if_exists(context.run_dir / "docker" / "compose-logs.txt")
+                logs = _read_if_exists(context.run_dir / "kubernetes" / "logs.txt")
                 db_hints = json.dumps(db_metadata, default=str)
                 classification = classify_failure(
                     nodeid=pytest_summary.first_failing_test_nodeid,
@@ -171,7 +165,6 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
                     failed,
                     pytest_summary,
                     classification,
-                    docker=docker_metadata,
                     database=db_metadata,
                     kubernetes=kubernetes_metadata,
                     sentry_event_id=sentry.event_id,
@@ -229,101 +222,13 @@ def _run_integration(
     sentry: SentryReporter,
     args: argparse.Namespace,
 ) -> dict[str, Any]:
-    compose_file = detect_compose_file(context.repo_root, prefer_integration=True)
     missing: list[str] = []
-    if compose_file is None:
-        missing.append("No Docker Compose file was found; falling back to host pytest.")
-        return _host_e2e(context, storage, tracer, sentry, args, missing)
-    profile_test = compose_file.name == "docker-compose.integration.yml"
-    prefix = compose_prefix(compose_file, profile_test=profile_test)
-    services = compose_services(context, compose_file, profile_test=profile_test)
-    storage.write_json("docker/discovered-services.json", {"compose_file": str(compose_file), "services": services})
-    results: list[CommandResult] = []
-
-    def invoke(
-        argv: list[str],
-        name: str,
-        stage: str,
-        *,
-        timeout: float = 900,
-        retry_transient: bool = False,
-    ) -> CommandResult:
-        max_attempts = 3 if retry_transient else 1
-        attempts: list[dict[str, object]] = []
-        result: CommandResult | None = None
-        for attempt in range(1, max_attempts + 1):
-            attempt_name = name if max_attempts == 1 else f"{name}-attempt-{attempt}"
-            result = run_command(
-                context,
-                argv,
-                name=attempt_name,
-                stage=stage,
-                storage=storage,
-                tracer=tracer,
-                sentry=sentry,
-                timeout=timeout,
-                report_failure_to_sentry=False,
-            )
-            attempt_metadata = result.to_dict()
-            attempt_metadata["retry.attempt"] = attempt
-            attempt_metadata["retry.max_attempts"] = max_attempts
-            attempt_metadata["retry.transient"] = _is_transient_command_failure(result)
-            attempts.append(attempt_metadata)
-            if result.succeeded or not attempt_metadata["retry.transient"] or attempt >= max_attempts:
-                break
-            time.sleep(float(2 ** (attempt - 1)))
-
-        if max_attempts > 1:
-            storage.write_json(
-                Path("commands") / stage / name / "retry-summary.json",
-                {
-                    "command": name,
-                    "recovered": bool(result and result.succeeded and len(attempts) > 1),
-                    "attempts": attempts,
-                },
-            )
-        assert result is not None
-        results.append(result)
-        return result
-
     if args.clean:
-        if not invoke([*prefix, "down", "-v", "--remove-orphans"], "compose-clean", "prepare", timeout=180, retry_transient=True).succeeded:
-            return _integration_result(context, storage, compose_file, profile_test, results, None, missing)
-    if not invoke([*prefix, "build"], "compose-build", "build", timeout=1800, retry_transient=True).succeeded:
-        return _integration_result(context, storage, compose_file, profile_test, results, None, missing)
-    dependencies = [
-        name
-        for name in services
-        if name == "otel-collector" or any(token in name.lower() for token in ("postgres", "rabbit", "nats"))
-    ]
-    if dependencies and not invoke([*prefix, "up", "-d", *dependencies], "compose-dependencies", "start", timeout=300, retry_transient=True).succeeded:
-        return _integration_result(context, storage, compose_file, profile_test, results, None, missing)
-    if "migrate" in services and not invoke([*prefix, "up", "--exit-code-from", "migrate", "migrate"], "compose-migrate", "migrate", timeout=300).succeeded:
-        return _integration_result(context, storage, compose_file, profile_test, results, None, missing)
-    app_services = [name for name in services if name not in {*dependencies, "migrate", "e2e-tests", "tests"}]
-    if app_services and not invoke([*prefix, "up", "-d", *app_services], "compose-services", "start", timeout=600, retry_transient=True).succeeded:
-        return _integration_result(context, storage, compose_file, profile_test, results, None, missing)
-    invoke([*prefix, "ps"], "compose-readiness", "readiness", timeout=60)
-    junit_host = storage.path("pytest/pytest-junit.xml")
-    test_path = args.test_path or "distributed-backend/tests/e2e"
-    maxfail = f" --maxfail={args.maxfail}" if args.maxfail else ""
-    pytest_command = (
-        "python -m pip install --retries 5 --timeout 60 -r distributed-backend/tests/e2e/requirements.txt && "
-        f"python -m coverage run --branch --source=distributed-backend/tests/e2e -m pytest {shlex.quote(test_path)} -vv -s --tb=short{maxfail} "
-        f"--junitxml=/workspace/{junit_host.relative_to(context.repo_root).as_posix()} && "
-        "python -m coverage report --fail-under=70 && "
-        "python -m coverage xml -o /workspace/distributed-backend/tests/e2e/coverage.xml"
-    )
-    if "e2e-tests" in services:
-        test_argv = [*prefix, "run", "--rm", "--no-deps", "e2e-tests", "sh", "-c", pytest_command]
-    else:
-        missing.append("No e2e-tests Compose service found; pytest ran on the host.")
-        test_argv = [sys.executable, "-m", "pytest", test_path, "-vv", "-s", "--tb=short", f"--junitxml={junit_host}"]
-        if args.maxfail:
-            test_argv.append(f"--maxfail={args.maxfail}")
-    test_result = invoke(test_argv, "pytest-e2e", "e2e", timeout=1800)
-    pytest_summary = collect_pytest(context, test_result.stdout + "\n" + test_result.stderr, junit_path=junit_host, storage=storage)
-    return _integration_result(context, storage, compose_file, profile_test, results, pytest_summary, missing)
+        missing.append("--clean was ignored; Encore E2E uses the configured runtime environment")
+    for name in ("EVE_TRADE_ENCORE_URL", "EVE_TRADE_SIMULATOR_URL", "EVE_TRADE_DATABASE_URL"):
+        if not os.getenv(name):
+            missing.append(f"{name} is not set; pytest will skip or fail according to the production gate")
+    return _host_e2e(context, storage, tracer, sentry, args, missing)
 
 
 def _host_e2e(
@@ -337,7 +242,7 @@ def _host_e2e(
         argv.append(f"--maxfail={args.maxfail}")
     result = run_command(context, argv, name="pytest-e2e-host", stage="e2e", storage=storage, tracer=tracer, sentry=sentry, timeout=1800, report_failure_to_sentry=False)
     summary = collect_pytest(context, result.stdout + "\n" + result.stderr, junit_path=junit, storage=storage)
-    return {"results": [result], "pytest": summary, "docker": {}, "database": {}, "missing": missing}
+    return {"results": [result], "pytest": summary, "database": _safe_collect("database", missing, False, lambda: collect_db(context, storage)), "missing": missing}
 
 
 def _is_transient_command_failure(result: CommandResult) -> bool:
@@ -347,15 +252,6 @@ def _is_transient_command_failure(result: CommandResult) -> bool:
         return True
     output = f"{result.stdout}\n{result.stderr}".lower()
     return any(marker in output for marker in _TRANSIENT_COMMAND_MARKERS)
-
-
-def _integration_result(
-    context: RunContext, storage: RunStorage, compose_file: Path, profile_test: bool,
-    results: list[CommandResult], pytest_summary: PytestSummary | None, missing: list[str],
-) -> dict[str, Any]:
-    docker_metadata = _safe_collect("docker", missing, False, lambda: collect_docker(context, storage, compose_file=compose_file, profile_test=profile_test))
-    db_metadata = _safe_collect("database", missing, False, lambda: collect_db(context, storage, compose_file=compose_file, profile_test=profile_test))
-    return {"results": results, "pytest": pytest_summary, "docker": docker_metadata, "database": db_metadata, "missing": missing}
 
 
 def _capture_enriched_sentry(
@@ -410,15 +306,11 @@ def _service_urls(environment: dict[str, Any]) -> dict[str, str]:
 
 
 def _evidence_attributes(
-    docker: dict[str, Any],
     database: dict[str, Any],
     kubernetes: dict[str, Any],
 ) -> dict[str, Any]:
-    images = docker.get("images", []) if isinstance(docker, dict) else []
     pods = kubernetes.get("containers", []) if isinstance(kubernetes, dict) else []
     attributes = {
-        "docker.image_digest": [str(item.get("docker.image_digest", "")) for item in images if item.get("docker.image_digest")],
-        "docker.compose_service": [str(item.get("docker.compose_service", "")) for item in images if item.get("docker.compose_service")],
         "db.schema_hash": database.get("db.schema_hash", "") if isinstance(database, dict) else "",
         "kubernetes.namespace": kubernetes.get("namespace", "") if isinstance(kubernetes, dict) else "",
         "kubernetes.pod.name": [str(item.get("kubernetes.pod.name", "")) for item in pods if item.get("kubernetes.pod.name")],

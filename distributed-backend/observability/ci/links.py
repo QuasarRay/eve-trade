@@ -78,8 +78,8 @@ def honeycomb_investigation(context: RunContext, *, trace_id: str = "", test_nod
         "query_url": query_url,
         "filters": filters,
         "suggested_fields": [
-            "python.version", "os.name", "docker.image_digest", "db.schema_hash",
-            "db.migration_hash", "protobuf.generated_hash", "service.name", "test.nodeid",
+            "python.version", "os.name", "encore.config_hash", "db.schema_hash",
+            "db.migration_hash", "protobuf.generated_hash", "kubernetes.manifest_hash", "service.name", "test.nodeid",
             "command.exit_code", "test.failure_family", "github.run_id", "git.dirty",
         ],
         "bubbleup_steps": [

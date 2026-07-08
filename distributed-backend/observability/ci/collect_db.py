@@ -6,10 +6,8 @@ import hashlib
 import os
 import shutil
 import subprocess
-from pathlib import Path
 from typing import Any
 
-from .collect_docker import compose_prefix, compose_services, detect_compose_file
 from .redaction import redact_text
 from .run_context import RunContext
 from .storage import RunStorage
@@ -24,29 +22,17 @@ LIKELY_TABLES = (
 def collect_db(
     context: RunContext,
     storage: RunStorage | None = None,
-    *,
-    compose_file: Path | None = None,
-    profile_test: bool = False,
 ) -> dict[str, Any]:
     storage = storage or RunStorage(context.run_dir)
-    compose_file = compose_file or detect_compose_file(context.repo_root, prefer_integration=profile_test)
-    services = compose_services(context, compose_file, profile_test=profile_test)
-    service = next((name for name in services if "postgres" in name.lower()), "")
-    metadata: dict[str, Any] = {"available": False, "service": service, "tables": [], "errors": []}
-    if not service or not shutil.which("docker"):
-        metadata["errors"].append("PostgreSQL Compose service or Docker executable unavailable")
+    database_url = os.getenv("EVE_TRADE_DATABASE_URL") or os.getenv("DATABASE_URL", "")
+    metadata: dict[str, Any] = {"available": False, "tables": [], "errors": []}
+    if not database_url or not shutil.which("psql"):
+        metadata["errors"].append("EVE_TRADE_DATABASE_URL/DATABASE_URL or psql executable unavailable")
         storage.write_json("db/metadata.json", metadata)
         return metadata
-    prefix = compose_prefix(compose_file, profile_test=profile_test)
-    user = os.getenv("POSTGRES_USER", "postgres")
-    database = _find_database(prefix, service, user, context.repo_root)
-    if not database:
-        metadata["errors"].append("No connectable PostgreSQL database found")
-        storage.write_json("db/metadata.json", metadata)
-        return metadata
-    metadata.update({"available": True, "database": database})
+    metadata.update({"available": True, "database": "<redacted:url>"})
     tables_query = "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname='public' ORDER BY tablename;"
-    code, table_output = _psql(prefix, service, user, database, tables_query, context.repo_root, tuples=True)
+    code, table_output = _psql(database_url, tables_query, context.repo_root, tuples=True)
     storage.write_text("db/tables.txt", redact_text(table_output))
     if code:
         metadata["errors"].append("table list query failed")
@@ -57,7 +43,7 @@ def collect_db(
         "FROM information_schema.columns WHERE table_schema='public' "
         "ORDER BY table_name,ordinal_position;"
     )
-    schema_code, schema = _psql(prefix, service, user, database, schema_query, context.repo_root, tuples=True)
+    schema_code, schema = _psql(database_url, schema_query, context.repo_root, tuples=True)
     storage.write_text("db/schema.txt", redact_text(schema))
     schema_hash = hashlib.sha256(schema.encode("utf-8")).hexdigest() if schema_code == 0 else ""
     metadata["db.schema_hash"] = schema_hash
@@ -69,9 +55,9 @@ def collect_db(
             "SELECT COALESCE(json_agg(row_to_json(snapshot)), '[]'::json)::text "
             f'FROM (SELECT * FROM "{table}" ORDER BY 1 DESC LIMIT 200) snapshot;'
         )
-        text_code, text_output = _psql(prefix, service, user, database, query, context.repo_root)
-        csv_code, csv_output = _psql(prefix, service, user, database, query, context.repo_root, csv=True)
-        json_code, json_output = _psql(prefix, service, user, database, json_query, context.repo_root, tuples=True)
+        text_code, text_output = _psql(database_url, query, context.repo_root)
+        csv_code, csv_output = _psql(database_url, query, context.repo_root, csv=True)
+        json_code, json_output = _psql(database_url, json_query, context.repo_root, tuples=True)
         storage.write_text(f"db/tables/{table}.txt", redact_text(text_output))
         storage.write_text(f"db/tables/{table}.csv", redact_text(csv_output))
         storage.write_text(f"db/tables/{table}.json", redact_text(json_output))
@@ -79,7 +65,7 @@ def collect_db(
             metadata["errors"].append(f"snapshot failed for {table}")
     migration_tables = [name for name in tables if "migration" in name.lower()]
     for table in migration_tables:
-        code, output = _psql(prefix, service, user, database, f'SELECT * FROM "{table}" ORDER BY 1;', context.repo_root)
+        code, output = _psql(database_url, f'SELECT * FROM "{table}" ORDER BY 1;', context.repo_root)
         storage.write_text(f"db/migrations/{table}.txt", redact_text(output))
         if code:
             metadata["errors"].append(f"migration snapshot failed for {table}")
@@ -87,20 +73,11 @@ def collect_db(
     return metadata
 
 
-def _find_database(prefix: list[str], service: str, user: str, cwd: Path) -> str:
-    candidates = [os.getenv("POSTGRES_DB", ""), "eve_trade", "eve_trade_e2e", "postgres"]
-    for database in dict.fromkeys(item for item in candidates if item):
-        code, _ = _psql(prefix, service, user, database, "SELECT 1;", cwd, tuples=True)
-        if code == 0:
-            return database
-    return ""
-
-
 def _psql(
-    prefix: list[str], service: str, user: str, database: str, query: str, cwd: Path,
+    database_url: str, query: str, cwd: Any,
     *, tuples: bool = False, csv: bool = False,
 ) -> tuple[int, str]:
-    argv = [*prefix, "exec", "-T", service, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", user, "-d", database]
+    argv = ["psql", database_url, "-X", "-v", "ON_ERROR_STOP=1"]
     if tuples:
         argv.extend(["-A", "-t"])
     if csv:

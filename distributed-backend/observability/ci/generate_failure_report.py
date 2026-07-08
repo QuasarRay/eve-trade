@@ -27,7 +27,6 @@ def generate_failure_report(
     pytest: PytestSummary | None = None,
     classification: FailureClassification | None = None,
     *,
-    docker: dict[str, Any] | None = None,
     database: dict[str, Any] | None = None,
     kubernetes: dict[str, Any] | None = None,
     sentry_event_id: str = "",
@@ -61,7 +60,6 @@ def generate_failure_report(
         "source_links": source_links,
         "honeycomb": honeycomb,
         "sentry": {"event_id": sentry_event_id, "event_url": sentry_event_url(sentry_event_id)},
-        "docker": docker or {},
         "database": database or {},
         "kubernetes": kubernetes or {},
         "artifacts": artifact_links,
@@ -86,7 +84,7 @@ def _markdown(data: dict[str, Any]) -> str:
     classification = data["classification"]
     honeycomb = data["honeycomb"]
     sentry = data["sentry"]
-    service_logs = [item for item in data["artifacts"] if item["path"].startswith(("docker/logs/", "kubernetes/logs/"))]
+    service_logs = [item for item in data["artifacts"] if item["path"].startswith(("runtime/logs/", "kubernetes/logs/"))]
     database_artifacts = [item for item in data["artifacts"] if item["path"].startswith("db/")]
     lines = [
         "# Eve Trade failure report", "", "## Executive summary", "", data["executive_summary"], "",
@@ -148,7 +146,7 @@ def _html(data: dict[str, Any]) -> str:
     def link(label: str, url: str) -> str:
         return f'<a href="{html.escape(url, quote=True)}">{html.escape(label)}</a>' if url else html.escape(label)
     artifacts = "".join(f"<li>{link(item['path'], item['href'])}</li>" for item in data["artifacts"])
-    service_logs = "".join(f"<li>{link(item['path'], item['href'])}</li>" for item in data["artifacts"] if item["path"].startswith(("docker/logs/", "kubernetes/logs/"))) or "<li>No per-service log artifacts were collected.</li>"
+    service_logs = "".join(f"<li>{link(item['path'], item['href'])}</li>" for item in data["artifacts"] if item["path"].startswith(("runtime/logs/", "kubernetes/logs/"))) or "<li>No per-service log artifacts were collected.</li>"
     database = "".join(f"<li>{link(item['path'], item['href'])}</li>" for item in data["artifacts"] if item["path"].startswith("db/")) or "<li>No database snapshot artifacts were collected.</li>"
     solutions = "".join(f"<li>{link(item['path'], item['url'])}</li>" for item in data["source_links"])
     bubble = "".join(f"<li>{html.escape(item)}</li>" for item in data["honeycomb"]["bubbleup_steps"])

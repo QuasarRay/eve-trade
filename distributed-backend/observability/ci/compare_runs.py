@@ -16,10 +16,10 @@ COMPARE_FIELDS = {
     "python.version": ("tool-versions.json", "python"),
     "go.version": ("tool-versions.json", "go"),
     "rust.version": ("tool-versions.json", "rustc"),
-    "docker.version": ("tool-versions.json", "docker"),
-    "docker.compose.version": ("tool-versions.json", "docker_compose"),
+    "encore.version": ("tool-versions.json", "encore"),
     "os.name": ("tool-versions.json", "os"),
-    "docker.compose_config_hash": ("hashes.json", "docker.compose_config_hash"),
+    "encore.config_hash": ("hashes.json", "encore.config_hash"),
+    "kubernetes.manifest_hash": ("hashes.json", "kubernetes.manifest_hash"),
     "db.schema_hash": ("db/metadata.json", "db.schema_hash"),
     "db.migration_hash": ("hashes.json", "db.migration_hash"),
     "protobuf.generated_hash": ("hashes.json", "protobuf.generated_hash"),
@@ -59,11 +59,6 @@ def compare_runs(local: Path, ci: Path, output_dir: Path | None = None) -> dict[
         ci_present = key in ci_env and ci_env[key] not in ("", None, "<redacted:empty>")
         if local_present != ci_present:
             comparisons.append({"field": f"env.{key}.present", "local": local_present, "ci": ci_present, "different": True, "hint": "Environment variable presence differs; values remain redacted."})
-    local_images = _image_map(_read(local / "docker/metadata.json"))
-    ci_images = _image_map(_read(ci / "docker/metadata.json"))
-    for service in sorted(set(local_images) | set(ci_images)):
-        if local_images.get(service) != ci_images.get(service):
-            comparisons.append({"field": f"docker.image_digest.{service}", "local": local_images.get(service), "ci": ci_images.get(service), "different": True, "hint": "Docker image digest differs."})
     local_summary = _read(local / "run-summary.json")
     ci_summary = _read(ci / "run-summary.json")
     _compare_mapping(comparisons, "service.url", local_summary.get("service_urls", {}), ci_summary.get("service_urls", {}), "Service URL differs.")
@@ -109,10 +104,6 @@ def _read(path: Path) -> dict[str, Any]:
         return value if isinstance(value, dict) else {}
     except (OSError, json.JSONDecodeError):
         return {}
-
-
-def _image_map(metadata: dict[str, Any]) -> dict[str, str]:
-    return {str(item.get("service", "")): str(item.get("id", "")) for item in metadata.get("images", []) if item.get("service")}
 
 
 def _compare_mapping(
@@ -168,8 +159,10 @@ def _hint(field: str, local: Any, ci: Any) -> str:
         return "Migration content/hash differs."
     if field == "protobuf.generated_hash":
         return "Generated protobuf hash differs."
-    if field.startswith("docker"):
-        return "Docker configuration, version, or image digest differs."
+    if field.startswith("encore"):
+        return "Encore configuration or CLI version differs."
+    if field.startswith("kubernetes"):
+        return "Kubernetes manifest content differs."
     if field.endswith("version") or field == "os.name":
         return f"Runtime parity differs for {field}."
     if field.startswith("pytest"):

@@ -41,38 +41,38 @@ RULES = (
         ("python -m pip check", "python -m compileall observability"),
     ),
     _Rule(
-        "docker-networking", (r"connection refused|temporary failure in name resolution|no such host|network.*not found|quilkin",),
-        ("docker-compose", "api-gateway", "market"), ("compose.yaml", "docker-compose.integration.yml", "distributed-backend/src/api-gateway/distributed-backend/quilkin_udp.go"),
-        ("docker compose ps", "docker compose logs --no-color"),
+        "runtime-networking", (r"connection refused|temporary failure in name resolution|no such host|network.*not found|quilkin",),
+        ("encore-backend", "quilkin", "nsqd"), ("gateway/udp.go", "distributed-backend/orchestration/kubernetes/overlay/prod/networkpolicies.yaml"),
+        ("kubectl -n eve-trade get pods,svc", "kubectl -n eve-trade logs deploy/encore-backend --tail=200"),
     ),
     _Rule(
         "service-readiness", (r"not ready|healthcheck|timed out waiting|readiness|deadline exceeded",),
-        ("api-gateway", "market", "settlement-worker", "trade-settlement"), ("compose.yaml", "distributed-backend/src/market/cmd/market/main.go"),
-        ("docker compose ps", "docker compose logs --no-color --timestamps"),
+        ("encore-backend", "trade-settlement", "nsqd"), ("gateway/service.go", "market/api.go", "settlementworker/service.go"),
+        ("kubectl -n eve-trade get pods", "kubectl -n eve-trade logs deploy/encore-backend --tail=200"),
     ),
     _Rule(
         "migration/schema-drift", (r"migration|schema.*(differ|drift|missing)|undefined table|undefined column|does not exist",),
-        ("postgres", "trade-settlement"), ("distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql", "compose.yaml"),
-        ("python observability/ci/observed_run.py collect-only", "docker compose run --rm migrate"),
+        ("postgres", "trade-settlement"), ("distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql", "distributed-backend/orchestration/kubernetes/base/migrate.yaml"),
+        ("python observability/ci/observed_run.py collect-only", "kubectl -n eve-trade logs job/settlement-db-migrate"),
     ),
     _Rule(
         "generated-code-drift", (r"protobuf|proto.*drift|generated.*differ|buf generate",),
-        ("proto", "ci"), ("buf.gen.yaml", "distributed-backend/proto"),
-        ("buf generate", "git diff -- distributed-backend/proto/gen"),
+        ("proto", "ci"), ("buf.gen.yaml", "proto"),
+        ("buf generate", "git diff -- proto/gen"),
     ),
     _Rule(
         "environment-parity", (r"github actions|works locally|environment|version differs|image digest",),
-        ("ci",), (".github/workflows/verify.yaml", "docker-compose.integration.yml"),
+        ("ci",), (".github/workflows/verify.yaml", "ci-cd/pipeline.py"),
         ("python observability/ci/compare_runs.py --local <local-run> --ci <ci-run>",),
     ),
     _Rule(
         "idempotency", (r"idempot|duplicate|replay|settlement.*twice|double",),
-        ("api-gateway", "market", "trade-settlement"), ("distributed-backend/src/api-gateway/distributed-backend/quilkin_udp.go", "distributed-backend/src/market/distributed-backend/handler.go", "distributed-backend/src/trade-settlement/src/executor.rs"),
+        ("encore-backend", "market", "trade-settlement"), ("gateway/udp.go", "market/handler.go", "settlementworker/service.go", "distributed-backend/src/trade-settlement/src/executor.rs"),
         ("python -m pytest distributed-backend/tests/e2e -k idempotency -vv -s",),
     ),
     _Rule(
         "cancel-lifecycle", (r"cancel|refund|cancelled",),
-        ("market", "trade-settlement"), ("distributed-backend/src/market/game-trade/cancel_trade_instance.go", "distributed-backend/src/market/distributed-backend/handler.go", "distributed-backend/src/trade-settlement/src/operations.rs"),
+        ("market", "trade-settlement"), ("internal/gametrade/cancel_trade_instance.go", "market/handler.go", "distributed-backend/src/trade-settlement/src/operations.rs"),
         ("python -m pytest distributed-backend/tests/e2e -k cancel -vv -s --maxfail=1",),
     ),
     _Rule(
@@ -82,17 +82,17 @@ RULES = (
     ),
     _Rule(
         "client-tampering", (r"tamper|wrong owner|wrong station|canonical|not owned|forged",),
-        ("market",), ("distributed-backend/src/market/distributed-backend/handler.go", "distributed-backend/src/market/distributed-backend/repository.go"),
+        ("market",), ("market/handler.go", "market/repository.go"),
         ("python -m pytest distributed-backend/tests/e2e -k 'owner or station or tamper' -vv -s",),
     ),
     _Rule(
         "accept-validation", (r"accept.*(zero|negative|quantity)|rejects_zero_quantity|quantity_requested|insufficient isk|buyer and seller",),
-        ("market", "trade-settlement"), ("distributed-backend/src/market/game-trade/accept_trade_instance.go", "distributed-backend/src/market/distributed-backend/handler.go", "distributed-backend/src/trade-settlement/src/operations.rs"),
+        ("market", "trade-settlement"), ("internal/gametrade/accept_trade_instance.go", "market/handler.go", "distributed-backend/src/trade-settlement/src/operations.rs"),
         ("python -m pytest distributed-backend/tests/e2e -k accepting_trade -vv -s --maxfail=1",),
     ),
     _Rule(
         "settlement-invariant", (r"settlement.*invariant|escrow.*mismatch|settlement step|batch_state",),
-        ("trade-settlement", "settlement-worker"), ("distributed-backend/src/trade-settlement/src/executor.rs", "distributed-backend/src/trade-settlement/src/operations.rs"),
+        ("trade-settlement", "settlementworker"), ("distributed-backend/src/trade-settlement/src/executor.rs", "settlementworker/service.go", "distributed-backend/src/trade-settlement/src/operations.rs"),
         ("cargo test --manifest-path distributed-backend/src/trade-settlement/Cargo.toml",),
     ),
     _Rule(
@@ -147,4 +147,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -1,5 +1,5 @@
-# Credential-free local collector. Start with:
-#   docker compose --profile observability up -d otel-collector
+# Credential-free local collector. Run with Kubernetes, the collector binary,
+# or another local supervisor.
 # Enable service SDKs with OTEL_SDK_DISABLED=false.
 extensions:
   health_check:

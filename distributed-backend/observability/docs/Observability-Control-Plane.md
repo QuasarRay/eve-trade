@@ -20,13 +20,13 @@ High-cardinality fields include:
 - Pipeline: `pipeline.command`, `pipeline.stage`, `pipeline.step`, `command.argv`, `command.exit_code`, `command.duration_ms`.
 - Tests: `test.nodeid`, `test.file`, `test.line`, `test.failure_family`.
 - Domain: `interaction_id`, `idempotency_key`, `trade_id`, `settlement_batch_id`, `settlement_step_id`, item/station/quantity and safe actor hashes.
-- Runtime: `service.name`, `service.version`, `service.language`, Docker image/service fields, Kubernetes namespace/pod/container fields.
+- Runtime: `service.name`, `service.version`, `service.language`, Encore/Kubernetes namespace, pod, and container fields.
 - Drift: `db.schema_hash`, `db.migration_hash`, `protobuf.generated_hash`.
 - Links: `artifact.path`, `sentry.event_id`, `honeycomb.trace_url`, `source.url`.
 
 ## Data paths
 
-Go services initialize OTLP traces, metrics, and logs through the shared `distributed-backend/src/observability` adapter. Connect RPC interceptors propagate W3C trace context. Domain spans cover UDP ingress/forwarding and market create/accept/cancel/validation/settlement-plan stages.
+The Encore backend initializes OTLP traces, metrics, and logs through `internal/observability`; Encore owns the Go service API and Pub/Sub boundaries. Domain spans cover UDP ingress/forwarding and Market create/accept/cancel/validation/settlement-plan stages.
 
 Rust registers `summer-opentelemetry`; explicit spans cover receive, validation, transaction, step execution, rollback, and failure audit. Structured tracing events carry batch, step, failure, and rollback fields.
 
