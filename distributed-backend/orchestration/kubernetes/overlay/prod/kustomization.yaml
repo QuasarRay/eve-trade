@@ -26,14 +26,8 @@ patches:
   - path: patches/deployments.yaml
 
 images:
-  - name: eve-trade/api-gateway
-    newName: registry.example.com/eve-trade/api-gateway
-    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
-  - name: eve-trade/market
-    newName: registry.example.com/eve-trade/market
-    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
-  - name: eve-trade/settlement-worker
-    newName: registry.example.com/eve-trade/settlement-worker
+  - name: eve-trade/encore-backend
+    newName: registry.example.com/eve-trade/encore-backend
     digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
   - name: eve-trade/trade-settlement
     newName: registry.example.com/eve-trade/trade-settlement

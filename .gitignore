@@ -3,14 +3,12 @@
 /distributed-backend/src/trade-settlement/target
 
 # Local Go/Windows build artifacts
-/market
 /market.exe
 *.exe
 
 # CI/CD local artifacts
 /.ci-venv
-/ci-cd/out
-/.o11y/
+/distributed-backend/ci-cd/out
 
 # Python caches
 __pycache__/
@@ -25,6 +23,4 @@ __pycache__/
 /simulator/.venv/
 /.idea/
 .terraform
-
-
-
+.vscode

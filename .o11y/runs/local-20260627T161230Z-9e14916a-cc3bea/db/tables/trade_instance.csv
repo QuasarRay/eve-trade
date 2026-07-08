@@ -1,0 +1,2 @@
+trade_instance_id,created_settlement_step_id,trade_kind,trade_state,issuer_id,item_type_id,station_id,total_quantity,remaining_quantity,unit_price_isk,expires_at,created_at,updated_at
+ce5254ac-9c25-46ca-bc06-b10e19829299,c32f26f2-be4b-4e00-8edc-31c2576a7d85,SELL,COMPLETED,1001,34,60003760,4,0,25,,2026-06-27 16:16:58.45002+00,2026-06-27 16:16:58.489871+00

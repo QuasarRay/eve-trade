@@ -1,0 +1,25 @@
+{
+  "branch": "main",
+  "dirty": true,
+  "git.branch": "main",
+  "git.dirty": true,
+  "ref": "",
+  "remote_origin": "https://github.com/QuasarRay/eve-trade",
+  "sha": "4bbba96894b8e35599bc34c7d4ebf71a68621d77",
+  "short_sha": "4bbba96894b8",
+  "status": [
+    "M compose.yaml",
+    " M distributed-backend/orchestration/kubernetes/overlay/local/simulator.yaml",
+    " M distributed-backend/src/api-gateway/distributed-backend/quilkin_udp.go",
+    " M distributed-backend/src/api-gateway/distributed-backend/quilkin_udp_test.go",
+    " M distributed-backend/src/api-gateway/go.mod",
+    " M distributed-backend/src/observability/go.mod",
+    " M distributed-backend/tests/e2e/test_trade_lifecycle.py",
+    " M docker-compose.integration.yml",
+    " M observability/ci/observed_run.py",
+    " M simulator/eve_trade_simulator/settings.py",
+    " M simulator/trade_gui/tests.py",
+    " M simulator/trade_gui/udp_client.py",
+    "?? observability/tests/test_observed_run.py"
+  ]
+}

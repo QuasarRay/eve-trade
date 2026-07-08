@@ -1,13 +1,5 @@
 [CmdletBinding()]
 param()
 
-$ErrorActionPreference = "Stop"
-$RepoRoot = Split-Path -Parent $PSScriptRoot
-Set-Location $RepoRoot
-
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    throw "Docker CLI was not found."
-}
-
-docker compose down
-exit $LASTEXITCODE
+Write-Host "The Encore backend runs in the foreground. Stop it with Ctrl+C in the terminal running scripts/run-local.ps1."
+Write-Host "Non-Go dependencies such as PostgreSQL, NSQ, Quilkin, or Rust trade-settlement must be stopped with the tool that started them."

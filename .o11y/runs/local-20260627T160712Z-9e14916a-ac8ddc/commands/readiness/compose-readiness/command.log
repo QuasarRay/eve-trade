@@ -1,0 +1,18 @@
+command: docker compose -f C:\Users\Astral\Desktop\eve-trade\docker-compose.integration.yml --profile test ps
+cwd: C:\Users\Astral\Desktop\eve-trade
+exit_code: 0
+duration_ms: 400.02
+
+--- stdout ---
+NAME                                        IMAGE                                                                                                                                                                     COMMAND                  SERVICE             CREATED          STATUS                                     PORTS
+eve-trade-integration-api-gateway-1         eve-trade-integration-api-gateway                                                                                                                                         "/app/api-gateway"       api-gateway         14 seconds ago   Up 3 seconds (healthy)                     8080/tcp, 26000/udp
+eve-trade-integration-market-1              eve-trade-integration-market                                                                                                                                              "/app/market"            market              16 seconds ago   Up 6 seconds (healthy)                     8081/tcp
+eve-trade-integration-otel-collector-1      ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.153.0@sha256:93aad750175cbf1a973ae1c5886c3371f4d800f61be25cdd26870b8441ffe9fa   "/otelcol-contrib --…"   otel-collector      17 seconds ago   Up 11 seconds                              4317-4318/tcp, 55679/tcp
+eve-trade-integration-postgres-1            postgres:16                                                                                                                                                               "docker-entrypoint.s…"   postgres            6 minutes ago    Up 6 minutes (healthy)                     5432/tcp
+eve-trade-integration-quilkin-1             eve-trade/quilkin:dev                                                                                                                                                     "/bin/sh -ec 'endpoi…"   quilkin             14 seconds ago   Up 1 second                                26001/udp
+eve-trade-integration-rabbitmq-1            rabbitmq:3.13.7-management                                                                                                                                                "docker-entrypoint.s…"   rabbitmq            6 minutes ago    Up 6 minutes (healthy)                     4369/tcp, 5671-5672/tcp, 15671-15672/tcp, 15691-15692/tcp, 25672/tcp
+eve-trade-integration-settlement-worker-1   eve-trade-integration-settlement-worker                                                                                                                                   "/app/settlement-wor…"   settlement-worker   16 seconds ago   Up 9 seconds (healthy)                     8082/tcp
+eve-trade-integration-simulator-1           eve-trade-integration-simulator                                                                                                                                           "sh -c 'python manag…"   simulator           13 seconds ago   Up Less than a second (health: starting)   8000/tcp
+eve-trade-integration-trade-settlement-1    eve-trade-integration-trade-settlement                                                                                                                                    "/app/trade-settleme…"   trade-settlement    17 seconds ago   Up 9 seconds                               9092/tcp
+
+--- stderr ---

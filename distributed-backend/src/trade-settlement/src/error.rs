@@ -18,6 +18,8 @@ pub enum SettlementError {
     Database(#[from] sqlx::Error),
     #[error("serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
+    #[error("validation error: {0}")]
+    Validation(#[from] prost_protovalidate::Error),
 }
 
 pub type Result<T> = std::result::Result<T, SettlementError>;
@@ -33,6 +35,10 @@ impl SettlementError {
             SettlementError::InsufficientQuantity(_) => "INSUFFICIENT_QUANTITY",
             SettlementError::Database(_) => "DATABASE_ERROR",
             SettlementError::Serialization(_) => "SERIALIZATION_ERROR",
+            SettlementError::Validation(prost_protovalidate::Error::Validation(_)) => {
+                "INVALID_ARGUMENT"
+            }
+            SettlementError::Validation(_) => "VALIDATION_ERROR",
         }
     }
 
@@ -46,6 +52,10 @@ impl SettlementError {
             SettlementError::InsufficientQuantity(message) => Status::failed_precondition(message),
             SettlementError::Database(error) => Status::internal(error.to_string()),
             SettlementError::Serialization(error) => Status::internal(error.to_string()),
+            SettlementError::Validation(prost_protovalidate::Error::Validation(error)) => {
+                Status::invalid_argument(error.to_string())
+            }
+            SettlementError::Validation(error) => Status::internal(error.to_string()),
         }
     }
 }

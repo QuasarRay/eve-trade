@@ -1,0 +1,54 @@
+command: docker compose -f C:\Users\Astral\Desktop\eve-trade\docker-compose.integration.yml --profile test up -d trade-settlement settlement-worker market api-gateway quilkin simulator otel-collector
+cwd: C:\Users\Astral\Desktop\eve-trade
+exit_code: 0
+duration_ms: 27329.56
+
+--- stdout ---
+
+--- stderr ---
+ Container eve-trade-integration-otel-collector-1 Creating 
+ Container eve-trade-integration-postgres-1 Running 
+ Container eve-trade-integration-rabbitmq-1 Running 
+ Container eve-trade-integration-trade-settlement-1 Creating 
+ Container eve-trade-integration-trade-settlement-1 Created 
+ Container eve-trade-integration-settlement-worker-1 Creating 
+ Container eve-trade-integration-settlement-worker-1 Created 
+ Container eve-trade-integration-market-1 Creating 
+ Container eve-trade-integration-otel-collector-1 Created 
+ Container eve-trade-integration-market-1 Created 
+ Container eve-trade-integration-api-gateway-1 Creating 
+ Container eve-trade-integration-api-gateway-1 Created 
+ Container eve-trade-integration-quilkin-1 Creating 
+ Container eve-trade-integration-quilkin-1 Created 
+ Container eve-trade-integration-simulator-1 Creating 
+ Container eve-trade-integration-simulator-1 Created 
+ Container eve-trade-integration-otel-collector-1 Starting 
+ Container eve-trade-integration-postgres-1 Waiting 
+ Container eve-trade-integration-otel-collector-1 Started 
+ Container eve-trade-integration-postgres-1 Healthy 
+ Container eve-trade-integration-migrate-1 Starting 
+ Container eve-trade-integration-migrate-1 Started 
+ Container eve-trade-integration-migrate-1 Waiting 
+ Container eve-trade-integration-migrate-1 Exited 
+ Container eve-trade-integration-trade-settlement-1 Starting 
+ Container eve-trade-integration-trade-settlement-1 Started 
+ Container eve-trade-integration-rabbitmq-1 Waiting 
+ Container eve-trade-integration-rabbitmq-1 Healthy 
+ Container eve-trade-integration-settlement-worker-1 Starting 
+ Container eve-trade-integration-settlement-worker-1 Started 
+ Container eve-trade-integration-rabbitmq-1 Waiting 
+ Container eve-trade-integration-settlement-worker-1 Waiting 
+ Container eve-trade-integration-rabbitmq-1 Healthy 
+ Container eve-trade-integration-settlement-worker-1 Healthy 
+ Container eve-trade-integration-market-1 Starting 
+ Container eve-trade-integration-market-1 Started 
+ Container eve-trade-integration-market-1 Waiting 
+ Container eve-trade-integration-market-1 Healthy 
+ Container eve-trade-integration-api-gateway-1 Starting 
+ Container eve-trade-integration-api-gateway-1 Started 
+ Container eve-trade-integration-api-gateway-1 Waiting 
+ Container eve-trade-integration-api-gateway-1 Healthy 
+ Container eve-trade-integration-quilkin-1 Starting 
+ Container eve-trade-integration-quilkin-1 Started 
+ Container eve-trade-integration-simulator-1 Starting 
+ Container eve-trade-integration-simulator-1 Started 

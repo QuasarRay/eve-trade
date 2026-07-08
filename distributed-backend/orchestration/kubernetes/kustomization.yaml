@@ -13,11 +13,7 @@ resources:
   - base
 
 images:
-  - name: eve-trade/api-gateway
-    newTag: dev
-  - name: eve-trade/market
-    newTag: dev
-  - name: eve-trade/settlement-worker
+  - name: eve-trade/encore-backend
     newTag: dev
   - name: eve-trade/trade-settlement
     newTag: dev

@@ -11,10 +11,9 @@ locals {
   })
 
   service_image_names = toset([
-    "api-gateway",
-    "market",
-    "settlement-worker",
+    "encore-backend",
     "trade-settlement",
+    "quilkin",
   ])
 
   image_registry = trimsuffix(var.image_registry, "/")

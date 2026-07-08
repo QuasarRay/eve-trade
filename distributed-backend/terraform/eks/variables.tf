@@ -23,7 +23,7 @@ variable "cluster_endpoint_public_access" {
 }
 
 variable "container_image_overrides" {
-  description = "Optional per-service image overrides keyed by api-gateway, market, settlement-worker, or trade-settlement. Each value may include repository and tag."
+  description = "Optional per-service image overrides keyed by encore-backend, trade-settlement, or quilkin. Each value may include repository and tag."
   type        = map(any)
   default     = {}
 }

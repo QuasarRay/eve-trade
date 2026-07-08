@@ -2,13 +2,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let protoc = bundled_protoc_bin_path()?;
     std::env::set_var("PROTOC", protoc);
 
-    let proto = "../../proto/eve/trade_settlement/v1/trade_settlement.proto";
+    let proto = "../../../proto/eve/trade_settlement/v1/trade_settlement.proto";
+    let includes = ["../../../proto"];
+    let descriptor_path =
+        std::path::PathBuf::from(std::env::var("OUT_DIR")?).join("file_descriptor_set.bin");
+
     println!("cargo:rerun-if-changed={proto}");
+    println!("cargo:rerun-if-changed=../../../proto/eve/validation/v1/validation_rules.proto");
+    println!("cargo:rerun-if-changed=../../../proto/buf/validate/validate.proto");
+
+    let mut prost_config = tonic_prost_build::Config::new();
+    prost_reflect_build::Builder::new()
+        .file_descriptor_set_path(&descriptor_path)
+        .file_descriptor_set_bytes("crate::proto::FILE_DESCRIPTOR_SET_BYTES")
+        .configure(&mut prost_config, &[proto], &includes)?;
 
     tonic_prost_build::configure()
         .build_client(true)
         .build_server(true)
-        .compile_protos(&[proto], &["../../proto"])?;
+        .file_descriptor_set_path(&descriptor_path)
+        .skip_protoc_run()
+        .compile_with_config(prost_config, &[proto], &includes)?;
 
     Ok(())
 }

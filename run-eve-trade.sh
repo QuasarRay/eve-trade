@@ -2,4 +2,4 @@
 set -eu
 
 cd "$(dirname "$0")"
-docker compose up --build
+exec encore run

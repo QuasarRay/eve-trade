@@ -1,0 +1,14 @@
+{
+  "branch": "main",
+  "dirty": true,
+  "git.branch": "main",
+  "git.dirty": true,
+  "ref": "",
+  "remote_origin": "https://github.com/QuasarRay/eve-trade",
+  "sha": "ec4710ad643cf582d73904bbff823c276ccac7be",
+  "short_sha": "ec4710ad643c",
+  "status": [
+    "M compose.yaml",
+    " M docker-compose.integration.yml"
+  ]
+}

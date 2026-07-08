@@ -1,0 +1,8 @@
+{
+  "available": false,
+  "errors": [
+    "No connectable PostgreSQL database found"
+  ],
+  "service": "postgres",
+  "tables": []
+}

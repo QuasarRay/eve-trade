@@ -121,11 +121,10 @@ def test_production_gate_does_not_inherit_the_all_skipped_escape_hatch(monkeypat
 @pytest.mark.parametrize(
     "missing_name",
     [
-        "EVE_TRADE_API_GATEWAY_URL",
-        "EVE_TRADE_MARKET_URL",
+        "EVE_TRADE_ENCORE_URL",
         "EVE_TRADE_SETTLEMENT_GRPC",
         "EVE_TRADE_SIMULATOR_URL",
-        "EVE_TRADE_RABBITMQ_URL",
+        "EVE_TRADE_NSQ_TCP",
         "EVE_TRADE_DATABASE_URL",
         "EVE_TRADE_RUNTIME_DATABASE_URL",
         "EVE_TRADE_QUILKIN_UDP_HOST",

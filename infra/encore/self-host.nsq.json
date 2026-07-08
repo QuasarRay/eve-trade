@@ -1,0 +1,8 @@
+{
+  "pubsub": [
+    {
+      "type": "nsq",
+      "hosts": "nsqd.eve-trade.svc.cluster.local:4150"
+    }
+  ]
+}

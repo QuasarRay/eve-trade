@@ -66,8 +66,7 @@ def verify(path: Path) -> list[str]:
                     errors.append(f"workload {kind}/{name} container {container.get('name')} uses mutable or invalid image {image!r}")
 
     required_secret_contracts = {
-        ("Deployment", "api-gateway"): {"api-gateway-edge-auth"},
-        ("Deployment", "market"): {"trade-settlement-database"},
+        ("Deployment", "encore-backend"): {"gateway-edge-auth", "trade-settlement-database"},
         ("Deployment", "trade-settlement"): {"trade-settlement-database"},
         ("Job", "settlement-db-migrate"): {"trade-settlement-migration-database"},
     }

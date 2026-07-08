@@ -18,35 +18,35 @@ CON-27, and CON-34.
 
 ## Local Deployment Model
 
-Local development uses Docker Compose.
+Local Go development uses `encore run`. PostgreSQL, NSQ, Quilkin, the simulator,
+and Rust trade-settlement remain external support services because they are not
+packaged by Encore's Go runtime.
 
-| Compose service | Runtime role | Notable dependency |
+| Local component | Runtime role | Notable dependency |
 | --- | --- | --- |
+| `encore run` | Runs the Encore Go app containing gateway, Market, and settlementworker services. | PostgreSQL, NSQ, and trade-settlement configuration. |
 | `postgres` | Local PostgreSQL database | Database volume and loopback port. |
 | `migrate` | Applies SQL migrations and local seed data | Depends on PostgreSQL readiness. |
-| `rabbitmq` | Local settlement broker and management UI | AMQP and management ports on loopback. |
+| `nsqd` | Local Encore Pub/Sub backend | NSQ TCP `4150` and HTTP inspection `4151` when self-hosted. |
 | `trade-settlement` | Rust settlement service | Depends on migrated PostgreSQL. |
-| `settlement-worker` | RabbitMQ consumer and trade-settlement caller | Depends on RabbitMQ and trade-settlement. |
-| `market` | Go trade policy service | Depends on PostgreSQL and RabbitMQ. |
-| `api-gateway` | UDP edge and health/readiness service | Depends on Market; listens for Quilkin UDP on `26000` and publishes HTTP health/readiness on `localhost:8080`. |
-| `quilkin` | Local UDP proxy/routing edge | Forwards UDP `26001` to API Gateway UDP `26000`. |
+| `quilkin` | Local UDP proxy/routing edge | Forwards UDP `26001` to Encore gateway UDP `26000`. |
 | `simulator` | Local game-frontend simulator | Sends signed production-shaped GUI packets to Quilkin. |
 
-Local ports expose developer access to the simulator, Quilkin UDP, API Gateway
-health/readiness, PostgreSQL, RabbitMQ AMQP, and RabbitMQ management UI on
+Local ports expose developer access to the simulator, Quilkin UDP, Encore gateway
+health/readiness, PostgreSQL, NSQ TCP, and NSQ HTTP inspection endpoint on
 loopback. These exposures are local-only. Production overlays exclude simulator
 resources and use Quilkin as the UDP ingress point.
 
 ## Local-Only Exposure Model
 
-| Local exposure | Compose binding | Production-like manifest behavior |
+| Local exposure | local Encore/Kubernetes binding | Production-like manifest behavior |
 | --- | --- | --- |
 | Simulator | `127.0.0.1:8000:8000` | Simulator is excluded from production overlays. |
 | Quilkin UDP | `127.0.0.1:26001:26001/udp` | Production overlay exposes Quilkin UDP through its service. |
-| API Gateway health/readiness | `127.0.0.1:8080:8080` | Production HTTP exposure is health/readiness only; trade traffic enters through Quilkin UDP. |
+| gateway health/readiness | `127.0.0.1:8080:8080` | Production HTTP exposure is health/readiness only; trade traffic enters through Quilkin UDP. |
 | PostgreSQL | `127.0.0.1:5432:5432` | Database egress is broad TCP `5432`; no public database ingress is modeled here. |
-| RabbitMQ AMQP | `127.0.0.1:5672:5672` | RabbitMQ is reached by Market and settlement-worker through cluster service policy. |
-| RabbitMQ management UI | `127.0.0.1:15672:15672` | No production-like RabbitMQ management UI ingress is modeled in this ISO view. |
+| NSQ TCP | `127.0.0.1:4150:4150` | Encore Pub/Sub is reached by the Encore backend through service policy. |
+| NSQ HTTP inspection endpoint | `127.0.0.1:4151:4151` | No production-like NSQ HTTP inspection endpoint ingress is modeled in this ISO view. |
 
 ## Production-Like Deployment Model
 
@@ -55,18 +55,16 @@ Model ID: `MODEL-DEP-01`; view component ID: `VC-DEP-01`.
 ```mermaid
 flowchart TB
   Internet["Game UDP Clients"] --> Quilkin["quilkin Deployment / UDP Service"]
-  Quilkin --> APIGW["api-gateway Deployment"]
-  APIGW --> Market["market Deployment"]
-  Market --> Rabbit["rabbitmq Service"]
-  Rabbit --> Worker["settlement-worker Deployment"]
+  Quilkin --> Backend["encore-backend Deployment"]
+  Backend --> Market["Market Encore service package"]
+  Market --> PubSub["nsqd StatefulSet / Encore Pub/Sub"]
+  PubSub --> Worker["settlementworker Encore service package"]
   Worker --> Settlement["trade-settlement Deployment"]
   Market --> DB["RDS / Cloud SQL / PostgreSQL Service"]
   Settlement --> DB
   Migrate["migration Job"] --> DB
 
-  APIGW --> Collector["OpenTelemetry Collector"]
-  Market --> Collector
-  Worker --> Collector
+  Backend --> Collector["OpenTelemetry Collector"]
   Settlement --> Collector
   Collector --> Observability["Telemetry Export Backend"]
 
@@ -74,10 +72,9 @@ flowchart TB
   Terraform -. provisions/prepares .-> K8sCloud["EKS, GKE, or Omni-managed Talos"]
   Terraform -. provisions .-> DB
   Terraform -. provisions .-> Images["Image Repositories"]
-  K8sCloud -. runs .-> APIGW
+  K8sCloud -. runs .-> Backend
   K8sCloud -. runs .-> Quilkin
-  K8sCloud -. runs .-> Market
-  K8sCloud -. runs .-> Worker
+  K8sCloud -. runs .-> PubSub
   K8sCloud -. runs .-> Settlement
 ```
 
@@ -99,23 +96,19 @@ flowchart TB
 
 | Service | Expected endpoints | Current operational meaning | Current gap or limitation |
 | --- | --- | --- | --- |
-| API Gateway | `/healthz`, `/readyz` | Liveness means process is up; readiness checks Market reachability; UDP listener health is process/config dependent. | No wider downstream or trade-flow readiness is checked. |
-| Market | `/healthz`, `/readyz` | Liveness means process is up; readiness checks PostgreSQL via `repository.Ping` and checks the RabbitMQ client session when the RabbitMQ transport is active. | End-to-end settlement-worker/trade-settlement reply-path readiness is not actively checked by Market readiness. |
-| settlement-worker | `/healthz`, `/readyz` | Liveness means process is up; readiness reflects the worker health status set by the RabbitMQ consumer loop. | No separate trade-settlement dependency probe is modeled beyond request execution behavior. |
+| Encore backend gateway service | `/gateway/healthz`, `/gateway/readyz` | Liveness means process is up; readiness reflects Encore backend availability; UDP listener health is process/config dependent. | No wider downstream or trade-flow readiness is checked. |
+| Encore backend Market service | `/market/healthz`, `/market/readyz` | Readiness checks PostgreSQL via `repository.Ping`; Pub/Sub is runtime-managed by Encore. | End-to-end settlementworker/trade-settlement completion is asynchronous and not proven by Market readiness. |
+| Encore backend settlementworker service | `/settlementworker/healthz`, `/settlementworker/readyz` | Readiness checks configured Rust trade-settlement reachability where possible. | It does not prove a future settlement commit will succeed. |
 | trade-settlement | Kubernetes TCP socket probes on port `9092` | Proves the gRPC port is accepting TCP connections; does not prove PostgreSQL is reachable or settlement can commit. | Database commit readiness is not probed. |
 
-## Compose Healthcheck Versus Kubernetes Probe Model
+## local Encore/Kubernetes Healthcheck Versus Kubernetes Probe Model
 
 | Runtime | Service | Check | Meaning |
 | --- | --- | --- | --- |
-| Compose | `postgres` | `pg_isready` | Local database accepts connections. |
-| Compose | `rabbitmq` | `rabbitmq-diagnostics -q ping` | Local broker responds. |
-| Compose | `settlement-worker` | `GET /readyz` | Worker readiness, tied to worker health status. |
-| Compose | `market` | `GET /readyz` | Market readiness, including PostgreSQL and RabbitMQ client-session readiness for the default RabbitMQ transport. |
-| Compose | `api-gateway` | `GET /readyz` | API Gateway readiness, including Market reachability. |
-| Kubernetes | `api-gateway` | `GET /readyz`, `GET /healthz` | Readiness checks Market; liveness checks process. |
-| Kubernetes | `market` | `GET /readyz`, `GET /healthz` | Readiness checks PostgreSQL and RabbitMQ client-session readiness when RabbitMQ transport is active. |
-| Kubernetes | `settlement-worker` | `GET /readyz`, `GET /healthz` | Readiness reflects worker health status. |
+| local Encore/Kubernetes | `postgres` | `pg_isready` | Local database accepts connections. |
+| local Encore/Kubernetes | `nsqd` | HTTP `/ping` on `4151` | Local Pub/Sub backend responds. |
+| local Encore/Kubernetes | `encore-backend` | `GET /gateway/readyz`, `GET /market/readyz`, `GET /settlementworker/readyz` | Service-specific readiness inside the one Encore application. |
+| Kubernetes | `encore-backend` | `GET /gateway/healthz`, `GET /market/readyz` | Liveness/readiness for the single Encore application image. |
 | Kubernetes | `trade-settlement` | TCP socket startup/readiness/liveness probes | Port-open check only. |
 
 ## Network Policy Intent
@@ -124,13 +117,12 @@ View component ID: `VC-DEP-02`.
 
 | Flow | Intended allowance | Current manifest precision |
 | --- | --- | --- |
-| Gateway namespace to API Gateway | Allow ingress from the configured ingress/gateway namespace to API Gateway. | Namespace label selector to API Gateway port `8080`. |
-| API Gateway to Market | Allow API Gateway egress to Market and Market ingress from API Gateway. | Pod selector to Market port `8081`. |
-| Market to PostgreSQL | Allow Market egress to database for validation reads and idempotency replay reads. | Broad TCP `5432` egress without destination selector. |
-| Market to RabbitMQ | Allow Market egress to RabbitMQ AMQP for settlement commands. | Pod selector to RabbitMQ port `5672`. |
-| RabbitMQ from Market and settlement-worker | Allow broker ingress only from command publishers and consumers. | Pod selectors for Market and settlement-worker to port `5672`. |
-| settlement-worker to RabbitMQ | Allow worker egress to RabbitMQ for consuming commands and publishing replies. | Pod selector to RabbitMQ port `5672`. |
-| settlement-worker to trade-settlement | Allow worker egress and settlement ingress for settlement RPC. | Pod selector to trade-settlement port `9092`. |
+| Gateway namespace to Encore backend | Allow ingress from the configured ingress/gateway namespace to the Encore backend HTTP port. | Namespace label selector to `encore-backend` port `4000`. |
+| Quilkin to Encore gateway UDP | Allow Quilkin to forward UDP packets to the Encore backend UDP listener. | Pod selector to `encore-backend` UDP `26000`. |
+| Encore backend to PostgreSQL | Allow Market package code to read validation/idempotency state. | Broad TCP `5432` egress without destination selector. |
+| Encore backend to Encore Pub/Sub | Allow Market publish and settlementworker subscription/result publication. | Pod selector to `nsqd` TCP `4150`. |
+| Encore Pub/Sub from Encore backend | Allow topic publishers/subscribers from the Encore backend. | Pod selector from `encore-backend` to `nsqd` TCP `4150`. |
+| settlement worker to trade-settlement | Allow worker egress and settlement ingress for settlement RPC. | Pod selector to trade-settlement port `9092`. |
 | trade-settlement to PostgreSQL | Allow settlement egress to database for durable mutation. | Broad TCP `5432` egress without destination selector. |
 | migration job to PostgreSQL | Allow migration egress to database for schema setup. | Broad TCP `5432` egress without destination selector. |
 | DNS egress | Allow workloads to resolve service names. | UDP/TCP `53` egress for all selected pods. |
@@ -146,7 +138,7 @@ database destination beyond TCP port `5432`.
 
 | Environment | Current control | Current precision gap |
 | --- | --- | --- |
-| Local Compose | Loopback PostgreSQL port for developer use. | Local-only exposure. |
+| Local local Encore/Kubernetes | Loopback PostgreSQL port for developer use. | Local-only exposure. |
 | Kubernetes with in-cluster PostgreSQL | Broad TCP `5432` egress in current policy. | No pod/namespace destination selector is modeled for database egress. |
 | Kubernetes with external managed PostgreSQL | Broad TCP `5432` egress in current policy. | Destination restriction would depend on cloud/network controls outside the checked-in NetworkPolicy. |
 | Omni-managed Talos with external PostgreSQL | Broad TCP `5432` egress in current policy. | Destination restriction depends on the operator's Talos/Omni network, firewall, and PostgreSQL placement outside the checked-in NetworkPolicy. |
@@ -156,9 +148,9 @@ database destination beyond TCP port `5432`.
 
 | Configuration type | Mechanism |
 | --- | --- |
-| Service ports and downstream URLs | ConfigMaps and service-specific environment variables. |
-| Database credentials | Kubernetes Secrets or local Compose environment variables. |
-| RabbitMQ credentials and URLs | Kubernetes Secrets/ConfigMaps or local Compose environment variables. |
+| Service ports and downstream targets | ConfigMaps and service-specific environment variables. |
+| Database credentials | Kubernetes Secrets or local Encore/Kubernetes environment variables. |
+| Encore Pub/Sub infrastructure configuration | Kubernetes Secrets/ConfigMaps or local Encore/Kubernetes environment variables. |
 | Telemetry endpoint and service name | ConfigMaps and observability configuration. |
 | Image references | Kubernetes kustomization images and Terraform image repository outputs. |
 
@@ -170,8 +162,8 @@ database destination beyond TCP port `5432`.
 | Public hostname | Gateway and HTTPRoute manifests | Example hostname `api.eve-trade.example.com` appears in manifests/docs. | Not implemented; GATE-003 open |
 | ACME email | Gateway platform ClusterIssuer | Placeholder email remains in checked-in platform manifests. | Not implemented; GATE-003 open |
 | Database secret | `trade-settlement-database` secret reference | Runtime expects `DATABASE_URL`; production secret material is not in repo. | Not implemented; GATE-003 open |
-| RabbitMQ secret | `rabbitmq` secret reference | Runtime expects broker credentials/URL; production secret material is not in repo. | Not implemented; GATE-003 open |
-| Edge HMAC secret | `api-gateway-edge-auth` secret reference | Runtime expects `GAME_PACKET_HMAC_SECRET`; production secret material is not in repo. | Not implemented; GATE-003 open |
+| Encore Pub/Sub secret | `nsqd` secret reference | Runtime expects broker credentials/URL; production secret material is not in repo. | Not implemented; GATE-003 open |
+| Edge HMAC secret | `encore-backend-edge-auth` secret reference | Runtime expects `GAME_PACKET_HMAC_SECRET`; production secret material is not in repo. | Not implemented; GATE-003 open |
 | Observability secrets | `observability-backends` secret reference | Export credentials are out of band. | Not implemented; GATE-003 open |
 
 No checked-in CI check, release script, policy-as-code rule, or admission policy
@@ -184,9 +176,9 @@ View component ID: `VC-DEP-03`.
 
 | Secret or credential | Consumers | Current source | Owner | Rotation | Access/audit requirement | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| `DATABASE_URL` | Market, trade-settlement, migration job | Kubernetes Secret or Compose environment | SRE/database owner | Rotation policy not defined in repo | Secret read access is modeled by workload secret references; break-glass logging is not implemented in repo | Gap recorded |
-| RabbitMQ username/password/URL | RabbitMQ, Market, settlement-worker | Kubernetes Secret or Compose environment | SRE/platform owner | Per-service rotation policy not defined in repo | Broker publisher/consumer/admin permission separation is not documented. | Gap recorded |
-| `GAME_PACKET_HMAC_SECRET` | API Gateway UDP edge | Production secret manager or Kubernetes Secret | Security/platform owner | Rotation policy not defined in repo | Must match the game frontend signing key without identifying local simulator traffic. | Production blocker |
+| `DATABASE_URL` | Encore backend Market package, trade-settlement, migration job | Kubernetes Secret or local Encore/Kubernetes environment | SRE/database owner | Rotation policy not defined in repo | Secret read access is modeled by workload secret references; break-glass logging is not implemented in repo | Gap recorded |
+| Encore Pub/Sub infrastructure credentials/configuration | Encore backend and NSQ | Infrastructure config or local Encore/Kubernetes environment | SRE/platform owner | Rotation policy not defined in repo | Broker publisher/consumer/admin permission separation is delegated to the selected Pub/Sub backend. | Gap recorded |
+| `GAME_PACKET_HMAC_SECRET` | Encore gateway UDP edge | Production secret manager or Kubernetes Secret | Security/platform owner | Rotation policy not defined in repo | Must match the game frontend signing key without identifying local simulator traffic. | Production blocker |
 | Observability API keys | OpenTelemetry/Honeycomb/Sentry components | Out-of-band secret | Observability owner | Rotation policy not defined in repo | Export credentials are not present in checked-in manifests. | Gap recorded |
 
 ## Infrastructure Constraints And Cost Drivers
@@ -195,7 +187,7 @@ View component ID: `VC-DEP-03`.
 | --- | --- | --- |
 | EKS/GKE/Omni-managed Talos/Kubernetes | Services assume Kubernetes Deployments, Services, probes, and network policy. | Cluster baseline cost and pod resource requests/limits. |
 | PostgreSQL | Settlement correctness depends on transactional PostgreSQL. | RDS, Cloud SQL, external operated PostgreSQL, or non-production in-cluster PostgreSQL storage growth from ledgers, backups, and connection count. |
-| RabbitMQ | Settlement path depends on AMQP command/reply behavior. | Broker durability, quorum queues, queue depth, and management overhead. |
+| Encore Pub/Sub | Settlement path depends on typed at-least-once work delivery and result visibility. | Backend durability, queue depth, retry load, and management overhead. |
 | Observability | Services emit telemetry to collector. | Trace/log/metric volume and external backend ingestion. |
 | Image repositories | Terraform provisions runtime image assets. | Storage, scanning, retention, and cross-environment promotion. |
 
@@ -203,10 +195,10 @@ View component ID: `VC-DEP-03`.
 
 | Assertion | Enforcement tag | Evidence or gap |
 | --- | --- | --- |
-| Local Compose and Kubernetes both preserve the same logical service chain. | Enforced by manifest | Compose and Kubernetes both include API Gateway, Market, RabbitMQ, settlement-worker, trade-settlement, and PostgreSQL/migration path. |
-| Migrations are operationally part of startup. | Enforced by manifest | Compose `migrate` and Kubernetes migration job exist. |
+| Local Encore and Kubernetes both preserve the same logical service chain. | Enforced by manifest | Both include Encore gateway, Market, Encore Pub/Sub, settlementworker, trade-settlement, and PostgreSQL/migration path. |
+| Migrations are operationally part of startup. | Enforced by manifest | Local support services and Kubernetes migration job apply the settlement schema. |
 | Network policies encode intended service reachability rules. | Partially enforced | Business flows are encoded; database egress is broad TCP `5432`. |
-| Readiness probes cover only part of downstream dependency health. | Partially enforced | API Gateway and Market readiness cover some dependencies; trade-settlement uses TCP probe only and Market does not probe the full settlement reply path. |
+| Readiness probes cover only part of downstream dependency health. | Partially enforced | Encore gateway and Market readiness cover some dependencies; trade-settlement uses TCP probe only and Market does not probe the full settlement reply path. |
 | Observability is deployed as platform support for all business services. | Partially enforced | Collector manifests exist; alert/dashboard requirements are documented in Observability view. |
 
 ## Concern Satisfaction
@@ -214,11 +206,11 @@ View component ID: `VC-DEP-03`.
 | Concern | How this view satisfies it | Evidence or gap |
 | --- | --- | --- |
 | CON-12 | Probe model distinguishes process, dependency, and TCP readiness. | Remaining settlement reply-path and trade-settlement readiness gaps documented. |
-| CON-13 | RabbitMQ deployment and DLQ config are represented. | Runtime and resilience views define DLQ semantics. |
-| CON-16 | Local and Kubernetes deployment paths are shown. | Compose and Kubernetes models. |
+| CON-13 | Encore Pub/Sub deployment and retry config are represented. | Runtime and resilience views define DLQ semantics. |
+| CON-16 | Local and Kubernetes deployment paths are shown. | Local Encore/Kubernetes and Kubernetes models. |
 | CON-23 | Runtime services, ports, config, and dependencies are listed. | Local and production-like deployment models. |
 | CON-24 | Migration job/service is modeled. | Migration rows in local and Kubernetes models. |
 | CON-25 | Probes and telemetry paths are documented. | Probe model and observability egress. |
 | CON-26 | Network paths are listed with current manifest precision. | Network Policy Intent table. |
 | CON-27 | Terraform and infrastructure constraints are identified. | Infrastructure Constraints table. |
-| CON-34 | Health/readiness endpoint behavior is explicit. | Probe Model and Compose/Kubernetes comparison. |
+| CON-34 | Health/readiness endpoint behavior is explicit. | Probe Model and local Encore/Kubernetes/Kubernetes comparison. |

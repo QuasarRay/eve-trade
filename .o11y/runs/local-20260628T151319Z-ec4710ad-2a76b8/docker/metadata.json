@@ -1,0 +1,141 @@
+{
+  "available": true,
+  "commands": {
+    "compose-config.yaml": {
+      "command": [
+        "docker",
+        "compose",
+        "-f"
+      ],
+      "exit_code": 0
+    },
+    "compose-images.jsonl": {
+      "command": [
+        "docker",
+        "compose",
+        "-f"
+      ],
+      "exit_code": 0
+    },
+    "compose-logs.txt": {
+      "command": [
+        "docker",
+        "compose",
+        "-f"
+      ],
+      "exit_code": 0
+    },
+    "compose-ps.txt": {
+      "command": [
+        "docker",
+        "compose",
+        "-f"
+      ],
+      "exit_code": 0
+    },
+    "compose-version.txt": {
+      "command": [
+        "docker",
+        "compose",
+        "version"
+      ],
+      "exit_code": 0
+    },
+    "docker-version.txt": {
+      "command": [
+        "docker",
+        "version"
+      ],
+      "exit_code": 0
+    },
+    "docker/logs/api-gateway.log": {
+      "exit_code": 0,
+      "service": "api-gateway"
+    },
+    "docker/logs/e2e-tests.log": {
+      "exit_code": 0,
+      "service": "e2e-tests"
+    },
+    "docker/logs/market.log": {
+      "exit_code": 0,
+      "service": "market"
+    },
+    "docker/logs/migrate.log": {
+      "exit_code": 0,
+      "service": "migrate"
+    },
+    "docker/logs/otel-collector.log": {
+      "exit_code": 0,
+      "service": "otel-collector"
+    },
+    "docker/logs/postgres.log": {
+      "exit_code": 0,
+      "service": "postgres"
+    },
+    "docker/logs/quilkin.log": {
+      "exit_code": 0,
+      "service": "quilkin"
+    },
+    "docker/logs/rabbitmq.log": {
+      "exit_code": 0,
+      "service": "rabbitmq"
+    },
+    "docker/logs/settlement-worker.log": {
+      "exit_code": 0,
+      "service": "settlement-worker"
+    },
+    "docker/logs/simulator.log": {
+      "exit_code": 0,
+      "service": "simulator"
+    },
+    "docker/logs/trade-settlement.log": {
+      "exit_code": 0,
+      "service": "trade-settlement"
+    }
+  },
+  "compose_file": "C:\\Users\\Astral\\Desktop\\eve-trade\\docker-compose.integration.yml",
+  "docker.compose_config_hash": "860a2378c959e1d802cd8cf791dc6ecb5900c9bb1c56fb83436178f51bb2e436",
+  "images": [],
+  "service_logs": {
+    "api-gateway": "docker/logs/api-gateway.log",
+    "e2e-tests": "docker/logs/e2e-tests.log",
+    "market": "docker/logs/market.log",
+    "migrate": "docker/logs/migrate.log",
+    "otel-collector": "docker/logs/otel-collector.log",
+    "postgres": "docker/logs/postgres.log",
+    "quilkin": "docker/logs/quilkin.log",
+    "rabbitmq": "docker/logs/rabbitmq.log",
+    "settlement-worker": "docker/logs/settlement-worker.log",
+    "simulator": "docker/logs/simulator.log",
+    "trade-settlement": "docker/logs/trade-settlement.log"
+  },
+  "service_urls": {
+    "api-gateway.MARKET_URL": "http://market:8081",
+    "api-gateway.OTEL_EXPORTER_OTLP_ENDPOINT": "http://otel-collector:4318",
+    "e2e-tests.EVE_TRADE_API_GATEWAY_URL": "http://api-gateway:8080",
+    "e2e-tests.EVE_TRADE_DATABASE_URL": "postgres://<redacted>@postgres:5432/eve_trade",
+    "e2e-tests.EVE_TRADE_SIMULATOR_URL": "http://simulator:8000",
+    "market.DATABASE_URL": "postgres://<redacted>@postgres:5432/eve_trade",
+    "market.OTEL_EXPORTER_OTLP_ENDPOINT": "http://otel-collector:4318",
+    "market.RABBITMQ_URL": "amqp://<redacted>@rabbitmq:5672/",
+    "market.TRADE_SETTLEMENT_URL": "http://trade-settlement:9092",
+    "settlement-worker.OTEL_EXPORTER_OTLP_ENDPOINT": "http://otel-collector:4318",
+    "settlement-worker.RABBITMQ_URL": "amqp://<redacted>@rabbitmq:5672/",
+    "settlement-worker.TRADE_SETTLEMENT_URL": "http://trade-settlement:9092",
+    "trade-settlement.DATABASE_URL": "postgres://<redacted>@postgres:5432/eve_trade",
+    "trade-settlement.OTEL_EXPORTER_OTLP_ENDPOINT": "http://otel-collector:4318"
+  },
+  "services": [
+    "rabbitmq",
+    "postgres",
+    "migrate",
+    "trade-settlement",
+    "settlement-worker",
+    "market",
+    "api-gateway",
+    "quilkin",
+    "simulator",
+    "e2e-tests",
+    "otel-collector"
+  ]
+}

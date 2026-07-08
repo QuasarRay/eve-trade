@@ -1,7 +1,6 @@
 [CmdletBinding()]
 param(
     [switch]$ResetData,
-    [switch]$NoBuild,
     [switch]$SkipInstall,
     [switch]$SkipOutage
 )
@@ -25,28 +24,16 @@ function Resolve-Tool {
     throw "$Name was not found. Install Node.js/pnpm or run this command from Codex Desktop with workspace dependencies available."
 }
 
-docker info *> $null
-if ($LASTEXITCODE -ne 0) {
-    throw "Docker Desktop is not running."
-}
-
 if ($ResetData) {
-    Write-Host "ResetData removes the eve-trade local PostgreSQL and RabbitMQ volumes."
-    docker compose down -v --remove-orphans
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    throw "ResetData is no longer implemented by this script because the Go backend is started with Encore. Reset the configured PostgreSQL database explicitly before running the demo."
 }
 
-$composeArgs = @("compose", "up", "-d")
-if (-not $NoBuild) {
-    $composeArgs += "--build"
-}
-& docker @composeArgs
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
+$SimulatorUrl = $env:EVE_TRADE_SIMULATOR_URL
+if (-not $SimulatorUrl) { $SimulatorUrl = "http://127.0.0.1:8000" }
 $deadline = (Get-Date).AddMinutes(4)
 do {
     try {
-        $response = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:8000/api/gui/buttons/" -TimeoutSec 2
+        $response = Invoke-WebRequest -UseBasicParsing -Uri "$SimulatorUrl/api/gui/buttons/" -TimeoutSec 2
         if ($response.StatusCode -eq 200) { break }
     } catch {
         Start-Sleep -Seconds 2
@@ -54,8 +41,7 @@ do {
 } while ((Get-Date) -lt $deadline)
 
 if (-not $response -or $response.StatusCode -ne 200) {
-    docker compose ps
-    throw "The GUI simulator did not become ready within four minutes."
+    throw "The GUI simulator at $SimulatorUrl did not become ready within four minutes. Start the simulator and Encore backend first."
 }
 
 $RuntimeRoot = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies"
@@ -69,6 +55,8 @@ if (-not $SkipInstall) {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
-$env:GUI_DEMO_SKIP_OUTAGE = if ($SkipOutage) { "1" } else { "0" }
+if ($SkipOutage) {
+    $env:GUI_DEMO_ENABLE_OUTAGE = "0"
+}
 & $Node ".\scripts\gui-simulator-demo.cjs"
 exit $LASTEXITCODE

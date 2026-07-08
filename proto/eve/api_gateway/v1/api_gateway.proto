@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package eve.api_gateway.v1;
+
+import "buf/validate/validate.proto";
+import "eve/market/v1/market.proto";
+import "eve/validation/v1/validation_rules.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/proto/gen/eve/api_gateway/v1;api_gatewayv1";
+
+service GameTradeGatewayService {
+  rpc IssueTradeInstance(eve.market.v1.IssueTradeInstanceRequest) returns (eve.market.v1.IssueTradeInstanceResponse);
+  rpc AcceptTradeInstance(eve.market.v1.AcceptTradeInstanceRequest) returns (eve.market.v1.AcceptTradeInstanceResponse);
+  rpc CancelTradeInstance(eve.market.v1.CancelTradeInstanceRequest) returns (eve.market.v1.CancelTradeInstanceResponse);
+  rpc SubmitTradeGuiInteraction(eve.market.v1.SubmitTradeGuiInteractionRequest) returns (eve.market.v1.SubmitTradeGuiInteractionResponse);
+}
+
+message QuilkinUdpServerConfig {
+  int64 max_packet_bytes = 1 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  int64 worker_count = 2 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  int64 queue_depth = 3 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+}
+
+message UdpInboundPacket {
+  bytes packet = 1 [(buf.validate.field).bytes.min_len = 1];
+}
+
+message UdpEdgeEnvelope {
+  string schema_version = 1 [(buf.validate.field).string.(eve.validation.v1.edge_schema_version) = true];
+  string payload_json = 2 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+  UdpEdgeAuth auth = 3 [(buf.validate.field).required = true];
+}
+
+message UdpEdgeAuth {
+  string algorithm = 1 [(buf.validate.field).string.(eve.validation.v1.hmac_sha256_algorithm) = true];
+  string key_id = 2 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+  string signature = 3 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+}
+
+message AuthenticatedTradeGuiActor {
+  option (buf.validate.message).cel = {
+    id: "gateway.actor.issue_matches_principal"
+    message: "authenticated capsuleer does not match issue actor"
+    expression: "!(this.action in ['market_place_sell_order', 'contract_create_item_exchange', 'direct_trade_offer']) || this.issued_by_capsuleer_id == this.authenticated_capsuleer_id"
+  };
+  option (buf.validate.message).cel = {
+    id: "gateway.actor.accept_matches_principal"
+    message: "authenticated capsuleer does not match accept actor"
+    expression: "!(this.action in ['market_buy_from_sell_order', 'contract_accept_item_exchange', 'direct_trade_accept']) || this.buyer_capsuleer_id == this.authenticated_capsuleer_id"
+  };
+  option (buf.validate.message).cel = {
+    id: "gateway.actor.cancel_matches_principal"
+    message: "authenticated capsuleer does not match cancel actor"
+    expression: "!(this.action in ['market_cancel_order', 'contract_cancel_item_exchange', 'direct_trade_cancel']) || this.cancelled_by_capsuleer_id == this.authenticated_capsuleer_id"
+  };
+  option (buf.validate.message).cel = {
+    id: "gateway.actor.item_stack_owner_matches_principal"
+    message: "authenticated capsuleer does not match item stack owner"
+    expression: "this.item_stack_owner_id == 0 || this.item_stack_owner_id == this.authenticated_capsuleer_id"
+  };
+  option (buf.validate.message).cel = {
+    id: "gateway.actor.all_known_actor_claims_match_principal"
+    message: "authenticated capsuleer does not match actor field"
+    expression: "(this.issued_by_capsuleer_id == 0 || this.issued_by_capsuleer_id == this.authenticated_capsuleer_id) && (this.buyer_capsuleer_id == 0 || this.buyer_capsuleer_id == this.authenticated_capsuleer_id) && (this.cancelled_by_capsuleer_id == 0 || this.cancelled_by_capsuleer_id == this.authenticated_capsuleer_id) && (this.seller_capsuleer_id == 0 || this.seller_capsuleer_id == this.authenticated_capsuleer_id) && (this.accepted_by_capsuleer_id == 0 || this.accepted_by_capsuleer_id == this.authenticated_capsuleer_id) && (this.delegated_capsuleer_id == 0 || this.delegated_capsuleer_id == this.authenticated_capsuleer_id)"
+  };
+
+  int64 authenticated_capsuleer_id = 1 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  string action = 2 [(buf.validate.field).string.(eve.validation.v1.trade_gui_action) = true];
+  int64 issued_by_capsuleer_id = 3;
+  int64 buyer_capsuleer_id = 4;
+  int64 cancelled_by_capsuleer_id = 5;
+  int64 item_stack_owner_id = 6;
+  int64 seller_capsuleer_id = 7;
+  int64 accepted_by_capsuleer_id = 8;
+  int64 delegated_capsuleer_id = 9;
+}
+
+message MarketResponseIdentity {
+  option (buf.validate.message).cel = {
+    id: "gateway.market_response.identity_matches_request"
+    message: "downstream response identity mismatch"
+    expression: "this.request_interaction_id == this.response_interaction_id"
+  };
+
+  string request_interaction_id = 1 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+  string response_interaction_id = 2 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+}

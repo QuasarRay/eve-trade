@@ -5,13 +5,13 @@ import hmac
 import base64
 import importlib
 import json
+import os
 import re
 import socket
 import sys
 import tempfile
 import time
 import uuid
-from urllib.parse import urlparse
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -81,9 +81,19 @@ class GatewayClient:
         self.simulator_url = simulator_url.rstrip("/")
         self.http = httpx.Client(timeout=httpx.Timeout(20.0))
         self._buttons_by_action: dict[str, int] | None = None
+        self.settlement_db = None
+        database_url = os.environ.get("EVE_TRADE_DATABASE_URL")
+        if database_url:
+            self.settlement_db = psycopg.connect(
+                database_url,
+                autocommit=True,
+                row_factory=dict_row,
+            )
 
     def close(self) -> None:
         self.http.close()
+        if self.settlement_db is not None:
+            self.settlement_db.close()
 
 
     def issue_trade_instance(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -125,7 +135,50 @@ class GatewayClient:
             )
         if not isinstance(gateway_payload, dict):
             raise RpcFailure(response.status_code, "invalid_response", str(gateway_payload), body)
-        return snake_to_camel(gateway_payload)
+        result = snake_to_camel(gateway_payload)
+        self._wait_for_queued_settlement(payload, result)
+        return result
+
+    def _wait_for_queued_settlement(self, payload: dict[str, Any], response: dict[str, Any]) -> None:
+        if response.get("status") not in {"queued", "accepted"}:
+            return
+        idempotency_key = str(payload.get("idempotencyKey") or payload.get("idempotency_key") or "")
+        if not idempotency_key or self.settlement_db is None:
+            return
+        row = self._wait_for_settlement_batch(idempotency_key)
+        response.setdefault("settlementBatchId", row["settlement_batch_id"])
+        state = str(row["batch_state"])
+        if state == "COMPLETED":
+            return
+        code = str(row.get("failure_code") or "settlement_failed").lower()
+        message = str(row.get("failure_message") or f"settlement batch {state}")
+        raise RpcFailure(500, code, message, row)
+
+    def _wait_for_settlement_batch(self, idempotency_key: str, timeout_seconds: float = 20.0) -> dict[str, Any]:
+        assert self.settlement_db is not None
+        deadline = time.monotonic() + timeout_seconds
+        last_state = "missing"
+        while time.monotonic() < deadline:
+            with self.settlement_db.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT settlement_batch_id, batch_state, failure_code, failure_message
+                    FROM settlement_batch
+                    WHERE idempotency_key = %s
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                    """,
+                    (idempotency_key,),
+                )
+                row = cursor.fetchone()
+            if row is not None:
+                last_state = str(row["batch_state"])
+                if last_state in {"COMPLETED", "FAILED"}:
+                    return row
+            time.sleep(0.1)
+        raise RuntimeError(
+            f"settlement batch for idempotency key {idempotency_key!r} did not complete; last state={last_state}"
+        )
 
     def _button_id(self, action: str) -> int:
         if self._buttons_by_action is None:
@@ -234,7 +287,7 @@ def settlement_proto_modules() -> tuple[Any, Any, Any]:
     from grpc_tools import protoc
 
     repo_root = Path(__file__).resolve().parents[3]
-    proto_root = repo_root / "distributed-backend" / "proto"
+    proto_root = repo_root / "proto"
     proto_file = proto_root / "eve" / "trade_settlement" / "v1" / "trade_settlement.proto"
     _SETTLEMENT_PROTO_TMPDIR = tempfile.TemporaryDirectory(prefix="eve-trade-proto-")
     out_dir = Path(_SETTLEMENT_PROTO_TMPDIR.name)
@@ -350,7 +403,7 @@ def wait_for_database(database_url: str, timeout_seconds: float = 60.0) -> None:
 def wait_for_gateway(api_gateway_url: str, timeout_seconds: float = 60.0) -> None:
     deadline = time.monotonic() + timeout_seconds
     last_error: Exception | None = None
-    url = api_gateway_url.rstrip("/") + "/healthz"
+    url = api_gateway_url.rstrip("/") + "/gateway/healthz"
     while time.monotonic() < deadline:
         try:
             response = httpx.get(url, timeout=2.0)
@@ -359,11 +412,11 @@ def wait_for_gateway(api_gateway_url: str, timeout_seconds: float = 60.0) -> Non
         except Exception as exc:  # noqa: BLE001 - preserve final connection error.
             last_error = exc
             time.sleep(0.5)
-    raise RuntimeError(f"api gateway did not become reachable: {last_error}")
+    raise RuntimeError(f"Encore gateway did not become reachable: {last_error}")
 
 
 def wait_for_market(market_url: str, timeout_seconds: float = 60.0) -> None:
-    wait_for_http_health(market_url.rstrip("/") + "/readyz", "Market", timeout_seconds)
+    wait_for_http_health(market_url.rstrip("/") + "/market/readyz", "Encore backend", timeout_seconds)
 
 
 def wait_for_http_health(url: str, service: str, timeout_seconds: float) -> None:
@@ -388,11 +441,11 @@ def wait_for_settlement(endpoint: str, timeout_seconds: float = 60.0) -> None:
     wait_for_tcp(host, int(port_text), "settlement service", timeout_seconds)
 
 
-def wait_for_rabbitmq(url: str, timeout_seconds: float = 60.0) -> None:
-    parsed = urlparse(url)
-    if not parsed.hostname:
-        raise RuntimeError(f"invalid RabbitMQ URL {url!r}")
-    wait_for_tcp(parsed.hostname, parsed.port or 5672, "RabbitMQ", timeout_seconds)
+def wait_for_pubsub(endpoint: str, timeout_seconds: float = 60.0) -> None:
+    host, separator, port_text = endpoint.rpartition(":")
+    if not separator or not host:
+        raise RuntimeError(f"invalid NSQ endpoint {endpoint!r}")
+    wait_for_tcp(host, int(port_text), "NSQ", timeout_seconds)
 
 
 def wait_for_tcp(host: str, port: int, service: str, timeout_seconds: float) -> None:

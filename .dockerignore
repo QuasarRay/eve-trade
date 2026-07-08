@@ -14,14 +14,14 @@ node_modules/
 .downloads/
 artifacts/
 .o11y/
-observability/tests/
+distributed-backend/observability/tests/
 
 # Local binaries
 *.exe
 *.dll
 *.so
 *.dylib
-market
+distributed-backend/src/market
 api-gateway
 settlement-worker
 trade-settlement
@@ -34,7 +34,7 @@ main.exe
 .idea/
 .vscode/
 .ci-venv/
-ci-cd/out/
+distributed-backend/ci-cd/out/
 
 # Documentation/audit scratch files are not needed in image build contexts.
 changes/v1/flaws.md

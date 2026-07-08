@@ -33,7 +33,7 @@ and formalized in
 | Model kinds | System context diagram, boundary table, interface catalog |
 | Notation | Mermaid flowchart plus tables |
 | Required model elements | System of interest, external actors, external dependencies, internal services, data store, message broker, observability sink, trust boundaries |
-| Analysis method | Confirm every runtime dependency in Compose/Kubernetes is represented and every public contract has an owner. |
+| Analysis method | Confirm every runtime dependency in local Encore/Kubernetes/Kubernetes is represented and every public contract has an owner. |
 
 View governed by this viewpoint:
 
@@ -51,7 +51,7 @@ View governed by this viewpoint:
 | Related aspects | ASP-01, ASP-03, ASP-04 |
 | Model kinds | Responsibility table, module map, operation catalog |
 | Notation | Tables with explicit responsibility and dependency statements |
-| Required model elements | API Gateway, Market, messaging library, settlement-worker, trade-settlement, PostgreSQL, protobuf contracts |
+| Required model elements | Encore gateway, Market, messaging library, settlement worker, trade-settlement, PostgreSQL, Encore API types and the remaining Rust protobuf contract |
 | Analysis method | Verify Market-specific trade decisions remain in Market and durable mutation execution remains in trade-settlement operation handlers. |
 
 View governed by this viewpoint:
@@ -70,7 +70,7 @@ View governed by this viewpoint:
 | Related aspects | ASP-02, ASP-03, ASP-04, ASP-07 |
 | Model kinds | Sequence diagram, state/effect table, failure mode table |
 | Notation | Mermaid sequence diagram plus tables |
-| Required model elements | Request, idempotency key, request fingerprint, Market validation, configured settlement transport, RabbitMQ command and worker consumption when `SETTLEMENT_TRANSPORT=rabbitmq`, settlement batch, database transaction, response |
+| Required model elements | Request, idempotency key, request fingerprint, Market validation, configured settlement transport, Encore Pub/Sub command and worker consumption when `SETTLEMENT_TRANSPORT=nsqd`, settlement batch, database transaction, response |
 | Analysis method | Trace success, replay, conflict, validation failure, broker failure, worker failure, and settlement failure outcomes. |
 
 View governed by this viewpoint:
@@ -108,7 +108,7 @@ View governed by this viewpoint:
 | Related aspects | ASP-04, ASP-06, ASP-07, ASP-08 |
 | Model kinds | Deployment diagram, environment table, probe table, network policy table |
 | Notation | Mermaid flowchart and tables |
-| Required model elements | Docker Compose services, Kubernetes workloads, ConfigMaps, Secrets, Services, probes, network policies, migration job, Terraform resources |
+| Required model elements | Encore local run plus Kubernetes support services services, Kubernetes workloads, ConfigMaps, Secrets, Services, probes, network policies, migration job, Terraform resources |
 | Analysis method | Confirm intended service-to-service paths are allowed and unintended paths are omitted by policy. |
 
 View governed by this viewpoint:
@@ -165,7 +165,7 @@ View governed by this viewpoint:
 | Related aspects | ASP-04, ASP-06, ASP-07 |
 | Model kinds | Timeout budget table, bottleneck table, capacity assumption table, performance risk table |
 | Notation | Tables with configuration evidence and explicit unknowns |
-| Required model elements | Caller timeout, API Gateway timeout, Market settlement timeout, RabbitMQ publish timeout, worker timeout, prefetch, HPAs, resource limits, database contention points |
+| Required model elements | Caller timeout, Encore gateway timeout, Market settlement timeout, Encore Pub/Sub publish timeout, worker timeout, prefetch, HPAs, resource limits, database contention points |
 | Analysis method | Trace the maximum caller-visible path and identify queueing or lock contention where latency can grow. |
 
 View governed by this viewpoint:
@@ -203,7 +203,7 @@ View governed by this viewpoint:
 | Related aspects | ASP-02, ASP-04, ASP-07 |
 | Model kinds | Telemetry map, correlation key table, alert signal table, incident query table |
 | Notation | Tables |
-| Required model elements | Interaction ID, external request ID, idempotency key, settlement batch ID, RabbitMQ correlation ID, service spans, logs, metrics, health/readiness signals |
+| Required model elements | Interaction ID, external request ID, idempotency key, settlement batch ID, settlement message ID, service spans, logs, metrics, health/readiness signals |
 | Analysis method | Confirm each runtime step has at least one observable signal and one correlation key. |
 
 View governed by this viewpoint:
@@ -215,7 +215,7 @@ View governed by this viewpoint:
 | Field | Specification |
 | --- | --- |
 | Viewpoint ID | VP-11 |
-| Purpose | Govern changes to protobuf contracts, generated code, SQL migrations, deployment contracts, and release validation. |
+| Purpose | Govern changes to Encore API types and the remaining Rust protobuf contract, generated code, SQL migrations, deployment contracts, and release validation. |
 | Primary stakeholders | STK-03, STK-07, STK-08, STK-10 |
 | Framed concerns | CON-28, CON-29, CON-31, CON-35 |
 | Related perspectives | PER-06 |
@@ -241,7 +241,7 @@ View governed by this viewpoint:
 | Related aspects | ASP-05, ASP-07 |
 | Model kinds | Asset table, attacker model, STRIDE-style threat table, control verification table |
 | Notation | Tables plus optional trust-boundary diagram |
-| Required model elements | Actor identity, API Gateway, Market, RabbitMQ, settlement-worker, trade-settlement, PostgreSQL, secrets, telemetry, network and mesh controls |
+| Required model elements | Actor identity, Encore gateway, Market, Encore Pub/Sub, settlement worker, trade-settlement, PostgreSQL, secrets, telemetry, network and mesh controls |
 | Analysis method | For each entry point, identify spoofing, tampering, repudiation, information disclosure, denial of service, and elevation-of-privilege risks where applicable. |
 
 View governed by this viewpoint:
@@ -254,7 +254,7 @@ View governed by this viewpoint:
 | --- | --- |
 | VP-01 Context | Required to bound the system of interest and external dependencies. |
 | VP-02 Functional Decomposition | Required because service responsibility boundaries are a primary correctness mechanism. |
-| VP-03 Runtime Transaction | Required because the trade path crosses UDP edge handling, gRPC/Connect, RabbitMQ, worker execution, and SQL transactions. |
+| VP-03 Runtime Transaction | Required because the trade path crosses UDP edge handling, Encore service call and standard gRPC, Encore Pub/Sub, worker execution, and SQL transactions. |
 | VP-04 Information and Data Integrity | Required because settlement mutates inventory, wallet, escrow, trade, ledger, and idempotency state. |
 | VP-05 Deployment and Operations | Required because deployment manifests enforce communication and runtime behavior. |
 | VP-06 Security and Trust | Required because actor identity, privileged settlement operations, and service isolation are high risk. |
@@ -278,8 +278,8 @@ View governed by this viewpoint:
 
 | Model kind | Model kind ID | Construction rules | Interpretation rules | Invalid when |
 | --- | --- | --- | --- | --- |
-| System context diagram | MK-CTX-DIAGRAM | Must show the system boundary, external actors, internal services, data stores, brokers, and observability destinations. | Arrows represent runtime or provisioning relationships as defined by the legend. | A runtime dependency exists in Compose/Kubernetes but is absent from the diagram or table. |
-| Sequence diagram | MK-RUN-SEQUENCE | Must show game frontend or simulator, Quilkin, API Gateway UDP edge, Market, PostgreSQL, the configured settlement transport, trade-settlement, and success/failure alternatives when modeling GUI interactions. The checked-in Compose/Kubernetes model includes RabbitMQ and settlement-worker. | Ordered arrows are logical interaction order, not precise network timing. | A durable write is shown outside trade-settlement without an explicit exception. |
+| System context diagram | MK-CTX-DIAGRAM | Must show the system boundary, external actors, internal services, data stores, brokers, and observability destinations. | Arrows represent runtime or provisioning relationships as defined by the legend. | A runtime dependency exists in local Encore/Kubernetes/Kubernetes but is absent from the diagram or table. |
+| Sequence diagram | MK-RUN-SEQUENCE | Must show game frontend or simulator, Quilkin, Encore gateway UDP edge, Market, PostgreSQL, the configured settlement transport, trade-settlement, and success/failure alternatives when modeling GUI interactions. The checked-in local Encore/Kubernetes/Kubernetes model includes Encore Pub/Sub and settlement worker. | Ordered arrows are logical interaction order, not precise network timing. | A durable write is shown outside trade-settlement without an explicit exception. |
 | Data table model | MK-DATA-TABLE | Must list table or data group, owner, key role, and evidence. | Table rows are architecture-level data responsibilities, not full DDL. | It omits a table that enforces a stated invariant. |
 | Invariant catalog | MK-DATA-INVARIANT | Must name invariant, enforcement mechanism, evidence, tests or gaps. | An invariant is only fully satisfied when service logic, SQL, and tests are identified or a gap is recorded. | Enforcement is asserted without source evidence. |
 | Deployment model | MK-DEP-TOPOLOGY | Must include local and Kubernetes differences, probes, ports, secrets, network policy, and platform egress. | Deployment arrows describe intended connectivity, not proof of live reachability. | It hides broad egress, placeholder configuration, or probe semantics. |
@@ -317,11 +317,11 @@ Detailed table schemas for these model kinds are defined in
 
 | Viewpoint | Construction rule | Interpretation rule | Analysis rule | Failure criterion |
 | --- | --- | --- | --- | --- |
-| VP-01 | Include every service and external runtime dependency in an interface or boundary table. | Boundary rows define trust/control intent, not only topology. | Compare against Compose, Kubernetes, protobuf, and README evidence. | A public or internal interface has no owner or contract source. |
+| VP-01 | Include every service and external runtime dependency in an interface or boundary table. | Boundary rows define trust/control intent, not only topology. | Compare against local Encore/Kubernetes, Kubernetes, protobuf, and README evidence. | A public or internal interface has no owner or contract source. |
 | VP-02 | Assign each component positive responsibilities and prohibited responsibilities. | Responsibility ownership is normative where tagged `Enforced` or `Convention`. | Verify no service writes outside its stated ownership. | Mutating responsibility is duplicated without rationale. |
 | VP-03 | Model success, replay, invalid input, downstream failure, and timeout. | The sequence is logical and must be paired with failure tables. | Trace durable state for every caller-visible outcome. | Ambiguous outcomes are not recoverable or risk-recorded. |
 | VP-04 | Map data groups, tables, invariants, operations, and lifecycle. | Data ownership is determined by write authority and schema control. | Link each invariant to code, SQL, tests, or a gap. | An invariant is listed without enforcement evidence. |
-| VP-05 | Separate local Compose, Kubernetes base, production overlay, and platform dependencies. | Probe and network policy claims must match manifest semantics. | Verify each allowed flow and broad egress exception. | Readiness, secret, or policy behavior is overstated. |
+| VP-05 | Separate local Encore/Kubernetes, Kubernetes base, production overlay, and platform dependencies. | Probe and network policy claims must match manifest semantics. | Verify each allowed flow and broad egress exception. | Readiness, secret, or policy behavior is overstated. |
 | VP-06 | Separate app, mesh, network, secret, and operational controls. | A control is not complete unless verification and residual risk are stated. | Analyze actor identity and settlement privilege first. | A critical trust assumption is hidden. |
 | VP-07 | Link modules, generated artifacts, compatibility rules, and validation gates. | Validation entries distinguish required gates from last documented results. | Review every change type for contract/schema/deployment impact. | A compatibility-breaking change has no validation gate. |
 | VP-08 | Derive timeout and capacity assumptions from config where available. | Unknown SLOs and limits are gaps, not defaults. | Identify bottlenecks and queueing points. | Performance claims have no metric or config evidence. |

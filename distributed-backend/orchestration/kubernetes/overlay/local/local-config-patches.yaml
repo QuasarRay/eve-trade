@@ -1,24 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: api-gateway-config
+  name: encore-backend-config
 data:
   API_GATEWAY_QUILKIN_UDP_ADDR: ":26000"
   API_GATEWAY_QUILKIN_UDP_ENABLED: "true"
-  OTEL_SDK_DISABLED: "true"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: market-config
-data:
-  OTEL_SDK_DISABLED: "true"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: settlement-worker-config
-data:
   OTEL_SDK_DISABLED: "true"
 ---
 apiVersion: v1

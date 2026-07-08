@@ -66,10 +66,10 @@ spec:
               kubernetes.io/metadata.name: eve-trade
           podSelector:
             matchLabels:
-              app.kubernetes.io/name: api-gateway
+              app.kubernetes.io/name: encore-backend
       ports:
         - protocol: TCP
-          port: 8080
+          port: 4000
     - to:
         - namespaceSelector:
             matchLabels:

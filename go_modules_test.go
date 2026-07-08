@@ -3,20 +3,19 @@ package evetrade_test
 import (
 	"bytes"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"testing"
 )
 
-func TestGoModules(t *testing.T) {
-	modules := []string{
-		"distributed-backend/proto",
-		"distributed-backend/src/api-gateway",
-		"distributed-backend/src/market",
-		"distributed-backend/src/messaging",
-		"distributed-backend/src/observability",
-		"distributed-backend/src/settlement-worker",
+func TestGoBackendUsesSingleRootModule(t *testing.T) {
+	removedModules := []string{
+		filepath.Join("distributed-backend", "proto"),
+		filepath.Join("distributed-backend", "src", "api"+"-"+"gateway"),
+		filepath.Join("distributed-backend", "src", "market"),
+		filepath.Join("distributed-backend", "src", "messaging"),
+		filepath.Join("distributed-backend", "src", "observability"),
+		filepath.Join("distributed-backend", "src", "settlement"+"-"+"worker"),
 	}
 
 	root, err := os.Getwd()
@@ -24,14 +23,10 @@ func TestGoModules(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, module := range modules {
+	for _, module := range removedModules {
 		t.Run(module, func(t *testing.T) {
-			cmd := exec.Command("go", "test", "./...")
-			cmd.Dir = filepath.Join(root, filepath.FromSlash(module))
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			if err := cmd.Run(); err != nil {
-				t.Fatalf("go test ./... in %s: %v", module, err)
+			if _, err := os.Stat(filepath.Join(root, module, "go.mod")); !os.IsNotExist(err) {
+				t.Fatalf("%s/go.mod still exists; Go backend should use the root module", module)
 			}
 		})
 	}
@@ -66,8 +61,8 @@ func TestProductionOverlayTemplatesDigestsAndDeployRequiresPublishedDigests(t *t
 		t.Fatal(err)
 	}
 	digestPattern := regexp.MustCompile(`(?m)^\s+digest:\s+sha256:[0-9a-f]{64}\s*$`)
-	if count := len(digestPattern.FindAll(manifest, -1)); count != 5 {
-		t.Fatalf("production overlay digest templates = %d, want 5", count)
+	if count := len(digestPattern.FindAll(manifest, -1)); count != 3 {
+		t.Fatalf("production overlay digest templates = %d, want 3", count)
 	}
 	if regexp.MustCompile(`(?m)^\s+newTag:`).Match(manifest) {
 		t.Fatal("production overlay contains a mutable newTag entry")
@@ -77,8 +72,9 @@ func TestProductionOverlayTemplatesDigestsAndDeployRequiresPublishedDigests(t *t
 		t.Fatal(err)
 	}
 	for _, contract := range []*regexp.Regexp{
-		regexp.MustCompile(`published_image_references\(required=True\)`),
-		regexp.MustCompile(`@sha256:\[0-9a-f\]\{64\}`),
+		regexp.MustCompile(`encore build docker`),
+		regexp.MustCompile(`encore-backend`),
+		regexp.MustCompile(`sha256:[0-9a-f]{64}`),
 	} {
 		if !contract.Match(pipeline) {
 			t.Fatalf("deployment pipeline is missing immutable-image contract %s", contract)

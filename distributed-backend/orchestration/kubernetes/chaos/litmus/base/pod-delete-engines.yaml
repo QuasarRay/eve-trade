@@ -1,22 +1,22 @@
 apiVersion: litmuschaos.io/v1alpha1
 kind: ChaosEngine
 metadata:
-  name: eve-trade-api-gateway
+  name: eve-trade-encore-backend
   labels:
-    app.kubernetes.io/name: api-gateway
-    app.kubernetes.io/component: gateway
+    app.kubernetes.io/name: encore-backend
+    app.kubernetes.io/component: backend
     chaos.eve-trade.io/fault: pod-delete
     chaos.eve-trade.io/suite: pod-resilience
-    chaos.eve-trade.io/target: api-gateway
+    chaos.eve-trade.io/target: encore-backend
   annotations:
-    chaos.eve-trade.io/intent: "Validate API gateway recovery and service continuity after one graceful pod deletion."
+    chaos.eve-trade.io/intent: "Validate Encore backend recovery while Quilkin and internal Pub/Sub callers keep stable targets."
 spec:
   engineState: "stop"
   annotationCheck: "false"
   jobCleanUpPolicy: "delete"
   appinfo:
     appns: "eve-trade"
-    applabel: "app.kubernetes.io/name=api-gateway"
+    applabel: "app.kubernetes.io/name=encore-backend"
     appkind: "deployment"
   chaosServiceAccount: eve-trade-chaos-runner
   experiments:
@@ -37,65 +37,11 @@ spec:
             - name: RAMP_TIME
               value: "10"
         probe:
-          - name: api-gateway-ready-during-pod-delete
+          - name: encore-backend-ready-during-pod-delete
             type: httpProbe
             mode: Continuous
             httpProbe/inputs:
-              url: http://api-gateway.eve-trade.svc.cluster.local:8080/readyz
-              method:
-                get:
-                  criteria: "=="
-                  responseCode: "200"
-            runProperties:
-              probeTimeout: 5
-              interval: 2
-              retry: 3
-              stopOnFailure: true
----
-apiVersion: litmuschaos.io/v1alpha1
-kind: ChaosEngine
-metadata:
-  name: eve-trade-market
-  labels:
-    app.kubernetes.io/name: market
-    app.kubernetes.io/component: market
-    chaos.eve-trade.io/fault: pod-delete
-    chaos.eve-trade.io/suite: pod-resilience
-    chaos.eve-trade.io/target: market
-  annotations:
-    chaos.eve-trade.io/intent: "Validate market service recovery while API gateway callers keep a stable backend target."
-spec:
-  engineState: "stop"
-  annotationCheck: "false"
-  jobCleanUpPolicy: "delete"
-  appinfo:
-    appns: "eve-trade"
-    applabel: "app.kubernetes.io/name=market"
-    appkind: "deployment"
-  chaosServiceAccount: eve-trade-chaos-runner
-  experiments:
-    - name: pod-delete
-      spec:
-        components:
-          env:
-            - name: TOTAL_CHAOS_DURATION
-              value: "30"
-            - name: CHAOS_INTERVAL
-              value: "10"
-            - name: FORCE
-              value: "false"
-            - name: PODS_AFFECTED_PERC
-              value: "50"
-            - name: SEQUENCE
-              value: "serial"
-            - name: RAMP_TIME
-              value: "10"
-        probe:
-          - name: api-gateway-ready-during-pod-delete
-            type: httpProbe
-            mode: Continuous
-            httpProbe/inputs:
-              url: http://api-gateway.eve-trade.svc.cluster.local:8080/readyz
+              url: http://encore-backend.eve-trade.svc.cluster.local:4000/gateway/readyz
               method:
                 get:
                   criteria: "=="
@@ -117,7 +63,7 @@ metadata:
     chaos.eve-trade.io/suite: pod-resilience
     chaos.eve-trade.io/target: trade-settlement
   annotations:
-    chaos.eve-trade.io/intent: "Validate settlement gRPC recovery and connection re-establishment after one graceful pod deletion."
+    chaos.eve-trade.io/intent: "Validate Rust settlement gRPC recovery and Encore worker retry behavior after one graceful pod deletion."
 spec:
   engineState: "stop"
   annotationCheck: "false"
@@ -145,11 +91,11 @@ spec:
             - name: RAMP_TIME
               value: "10"
         probe:
-          - name: api-gateway-ready-during-pod-delete
+          - name: encore-backend-ready-during-pod-delete
             type: httpProbe
             mode: Continuous
             httpProbe/inputs:
-              url: http://api-gateway.eve-trade.svc.cluster.local:8080/readyz
+              url: http://encore-backend.eve-trade.svc.cluster.local:4000/gateway/readyz
               method:
                 get:
                   criteria: "=="
@@ -158,4 +104,58 @@ spec:
               probeTimeout: 5
               interval: 2
               retry: 3
+              stopOnFailure: true
+---
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: eve-trade-nsqd
+  labels:
+    app.kubernetes.io/name: nsqd
+    app.kubernetes.io/component: pubsub
+    chaos.eve-trade.io/fault: pod-delete
+    chaos.eve-trade.io/suite: pod-resilience
+    chaos.eve-trade.io/target: nsqd
+  annotations:
+    chaos.eve-trade.io/intent: "Validate Encore Pub/Sub backend recovery for at-least-once settlement work delivery."
+spec:
+  engineState: "stop"
+  annotationCheck: "false"
+  jobCleanUpPolicy: "delete"
+  appinfo:
+    appns: "eve-trade"
+    applabel: "app.kubernetes.io/name=nsqd"
+    appkind: "statefulset"
+  chaosServiceAccount: eve-trade-chaos-runner
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          env:
+            - name: TOTAL_CHAOS_DURATION
+              value: "30"
+            - name: CHAOS_INTERVAL
+              value: "10"
+            - name: FORCE
+              value: "false"
+            - name: PODS_AFFECTED_PERC
+              value: "100"
+            - name: SEQUENCE
+              value: "serial"
+            - name: RAMP_TIME
+              value: "10"
+        probe:
+          - name: nsqd-ready-during-pod-delete
+            type: httpProbe
+            mode: Continuous
+            httpProbe/inputs:
+              url: http://nsqd.eve-trade.svc.cluster.local:4151/ping
+              method:
+                get:
+                  criteria: "=="
+                  responseCode: "200"
+            runProperties:
+              probeTimeout: 5
+              interval: 2
+              retry: 6
               stopOnFailure: true

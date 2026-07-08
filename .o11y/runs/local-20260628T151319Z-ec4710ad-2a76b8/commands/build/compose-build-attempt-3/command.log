@@ -1,0 +1,304 @@
+command: docker compose -f C:\Users\Astral\Desktop\eve-trade\docker-compose.integration.yml --profile test build
+cwd: C:\Users\Astral\Desktop\eve-trade
+exit_code: 1
+duration_ms: 210831.029
+
+--- stdout ---
+#1 [internal] load local bake definitions
+#1 reading from stdin 3.23kB done
+#1 DONE 0.0s
+
+#2 [market internal] load build definition from market.Dockerfile
+#2 transferring dockerfile: 2.15kB done
+#2 DONE 0.0s
+
+#3 [api-gateway internal] load build definition from api-gateway.Dockerfile
+#3 transferring dockerfile: 1.85kB done
+#3 DONE 0.0s
+
+#4 [quilkin internal] load build definition from quilkin.Dockerfile
+#4 transferring dockerfile: 711B done
+#4 DONE 0.0s
+
+#5 [trade-settlement internal] load build definition from trade-settlement.Dockerfile
+#5 transferring dockerfile: 2.71kB done
+#5 DONE 0.0s
+
+#6 [settlement-worker internal] load build definition from settlement-worker.Dockerfile
+#6 transferring dockerfile: 2.11kB done
+#6 DONE 0.0s
+
+#7 [simulator internal] load build definition from Dockerfile
+#7 transferring dockerfile: 428B done
+#7 DONE 0.1s
+
+#8 [settlement-worker internal] load metadata for docker.io/library/golang:1.26-bookworm
+#8 DONE 0.2s
+
+#9 [trade-settlement internal] load metadata for docker.io/library/debian:bookworm-slim
+#9 DONE 0.2s
+
+#10 [simulator internal] load metadata for docker.io/library/python:3.13-slim
+#10 DONE 0.2s
+
+#11 [quilkin internal] load metadata for docker.io/library/rust:1-bookworm
+#11 DONE 0.2s
+
+#12 [api-gateway internal] load .dockerignore
+#12 transferring context: 646B done
+#12 DONE 0.0s
+
+#13 [settlement-worker internal] load build context
+#13 DONE 0.0s
+
+#14 [market runtime 1/4] WORKDIR /app
+#14 DONE 0.0s
+
+#15 [trade-settlement internal] load build context
+#15 DONE 0.0s
+
+#16 [api-gateway internal] load build context
+#16 DONE 0.0s
+
+#17 [market internal] load build context
+#17 DONE 0.0s
+
+#18 [trade-settlement build 1/2] FROM docker.io/library/rust:1-bookworm@sha256:19817ead3289c8c631c73df281e18b59b172f6a31f4f563290f69cddd06c30e9
+#18 resolve docker.io/library/rust:1-bookworm@sha256:19817ead3289c8c631c73df281e18b59b172f6a31f4f563290f69cddd06c30e9 0.1s done
+#18 DONE 0.1s
+
+#19 [trade-settlement runtime 1/2] FROM docker.io/library/debian:bookworm-slim@sha256:96e378d7e6531ac9a15ad505478fcc2e69f371b10f5cdf87857c4b8188404716
+#19 resolve docker.io/library/debian:bookworm-slim@sha256:96e378d7e6531ac9a15ad505478fcc2e69f371b10f5cdf87857c4b8188404716 0.1s done
+#19 DONE 0.1s
+
+#20 [api-gateway build  1/14] FROM docker.io/library/golang:1.26-bookworm@sha256:5f68ec6805843bd3981a951ffada82a26a0bd2631045c8f7dba483fa868f5ec5
+#20 resolve docker.io/library/golang:1.26-bookworm@sha256:5f68ec6805843bd3981a951ffada82a26a0bd2631045c8f7dba483fa868f5ec5 0.1s done
+#20 DONE 0.1s
+
+#21 [simulator stage-0 1/5] FROM docker.io/library/python:3.13-slim@sha256:c33f0bc4364a6881bed1ec0cc2665e6c53c87a43e774aaeab88e6f17af105e4f
+#21 resolve docker.io/library/python:3.13-slim@sha256:c33f0bc4364a6881bed1ec0cc2665e6c53c87a43e774aaeab88e6f17af105e4f 0.1s done
+#21 DONE 0.1s
+
+#22 [quilkin build 2/2] RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked     for attempt in 1 2 3; do       cargo install quilkin --version "0.10.0" --locked --root /opt/quilkin && break;       status=$?;       [ "$attempt" -eq 3 ] && exit "$status";       sleep $((attempt * 2));     done
+#22 CACHED
+
+#23 [quilkin runtime 2/2] COPY --from=build /opt/quilkin/bin/quilkin /usr/local/bin/quilkin
+#23 CACHED
+
+#16 [api-gateway internal] load build context
+#16 transferring context: 3.83kB 0.0s done
+#16 DONE 0.0s
+
+#17 [market internal] load build context
+#17 transferring context: 112.05kB 0.0s done
+#17 DONE 0.0s
+
+#13 [settlement-worker internal] load build context
+#13 transferring context: 25.31kB 0.0s done
+#13 DONE 0.0s
+
+#24 [quilkin] exporting to image
+#24 exporting layers done
+#24 exporting manifest sha256:1d198e6d71782e7418d55e579ba101b6e56562f7807dfb2302fe6c15987750bd done
+#24 exporting config sha256:cfcee9f0ae68d26b09da42b4efa23b1f5fe0493269d0345cc581bee0d49da886 done
+#24 exporting attestation manifest sha256:a55406e12d14b0700c776d9bcdf656bacd3bd9ebe38a558edc024b50f754dc25 0.1s done
+#24 exporting manifest list sha256:dcf320377690347966a6e571112b80272621ee7cf03b83b6f0b90731da86302b
+#24 exporting manifest list sha256:dcf320377690347966a6e571112b80272621ee7cf03b83b6f0b90731da86302b 0.0s done
+#24 naming to docker.io/eve-trade/quilkin:dev done
+#24 unpacking to docker.io/eve-trade/quilkin:dev 0.0s done
+#24 DONE 0.2s
+
+#25 [api-gateway build  4/12] COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
+#25 CACHED
+
+#26 [api-gateway build  5/12] COPY distributed-backend/proto/go.mod distributed-backend/proto/go.sum ./distributed-backend/proto/
+#26 CACHED
+
+#27 [api-gateway build  3/12] COPY distributed-backend/docker/http-healthcheck.go ./distributed-backend/docker/
+#27 CACHED
+
+#28 [api-gateway build  6/12] COPY distributed-backend/src/api-gateway/go.mod distributed-backend/src/api-gateway/go.sum ./distributed-backend/src/api-gateway/
+#28 CACHED
+
+#29 [market build  3/14] COPY distributed-backend/docker/http-healthcheck.go ./distributed-backend/docker/
+#29 CACHED
+
+#30 [market build  5/14] COPY distributed-backend/proto/go.mod distributed-backend/proto/go.sum ./distributed-backend/proto/
+#30 CACHED
+
+#31 [market build  4/14] COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
+#31 CACHED
+
+#32 [market build  6/14] COPY distributed-backend/src/messaging/go.mod distributed-backend/src/messaging/go.sum ./distributed-backend/src/messaging/
+#32 CACHED
+
+#33 [market build  2/14] WORKDIR /workspace
+#33 CACHED
+
+#34 [market build  7/14] COPY distributed-backend/src/market/go.mod distributed-backend/src/market/go.sum ./distributed-backend/src/market/
+#34 CACHED
+
+#35 [settlement-worker build  6/14] COPY distributed-backend/src/messaging/go.mod distributed-backend/src/messaging/go.sum ./distributed-backend/src/messaging/
+#35 CACHED
+
+#36 [settlement-worker build  4/14] COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
+#36 CACHED
+
+#37 [settlement-worker build  5/14] COPY distributed-backend/proto/go.mod distributed-backend/proto/go.sum ./distributed-backend/proto/
+#37 CACHED
+
+#38 [settlement-worker build  3/14] COPY distributed-backend/docker/http-healthcheck.go ./distributed-backend/docker/
+#38 CACHED
+
+#33 [settlement-worker build  2/14] WORKDIR /workspace
+#33 CACHED
+
+#39 [settlement-worker build  7/14] COPY distributed-backend/src/settlement-worker/go.mod distributed-backend/src/settlement-worker/go.sum ./distributed-backend/src/settlement-worker/
+#39 CACHED
+
+#15 [trade-settlement internal] load build context
+#15 ...
+
+#40 [quilkin] resolving provenance for metadata file
+#40 DONE 0.0s
+
+#15 [trade-settlement internal] load build context
+#15 ...
+
+#41 [simulator internal] load build context
+#41 transferring context: 934.06kB 0.7s done
+#41 DONE 0.7s
+
+#42 [simulator stage-0 3/5] COPY simulator/requirements.txt /app/requirements.txt
+#42 CACHED
+
+#43 [simulator stage-0 4/5] RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked     python -m pip install --retries 5 --timeout 60 -r /app/requirements.txt
+#43 CACHED
+
+#44 [simulator stage-0 2/5] WORKDIR /app
+#44 CACHED
+
+#45 [simulator stage-0 5/5] COPY simulator /app
+#45 CACHED
+
+#15 [trade-settlement internal] load build context
+#15 ...
+
+#46 [simulator] exporting to image
+#46 exporting layers 0.0s done
+#46 exporting manifest sha256:6b48e72c6a58acd25fb4553d53b00d2757c7791819871520758d1ec05308e709 done
+#46 exporting config sha256:1180846cbf80d5db32e62e3f1845944be2c1c78f67819b9e9cf9328cf05f9f0b done
+#46 exporting attestation manifest sha256:75fdf5254073b99a0e49ccd24b1e6d24f4d942be30ab3bd2ddbc874736dd267f 0.0s done
+#46 exporting manifest list sha256:beec81a2e211448337b52160253535c7cdfe307a01daacd3bf0abfd7d4299e30 0.0s done
+#46 naming to docker.io/library/eve-trade-integration-simulator:latest done
+#46 unpacking to docker.io/library/eve-trade-integration-simulator:latest 0.0s done
+#46 DONE 0.1s
+
+#15 [trade-settlement internal] load build context
+#15 transferring context: 1.20MB 0.9s done
+#15 DONE 0.9s
+
+#47 [trade-settlement runtime 2/5] WORKDIR /app
+#47 CACHED
+
+#48 [trade-settlement runtime 4/5] COPY --from=build /workspace/distributed-backend/src/trade-settlement/target/release/trade-settlement /app/trade-settlement
+#48 CACHED
+
+#49 [trade-settlement build 3/4] COPY . .
+#49 CACHED
+
+#50 [trade-settlement build 2/4] WORKDIR /workspace
+#50 CACHED
+
+#51 [trade-settlement runtime 3/5] COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+#51 CACHED
+
+#52 [trade-settlement build 4/4] RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked     cd distributed-backend/src/trade-settlement     && for attempt in 1 2 3; do          cargo build --locked --release && break;          status=$?;          [ "$attempt" -eq 3 ] && exit "$status";          sleep $((attempt * 2));        done
+#52 CACHED
+
+#53 [trade-settlement runtime 5/5] COPY --from=build /workspace/distributed-backend/src/trade-settlement/config /app/config
+#53 CACHED
+
+#54 [simulator] resolving provenance for metadata file
+#54 DONE 0.0s
+
+#55 [trade-settlement] exporting to image
+#55 exporting layers done
+#55 exporting manifest sha256:f2297165874f87f83c723b9d3d639d2ac5a5f2cd16ca57cfa97b693a72ae538d done
+#55 exporting config sha256:c72587febcebcb52f9b8eef0bfa8a35ca3fdc71b81d3bae2a5fff29231e916c4 done
+#55 exporting attestation manifest sha256:75893f7bcbe7366e23ba436f47665d5a0894d1c33a20190b745435b15282cddb 0.0s done
+#55 exporting manifest list sha256:f200ce2c6c88b70048bf9ad61b7c853ce1d04527ad264a3d92980f4d13e67f5b
+#55 exporting manifest list sha256:f200ce2c6c88b70048bf9ad61b7c853ce1d04527ad264a3d92980f4d13e67f5b 0.0s done
+#55 naming to docker.io/library/eve-trade-integration-trade-settlement:latest done
+#55 unpacking to docker.io/library/eve-trade-integration-trade-settlement:latest done
+#55 DONE 0.1s
+
+#56 [trade-settlement] resolving provenance for metadata file
+#56 DONE 0.0s
+
+#57 [settlement-worker build  8/14] RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked     cd distributed-backend/src/settlement-worker     && for attempt in 1 2 3; do          go mod download && break;          status=$?;          [ "$attempt" -eq 3 ] && exit "$status";          sleep $((attempt * 2));        done
+#57 ...
+
+#58 [api-gateway build  7/12] RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked     cd distributed-backend/src/api-gateway     && for attempt in 1 2 3; do          go mod download && break;          status=$?;          [ "$attempt" -eq 3 ] && exit "$status";          sleep $((attempt * 2));        done
+#58 ...
+
+#59 [market build  8/14] RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked     cd distributed-backend/src/market     && for attempt in 1 2 3; do          go mod download && break;          status=$?;          [ "$attempt" -eq 3 ] && exit "$status";          sleep $((attempt * 2));        done
+#59 ...
+
+#58 [api-gateway build  7/12] RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked     cd distributed-backend/src/api-gateway     && for attempt in 1 2 3; do          go mod download && break;          status=$?;          [ "$attempt" -eq 3 ] && exit "$status";          sleep $((attempt * 2));        done
+#58 73.53 go: connectrpc.com/connect@v1.20.0: Get "https://proxy.golang.org/connectrpc.com/connect/@v/v1.20.0.mod": unexpected EOF
+#58 143.0 go: connectrpc.com/connect@v1.20.0: Get "https://proxy.golang.org/connectrpc.com/connect/@v/v1.20.0.mod": unexpected EOF
+#58 208.8 go: connectrpc.com/connect@v1.20.0: Get "https://proxy.golang.org/connectrpc.com/connect/@v/v1.20.0.mod": unexpected EOF
+#58 ERROR: process "/bin/sh -c cd distributed-backend/src/api-gateway     && for attempt in 1 2 3; do          go mod download && break;          status=$?;          [ \"$attempt\" -eq 3 ] && exit \"$status\";          sleep $((attempt * 2));        done" did not complete successfully: exit code: 1
+
+#57 [settlement-worker build  8/14] RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked     cd distributed-backend/src/settlement-worker     && for attempt in 1 2 3; do          go mod download && break;          status=$?;          [ "$attempt" -eq 3 ] && exit "$status";          sleep $((attempt * 2));        done
+#57 CANCELED
+
+#59 [market build  8/14] RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked     cd distributed-backend/src/market     && for attempt in 1 2 3; do          go mod download && break;          status=$?;          [ "$attempt" -eq 3 ] && exit "$status";          sleep $((attempt * 2));        done
+#59 CANCELED
+------
+ > [api-gateway build  7/12] RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked     cd distributed-backend/src/api-gateway     && for attempt in 1 2 3; do          go mod download && break;          status=$?;          [ "$attempt" -eq 3 ] && exit "$status";          sleep $((attempt * 2));        done:
+73.53 go: connectrpc.com/connect@v1.20.0: Get "https://proxy.golang.org/connectrpc.com/connect/@v/v1.20.0.mod": unexpected EOF
+143.0 go: connectrpc.com/connect@v1.20.0: Get "https://proxy.golang.org/connectrpc.com/connect/@v/v1.20.0.mod": unexpected EOF
+208.8 go: connectrpc.com/connect@v1.20.0: Get "https://proxy.golang.org/connectrpc.com/connect/@v/v1.20.0.mod": unexpected EOF
+------
+
+--- stderr ---
+ Image eve-trade-integration-api-gateway Building 
+ Image eve-trade/quilkin:dev Building 
+ Image eve-trade-integration-trade-settlement Building 
+ Image eve-trade-integration-simulator Building 
+ Image eve-trade-integration-market Building 
+ Image eve-trade-integration-settlement-worker Building 
+api-gateway.Dockerfile:11
+
+--------------------
+
+  10 |     COPY distributed-backend/src/api-gateway/go.mod distributed-backend/src/api-gateway/go.sum ./distributed-backend/src/api-gateway/
+
+  11 | >>> RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
+
+  12 | >>>     cd distributed-backend/src/api-gateway \
+
+  13 | >>>     && for attempt in 1 2 3; do \
+
+  14 | >>>          go mod download && break; \
+
+  15 | >>>          status=$?; \
+
+  16 | >>>          [ "$attempt" -eq 3 ] && exit "$status"; \
+
+  17 | >>>          sleep $((attempt * 2)); \
+
+  18 | >>>        done
+
+  19 |     
+
+--------------------
+
+target api-gateway: failed to solve: process "/bin/sh -c cd distributed-backend/src/api-gateway     && for attempt in 1 2 3; do          go mod download && break;          status=$?;          [ \"$attempt\" -eq 3 ] && exit \"$status\";          sleep $((attempt * 2));        done" did not complete successfully: exit code: 1
+
+
+
+View build details: docker-desktop://dashboard/build/default/default/y1cowosj84tec0mcnizybxl21
+

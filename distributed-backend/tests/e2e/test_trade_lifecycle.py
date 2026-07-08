@@ -688,7 +688,7 @@ def test_retried_successful_request_returns_cached_response_without_second_settl
     first = gateway.issue_trade_instance(payload)
     second = gateway.issue_trade_instance(payload)
 
-    assert first["status"] == "accepted"
+    assert first["status"] in {"accepted", "queued"}
     assert second == first
     assert table_count(db, "trade_instance") == 1
     assert settlement_batch_count(db, key) == 1

@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: api-gateway-config
+  name: encore-backend-config
   labels:
-    app.kubernetes.io/name: api-gateway
-    app.kubernetes.io/component: gateway
+    app.kubernetes.io/name: encore-backend
+    app.kubernetes.io/component: backend
 data:
-  API_GATEWAY_HTTP_ADDR: ":8080"
+  PORT: "4000"
   API_GATEWAY_QUILKIN_UDP_ADDR: ":26000"
   API_GATEWAY_QUILKIN_UDP_ENABLED: "true"
   API_GATEWAY_QUILKIN_MAX_PACKET_BYTES: "8192"
@@ -17,73 +17,13 @@ data:
   API_GATEWAY_UDP_REPLAY_TTL: "10m"
   API_GATEWAY_UDP_AUTH_REQUIRED: "true"
   API_GATEWAY_UDP_HMAC_KEY_ID: "primary"
-  MARKET_URL: "http://market:8081"
-
-  OTEL_SERVICE_NAME: "api-gateway"
-  OTEL_SERVICE_NAMESPACE: "eve-trade"
-  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.eve-trade-observability.svc.cluster.local:4318"
-  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
-  OTEL_TRACES_EXPORTER: "otlp"
-  OTEL_METRICS_EXPORTER: "otlp"
-  OTEL_LOGS_EXPORTER: "otlp"
-  OTEL_PROPAGATORS: "tracecontext,baggage"
-  OTEL_METRIC_EXPORT_INTERVAL: "15000"
-  OBSERVABILITY_RUN_ID: "kubernetes"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: market-config
-  labels:
-    app.kubernetes.io/name: market
-    app.kubernetes.io/component: market
-data:
-  MARKET_HTTP_ADDR: ":8081"
-  TRADE_SETTLEMENT_URL: "http://trade-settlement:9092"
-  SETTLEMENT_TRANSPORT: "rabbitmq"
-  RABBITMQ_SETTLEMENT_EXCHANGE: "eve.trade.settlement"
-  RABBITMQ_SETTLEMENT_COMMAND_QUEUE: "eve.trade.settlement.commands"
-  RABBITMQ_SETTLEMENT_ROUTING_KEY: "settlement.execute"
-  RABBITMQ_SETTLEMENT_DLX: "eve.trade.settlement.dlx"
-  RABBITMQ_SETTLEMENT_DEAD_QUEUE: "eve.trade.settlement.dead"
-  RABBITMQ_SETTLEMENT_DEAD_ROUTING_KEY: "settlement.dead"
-  RABBITMQ_SETTLEMENT_PREFETCH: "8"
-  RABBITMQ_PUBLISH_TIMEOUT: "5s"
-
-  OTEL_SERVICE_NAME: "market"
-  OTEL_SERVICE_NAMESPACE: "eve-trade"
-  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.eve-trade-observability.svc.cluster.local:4318"
-  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
-  OTEL_TRACES_EXPORTER: "otlp"
-  OTEL_METRICS_EXPORTER: "otlp"
-  OTEL_LOGS_EXPORTER: "otlp"
-  OTEL_PROPAGATORS: "tracecontext,baggage"
-  OTEL_METRIC_EXPORT_INTERVAL: "15000"
-  OBSERVABILITY_RUN_ID: "kubernetes"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: settlement-worker-config
-  labels:
-    app.kubernetes.io/name: settlement-worker
-    app.kubernetes.io/component: settlement-worker
-data:
-  SETTLEMENT_WORKER_HEALTH_HTTP_ADDR: ":8082"
-  TRADE_SETTLEMENT_URL: "http://trade-settlement:9092"
+  API_GATEWAY_DOWNSTREAM_TIMEOUT: "5s"
+  MARKET_STARTUP_DEPENDENCY_TIMEOUT: "90s"
+  MARKET_STARTUP_RETRY_INTERVAL: "2s"
   SETTLEMENT_WORKER_REQUEST_TIMEOUT: "10s"
-  RABBITMQ_SETTLEMENT_EXCHANGE: "eve.trade.settlement"
-  RABBITMQ_SETTLEMENT_COMMAND_QUEUE: "eve.trade.settlement.commands"
-  RABBITMQ_SETTLEMENT_ROUTING_KEY: "settlement.execute"
-  RABBITMQ_SETTLEMENT_DLX: "eve.trade.settlement.dlx"
-  RABBITMQ_SETTLEMENT_DEAD_QUEUE: "eve.trade.settlement.dead"
-  RABBITMQ_SETTLEMENT_DEAD_ROUTING_KEY: "settlement.dead"
-  RABBITMQ_SETTLEMENT_PREFETCH: "8"
-  RABBITMQ_PUBLISH_TIMEOUT: "5s"
+  TRADE_SETTLEMENT_GRPC_TARGET: "trade-settlement:9092"
 
-  OTEL_SERVICE_NAME: "settlement-worker"
+  OTEL_SERVICE_NAME: "encore-backend"
   OTEL_SERVICE_NAMESPACE: "eve-trade"
   OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production,service.namespace=eve-trade"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.eve-trade-observability.svc.cluster.local:4318"

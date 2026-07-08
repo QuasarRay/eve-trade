@@ -1,0 +1,31 @@
+{
+  "argv": [
+    "C:\\Program Files\\Python314\\python.exe",
+    "-m",
+    "compileall",
+    "-q",
+    "observability"
+  ],
+  "artifact.path": "commands/check/compile-observability/command.log",
+  "command.argv": [
+    "C:\\Program Files\\Python314\\python.exe",
+    "-m",
+    "compileall",
+    "-q",
+    "observability"
+  ],
+  "command.duration_ms": 118.167,
+  "command.exit_code": 0,
+  "duration_ms": 118.167,
+  "ended_at": "2026-06-28T03:44:35.147681+00:00",
+  "exit_code": 0,
+  "log_path": "commands/check/compile-observability/command.log",
+  "metadata_path": "commands/check/compile-observability/command.json",
+  "name": "compile-observability",
+  "pipeline.command": "compile-observability",
+  "pipeline.stage": "check",
+  "stage": "check",
+  "started_at": "2026-06-28T03:44:35.028918+00:00",
+  "timed_out": false,
+  "trace_id": ""
+}

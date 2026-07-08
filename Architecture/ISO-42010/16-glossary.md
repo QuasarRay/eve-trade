@@ -26,16 +26,20 @@
 
 | Term | Meaning |
 | --- | --- |
-| API Gateway | Go UDP edge and UDP-to-gRPC forwarder. It validates transport safety and forwards raw game GUI payloads to Market; it does not expose production direct trade command RPCs. |
-| Quilkin | UDP proxy/routing component between game frontend traffic and the API Gateway UDP listener. |
+| Encore gateway | Go UDP edge and UDP-to-gRPC forwarder. It validates transport safety, UDP edge envelope/config/actor binding through proto rules, and forwards raw game GUI payloads to Market in the current runtime path. Restored API gateway proto contracts define typed internal gRPC shapes without moving trade mechanics into the gateway. |
+| Market proto service adapter | Small Go adapter that maps restored `eve.market.v1` protobuf request/response messages to the existing Market handler and domain planner. |
+| Quilkin | UDP proxy/routing component between game frontend traffic and the Encore gateway UDP listener. |
 | Edge envelope | Signed `eve-trade-edge.v1` UDP JSON envelope carrying the raw game GUI payload and HMAC authentication data. |
 | GUI interaction payload | Production game packet payload with `schema_version`, `interaction_id`, `ui`, and `input` fields. The local simulator and real frontend use the same shape. |
 | Market | Go service that interprets game GUI interactions, performs trade mechanics, validation, settlement planning, and settlement command publication. |
-| settlement-worker | Go worker that consumes RabbitMQ settlement commands and calls trade-settlement. |
+| settlement worker | Go worker that consumes Encore Pub/Sub settlement commands and calls trade-settlement. |
 | trade-settlement | Rust service that atomically executes requested settlement batches and applies durable PostgreSQL mutations plus settlement metadata. |
 | Settlement batch | A set of ordered settlement operations executed under one idempotency key. |
 | Settlement step | One operation within a settlement batch, recorded for audit and diagnosis. |
 | Settlement operation | A protobuf-defined mutation command handled by trade-settlement. |
+| Protovalidate | Buf protobuf validation runtime and schema annotation model used by this project for reusable request-shape rules. |
+| Buf BSR | Buf Schema Registry. `buf.yaml` declares `buf.build/bufbuild/protovalidate` as the source of the `buf.validate` validation annotations. |
+| Predefined validation rule | A reusable local `buf.validate` extension defined in `proto/eve/validation/v1/validation_rules.proto`, such as UUID, non-blank string, positive integer, or trade state rules. |
 | Idempotency key | Caller-supplied key used to prevent duplicate settlement effects and support replay. |
 | Request fingerprint | Hash or derived representation of request material used to detect key reuse for different payloads. |
 | External request ID | Upstream or boundary-generated correlation identifier. |
@@ -44,9 +48,9 @@
 | Wallet | A capsuleer's ISK balance container. |
 | Escrow | A temporary holding record for items or ISK during trade settlement. |
 | Ledger | Append-only audit record for item, wallet, or trade state changes. |
-| DLQ | Dead-letter queue for RabbitMQ settlement messages that cannot be processed normally. |
-| DLX | Dead-letter exchange used by RabbitMQ to route dead-lettered settlement messages. |
-| Quorum queue | RabbitMQ replicated queue type used for durable settlement command and dead-letter queues. |
+| DLQ | Dead-letter queue for Encore Pub/Sub settlement messages that cannot be processed normally. |
+| DLX | Dead-letter exchange used by Encore Pub/Sub to route dead-lettered settlement messages. |
+| Quorum queue | Encore Pub/Sub replicated queue type used for durable settlement command and dead-letter queues. |
 | RTO | Recovery Time Objective: the target time to restore service or data after an outage. |
 | RPO | Recovery Point Objective: the maximum acceptable data-loss window after a failure. |
 | h2c | HTTP/2 without TLS, acceptable only in trusted local or mesh-protected paths where explicitly allowed. |

@@ -1,0 +1,16 @@
+{
+  "compose_file": "C:\\Users\\Astral\\Desktop\\eve-trade\\docker-compose.integration.yml",
+  "services": [
+    "otel-collector",
+    "postgres",
+    "rabbitmq",
+    "migrate",
+    "trade-settlement",
+    "settlement-worker",
+    "market",
+    "api-gateway",
+    "quilkin",
+    "simulator",
+    "e2e-tests"
+  ]
+}

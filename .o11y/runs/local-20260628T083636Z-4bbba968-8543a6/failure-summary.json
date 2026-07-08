@@ -1,0 +1,439 @@
+{
+  "artifacts": [
+    {
+      "href": "commands/build/compose-build/retry-summary.json",
+      "path": "commands/build/compose-build/retry-summary.json"
+    },
+    {
+      "href": "commands/build/compose-build-attempt-1/command.json",
+      "path": "commands/build/compose-build-attempt-1/command.json"
+    },
+    {
+      "href": "commands/build/compose-build-attempt-1/command.log",
+      "path": "commands/build/compose-build-attempt-1/command.log"
+    },
+    {
+      "href": "commands/build/compose-build-attempt-2/command.json",
+      "path": "commands/build/compose-build-attempt-2/command.json"
+    },
+    {
+      "href": "commands/build/compose-build-attempt-2/command.log",
+      "path": "commands/build/compose-build-attempt-2/command.log"
+    },
+    {
+      "href": "commands/build/compose-build-attempt-3/command.json",
+      "path": "commands/build/compose-build-attempt-3/command.json"
+    },
+    {
+      "href": "commands/build/compose-build-attempt-3/command.log",
+      "path": "commands/build/compose-build-attempt-3/command.log"
+    },
+    {
+      "href": "db/metadata.json",
+      "path": "db/metadata.json"
+    },
+    {
+      "href": "docker/compose-config.yaml",
+      "path": "docker/compose-config.yaml"
+    },
+    {
+      "href": "docker/compose-images.jsonl",
+      "path": "docker/compose-images.jsonl"
+    },
+    {
+      "href": "docker/compose-logs.txt",
+      "path": "docker/compose-logs.txt"
+    },
+    {
+      "href": "docker/compose-ps.txt",
+      "path": "docker/compose-ps.txt"
+    },
+    {
+      "href": "docker/compose-version.txt",
+      "path": "docker/compose-version.txt"
+    },
+    {
+      "href": "docker/discovered-services.json",
+      "path": "docker/discovered-services.json"
+    },
+    {
+      "href": "docker/docker-version.txt",
+      "path": "docker/docker-version.txt"
+    },
+    {
+      "href": "docker/logs/api-gateway.log",
+      "path": "docker/logs/api-gateway.log"
+    },
+    {
+      "href": "docker/logs/e2e-tests.log",
+      "path": "docker/logs/e2e-tests.log"
+    },
+    {
+      "href": "docker/logs/market.log",
+      "path": "docker/logs/market.log"
+    },
+    {
+      "href": "docker/logs/migrate.log",
+      "path": "docker/logs/migrate.log"
+    },
+    {
+      "href": "docker/logs/otel-collector.log",
+      "path": "docker/logs/otel-collector.log"
+    },
+    {
+      "href": "docker/logs/postgres.log",
+      "path": "docker/logs/postgres.log"
+    },
+    {
+      "href": "docker/logs/quilkin.log",
+      "path": "docker/logs/quilkin.log"
+    },
+    {
+      "href": "docker/logs/rabbitmq.log",
+      "path": "docker/logs/rabbitmq.log"
+    },
+    {
+      "href": "docker/logs/settlement-worker.log",
+      "path": "docker/logs/settlement-worker.log"
+    },
+    {
+      "href": "docker/logs/simulator.log",
+      "path": "docker/logs/simulator.log"
+    },
+    {
+      "href": "docker/logs/trade-settlement.log",
+      "path": "docker/logs/trade-settlement.log"
+    },
+    {
+      "href": "docker/metadata.json",
+      "path": "docker/metadata.json"
+    },
+    {
+      "href": "env-redacted.json",
+      "path": "env-redacted.json"
+    },
+    {
+      "href": "git.json",
+      "path": "git.json"
+    },
+    {
+      "href": "hashes.json",
+      "path": "hashes.json"
+    },
+    {
+      "href": "pytest/pytest-output.txt",
+      "path": "pytest/pytest-output.txt"
+    },
+    {
+      "href": "pytest/pytest-summary.json",
+      "path": "pytest/pytest-summary.json"
+    },
+    {
+      "href": "run-context.json",
+      "path": "run-context.json"
+    },
+    {
+      "href": "run-summary.json",
+      "path": "run-summary.json"
+    },
+    {
+      "href": "telemetry/local-spans.jsonl",
+      "path": "telemetry/local-spans.jsonl"
+    },
+    {
+      "href": "tool-versions.json",
+      "path": "tool-versions.json"
+    }
+  ],
+  "classification": {
+    "confidence": 0.67,
+    "evidence": [
+      "matched /connection refused|temporary failure in name resolution|no such host|network.*not found|quilkin/"
+    ],
+    "failure_family": "docker-networking",
+    "likely_next_commands": [
+      "docker compose ps",
+      "docker compose logs --no-color"
+    ],
+    "likely_solution_files": [
+      "compose.yaml",
+      "docker-compose.integration.yml",
+      "distributed-backend/src/api-gateway/distributed-backend/quilkin_udp.go"
+    ],
+    "suspected_services": [
+      "docker-compose",
+      "api-gateway",
+      "market"
+    ],
+    "test.failure_family": "docker-networking"
+  },
+  "database": {
+    "available": false,
+    "errors": [
+      "No connectable PostgreSQL database found"
+    ],
+    "service": "postgres",
+    "tables": []
+  },
+  "docker": {
+    "available": true,
+    "commands": {
+      "compose-config.yaml": {
+        "command": [
+          "docker",
+          "compose",
+          "-f"
+        ],
+        "exit_code": 0
+      },
+      "compose-images.jsonl": {
+        "command": [
+          "docker",
+          "compose",
+          "-f"
+        ],
+        "exit_code": 0
+      },
+      "compose-logs.txt": {
+        "command": [
+          "docker",
+          "compose",
+          "-f"
+        ],
+        "exit_code": 0
+      },
+      "compose-ps.txt": {
+        "command": [
+          "docker",
+          "compose",
+          "-f"
+        ],
+        "exit_code": 0
+      },
+      "compose-version.txt": {
+        "command": [
+          "docker",
+          "compose",
+          "version"
+        ],
+        "exit_code": 0
+      },
+      "docker-version.txt": {
+        "command": [
+          "docker",
+          "version"
+        ],
+        "exit_code": 0
+      },
+      "docker/logs/api-gateway.log": {
+        "exit_code": 0,
+        "service": "api-gateway"
+      },
+      "docker/logs/e2e-tests.log": {
+        "exit_code": 0,
+        "service": "e2e-tests"
+      },
+      "docker/logs/market.log": {
+        "exit_code": 0,
+        "service": "market"
+      },
+      "docker/logs/migrate.log": {
+        "exit_code": 0,
+        "service": "migrate"
+      },
+      "docker/logs/otel-collector.log": {
+        "exit_code": 0,
+        "service": "otel-collector"
+      },
+      "docker/logs/postgres.log": {
+        "exit_code": 0,
+        "service": "postgres"
+      },
+      "docker/logs/quilkin.log": {
+        "exit_code": 0,
+        "service": "quilkin"
+      },
+      "docker/logs/rabbitmq.log": {
+        "exit_code": 0,
+        "service": "rabbitmq"
+      },
+      "docker/logs/settlement-worker.log": {
+        "exit_code": 0,
+        "service": "settlement-worker"
+      },
+      "docker/logs/simulator.log": {
+        "exit_code": 0,
+        "service": "simulator"
+      },
+      "docker/logs/trade-settlement.log": {
+        "exit_code": 0,
+        "service": "trade-settlement"
+      }
+    },
+    "compose_file": "C:\\Users\\Astral\\Desktop\\eve-trade\\docker-compose.integration.yml",
+    "docker.compose_config_hash": "1decb14a21ba7d03d29932cb9a80cfcd34ba08b2125791a21c9f4865e83e8119",
+    "images": [],
+    "service_logs": {
+      "api-gateway": "docker/logs/api-gateway.log",
+      "e2e-tests": "docker/logs/e2e-tests.log",
+      "market": "docker/logs/market.log",
+      "migrate": "docker/logs/migrate.log",
+      "otel-collector": "docker/logs/otel-collector.log",
+      "postgres": "docker/logs/postgres.log",
+      "quilkin": "docker/logs/quilkin.log",
+      "rabbitmq": "docker/logs/rabbitmq.log",
+      "settlement-worker": "docker/logs/settlement-worker.log",
+      "simulator": "docker/logs/simulator.log",
+      "trade-settlement": "docker/logs/trade-settlement.log"
+    },
+    "service_urls": {
+      "api-gateway.MARKET_URL": "http://market:8081",
+      "api-gateway.OTEL_EXPORTER_OTLP_ENDPOINT": "http://otel-collector:4318",
+      "e2e-tests.EVE_TRADE_API_GATEWAY_URL": "http://api-gateway:8080",
+      "e2e-tests.EVE_TRADE_DATABASE_URL": "postgres://<redacted>@postgres:5432/eve_trade",
+      "e2e-tests.EVE_TRADE_SIMULATOR_URL": "http://simulator:8000",
+      "market.DATABASE_URL": "postgres://<redacted>@postgres:5432/eve_trade",
+      "market.OTEL_EXPORTER_OTLP_ENDPOINT": "http://otel-collector:4318",
+      "market.RABBITMQ_URL": "amqp://<redacted>@rabbitmq:5672/",
+      "market.TRADE_SETTLEMENT_URL": "http://trade-settlement:9092",
+      "settlement-worker.OTEL_EXPORTER_OTLP_ENDPOINT": "http://otel-collector:4318",
+      "settlement-worker.RABBITMQ_URL": "amqp://<redacted>@rabbitmq:5672/",
+      "settlement-worker.TRADE_SETTLEMENT_URL": "http://trade-settlement:9092",
+      "trade-settlement.DATABASE_URL": "postgres://<redacted>@postgres:5432/eve_trade",
+      "trade-settlement.OTEL_EXPORTER_OTLP_ENDPOINT": "http://otel-collector:4318"
+    },
+    "services": [
+      "rabbitmq",
+      "postgres",
+      "migrate",
+      "trade-settlement",
+      "settlement-worker",
+      "market",
+      "api-gateway",
+      "quilkin",
+      "simulator",
+      "e2e-tests",
+      "otel-collector"
+    ]
+  },
+  "executive_summary": "Command compose-build-attempt-3 failed with exit code 1; likely failure family: docker-networking (67% rule confidence).",
+  "failed_command": {
+    "argv": [
+      "docker",
+      "compose",
+      "-f",
+      "C:\\Users\\Astral\\Desktop\\eve-trade\\docker-compose.integration.yml",
+      "--profile",
+      "test",
+      "build"
+    ],
+    "artifact.path": "commands/build/compose-build-attempt-3/command.log",
+    "command.argv": [
+      "docker",
+      "compose",
+      "-f",
+      "C:\\Users\\Astral\\Desktop\\eve-trade\\docker-compose.integration.yml",
+      "--profile",
+      "test",
+      "build"
+    ],
+    "command.duration_ms": 34424.213,
+    "command.exit_code": 1,
+    "duration_ms": 34424.213,
+    "ended_at": "2026-06-28T08:38:24.981558+00:00",
+    "exit_code": 1,
+    "log_path": "commands/build/compose-build-attempt-3/command.log",
+    "metadata_path": "commands/build/compose-build-attempt-3/command.json",
+    "name": "compose-build-attempt-3",
+    "pipeline.command": "compose-build-attempt-3",
+    "pipeline.stage": "build",
+    "stage": "build",
+    "started_at": "2026-06-28T08:37:50.556770+00:00",
+    "timed_out": false,
+    "trace_id": ""
+  },
+  "github_actions_url": "",
+  "honeycomb": {
+    "bubbleup_steps": [
+      "Open or build a Honeycomb query filtered by observability.run_id = local-20260628T083636Z-4bbba968-8543a6.",
+      "Visualize duration with a heatmap or filter spans where error=true / command.exit_code != 0.",
+      "Select the failed subset and choose BubbleUp / Compare to Baseline.",
+      "Compare against a passing local run or passing CI run using the high-cardinality fields above."
+    ],
+    "filters": {
+      "observability.run_id": "local-20260628T083636Z-4bbba968-8543a6",
+      "service.name": "docker-compose",
+      "test.failure_family": "docker-networking"
+    },
+    "query_url": "",
+    "suggested_fields": [
+      "python.version",
+      "os.name",
+      "docker.image_digest",
+      "db.schema_hash",
+      "db.migration_hash",
+      "protobuf.generated_hash",
+      "service.name",
+      "test.nodeid",
+      "command.exit_code",
+      "test.failure_family",
+      "github.run_id",
+      "git.dirty"
+    ],
+    "trace_id": "",
+    "trace_url": ""
+  },
+  "kubernetes": {},
+  "missing_evidence": [],
+  "parity_hints": [],
+  "pytest": {
+    "assertion_text": "",
+    "collected_count": 0,
+    "collected_tests": [],
+    "duration_seconds": 0.0,
+    "error_count": 0,
+    "failed_count": 0,
+    "failure_message": "",
+    "first_failing_test_nodeid": "",
+    "passed_count": 0,
+    "skipped_count": 0,
+    "source_file": "",
+    "source_line": null,
+    "source_url": "",
+    "test.file": "",
+    "test.line": null,
+    "test.nodeid": ""
+  },
+  "run": {
+    "environment": "local",
+    "github_job": "",
+    "github_ref": "",
+    "github_run_attempt": "",
+    "github_run_id": "",
+    "github_sha": "4bbba96894b8e35599bc34c7d4ebf71a68621d77",
+    "github_workflow": "",
+    "observability.run_id": "local-20260628T083636Z-4bbba968-8543a6",
+    "repo_root": "C:\\Users\\Astral\\Desktop\\eve-trade",
+    "run_dir": "C:\\Users\\Astral\\Desktop\\eve-trade\\.o11y\\runs\\local-20260628T083636Z-4bbba968-8543a6",
+    "run_id": "local-20260628T083636Z-4bbba968-8543a6",
+    "started_at": "2026-06-28T08:36:36.625583+00:00"
+  },
+  "sentry": {
+    "event_id": "",
+    "event_url": ""
+  },
+  "source_links": [
+    {
+      "path": "compose.yaml",
+      "url": "https://github.com/QuasarRay/eve-trade/blob/4bbba96894b8e35599bc34c7d4ebf71a68621d77/compose.yaml"
+    },
+    {
+      "path": "docker-compose.integration.yml",
+      "url": "https://github.com/QuasarRay/eve-trade/blob/4bbba96894b8e35599bc34c7d4ebf71a68621d77/docker-compose.integration.yml"
+    },
+    {
+      "path": "distributed-backend/src/api-gateway/distributed-backend/quilkin_udp.go",
+      "url": "https://github.com/QuasarRay/eve-trade/blob/4bbba96894b8e35599bc34c7d4ebf71a68621d77/distributed-backend/src/api-gateway/distributed-backend/quilkin_udp.go"
+    }
+  ]
+}

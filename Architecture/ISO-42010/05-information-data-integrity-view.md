@@ -5,9 +5,9 @@
 | Field | Value |
 | --- | --- |
 | View status | Canonical current state |
-| Last reviewed | 2026-06-25 |
+| Last reviewed | 2026-07-08 |
 | Governing viewpoint | VP-04 Information And Data Integrity |
-| Evidence baseline | v6 architecture cleanup; starting commit recorded in `changes/v6/changes.md` |
+| Evidence baseline | v9 experimental refactor; branch delta recorded in `changes/v9/changes.md` |
 
 Governed by: [VP-04 Information And Data Integrity Viewpoint](./02-viewpoints.md#vp-04-information-and-data-integrity-viewpoint)
 
@@ -27,15 +27,15 @@ and CON-33.
 | Escrow | Item escrow and wallet escrow records | trade-settlement write path; Market read path | Holds items and ISK during issue and accept flows. |
 | Settlement metadata | Settlement batch, attempt, step, and operation metadata | trade-settlement | Audits settlement execution, success, failure, and replay outcomes. |
 | Idempotency metadata | Idempotency records, fingerprints, statuses, completed responses | trade-settlement and Market read path | Prevents duplicate mutation and supports replay. |
-| Game GUI packet data | Signed UDP edge envelope and raw `eve-trade-gui.v1` payload | Game frontend/simulator, Quilkin, API Gateway, Market | Defines the production packet data crossing the frontend-to-Market boundary. |
-| Settlement operation data | Low-level operation batches and metadata | Market, messaging, settlement-worker, trade-settlement | Defines durable settlement mutation data crossing the Market-to-settlement boundary. |
+| Game GUI packet data | Signed UDP edge envelope and raw `eve-trade-gui.v1` payload | Game frontend/simulator, Quilkin, Encore gateway, Market | Defines the production packet data crossing the frontend-to-Market boundary. |
+| Settlement operation data | Low-level operation batches and metadata | Market, `settlement`, settlement worker, trade-settlement | Defines durable settlement mutation data crossing the Market-to-settlement boundary. |
 
 ## Persistent State Responsibilities
 
 | Responsibility | Primary mechanism |
 | --- | --- |
 | Authoritative writes | trade-settlement SQL operation handlers inside a PostgreSQL transaction. |
-| Current-state reads for validation | Market repository reads from PostgreSQL snapshots. |
+| Current-state reads for preconditions | Market repository reads from PostgreSQL snapshots; request-shape validation is centralized in protobuf/protovalidate. |
 | Request replay | Market reads completed idempotency outcomes; trade-settlement enforces write-side idempotency. |
 | Audit history | Settlement metadata and append-only ledger tables. |
 | Schema creation | SQL migrations under trade-settlement and Kubernetes migration ConfigMaps/jobs. |
@@ -104,7 +104,7 @@ Current cross-table SQL functions and constraint triggers:
 
 | ID | Invariant | Enforcement location |
 | --- | --- | --- |
-| INV-01 | A settlement batch must contain at least one operation. | trade-settlement request validation. |
+| INV-01 | A settlement batch must contain at least one operation. | `ExecuteSettlementBatchRequest.operations` protovalidate rule in `proto/eve/trade_settlement/v1/trade_settlement.proto`. |
 | INV-02 | A completed idempotency key must not execute business mutations again. | trade-settlement idempotency lock and completion replay; Market completed replay reads. |
 | INV-03 | Concurrent requests with the same idempotency key must not both execute. | trade-settlement idempotency locking and in-progress conflict behavior. |
 | INV-04 | Business mutations in one settlement batch succeed or fail together. | PostgreSQL transaction plus savepoint rollback on operation failure. |
@@ -112,10 +112,10 @@ Current cross-table SQL functions and constraint triggers:
 | INV-06 | Failure metadata must survive a settlement failure when possible. | trade-settlement records failed steps, batch, attempt, and idempotency state after rollback of business savepoint. |
 | INV-07 | Item and wallet ledger rows cannot be updated or deleted; item-stack history changes are represented only by inserting new `item_stack_ledger` rows. | Database schema, triggers, and service write discipline. |
 | INV-08 | Item stack and wallet checksum fields detect inconsistent mutation sequences. Item-stack ledger hashes additionally bind each ledger row to the previous row for the same stack. | trade-settlement checksum logic, SQL hash functions, SQL triggers, and SQL updates. |
-| INV-09 | Accepted trade quantity cannot exceed remaining open quantity. | Market validation, item escrow transfer preconditions, and `trade_instance.remaining_quantity` SQL check. |
+| INV-09 | Accepted trade quantity cannot exceed remaining open quantity. | Protobuf positive-quantity validation, Market current-state validation, item escrow transfer preconditions, and `trade_instance.remaining_quantity` SQL check. |
 | INV-10 | Buyer wallet value transfer is consistent with quantity multiplied by price on the current trade row. | Market settlement plan plus trade-settlement row-level wallet/item escrow checks. |
 | INV-11 | Cancel returns only quantity present in item escrow to the previous owner. | Market cancellation planning plus item escrow quantity and owner-rule checks. |
-| INV-12 | Database schema must exist before services process requests. | Compose migration service and Kubernetes migration job dependency model. |
+| INV-12 | Database schema must exist before services process requests. | local Encore/Kubernetes migration service and Kubernetes migration job dependency model. |
 | INV-13 | Cancelled or completed trades cannot retain active wallet escrow. | Deferrable SQL constraint triggers on `trade_instance` and `wallet_escrow`. |
 | INV-14 | A current `item_stack` row must be reconstructable from the latest hash-chained `item_stack_ledger` row for the same stack. | Deferrable SQL constraint triggers on `item_stack` and `item_stack_ledger`. |
 
@@ -125,7 +125,7 @@ Model ID: `MODEL-DATA-02`; view component ID: `VC-DATA-02`.
 
 | Invariant | Service enforcement | SQL enforcement | Test or verification status |
 | --- | --- | --- | --- |
-| INV-01 | trade-settlement command conversion validates non-empty operation list. | None specific beyond batch/step inserts. | Repository tests should cover command validation; last run not recorded in this doc update. |
+| INV-01 | Protovalidate enforces non-empty settlement operation lists before command conversion in Go and Rust boundaries. | None specific beyond batch/step inserts. | `buf build`, `buf lint`, `buf generate`, generated Go package tests, and Rust trade-settlement tests passed during v9 validation. |
 | INV-02 | Executor locks idempotency record and returns completed replay. | `idempotency_record` primary key and result batch FK. | Covered by executor behavior; test evidence should be linked in future. |
 | INV-03 | Executor rejects `IN_PROGRESS` duplicate key. | Transaction lock on idempotency record. | Source-anchored in EVID-007; concurrency test not linked. |
 | INV-04 | Executor uses one PostgreSQL transaction for batch execution. | PostgreSQL transaction semantics. | Source-anchored in EVID-007; live transaction tests not run for this doc update. |
@@ -133,10 +133,10 @@ Model ID: `MODEL-DATA-02`; view component ID: `VC-DATA-02`.
 | INV-06 | Executor records failed attempt, batch, step, and idempotency state after rollback. | Settlement metadata tables and state checks. | Source-anchored in EVID-007 and EVID-010; test not linked. |
 | INV-07 | Ledger updates/deletes are rejected. Item-stack operation handlers insert new ledger rows for creation, transfer, and merge effects. | `wallet_ledger_append_only_trigger` and `item_stack_ledger_append_only_trigger`. | Migration and source evidence. |
 | INV-08 | Checksums are recomputed before current-state updates; item-stack ledger inserts recompute and validate payload/row hashes. | Checksum columns exist; SQL hash functions and `item_stack_ledger_insert_integrity_trigger` validate item ledger hashes. | Source-anchored in EVID-007 and EVID-010; live trigger test not run. |
-| INV-09 | Market validates requested quantity; settlement updates bounded trade quantity during item escrow release. | `remaining_quantity >= 0 AND remaining_quantity <= total_quantity`. | Market tests exist; last run not recorded in this doc update. |
+| INV-09 | Proto rules reject non-positive requested quantity; Market checks requested quantity against the current open escrow; settlement updates bounded trade quantity during item escrow release. | `remaining_quantity >= 0 AND remaining_quantity <= total_quantity`. | Market/gametrade package tests passed with `ENCORERUNTIME_NOPANIC=1`; SQL operation tests remain a separate gap. |
 | INV-10 | Market computes payment from quantity and price; settlement checks payment against current trade price/remaining quantity and applies wallet operations. | Wallet ledger delta checks and non-negative wallet amount. | Source-anchored in EVID-004 and EVID-010; DB operation test not linked. |
 | INV-11 | Market plans return of remaining escrow; settlement checks escrow quantity and previous-owner destination before release. | Escrow release step FK fields. | Source-anchored in EVID-004 and EVID-010; DB operation test not linked. |
-| INV-12 | Compose migration and Kubernetes migration job apply schema before useful service processing. | Migration files are schema source. | Deployment-order assumptions documented; live deploy not run. |
+| INV-12 | local Encore/Kubernetes migration and Kubernetes migration job apply schema before useful service processing. | Migration files are schema source. | Deployment-order assumptions documented; live deploy not run. |
 | INV-13 | Settlement operation handlers release wallet escrow in normal flows. | `trade_instance_wallet_escrow_closed_state_trigger` and `wallet_escrow_closed_trade_invariant_trigger`. | SQL evidence; trigger behavior test not linked. |
 | INV-14 | `CreateNewEmptyItemStack` inserts an initial `CREATE_STACK` ledger row; item stack mutations append transfer or merge ledger rows. | `item_stack_projection_ledger_invariant_trigger` and `item_stack_ledger_projection_invariant_trigger` require the current row to match the latest ledger row. | SQL and Rust source evidence; live trigger test not run. |
 
@@ -155,7 +155,7 @@ Model ID: `MODEL-DATA-02`; view component ID: `VC-DATA-02`.
 | INV-09 | EVID-004, EVID-010 | Partial test coverage | `TestAcceptTradeInstancePaysSellerAsNewWalletOwner`; SQL remaining-quantity checks. |
 | INV-10 | EVID-004, EVID-010 | Partial test coverage | `TestAcceptTradeInstancePaysSellerAsNewWalletOwner`; wallet ledger SQL checks. |
 | INV-11 | EVID-004 | Partial test coverage | `TestCancelTradeInstanceCanOnlyModifyTradeState`; full escrow-return DB test not linked. |
-| INV-12 | EVID-013, EVID-014 | Not run | Compose/Kubernetes migration order is modeled; live deploy validation was not run. |
+| INV-12 | EVID-013, EVID-014 | Not run | local Encore/Kubernetes/Kubernetes migration order is modeled; live deploy validation was not run. |
 | INV-13 | EVID-010 | SQL evidence | Closed-trade wallet escrow invariant is implemented in migration SQL; trigger behavior test not linked. |
 | INV-14 | EVID-007, EVID-010 | SQL and source evidence | Item-stack projection invariant and initial `CREATE_STACK` ledger writes are implemented; live trigger behavior test not linked. |
 
@@ -215,7 +215,7 @@ Model ID: `MODEL-DATA-03`; view component ID: `VC-DATA-03`.
 | --- | --- |
 | `0001_settlement_schema.sql` | Single canonical settlement migration file. It creates the schema on clean databases and contains current item stack merge constraints, item-ledger hash-chain columns/functions/triggers, stored settlement step output, append-only ledger triggers, item-stack projection invariants, and closed-trade escrow invariants. |
 | Kubernetes base migration manifests | Mount and run `0001_settlement_schema.sql` in cluster deployment. |
-| Compose `migrate` service | Runs `0001_settlement_schema.sql` before local services start, then applies local seed data. |
+| local Encore/Kubernetes `migrate` service | Runs `0001_settlement_schema.sql` before local services start, then applies local seed data. |
 | `local_dev_world.sql` | Seeds deterministic local test/demo data. |
 
 ## Data Lifecycle And Retention
@@ -249,7 +249,7 @@ Model ID: `MODEL-DATA-03`; view component ID: `VC-DATA-03`.
 | CON-09 | Trade quantity/state invariants. | Trade table checks and Market/settlement responsibilities. |
 | CON-10 | Failed settlement metadata. | Settlement attempt, batch, step, and idempotency records. |
 | CON-11 | Migrations and local seed data. | Migration Model. |
-| CON-24 | Migrations before service usefulness. | Compose and Kubernetes migration model. |
+| CON-24 | Migrations before service usefulness. | local Encore/Kubernetes and Kubernetes migration model. |
 | CON-33 | Settlement metadata supports diagnosis. | Metadata tables and resilience/observability views. |
 
 ## Aspect Application

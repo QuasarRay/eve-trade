@@ -46,7 +46,7 @@ spec:
                 --service.udp \
                 --service.udp.port 26001 \
                 --service.udp.workers 1 \
-                --provider.static.endpoints "${API_GATEWAY_SERVICE_HOST}:26000" \
+                --provider.static.endpoints "${ENCORE_BACKEND_SERVICE_HOST}:26000" \
                 --admin.enabled=false \
                 --log-format json
           ports:

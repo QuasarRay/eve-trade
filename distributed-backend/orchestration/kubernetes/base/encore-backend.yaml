@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: encore-backend
+  labels:
+    app.kubernetes.io/name: encore-backend
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: encore-backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: encore-backend
+        app.kubernetes.io/component: backend
+    spec:
+      serviceAccountName: encore-backend
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: encore-backend
+          image: eve-trade/encore-backend:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 4000
+            - name: quilkin-udp
+              containerPort: 26000
+              protocol: UDP
+          envFrom:
+            - configMapRef:
+                name: encore-backend-config
+            - secretRef:
+                name: trade-settlement-database
+          env:
+            - name: API_GATEWAY_UDP_HMAC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-edge-auth
+                  key: GAME_PACKET_HMAC_SECRET
+            - name: API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-edge-auth
+                  key: GAME_PACKET_PRINCIPAL_KEYS_JSON
+          readinessProbe:
+            httpGet:
+              path: /market/readyz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /gateway/healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 2
+              memory: 768Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: encore-backend
+  labels:
+    app.kubernetes.io/name: encore-backend
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: encore-backend
+  ports:
+    - name: http
+      port: 4000
+      targetPort: http
+    - name: quilkin-udp
+      port: 26000
+      targetPort: quilkin-udp
+      protocol: UDP

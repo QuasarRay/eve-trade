@@ -1,0 +1,29 @@
+{
+  "compose": {
+    "files": [
+      "compose.yaml"
+    ],
+    "sha256": "2f00afa006590e402a72a22e6fba9093c8181adbdce12fa99014f857684cd917"
+  },
+  "db.migration_hash": "09cfd1bf4902af70243507c9c30fada151f24ae9c6032dc9c3da7a305afaf4a6",
+  "docker.compose_config_hash": "2f00afa006590e402a72a22e6fba9093c8181adbdce12fa99014f857684cd917",
+  "migrations": {
+    "file_count": 2,
+    "files": [
+      "distributed-backend/orchestration/kubernetes/base/migrations/0001_settlement_schema.sql",
+      "distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql"
+    ],
+    "sha256": "09cfd1bf4902af70243507c9c30fada151f24ae9c6032dc9c3da7a305afaf4a6"
+  },
+  "protobuf.generated_hash": "822c3e1eb4ac4f71971c05529dd08e5b86614bb81c8db90732ffa2cc317b224f",
+  "protobuf_generated": {
+    "file_count": 4,
+    "files": [
+      "distributed-backend/proto/gen/eve/market/v1/market.pb.go",
+      "distributed-backend/proto/gen/eve/market/v1/marketv1connect/market.connect.go",
+      "distributed-backend/proto/gen/eve/trade_settlement/v1/trade_settlement.pb.go",
+      "distributed-backend/proto/gen/eve/trade_settlement/v1/trade_settlementv1connect/trade_settlement.connect.go"
+    ],
+    "sha256": "822c3e1eb4ac4f71971c05529dd08e5b86614bb81c8db90732ffa2cc317b224f"
+  }
+}

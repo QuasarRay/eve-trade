@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api-gateway
+  name: encore-backend
 spec:
   replicas: 3
   template:
@@ -34,7 +34,7 @@ spec:
               podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    app.kubernetes.io/name: api-gateway
+                    app.kubernetes.io/name: encore-backend
                 topologyKey: kubernetes.io/hostname
       topologySpreadConstraints:
         - maxSkew: 1
@@ -42,162 +42,20 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app.kubernetes.io/name: api-gateway
+              app.kubernetes.io/name: encore-backend
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app.kubernetes.io/name: api-gateway
+              app.kubernetes.io/name: encore-backend
       containers:
-        - name: api-gateway
+        - name: encore-backend
           imagePullPolicy: Always
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: 1
+              cpu: 500m
               memory: 512Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 10001
-            runAsGroup: 10001
-            capabilities:
-              drop:
-                - ALL
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: market
-spec:
-  replicas: 3
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/environment: production
-      annotations:
-        proxy.istio.io/config: |
-          holdApplicationUntilProxyStarts: true
-        sidecar.istio.io/proxyCPU: 100m
-        sidecar.istio.io/proxyCPULimit: 500m
-        sidecar.istio.io/proxyMemory: 128Mi
-        sidecar.istio.io/proxyMemoryLimit: 256Mi
-        sidecar.istio.io/rewriteAppHTTPProbers: "true"
-    spec:
-      automountServiceAccountToken: false
-      enableServiceLinks: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
-        fsGroupChangePolicy: OnRootMismatch
-        seccompProfile:
-          type: RuntimeDefault
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    app.kubernetes.io/name: market
-                topologyKey: kubernetes.io/hostname
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: market
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: market
-      containers:
-        - name: market
-          imagePullPolicy: Always
-          resources:
-            requests:
-              cpu: 200m
-              memory: 256Mi
-            limits:
-              cpu: 2
-              memory: 1Gi
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 10001
-            runAsGroup: 10001
-            capabilities:
-              drop:
-                - ALL
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: settlement-worker
-spec:
-  replicas: 3
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/environment: production
-      annotations:
-        proxy.istio.io/config: |
-          holdApplicationUntilProxyStarts: true
-        sidecar.istio.io/proxyCPU: 100m
-        sidecar.istio.io/proxyCPULimit: 500m
-        sidecar.istio.io/proxyMemory: 128Mi
-        sidecar.istio.io/proxyMemoryLimit: 256Mi
-        sidecar.istio.io/rewriteAppHTTPProbers: "true"
-    spec:
-      automountServiceAccountToken: false
-      enableServiceLinks: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
-        fsGroupChangePolicy: OnRootMismatch
-        seccompProfile:
-          type: RuntimeDefault
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    app.kubernetes.io/name: settlement-worker
-                topologyKey: kubernetes.io/hostname
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: settlement-worker
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: settlement-worker
-      containers:
-        - name: settlement-worker
-          imagePullPolicy: Always
-          resources:
-            requests:
-              cpu: 200m
-              memory: 256Mi
             limits:
               cpu: 2
               memory: 1Gi
@@ -228,7 +86,7 @@ spec:
         sidecar.istio.io/proxyCPULimit: 500m
         sidecar.istio.io/proxyMemory: 128Mi
         sidecar.istio.io/proxyMemoryLimit: 256Mi
-        sidecar.istio.io/rewriteAppHTTPProbers: "true"
+        sidecar.istio.io/rewriteAppHTTPProbers: "false"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -240,35 +98,13 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    app.kubernetes.io/name: trade-settlement
-                topologyKey: kubernetes.io/hostname
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: trade-settlement
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/name: trade-settlement
       containers:
         - name: trade-settlement
           imagePullPolicy: Always
           resources:
             requests:
-              cpu: 250m
-              memory: 256Mi
+              cpu: 500m
+              memory: 512Mi
             limits:
               cpu: 2
               memory: 1Gi
@@ -281,33 +117,3 @@ spec:
             capabilities:
               drop:
                 - ALL
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: rabbitmq
-spec:
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/environment: production
-      annotations:
-        proxy.istio.io/config: |
-          holdApplicationUntilProxyStarts: true
-        sidecar.istio.io/proxyCPU: 100m
-        sidecar.istio.io/proxyCPULimit: 500m
-        sidecar.istio.io/proxyMemory: 128Mi
-        sidecar.istio.io/proxyMemoryLimit: 256Mi
-    spec:
-      automountServiceAccountToken: false
-      enableServiceLinks: false
-      containers:
-        - name: rabbitmq
-          imagePullPolicy: IfNotPresent
-          resources:
-            requests:
-              cpu: 500m
-              memory: 1Gi
-            limits:
-              cpu: 2
-              memory: 2Gi

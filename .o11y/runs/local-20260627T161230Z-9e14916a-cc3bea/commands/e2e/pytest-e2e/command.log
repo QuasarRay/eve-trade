@@ -1,0 +1,187 @@
+command: docker compose -f C:\Users\Astral\Desktop\eve-trade\docker-compose.integration.yml --profile test run --rm --no-deps e2e-tests sh -c python -m pip install -r distributed-backend/tests/e2e/requirements.txt && python -m pytest distributed-backend/tests/e2e -vv -s --tb=short --maxfail=1 --junitxml=/workspace/.o11y/runs/local-20260627T161230Z-9e14916a-cc3bea/pytest/pytest-junit.xml
+cwd: C:\Users\Astral\Desktop\eve-trade
+exit_code: 0
+duration_ms: 47824.81
+
+--- stdout ---
+Collecting pytest<9,>=8.2 (from -r distributed-backend/tests/e2e/requirements.txt (line 1))
+  Using cached pytest-8.4.2-py3-none-any.whl.metadata (7.7 kB)
+Collecting httpx<1,>=0.27 (from -r distributed-backend/tests/e2e/requirements.txt (line 2))
+  Using cached httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+Collecting psycopg<4,>=3.2 (from psycopg[binary]<4,>=3.2->-r distributed-backend/tests/e2e/requirements.txt (line 3))
+  Using cached psycopg-3.3.4-py3-none-any.whl.metadata (4.3 kB)
+Collecting grpcio<2,>=1.76 (from -r distributed-backend/tests/e2e/requirements.txt (line 4))
+  Using cached grpcio-1.81.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (3.7 kB)
+Collecting grpcio-tools<2,>=1.76 (from -r distributed-backend/tests/e2e/requirements.txt (line 5))
+  Using cached grpcio_tools-1.81.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (5.3 kB)
+Collecting iniconfig>=1 (from pytest<9,>=8.2->-r distributed-backend/tests/e2e/requirements.txt (line 1))
+  Using cached iniconfig-2.3.0-py3-none-any.whl.metadata (2.5 kB)
+Collecting packaging>=20 (from pytest<9,>=8.2->-r distributed-backend/tests/e2e/requirements.txt (line 1))
+  Using cached packaging-26.2-py3-none-any.whl.metadata (3.5 kB)
+Collecting pluggy<2,>=1.5 (from pytest<9,>=8.2->-r distributed-backend/tests/e2e/requirements.txt (line 1))
+  Using cached pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+Collecting pygments>=2.7.2 (from pytest<9,>=8.2->-r distributed-backend/tests/e2e/requirements.txt (line 1))
+  Using cached pygments-2.20.0-py3-none-any.whl.metadata (2.5 kB)
+Collecting anyio (from httpx<1,>=0.27->-r distributed-backend/tests/e2e/requirements.txt (line 2))
+  Using cached anyio-4.14.1-py3-none-any.whl.metadata (4.6 kB)
+Collecting certifi (from httpx<1,>=0.27->-r distributed-backend/tests/e2e/requirements.txt (line 2))
+  Using cached certifi-2026.6.17-py3-none-any.whl.metadata (2.5 kB)
+Collecting httpcore==1.* (from httpx<1,>=0.27->-r distributed-backend/tests/e2e/requirements.txt (line 2))
+  Using cached httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+Collecting idna (from httpx<1,>=0.27->-r distributed-backend/tests/e2e/requirements.txt (line 2))
+  Using cached idna-3.18-py3-none-any.whl.metadata (6.1 kB)
+Collecting typing-extensions~=4.12 (from grpcio<2,>=1.76->-r distributed-backend/tests/e2e/requirements.txt (line 4))
+  Using cached typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting protobuf<7.0.0,>=6.33.5 (from grpcio-tools<2,>=1.76->-r distributed-backend/tests/e2e/requirements.txt (line 5))
+  Using cached protobuf-6.33.6-cp39-abi3-manylinux2014_x86_64.whl.metadata (593 bytes)
+Collecting setuptools>=77.0.1 (from grpcio-tools<2,>=1.76->-r distributed-backend/tests/e2e/requirements.txt (line 5))
+  Using cached setuptools-82.0.1-py3-none-any.whl.metadata (6.5 kB)
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.27->-r distributed-backend/tests/e2e/requirements.txt (line 2))
+  Using cached h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+Collecting psycopg-binary==3.3.4 (from psycopg[binary]<4,>=3.2->-r distributed-backend/tests/e2e/requirements.txt (line 3))
+  Using cached psycopg_binary-3.3.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.7 kB)
+Using cached pytest-8.4.2-py3-none-any.whl (365 kB)
+Using cached httpx-0.28.1-py3-none-any.whl (73 kB)
+Using cached psycopg-3.3.4-py3-none-any.whl (213 kB)
+Using cached grpcio-1.81.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (6.8 MB)
+Using cached grpcio_tools-1.81.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (2.7 MB)
+Using cached httpcore-1.0.9-py3-none-any.whl (78 kB)
+Using cached pluggy-1.6.0-py3-none-any.whl (20 kB)
+Using cached protobuf-6.33.6-cp39-abi3-manylinux2014_x86_64.whl (323 kB)
+Using cached psycopg_binary-3.3.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.2 MB)
+Using cached typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+Using cached iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+Using cached packaging-26.2-py3-none-any.whl (100 kB)
+Using cached pygments-2.20.0-py3-none-any.whl (1.2 MB)
+Using cached setuptools-82.0.1-py3-none-any.whl (1.0 MB)
+Using cached anyio-4.14.1-py3-none-any.whl (124 kB)
+Using cached idna-3.18-py3-none-any.whl (65 kB)
+Using cached certifi-2026.6.17-py3-none-any.whl (133 kB)
+Installing collected packages: typing-extensions, setuptools, pygments, psycopg-binary, psycopg, protobuf, pluggy, packaging, iniconfig, idna, h11, certifi, pytest, httpcore, grpcio, anyio, httpx, grpcio-tools
+
+Successfully installed anyio-4.14.1 certifi-2026.6.17 grpcio-1.81.1 grpcio-tools-1.81.1 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.18 iniconfig-2.3.0 packaging-26.2 pluggy-1.6.0 protobuf-6.33.6 psycopg-3.3.4 psycopg-binary-3.3.4 pygments-2.20.0 pytest-8.4.2 setuptools-82.0.1 typing-extensions-4.15.0
+============================= test session starts ==============================
+platform linux -- Python 3.13.14, pytest-8.4.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+plugins: anyio-4.14.1
+collecting ... collected 109 items
+
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_creating_trade_offer_makes_requested_item_quantity_unavailable_to_seller PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_creating_trade_offer_keeps_seller_non_offered_item_quantity_available PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_creating_trade_offer_exposes_trade_as_outstanding_to_other_players PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_creating_trade_offer_rejects_zero_item_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_creating_trade_offer_rejects_negative_item_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_creating_trade_offer_rejects_more_items_than_seller_owns PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_creating_trade_offer_rejects_item_stack_not_owned_by_seller PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_creating_trade_offer_rejects_item_stack_in_wrong_station PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_creating_trade_offer_rejects_invalid_unit_price PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_creating_trade_offer_does_not_change_wallet_balances PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_transfers_requested_item_quantity_to_buyer PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_transfers_correct_isk_amount_to_seller PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_debits_buyer_wallet_by_quantity_times_unit_price PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_creates_buyer_item_stack_when_buyer_has_no_matching_stack PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_merges_items_into_existing_buyer_stack_when_matching_stack_exists PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_partial_trade_keeps_trade_outstanding PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_partial_trade_reduces_available_trade_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_partial_trade_updates_visible_available_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_partial_trade_keeps_database_available_quantity_consistent PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_full_remaining_trade_quantity_marks_trade_completed PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_does_not_complete_trade_while_item_escrow_quantity_remains_positive PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_completes_trade_when_item_escrow_quantity_becomes_zero PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_full_remaining_trade_leaves_zero_available_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_rejects_quantity_above_available_trade_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_rejects_zero_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_rejects_negative_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_rejects_when_buyer_has_insufficient_isk PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_rejects_when_trade_is_cancelled PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_rejects_when_trade_is_already_completed PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_rejects_when_buyer_is_seller_if_self_purchase_is_disallowed PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_cancelling_trade_returns_remaining_item_quantity_to_seller PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_cancelling_trade_makes_remaining_item_quantity_available_to_seller PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_cancelling_trade_marks_trade_unavailable_to_buyers PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_cancelling_partially_accepted_trade_refunds_only_remaining_item_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_cancelling_partially_accepted_trade_does_not_reverse_already_completed_purchase PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_cancelling_trade_rejects_non_seller_caller PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_cancelling_trade_rejects_already_completed_trade PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_cancelling_trade_rejects_already_cancelled_trade PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_cancelling_trade_does_not_change_wallet_balances PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_retrying_create_trade_offer_does_not_duplicate_trade PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_retrying_create_trade_offer_does_not_duplicate_item_escrow PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_retrying_accept_trade_does_not_transfer_items_twice PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_retrying_accept_trade_does_not_transfer_isk_twice PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_retrying_cancel_trade_does_not_refund_items_twice PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_same_interaction_id_with_different_create_trade_payload_is_rejected_at_edge PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_same_interaction_id_with_different_accept_trade_payload_is_rejected_at_edge PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_same_interaction_id_with_different_cancel_trade_payload_is_rejected_at_edge PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_retried_successful_request_is_rejected_at_edge_without_second_settlement PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_create_trade_offer_does_not_create_visible_trade PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_create_trade_offer_does_not_remove_items_from_seller PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_accept_trade_does_not_debit_buyer_wallet PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_accept_trade_does_not_credit_seller_wallet PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_accept_trade_does_not_transfer_items_to_buyer PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_accept_trade_does_not_reduce_available_trade_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_accept_trade_does_not_complete_trade PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_accept_rolls_back_wallet_and_item_changes PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_accept_records_failed_batch_after_rollback PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_accept_records_failed_step_after_rollback PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_accept_keeps_original_error_code_for_diagnostics PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_cancel_trade_does_not_refund_partial_item_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_failed_cancel_trade_does_not_hide_trade_from_buyers_unless_refund_succeeds PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_concurrent_accepts_cannot_sell_more_than_available_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_concurrent_accepts_cannot_make_buyer_wallet_negative PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_total_item_quantity_is_preserved_after_trade_offer_creation PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_total_item_quantity_is_preserved_after_trade_acceptance PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_total_item_quantity_is_preserved_after_trade_cancellation PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_total_isk_amount_is_preserved_after_trade_acceptance PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_no_wallet_balance_becomes_negative_after_successful_request PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_no_item_stack_quantity_becomes_negative_after_successful_request PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_available_trade_quantity_never_becomes_negative PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_completed_trade_has_zero_available_item_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_completed_trade_cannot_have_positive_available_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_outstanding_trade_can_have_positive_available_item_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_cancelled_trade_has_no_available_quantity_for_buyers PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_player_cannot_offer_item_stack_owned_by_another_player PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_player_cannot_cancel_trade_created_by_another_player PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_buyer_cannot_receive_more_items_than_requested PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_seller_cannot_receive_more_isk_than_trade_price_requires PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_trade_acceptance_uses_trade_price_not_client_supplied_price PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_trade_acceptance_uses_trade_item_type_not_client_supplied_item_type PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_trade_acceptance_uses_trade_station_not_client_supplied_station PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_trade_acceptance_uses_trade_seller_not_client_supplied_seller PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_create_trade_offer_returns_clear_error_for_insufficient_item_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_create_trade_offer_returns_clear_error_for_invalid_item_stack_owner PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accept_trade_returns_clear_error_for_insufficient_wallet_balance PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accept_trade_returns_clear_error_for_unavailable_trade_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accept_trade_returns_clear_error_for_cancelled_trade PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accept_trade_returns_clear_error_for_completed_trade PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_cancel_trade_returns_clear_error_for_non_seller_caller PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_rejected_request_does_not_return_success_status PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_gateway_create_trade_offer_makes_trade_available_end_to_end PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_gateway_accept_partial_trade_keeps_trade_outstanding_end_to_end PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_gateway_accept_full_remaining_trade_completes_trade_end_to_end PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_gateway_cancel_trade_returns_remaining_items_end_to_end PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_gateway_retry_create_trade_offer_is_idempotent_end_to_end PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_gateway_retry_accept_trade_is_idempotent_end_to_end PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_gateway_retry_cancel_trade_is_idempotent_end_to_end PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_gateway_rejects_invalid_create_trade_offer_without_changing_state_end_to_end PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_gateway_rejects_invalid_accept_trade_without_changing_state_end_to_end PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_gateway_rejects_invalid_cancel_trade_without_changing_state_end_to_end PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_settlement_rejects_completing_trade_while_item_escrow_quantity_remains_positive PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_settlement_rejects_releasing_more_item_quantity_than_escrow_contains PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_settlement_rejects_releasing_same_item_escrow_twice PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_settlement_rejects_wallet_payment_that_does_not_match_trade_price PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_settlement_rejects_wallet_payment_that_exceeds_remaining_trade_quantity PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_settlement_rejects_completing_trade_while_wallet_escrow_remains_active PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_database_rejects_remaining_quantity_drift PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_database_rejects_item_stack_ledger_updates PASSED
+distributed-backend/tests/e2e/test_trade_lifecycle.py::test_database_rejects_wallet_ledger_deletes PASSED
+
+- generated xml file: /workspace/.o11y/runs/local-20260627T161230Z-9e14916a-cc3bea/pytest/pytest-junit.xml -
+============================= 109 passed in 29.23s =============================
+
+--- stderr ---
+ Container eve-trade-integration-e2e-tests-run-a34eddac64c1 Creating 
+ Container eve-trade-integration-e2e-tests-run-a34eddac64c1 Created 
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.

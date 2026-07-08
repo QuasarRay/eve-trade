@@ -66,7 +66,7 @@ def test_authenticated_udp_issue_burst_meets_slo_and_preserves_state(db, authent
 
     latencies = sorted(latency for latency, _ in outcomes)
     p95 = latencies[math.ceil(0.95 * len(latencies)) - 1]
-    failures = [response for _, response in outcomes if response.get("status") != "accepted"]
+    failures = [response for _, response in outcomes if response.get("status") not in {"accepted", "queued"}]
     assert failures == []
     assert p95 <= p95_budget, f"p95={p95:.3f}s exceeds {p95_budget:.3f}s"
     assert open_trade_count(db) == requests

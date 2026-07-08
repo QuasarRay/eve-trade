@@ -1,0 +1,13 @@
+{
+  "architecture": "AMD64",
+  "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+  "docker": "29.5.2",
+  "docker_compose": "5.1.4",
+  "git": "git version 2.53.0.windows.2",
+  "go": "go version go1.26.4 windows/amd64",
+  "kubectl": "Client Version: v1.34.1\nKustomize Version: v5.7.1",
+  "os": "Windows-11-10.0.26200-SP0",
+  "os.name": "nt",
+  "python": "Python 3.14.5",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)"
+}

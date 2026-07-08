@@ -20,10 +20,10 @@ command-shaped public API model.
 | Runtime concern | Source view element | Implementation evidence | Current correspondence |
 | --- | --- | --- | --- |
 | Game packet shape | Context/runtime views identify `eve-trade-gui.v1` payload. | `simulator/trade_gui/views.py`, `simulator/trade_gui/tests.py` | Simulator outbound payload is validated from the actual socket send path and contains only game GUI fields plus player input. |
-| UDP envelope integrity | Security/runtime views identify signed edge envelope. | `simulator/trade_gui/udp_client.py`, `distributed-backend/src/api-gateway/distributed-backend/quilkin_udp.go` | Simulator signs canonical payload; API Gateway verifies HMAC before forwarding. |
-| UDP edge forwarding | Context/runtime views keep API Gateway at transport boundary. | `quilkin_udp.go`, `quilkin_udp_test.go`, deleted API Gateway proto/service handler | Gateway forwards `SubmitTradeGuiInteractionRequest{raw_payload}` only and no longer exposes direct trade command RPCs. |
-| Market interpretation | Runtime/data views assign game trade interpretation to Market. | `distributed-backend/src/market/distributed-backend/handler.go` | Market decodes GUI action/input and calls private helper functions for issue/accept/cancel decisions. |
-| Settlement execution | Data/runtime views assign only low-level operation batches to trade-settlement. | `distributed-backend/proto/eve/trade_settlement/v1/trade_settlement.proto`, Rust executor | trade-settlement receives operation batches plus idempotency/audit metadata, not game trade mechanics. |
+| UDP envelope integrity | Security/runtime views identify signed edge envelope. | `simulator/trade_gui/udp_client.py`, `gateway/auth.go`, `gateway/response.go` | Simulator signs canonical payload; Encore gateway verifies HMAC before forwarding. |
+| UDP edge forwarding | Context/runtime views keep Encore gateway at transport boundary. | `gateway/udp.go`, `gateway/packet.go`, `gateway/proto_validation.go`, `gateway/udp_test.go`, `proto/eve/api_gateway/v1/api_gateway.proto` | Gateway validates UDP envelope/config/actor binding through proto views and forwards `SubmitTradeGuiInteractionRequest{raw_payload}` in the current runtime path. |
+| Market interpretation | Runtime/data views assign game trade interpretation to Market. | `market/gui.go`, `market/proto_validation.go`, `market/proto_service.go`, `proto/eve/market/v1/market.proto` | Market validates typed RPC/GUI payload shape through proto, then calls helper functions for issue/accept/cancel decisions. |
+| Settlement execution | Data/runtime views assign only low-level operation batches to trade-settlement. | `proto/eve/trade_settlement/v1/trade_settlement.proto`, Rust executor | trade-settlement receives operation batches plus idempotency/audit metadata, not game trade mechanics. |
 | Production overlay boundary | Deployment/security views separate local simulator and production backend. | `distributed-backend/orchestration/kubernetes/overlay/local`, `overlay/prod`, `scripts/verify_architecture_boundaries.py` | Local overlay includes simulator secrets/resources; production overlay includes Quilkin and excludes simulator resources. |
 | CI enforcement | Development/validation view requires drift detection. | `.github/workflows/verify.yaml`, `scripts/verify_architecture_boundaries.py` | CI rejects removed RPCs, source metadata in gateway-to-Market contracts, simulator identity leaks, stale generated protos, and invalid manifests. |
 
@@ -41,11 +41,11 @@ command-shaped public API model.
 | Runtime flow | Config or port evidence | Kubernetes policy evidence | Gap |
 | --- | --- | --- | --- |
 | Game UDP to Quilkin | Quilkin service UDP `26001` | Production Quilkin LoadBalancer service and `quilkin-ingress` NetworkPolicy. | External DDoS controls are outside this repo. |
-| Quilkin to API Gateway | API Gateway UDP `26000` | `quilkin-egress` and API Gateway UDP ingress NetworkPolicy. | None documented. |
-| API Gateway to Market | `MARKET_URL=http://market:8081` | API Gateway egress and Market ingress on `8081`; Istio policy allows only `SubmitTradeGuiInteraction`. | None documented. |
-| Market to RabbitMQ | AMQP `5672` | Market egress to RabbitMQ and RabbitMQ ingress from Market. | Broker-level per-service authorization not fully documented. |
-| settlement-worker to RabbitMQ | AMQP `5672` | Worker egress to RabbitMQ and RabbitMQ ingress from worker. | Broker-level per-service authorization not fully documented. |
-| settlement-worker to trade-settlement | `TRADE_SETTLEMENT_URL=http://trade-settlement:9092` | Worker egress and trade-settlement ingress on `9092`. | Depends on mesh/service-account policy in production. |
+| Quilkin to Encore gateway | Encore gateway UDP `26000` | `quilkin-egress` and Encore gateway UDP ingress NetworkPolicy. | None documented. |
+| gateway to Market | `Encore service discovery for market.SubmitTradeGuiInteraction` | Encore gateway egress and Market ingress on `8081`; Istio policy allows only `SubmitTradeGuiInteraction`. | None documented. |
+| Market to Encore Pub/Sub | Encore Pub/Sub `5672` | Market egress to Encore Pub/Sub and Encore Pub/Sub ingress from Market. | Broker-level per-service authorization not fully documented. |
+| settlement worker to Encore Pub/Sub | Encore Pub/Sub `5672` | Worker egress to Encore Pub/Sub and Encore Pub/Sub ingress from worker. | Broker-level per-service authorization not fully documented. |
+| settlement worker to trade-settlement | `TRADE_SETTLEMENT_GRPC_TARGET=trade-settlement:9092` | Worker egress and trade-settlement ingress on `9092`. | Depends on mesh/service-account policy in production. |
 | Market and trade-settlement to PostgreSQL | `DATABASE_URL` | Broad TCP `5432` egress. | Destination is not selected by pod/namespace policy. |
 | app pods to observability | OTLP `4317`/`4318` | Telemetry egress to collector namespace. | Alert/dashboard definitions remain incomplete. |
 
@@ -53,13 +53,13 @@ command-shaped public API model.
 
 | ID | Method | Correspondence | Source AD element | Target AD element | Verification status |
 | --- | --- | --- | --- | --- | --- |
-| COR-01 | Constraint | API Gateway public production API surface is UDP edge plus health/readiness only; direct command RPCs are removed. | Context view | Proto/generated code and gateway service | Enforced by deletion and CI guard |
-| COR-02 | Reuse | API Gateway forwards the raw GUI payload into Market's one production submission RPC. | Runtime view | Market proto and gateway UDP code | Enforced by tests |
+| COR-01 | Constraint | Encore gateway runtime remains a UDP edge plus health/readiness surface; restored typed proto/gRPC contracts do not move Market business decisions into gateway. | Context view | API gateway proto, generated code, and gateway UDP service | Enforced by gateway tests and proto validation |
+| COR-02 | Reuse | Encore gateway forwards the raw GUI payload into Market's runtime submission API while restored Market proto contracts define typed gRPC shapes for internal use. | Runtime view | Market proto and gateway UDP code | Enforced by tests |
 | COR-03 | Refinement | Market GUI decisions refine to low-level `SettlementOperation` sequences. | Runtime view | trade-settlement proto/Rust handlers | Evidence-backed |
 | COR-04 | Refinement | Settlement operation kinds correspond to SQL operation handlers and settlement step records. | Data view | Rust executor/migrations | Structurally represented |
 | COR-05 | Dependency | Runtime service calls correspond to Kubernetes network policy allowances. | Context view | Deployment view | Gap recorded for database egress precision |
 | COR-06 | Satisfaction | Health/readiness endpoints correspond to Kubernetes probes and operational readiness concerns. | Context view | Deployment view | Gap recorded for some dependency readiness |
-| COR-07 | Trace | Idempotency keys and request fingerprints correspond across GUI payload, Market replay, RabbitMQ messages, settlement metadata, and database rows. | Runtime view | Data view | Evidence-backed |
+| COR-07 | Trace | Idempotency keys and request fingerprints correspond across GUI payload, Market replay, Encore Pub/Sub messages, settlement metadata, and database rows. | Runtime view | Data view | Evidence-backed |
 | COR-08 | Constraint | Simulator identity is allowed in local simulator database/log records but forbidden in outbound UDP payloads. | Context view | Simulator code/tests | Enforced by packet-boundary test |
 | COR-09 | Constraint | Security trust boundaries correspond to deployment network boundaries and service responsibilities. | Security view | Deployment view | Gap recorded for identity binding and broad DB egress |
 | COR-10 | Satisfaction | Validation commands correspond to the source modules and deployment assets they protect. | Development view | CI workflow | Partially verified locally; full compose e2e depends on Docker |
@@ -68,44 +68,51 @@ command-shaped public API model.
 
 | ADR | Status | Date recorded | Owner | Decision |
 | --- | --- | --- | --- | --- |
-| ADR-01 | Accepted | 2026-06-25 | Backend maintainers | Public production command-shaped trade RPCs were deleted from API Gateway and Market. |
-| ADR-02 | Accepted | 2026-06-25 | Backend maintainers | Market receives one raw GUI interaction payload RPC and owns game trade interpretation. |
-| ADR-03 | Accepted | 2026-06-25 | Backend maintainers and security reviewer | API Gateway keeps transport metadata internal and forwards no `source_transport` or `source_address` business fields to Market. |
+| ADR-01 | Revised | 2026-07-08 | Backend maintainers | API gateway and Market proto/gRPC command-shaped contracts are restored with proto-owned validation; the runtime UDP edge still forwards raw GUI payloads and does not own trade mechanics. |
+| ADR-02 | Accepted | 2026-06-25; updated 2026-07-08 | Backend maintainers | Market receives raw GUI interaction payloads in the current UDP runtime path and owns game trade interpretation; Market also owns typed trade proto request validation. |
+| ADR-03 | Accepted | 2026-06-25 | Backend maintainers and security reviewer | Encore gateway keeps transport metadata internal and forwards no `source_transport` or `source_address` business fields to Market. |
 | ADR-04 | Accepted | 2026-06-25 | Simulator owner | The Django simulator emits packets conforming to the versioned repository protocol schema and may identify itself only in private local records; external-client identity requires an external compatibility corpus. |
 | ADR-05 | Accepted | 2026-06-25 | Settlement/data owner | trade-settlement receives only low-level settlement operation batches plus infrastructure idempotency/audit metadata. |
 | ADR-06 | Accepted with limitations | 2026-06-25 | SRE/platform operator | UDP gateway resilience uses bounded queue/workers, per-remote rate limits, process-local replay cache, HMAC integrity, and downstream timeouts. |
 | ADR-07 | Accepted | 2026-06-25 | SRE/platform operator | Production overlays include Quilkin UDP and exclude local simulator resources. |
 | ADR-08 | Accepted | 2026-06-25 | CI owner | CI enforces architecture boundary drift guards, generated proto freshness, language checks, simulator packet tests, compose e2e, and manifest validation. |
 
-### ADR-01 Delete Command-Shaped Public Trade RPCs
+### ADR-01 Restore Internal Command-Shaped Proto Contracts
 
-Decision: Remove direct public issue, accept, and cancel trade RPCs from API
-Gateway and Market production protos and generated usage.
+Decision: Restore API Gateway and Market protobuf service contracts for direct
+issue, accept, cancel, and GUI submission methods, with request-shape rules in
+proto. Keep the UDP runtime gateway as a transport edge that forwards raw GUI
+payloads to Market.
 
 Rationale:
 
 - The production packet boundary is a game GUI interaction, not an external
   market command API.
-- Gateway command RPCs encouraged the gateway to look like a business service.
-- Market can keep private helper functions for issue/accept/cancel decisions
-  without exposing them as production RPCs.
+- Typed contracts reduce handwritten adapter code and allow gRPC use without
+  duplicating validation in Go.
+- Gateway command-shaped proto messages are contracts, not ownership of trade
+  mechanics; Market remains the business owner.
+- Market can expose typed proto service adapters while still accepting raw GUI
+  payloads from the UDP runtime path.
 
 Consequences:
 
-- Existing direct RPC callers/tests/docs had to be deleted or rewritten.
-- Generated API Gateway proto packages were removed.
-- CI now rejects reintroducing the removed production RPC shape.
+- Generated Go message types include API gateway and Market packages.
+- Local gRPC service stub generation requires `protoc-gen-go-grpc`; that tool
+  was unavailable during the local v9 pass.
+- Boundary checks must distinguish restored internal proto/gRPC contracts from
+  runtime code that would move trade mechanics into the gateway.
 
 ### ADR-02 Market Owns GUI Interpretation
 
-Decision: Define `MarketService.SubmitTradeGuiInteraction` with
-`SubmitTradeGuiInteractionRequest { bytes raw_payload = 1; }`.
+Decision: Define `market.SubmitTradeGuiInteraction Encore API` with
+`SubmitTradeGuiInteractionRequest { RawPayload []byte; }`.
 
 Rationale:
 
 - Market owns game trade mechanics and can evolve parsing/decisioning without
   moving business meaning into the UDP edge.
-- The API Gateway contract remains boundary-clean because it forwards bytes
+- The Encore gateway contract remains boundary-clean because it forwards bytes
   only.
 
 Consequences:
@@ -115,7 +122,7 @@ Consequences:
 
 ### ADR-03 Keep Gateway Metadata Internal
 
-Decision: API Gateway may log remote address and transport metadata internally,
+Decision: Encore gateway may log remote address and transport metadata internally,
 but Market request messages must not contain source transport or source address
 fields.
 

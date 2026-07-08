@@ -2,19 +2,27 @@ version: v2
 
 clean: true
 
+inputs:
+  - directory: proto
+    exclude_paths:
+      - buf/validate/validate.proto
+      - proto/buf/validate/validate.proto
+
 managed:
   enabled: true
   override:
     - file_option: go_package_prefix
       value: github.com/QuasarRay/eve-trade/proto/gen
+  disable:
+    - file_option: go_package
+      module: buf.build/bufbuild/protovalidate
+    - file_option: go_package
+      path: buf/validate/validate.proto
+    - file_option: go_package
+      path: proto/buf/validate/validate.proto
 
 plugins:
   - local: protoc-gen-go
-    out: distributed-backend/proto/gen
-    opt:
-      - paths=source_relative
-
-  - local: protoc-gen-connect-go
-    out: distributed-backend/proto/gen
+    out: proto/gen
     opt:
       - paths=source_relative

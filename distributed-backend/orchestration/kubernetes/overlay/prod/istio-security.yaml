@@ -1,68 +1,33 @@
-apiVersion: security.istio.io/v1
+apiVersion: security.istio.io/v1beta1
 kind: PeerAuthentication
 metadata:
-  name: default-strict-mtls
+  name: eve-trade-strict-mtls
 spec:
   mtls:
     mode: STRICT
 ---
-apiVersion: security.istio.io/v1
+apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
-  name: default-deny
-spec: {}
----
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-api-gateway
+  name: allow-encore-backend
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: api-gateway
+      app.kubernetes.io/name: encore-backend
+  action: ALLOW
   rules:
-    - to:
-        - operation:
-            ports:
-              - "8080"
-            methods:
-              - GET
-            paths:
-              - /healthz
-              - /readyz
----
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-market
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: market
-  rules:
-    - to:
-        - operation:
-            ports:
-              - "8081"
-            methods:
-              - GET
-            paths:
-              - /healthz
-              - /readyz
     - from:
         - source:
             principals:
-              - cluster.local/ns/eve-trade/sa/api-gateway
+              - cluster.local/ns/eve-trade/sa/quilkin
+              - cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account
       to:
         - operation:
             ports:
-              - "8081"
-            methods:
-              - POST
-            paths:
-              - /eve.market.v1.MarketService/SubmitTradeGuiInteraction
+              - "4000"
+              - "26000"
 ---
-apiVersion: security.istio.io/v1
+apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
   name: allow-trade-settlement
@@ -70,54 +35,13 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: trade-settlement
+  action: ALLOW
   rules:
     - from:
         - source:
             principals:
-              - cluster.local/ns/eve-trade/sa/settlement-worker
+              - cluster.local/ns/eve-trade/sa/encore-backend
       to:
         - operation:
             ports:
               - "9092"
-            methods:
-              - POST
-            paths:
-              - /eve.trade_settlement.v1.TradeSettlementService/ExecuteSettlementBatch
----
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-settlement-worker
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: settlement-worker
-  rules:
-    - to:
-        - operation:
-            ports:
-              - "8082"
-            methods:
-              - GET
-            paths:
-              - /healthz
-              - /readyz
----
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: allow-rabbitmq
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: rabbitmq
-  rules:
-    - from:
-        - source:
-            principals:
-              - cluster.local/ns/eve-trade/sa/market
-              - cluster.local/ns/eve-trade/sa/settlement-worker
-      to:
-        - operation:
-            ports:
-              - "5672"
