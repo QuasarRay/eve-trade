@@ -1,0 +1,18 @@
+{
+  "name": "tcp_timeout",
+  "requested_command": "integration",
+  "command": {
+    "name": "http-check",
+    "stage": "readiness",
+    "argv": ["http-check"],
+    "exit_code": 1,
+    "metadata_path": "commands/readiness/http-check/command.json",
+    "log_path": "commands/readiness/http-check/command.log"
+  },
+  "stderr": "Get \"http://market:8081/health\": context deadline exceeded (Client.Timeout exceeded while awaiting headers)",
+  "expected": {
+    "stage": "NETWORK_TRANSPORT",
+    "mechanism": "TIMEOUT",
+    "forbidden": ["DNS", "TCP_REFUSED"]
+  }
+}

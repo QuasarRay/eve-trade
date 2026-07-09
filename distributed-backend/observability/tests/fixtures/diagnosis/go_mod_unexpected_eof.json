@@ -1,0 +1,22 @@
+{
+  "name": "go_mod_unexpected_eof",
+  "requested_command": "integration",
+  "command": {
+    "name": "compose-build-attempt-3",
+    "stage": "build",
+    "argv": ["docker", "compose", "build"],
+    "exit_code": 1,
+    "metadata_path": "commands/build/compose-build-attempt-3/command.json",
+    "log_path": "commands/build/compose-build-attempt-3/command.log"
+  },
+  "stdout": "#50 [market build 8/14] RUN cd distributed-backend/src/market && go mod download\n#50 184.3 go: connectrpc.com/connect@v1.20.0: Get \"https://proxy.golang.org/connectrpc.com/connect/@v/v1.20.0.mod\": unexpected EOF\n#49 CANCELED\nNoise: Docker Kubernetes PostgreSQL were mentioned later but did not emit the earliest error.",
+  "stderr": "target market: failed to solve: process \"/bin/sh -c cd distributed-backend/src/market && go mod download\" did not complete successfully: exit code: 1",
+  "expected": {
+    "stage": "DEPENDENCY_RESOLUTION",
+    "mechanism": "NETWORK_TRANSPORT",
+    "external_system": "proxy.golang.org",
+    "product_status": "UNRESOLVED",
+    "forbidden": ["docker-networking", "database", "application E2E bug", "Kubernetes"],
+    "root_event_type": "NETWORK_TRANSPORT"
+  }
+}

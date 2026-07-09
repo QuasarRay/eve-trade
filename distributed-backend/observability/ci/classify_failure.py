@@ -9,6 +9,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from .diagnosis import CLASSIFIER_VERSION
+
 
 @dataclass(frozen=True)
 class FailureClassification:
@@ -18,10 +20,14 @@ class FailureClassification:
     evidence: list[str]
     likely_solution_files: list[str]
     likely_next_commands: list[str]
+    classifier_version: str = CLASSIFIER_VERSION
+    unsupported_diagnoses: list[str] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         value = asdict(self)
         value["test.failure_family"] = self.failure_family
+        if value["unsupported_diagnoses"] is None:
+            value["unsupported_diagnoses"] = []
         return value
 
 
@@ -111,6 +117,9 @@ def classify_failure(
     db_hints: str = "",
 ) -> FailureClassification:
     haystack = "\n".join((nodeid, assertion, logs[-30000:], db_hints[-10000:])).lower()
+    high_priority = _classify_causal_signature(haystack, nodeid=nodeid)
+    if high_priority:
+        return high_priority
     best: tuple[int, _Rule, list[str]] | None = None
     for rule in RULES:
         matches = [pattern for pattern in rule.patterns if re.search(pattern, haystack, re.IGNORECASE)]
@@ -125,13 +134,99 @@ def classify_failure(
             evidence=["No transparent classification rule matched the available evidence."],
             likely_solution_files=[],
             likely_next_commands=["Open failure-report.html and inspect the first failing command and service logs."],
+            unsupported_diagnoses=[],
         )
     score, rule, matches = best
     confidence = min(0.95, 0.55 + 0.12 * score + (0.08 if nodeid else 0.0))
     evidence = [f"matched /{pattern}/" for pattern in matches]
     if nodeid:
         evidence.insert(0, f"test nodeid: {nodeid}")
-    return FailureClassification(rule.family, list(rule.services), confidence, evidence, list(rule.files), list(rule.commands))
+    return FailureClassification(rule.family, list(rule.services), confidence, evidence, list(rule.files), list(rule.commands), unsupported_diagnoses=[])
+
+
+def classification_from_diagnosis(diagnosis: dict[str, Any]) -> FailureClassification:
+    primary = diagnosis.get("primary_diagnosis", {})
+    dimensions = primary.get("category_dimensions", {})
+    stage = str(dimensions.get("stage", "UNKNOWN"))
+    mechanism = str(dimensions.get("mechanism", "UNKNOWN"))
+    external = str(dimensions.get("external_system", ""))
+    family = "/".join(item.lower().replace("_", "-") for item in (stage, mechanism) if item and item != "UNKNOWN") or "unclassified"
+    evidence = [str(item) for item in primary.get("supporting_evidence", [])]
+    evidence.extend(str(item) for item in primary.get("contradicting_evidence", []))
+    next_commands = [
+        str(item.get("action", item))
+        for item in diagnosis.get("recommendations", [])
+    ]
+    services = [item for item in [str(dimensions.get("component", "")), external] if item]
+    return FailureClassification(
+        failure_family=family,
+        suspected_services=services,
+        confidence=float(primary.get("confidence_score", 0.2) or 0.2),
+        evidence=evidence or [str(primary.get("summary", "No structured evidence summary available."))],
+        likely_solution_files=[],
+        likely_next_commands=next_commands or ["Inspect the structured diagnosis JSON and command log."],
+        unsupported_diagnoses=[str(item) for item in primary.get("unsupported_diagnoses", [])],
+    )
+
+
+def _classify_causal_signature(haystack: str, *, nodeid: str) -> FailureClassification | None:
+    if "go mod download" in haystack and "unexpected eof" in haystack:
+        return FailureClassification(
+            failure_family="dependency-resolution/network-transport",
+            suspected_services=["go", "proxy.golang.org"],
+            confidence=0.82,
+            evidence=[
+                "observed go mod download",
+                "observed unexpected EOF during module fetch",
+                "observed proxy.golang.org endpoint",
+                "Docker, database, Kubernetes, and application E2E root causes are unsupported without additional causal evidence.",
+            ],
+            likely_solution_files=["go.mod", "go.sum"],
+            likely_next_commands=[
+                "retry the exact go mod download",
+                "verify GOPROXY and proxy.golang.org reachability",
+            ],
+            unsupported_diagnoses=["docker-networking", "database", "application E2E bug", "Kubernetes"],
+        )
+    if _looks_like_stale_path(haystack):
+        return FailureClassification(
+            failure_family="ci-harness/stale-path",
+            suspected_services=["ci-harness"],
+            confidence=0.9,
+            evidence=["observed missing observability path before product tests could run"],
+            likely_solution_files=[".github/workflows/verify.yaml", "distributed-backend/observability/ci/observed_run.py"],
+            likely_next_commands=["run the current distributed-backend/observability observed command"],
+            unsupported_diagnoses=["Python application bug", "E2E product regression", "Docker networking"],
+        )
+    if "cannot connect to the docker daemon" in haystack or "is the docker daemon running" in haystack:
+        return FailureClassification(
+            failure_family="container-runtime/docker-daemon-unavailable",
+            suspected_services=["docker"],
+            confidence=0.96,
+            evidence=["observed direct Docker daemon connectivity error"],
+            likely_solution_files=["docker-compose.integration.yml"],
+            likely_next_commands=["docker version", "docker info"],
+            unsupported_diagnoses=["application E2E bug", "database schema drift"],
+        )
+    if "connection refused" in haystack and ("postgres" in haystack or ":5432" in haystack or "database_url" in haystack):
+        return FailureClassification(
+            failure_family="database/network-transport",
+            suspected_services=["postgres"],
+            confidence=0.88,
+            evidence=["observed PostgreSQL TCP connection refusal"],
+            likely_solution_files=["distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql"],
+            likely_next_commands=["inspect PostgreSQL readiness and configured database URL"],
+            unsupported_diagnoses=["docker-networking"],
+        )
+    if nodeid and ("assert" in haystack or "expected" in haystack):
+        return None
+    return None
+
+
+def _looks_like_stale_path(haystack: str) -> bool:
+    if not any(marker in haystack for marker in ("no such file or directory", "can't open file", "cannot find the path", "enoent")):
+        return False
+    return bool(re.search(r"(?:^|[\\/\s])observability[\\/][^\s:'\"]+", haystack))
 
 
 def main() -> None:

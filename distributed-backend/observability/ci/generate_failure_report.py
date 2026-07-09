@@ -15,6 +15,7 @@ if __package__ in (None, ""):
 
 from observability.ci.classify_failure import FailureClassification, classify_failure
 from observability.ci.collect_pytest import PytestSummary
+from observability.ci.freshness import classify_freshness
 from observability.ci.links import github_actions_url, honeycomb_investigation, relative_artifact, sentry_event_url, source_url
 from observability.ci.run_command import CommandResult
 from observability.ci.run_context import RunContext, load_run_context
@@ -33,6 +34,7 @@ def generate_failure_report(
     trace_id: str = "",
     missing_evidence: list[str] | None = None,
     parity_hints: list[str] | None = None,
+    diagnosis: dict[str, Any] | None = None,
     storage: RunStorage | None = None,
 ) -> dict[str, Path]:
     storage = storage or RunStorage(context.run_dir)
@@ -65,11 +67,36 @@ def generate_failure_report(
         "artifacts": artifact_links,
         "parity_hints": parity_hints or [],
         "missing_evidence": missing_evidence or [],
+        "diagnosis": diagnosis or {},
     }
     storage.write_json(report_json.relative_to(context.run_dir), summary)
     storage.write_text(report_md.relative_to(context.run_dir), _markdown(summary))
     storage.write_text(report_html.relative_to(context.run_dir), _html(summary))
     return {"markdown": report_md, "html": report_html, "json": report_json}
+
+
+def generate_run_report(
+    context: RunContext,
+    diagnosis: dict[str, Any],
+    *,
+    provenance: dict[str, Any] | None = None,
+    storage: RunStorage | None = None,
+) -> dict[str, Path]:
+    storage = storage or RunStorage(context.run_dir)
+    provenance = provenance or _load_json_if_exists(context.run_dir / "provenance.json") or context.provenance
+    freshness = classify_freshness(provenance, root=context.repo_root).to_dict()
+    data = {
+        "schema_version": "o11y.run-report.v1",
+        "run": context.to_dict(),
+        "provenance": provenance,
+        "freshness": freshness,
+        "diagnosis": diagnosis,
+        "artifacts": _artifact_inventory(context.run_dir, context.run_dir / "run-report.md"),
+    }
+    report_json = storage.write_json("run-report.json", data)
+    report_md = storage.write_text("run-report.md", _run_markdown(data))
+    report_html = storage.write_text("run-report.html", _run_html(data))
+    return {"json": report_json, "markdown": report_md, "html": report_html}
 
 
 def _executive_summary(command: CommandResult, pytest: PytestSummary, classification: FailureClassification) -> str:
@@ -86,11 +113,28 @@ def _markdown(data: dict[str, Any]) -> str:
     sentry = data["sentry"]
     service_logs = [item for item in data["artifacts"] if item["path"].startswith(("runtime/logs/", "kubernetes/logs/"))]
     database_artifacts = [item for item in data["artifacts"] if item["path"].startswith("db/")]
+    diagnosis = data.get("diagnosis") or {}
+    primary = diagnosis.get("primary_diagnosis", {})
     lines = [
         "# Eve Trade failure report", "", "## Executive summary", "", data["executive_summary"], "",
         "## Run identity", "", f"- Run: `{data['run']['run_id']}`", f"- Environment: `{data['run']['environment']}`",
         f"- Git SHA: `{data['run'].get('github_sha', '')}`",
     ]
+    if primary:
+        dims = primary.get("category_dimensions", {})
+        lines.extend(
+            [
+                "",
+                "## Structured diagnosis",
+                "",
+                f"- Summary: {primary.get('summary', '')}",
+                f"- Stage: `{dims.get('stage', '')}`",
+                f"- Mechanism: `{dims.get('mechanism', '')}`",
+                f"- Component: `{dims.get('component', '')}`",
+                f"- External system: `{dims.get('external_system', '')}`",
+                f"- Confidence: `{primary.get('confidence_band', '')}` ({primary.get('confidence_score', 0):.0%})",
+            ]
+        )
     if data["github_actions_url"]:
         lines.append(f"- [Open GitHub Actions run]({data['github_actions_url']})")
     lines.extend([
@@ -139,6 +183,119 @@ def _markdown(data: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _run_markdown(data: dict[str, Any]) -> str:
+    diagnosis = data["diagnosis"]
+    primary = diagnosis.get("primary_diagnosis", {})
+    dims = primary.get("category_dimensions", {})
+    freshness = data["freshness"]
+    provenance = data["provenance"]
+    commands = diagnosis.get("commands", [])
+    earliest = diagnosis.get("earliest_causal_failure") or {}
+    lines = [
+        "# Eve Trade observed run report",
+        "",
+        "## Freshness",
+        "",
+        f"- Report SHA: `{freshness.get('report_full_head_sha', '')}`",
+        f"- Current SHA: `{freshness.get('current_full_head_sha', '')}`",
+        f"- Freshness state: `{freshness.get('state', 'UNKNOWN')}`",
+        f"- Branch: `{provenance.get('branch', '')}`",
+        f"- Dirty worktree: report `{freshness.get('report_dirty')}`, current `{freshness.get('current_dirty')}`",
+        f"- Reason: {freshness.get('reason', '')}",
+    ]
+    if freshness.get("state") != "EXACT":
+        lines.extend(["", "**STALE EVIDENCE: do not use this report as proof of the current revision.**"])
+    lines.extend(
+        [
+            "",
+            "## Validation Truth",
+            "",
+            f"- Run ID: `{diagnosis.get('run_id', data['run'].get('run_id', ''))}`",
+            f"- Requested command: `{diagnosis.get('requested_command', '')}`",
+            f"- Validation result: `{diagnosis.get('validation_result', '')}`",
+            f"- Harness status: `{diagnosis.get('harness_status', '')}`",
+            f"- Product status: `{diagnosis.get('product_status', '')}`",
+            "",
+            "### Commands Executed",
+            "",
+        ]
+    )
+    lines.extend(
+        [
+            f"- `{item.get('stage', '')}/{item.get('name', '')}` exited `{item.get('exit_code', '')}`; log `{item.get('log_path', '')}`"
+            for item in commands
+        ]
+        or ["- No commands were recorded."]
+    )
+    lines.extend(["", "### Test Execution", ""])
+    for category, truth in diagnosis.get("test_execution", {}).items():
+        lines.append(
+            f"- `{category}`: `{truth.get('status')}`; collected `{truth.get('tests_collected')}`, started `{truth.get('tests_started')}`, passed `{truth.get('tests_passed')}`, failed `{truth.get('tests_failed')}`, skipped `{truth.get('tests_skipped')}`"
+        )
+    lines.extend(
+        [
+            "",
+            "## Earliest Causal Failure",
+            "",
+            f"- Event: `{earliest.get('event_id', 'none')}`",
+            f"- Stage: `{earliest.get('stage', 'none')}`",
+            f"- Command: `{earliest.get('command_id', 'none')}`",
+            f"- Component: `{earliest.get('component', 'none')}`",
+            f"- Observed error: {earliest.get('message', 'No failing event observed.')}",
+            f"- Evidence: `{earliest.get('evidence_reference', '')}`",
+            "",
+            "## Diagnosis",
+            "",
+            f"- Summary: {primary.get('summary', '')}",
+            f"- Stage: `{dims.get('stage', '')}`",
+            f"- Mechanism: `{dims.get('mechanism', '')}`",
+            f"- Component: `{dims.get('component', '')}`",
+            f"- External system: `{dims.get('external_system', '')}`",
+            f"- Confidence: `{primary.get('confidence_band', '')}` ({primary.get('confidence_score', 0):.0%})",
+            "",
+            "### Supporting Evidence",
+            "",
+            *([f"- {item}" for item in primary.get("supporting_evidence", [])] or ["- None recorded."]),
+            "",
+            "### Contradicting / Negative Evidence",
+            "",
+            *([f"- {item}" for item in primary.get("contradicting_evidence", [])] or ["- None recorded."]),
+            "",
+            "### Missing Evidence",
+            "",
+            *([f"- {item}" for item in primary.get("missing_evidence", [])] or ["- None recorded."]),
+            "",
+            "### Unsupported Diagnoses",
+            "",
+            *([f"- {item}" for item in primary.get("unsupported_diagnoses", [])] or ["- None recorded."]),
+            "",
+            "## Causal Chain",
+            "",
+        ]
+    )
+    for event in diagnosis.get("events", []):
+        lines.append(f"- `{event.get('event_id')}` `{event.get('relation')}`: {event.get('message')} (`{event.get('evidence_reference')}`)")
+    if not diagnosis.get("events"):
+        lines.append("- No failure event graph was needed because no command failed.")
+    lines.extend(["", "## Recommendations", ""])
+    lines.extend(
+        [
+            f"- {item.get('action')} Why: {item.get('rationale')} Confirm/reject: {item.get('would_confirm_or_reject')}"
+            for item in diagnosis.get("recommendations", [])
+        ]
+        or ["- No failure-specific recommendations."]
+    )
+    lines.extend(["", "## Raw Evidence References", ""])
+    lines.extend([f"- [{item['path']}]({item['href']})" for item in data["artifacts"]] or ["- No artifacts recorded."])
+    return "\n".join(lines) + "\n"
+
+
+def _run_html(data: dict[str, Any]) -> str:
+    markdown = _run_markdown(data)
+    escaped = html.escape(markdown)
+    return f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Eve Trade observed run report</title><style>body{{font:15px/1.5 system-ui,sans-serif;max-width:1100px;margin:32px auto;padding:0 20px;color:#17212b}}pre{{white-space:pre-wrap;background:#f4f6f8;padding:18px;border-radius:6px}}</style></head><body><pre>{escaped}</pre></body></html>"
+
+
 def _html(data: dict[str, Any]) -> str:
     classification = data["classification"]
     pytest = data["pytest"]
@@ -178,6 +335,13 @@ def _artifact_inventory(run_dir: Path, report_path: Path) -> list[dict[str, str]
         if path.is_file() and path != report_path and path.name not in {"failure-report.html", "failure-summary.json"}:
             result.append({"path": path.relative_to(run_dir).as_posix(), "href": relative_artifact(report_path, path)})
     return result
+
+
+def _load_json_if_exists(path: Path) -> dict[str, Any]:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
 
 
 def main() -> None:

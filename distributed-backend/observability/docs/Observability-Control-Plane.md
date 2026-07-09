@@ -8,6 +8,7 @@ The platform answers four questions from one run bundle:
 2. What changed between a passing and failing environment?
 3. Which source files and data projections are most likely involved?
 4. Which Honeycomb trace/BubbleUp subset and Sentry issue should an engineer open next?
+5. Whether the report is exact for the current repository or historical evidence only.
 
 ## Correlation contract
 
@@ -32,6 +33,8 @@ Rust registers `summer-opentelemetry`; explicit spans cover receive, validation,
 
 The Python runner uses the OTLP HTTP exporter when configured and always writes local span JSONL. Sentry is intentionally a native SDK path for concise issues, rather than forwarding full logs or database data.
 
+Each run records `provenance.json`, `run-status.json`, `diagnosis.json`, and `run-report.*`. Markdown and HTML reports are renderings of structured diagnosis data; they are not the canonical data model. The diagnosis separates observations, derived facts, inferences, recommendations, causal events, confidence, negative evidence, false-green risk, and false-red risk.
+
 ## Failure safety
 
 - Sensitive environment keys are represented only as `<redacted:present>` or `<redacted:empty>`.
@@ -39,6 +42,8 @@ The Python runner uses the OTLP HTTP exporter when configured and always writes 
 - PostgreSQL collection is read-only, bounded to 200 rows per selected table, and best-effort.
 - External telemetry failures become local error artifacts unless strict mode is enabled.
 - The original command exit code remains the primary outcome.
+- A partially written run remains `IN_PROGRESS` or `INCOMPLETE` and is not promoted as latest complete evidence.
+- A stale report is labeled `ANCESTOR`, `DIVERGED`, `DIRTY_WORKTREE_MISMATCH`, or `UNKNOWN`; it is never treated as current because it is the newest file on disk.
 
 ## Collector deployment
 

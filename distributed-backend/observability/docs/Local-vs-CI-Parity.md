@@ -8,7 +8,7 @@ Local:
 python distributed-backend/observability/ci/observed_run.py e2e --maxfail 1
 ```
 
-CI uploads `.o11y/runs/`. Download and extract the artifact without changing the run directory layout.
+CI runs write `.o11y/runs/<run-id>` with GitHub SHA, ref, run ID, attempt, workflow, and job provenance. If the workflow exports the directory as an artifact, download and extract it without changing the run directory layout.
 
 ## Compare
 
@@ -23,7 +23,7 @@ Open `parity-diff.html`. The comparison highlights SHA, dirty state, tool versio
 
 ## Interpretation Order
 
-1. Different SHA or local dirty state means the executions are not code-equivalent.
+1. Different SHA or dirty-worktree fingerprint means the executions are not code-equivalent. Use the report freshness state first: `EXACT`, `ANCESTOR`, `DIVERGED`, `DIRTY_WORKTREE_MISMATCH`, or `UNKNOWN`.
 2. Different schema, migration, protobuf, Encore, or Kubernetes hashes indicate generated, persistence, runtime, or deployment drift.
 3. Different tool versions explain collection/build behavior before investigating business logic.
 4. Different test collection often indicates dependency, marker, or path differences.

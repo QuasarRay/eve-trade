@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 import time
@@ -14,18 +13,19 @@ from typing import Any
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from observability.ci.classify_failure import FailureClassification, classify_failure
+from observability.ci.classify_failure import FailureClassification, classification_from_diagnosis
 from observability.ci.collect_db import collect_db
 from observability.ci.collect_environment import collect_environment
 from observability.ci.collect_kubernetes import collect_kubernetes
 from observability.ci.collect_pytest import PytestSummary, collect_pytest
 from observability.ci.compare_runs import compare_runs
-from observability.ci.generate_failure_report import generate_failure_report
+from observability.ci.diagnosis import diagnose_run
+from observability.ci.generate_failure_report import generate_failure_report, generate_run_report
 from observability.ci.honeycomb_tracer import HoneycombTracer, ensure_triage_board, initialize_tracing
 from observability.ci.links import github_actions_url, honeycomb_investigation, source_url
 from observability.ci.run_command import CommandResult, run_command
 from observability.ci.redaction import redact_text
-from observability.ci.run_context import RunContext, create_run_context
+from observability.ci.run_context import RunContext, create_run_context, finalize_run_context
 from observability.ci.sentry_reporter import SentryReporter
 from observability.ci.storage import RunStorage
 
@@ -79,6 +79,9 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
     kubernetes_metadata: dict[str, Any] = {}
     missing_evidence: list[str] = []
     exit_code = 0
+    final_status = "INCOMPLETE"
+    diagnosis: dict[str, Any] = {}
+    report_path = ""
     try:
         with tracer.span("pipeline.run", {"pipeline.command": args.command, "pipeline.stage": "run"}) as run_span:
             environment = collect_environment(context, storage)
@@ -122,16 +125,21 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
                     "missing_evidence": missing_evidence,
                 },
             )
+            diagnosis = diagnose_run(
+                run_id=context.run_id,
+                command=args.command,
+                results=results,
+                pytest_summary=pytest_summary,
+                missing_evidence=missing_evidence,
+                database=db_metadata,
+                kubernetes=kubernetes_metadata,
+            )
+            storage.write_json("diagnosis.json", diagnosis)
+            run_report = generate_run_report(context, diagnosis, storage=storage)
+            report_path = run_report["markdown"].relative_to(context.run_dir).as_posix()
             if failed:
                 pytest_summary = pytest_summary or collect_pytest(context, failed.stdout + "\n" + failed.stderr, storage=storage)
-                logs = _read_if_exists(context.run_dir / "kubernetes" / "logs.txt")
-                db_hints = json.dumps(db_metadata, default=str)
-                classification = classify_failure(
-                    nodeid=pytest_summary.first_failing_test_nodeid,
-                    assertion=pytest_summary.assertion_text or pytest_summary.failure_message,
-                    logs=logs + "\n" + failed.stderr,
-                    db_hints=db_hints,
-                )
+                classification = classification_from_diagnosis(diagnosis)
                 _capture_enriched_sentry(sentry, context, failed, pytest_summary, classification)
                 investigation = honeycomb_investigation(
                     context,
@@ -170,6 +178,7 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
                     sentry_event_id=sentry.event_id,
                     trace_id=failed.trace_id,
                     missing_evidence=missing_evidence,
+                    diagnosis=diagnosis,
                     storage=storage,
                 )
             if args.compare_to:
@@ -178,8 +187,10 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
                 ensure_triage_board(context, strict=args.strict)
             sentry.configure_release_cli()
             sentry.run_optional_autofix_hook()
+            final_status = "COMPLETE"
     except Exception:
         storage.write_text("observability-error.txt", redact_text(traceback.format_exc()))
+        final_status = "ANALYSIS_FAILED"
         failed = next((result for result in results if not result.succeeded), None)
         if failed:
             exit_code = failed.exit_code
@@ -190,6 +201,22 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
         if args.strict:
             raise
     finally:
+        try:
+            final_provenance = finalize_run_context(
+                context,
+                status=final_status,
+                command=args.command,
+                exit_code=exit_code,
+                commands_executed=[result.to_dict() for result in results],
+                diagnosis_path="diagnosis.json" if diagnosis else "",
+                report_path=report_path,
+                storage=storage,
+            )
+            if diagnosis:
+                generate_run_report(context, diagnosis, provenance=final_provenance, storage=storage)
+        except Exception:
+            if args.strict:
+                raise
         sentry.flush()
         tracer.shutdown()
         if _truthy(os.getenv("OBS_COMPRESS_RUN", "")):

@@ -5,16 +5,15 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import platform
 import secrets
-import shutil
-import subprocess
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .provenance import collect_git_state, collect_run_provenance, collect_tool_versions as collect_provenance_tool_versions, utc_now
 from .redaction import redact_mapping
+from .run_index import record_from_provenance, update_run_index
 from .storage import RunStorage
 
 
@@ -31,6 +30,15 @@ class RunContext:
     github_job: str = ""
     github_sha: str = ""
     github_ref: str = ""
+    full_head_sha: str = ""
+    short_head_sha: str = ""
+    commit_subject: str = ""
+    branch: str = ""
+    worktree_dirty: bool = False
+    worktree_diff_fingerprint_if_dirty: str = ""
+    status: str = "IN_PROGRESS"
+    finished_at: str = ""
+    provenance: dict[str, Any] = field(default_factory=dict)
 
     @property
     def is_github_actions(self) -> bool:
@@ -58,11 +66,13 @@ def create_run_context(repo_root: Path | None = None, *, run_id: str | None = No
     now = datetime.now(timezone.utc)
     resolved_id = run_id or _derive_run_id(now, git.get("sha", "unknown"))
     run_dir = root / ".o11y" / "runs" / resolved_id
+    started_at = now.isoformat()
+    provenance = collect_run_provenance(root, run_id=resolved_id, run_started_at=started_at)
     context = RunContext(
         run_id=resolved_id,
         run_dir=run_dir,
         repo_root=root,
-        started_at=now.isoformat(),
+        started_at=started_at,
         environment=os.getenv("OBSERVABILITY_ENV") or ("github-actions" if os.getenv("GITHUB_ACTIONS") else "local"),
         github_run_id=os.getenv("GITHUB_RUN_ID", ""),
         github_run_attempt=os.getenv("GITHUB_RUN_ATTEMPT", ""),
@@ -70,13 +80,23 @@ def create_run_context(repo_root: Path | None = None, *, run_id: str | None = No
         github_job=os.getenv("GITHUB_JOB", ""),
         github_sha=os.getenv("GITHUB_SHA", "") or git.get("sha", ""),
         github_ref=os.getenv("GITHUB_REF", ""),
+        full_head_sha=provenance["full_head_sha"],
+        short_head_sha=provenance["short_head_sha"],
+        commit_subject=provenance["commit_subject"],
+        branch=provenance["branch"],
+        worktree_dirty=bool(provenance["worktree_dirty"]),
+        worktree_diff_fingerprint_if_dirty=provenance["worktree_diff_fingerprint_if_dirty"],
+        status="IN_PROGRESS",
+        provenance=provenance,
     )
     storage = RunStorage(run_dir)
     storage.write_json("run-context.json", context.to_dict())
     storage.write_json("git.json", git)
     storage.write_json("tool-versions.json", collect_tool_versions(root))
     storage.write_json("env-redacted.json", redact_mapping(dict(os.environ)))
-    _update_latest_pointer(root, run_dir)
+    storage.write_json("provenance.json", provenance)
+    storage.write_json("run-status.json", {"run_id": resolved_id, "status": "IN_PROGRESS", "updated_at": utc_now()})
+    update_run_index(root, record_from_provenance(root, provenance))
     return context
 
 
@@ -97,43 +117,107 @@ def load_run_context(run_dir: Path) -> RunContext:
         github_job=data.get("github_job", ""),
         github_sha=data.get("github_sha", ""),
         github_ref=data.get("github_ref", ""),
+        full_head_sha=data.get("full_head_sha", data.get("github_sha", "")),
+        short_head_sha=data.get("short_head_sha", data.get("github_sha", "")[:12]),
+        commit_subject=data.get("commit_subject", ""),
+        branch=data.get("branch", ""),
+        worktree_dirty=bool(data.get("worktree_dirty", False)),
+        worktree_diff_fingerprint_if_dirty=data.get("worktree_diff_fingerprint_if_dirty", ""),
+        status=data.get("status", "UNKNOWN"),
+        finished_at=data.get("finished_at", ""),
+        provenance=data.get("provenance", {}),
     )
 
 
 def collect_git(root: Path) -> dict[str, Any]:
-    def git(*args: str) -> str:
-        return _capture(["git", *args], root)
-
-    sha = os.getenv("GITHUB_SHA") or git("rev-parse", "HEAD")
-    status = git("status", "--porcelain=v1")
-    remote = git("remote", "get-url", "origin")
+    state = collect_git_state(root)
+    sha = state["full_head_sha"]
+    status_lines = state.get("worktree_status", [])
     return {
         "sha": sha,
         "short_sha": sha[:12] if sha else "",
-        "branch": git("branch", "--show-current") or os.getenv("GITHUB_REF_NAME", ""),
+        "full_head_sha": sha,
+        "short_head_sha": state["short_head_sha"],
+        "commit_subject": state["commit_subject"],
+        "branch": state["branch"],
         "ref": os.getenv("GITHUB_REF", ""),
-        "dirty": bool(status),
-        "status": status.splitlines(),
-        "remote_origin": remote,
-        "git.branch": git("branch", "--show-current"),
-        "git.dirty": bool(status),
+        "dirty": bool(state["worktree_dirty"]),
+        "status": status_lines,
+        "worktree_dirty": bool(state["worktree_dirty"]),
+        "worktree_diff_fingerprint_if_dirty": state["worktree_diff_fingerprint_if_dirty"],
+        "remote_origin": state["remote_origin"],
+        "git.branch": state["branch"],
+        "git.dirty": bool(state["worktree_dirty"]),
     }
 
 
 def collect_tool_versions(root: Path) -> dict[str, Any]:
-    commands = {
-        "python": [os.sys.executable, "--version"],
-        "git": ["git", "--version"],
-        "go": ["go", "version"],
-        "rustc": ["rustc", "--version"],
-        "cargo": ["cargo", "--version"],
-        "encore": ["encore", "version"],
-        "docker": ["docker", "version", "--format", "{{.Server.Version}}"],
-        "kubectl": ["kubectl", "version", "--client"],
-    }
-    versions = {name: _capture(argv, root) for name, argv in commands.items()}
-    versions.update({"os": platform.platform(), "os.name": os.name, "architecture": platform.machine()})
-    return versions
+    return collect_provenance_tool_versions(root)
+
+
+def finalize_run_context(
+    context: RunContext,
+    *,
+    status: str,
+    command: str = "",
+    exit_code: int = 0,
+    commands_executed: list[dict[str, Any]] | None = None,
+    diagnosis_path: str = "",
+    report_path: str = "",
+    storage: RunStorage | None = None,
+) -> dict[str, Any]:
+    storage = storage or RunStorage(context.run_dir)
+    final_status = status
+    finished_at = utc_now()
+    provenance = collect_run_provenance(
+        context.repo_root,
+        run_id=context.run_id,
+        run_started_at=context.started_at,
+        run_finished_at=finished_at,
+        status=final_status,
+        commands_executed=commands_executed or [],
+    )
+    source_changed = _source_changed(context.provenance or {}, provenance)
+    if source_changed and final_status == "COMPLETE":
+        final_status = "SOURCE_CHANGED_DURING_RUN"
+        provenance["run_status"] = final_status
+    provenance["source_changed_during_run"] = source_changed
+    context_value = context.to_dict()
+    context_value.update(
+        {
+            "status": final_status,
+            "finished_at": finished_at,
+            "provenance": provenance,
+            "full_head_sha": provenance["full_head_sha"],
+            "short_head_sha": provenance["short_head_sha"],
+            "commit_subject": provenance["commit_subject"],
+            "branch": provenance["branch"],
+            "worktree_dirty": provenance["worktree_dirty"],
+            "worktree_diff_fingerprint_if_dirty": provenance["worktree_diff_fingerprint_if_dirty"],
+        }
+    )
+    storage.write_json("run-context.json", context_value)
+    storage.write_json("provenance.json", provenance)
+    storage.write_json(
+        "run-status.json",
+        {
+            "run_id": context.run_id,
+            "status": final_status,
+            "updated_at": finished_at,
+            "source_changed_during_run": source_changed,
+            "exit_code": exit_code,
+        },
+    )
+    record = record_from_provenance(
+        context.repo_root,
+        provenance,
+        command=command,
+        exit_code=exit_code,
+        diagnosis_path=diagnosis_path,
+        report_path=report_path,
+    )
+    update_run_index(context.repo_root, record)
+    return provenance
 
 
 def _derive_run_id(now: datetime, sha: str) -> str:
@@ -148,27 +232,6 @@ def _derive_run_id(now: datetime, sha: str) -> str:
     return f"local-{timestamp}-{(sha or 'unknown')[:8]}-{secrets.token_hex(3)}"
 
 
-def _capture(argv: list[str], cwd: Path) -> str:
-    if not shutil.which(argv[0]) and not Path(argv[0]).exists():
-        return "<unavailable>"
-    try:
-        result = subprocess.run(argv, cwd=cwd, text=True, encoding="utf-8", errors="replace", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=20, check=False)
-        return result.stdout.strip() if result.returncode == 0 else f"<error:{result.returncode}> {result.stdout.strip()}"
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return f"<unavailable:{type(exc).__name__}>"
-
-
-def _update_latest_pointer(root: Path, run_dir: Path) -> None:
-    runs = root / ".o11y" / "runs"
-    runs.mkdir(parents=True, exist_ok=True)
-    pointer = runs / "latest-local.txt"
-    pointer.write_text(str(run_dir.resolve()) + "\n", encoding="utf-8")
-    symlink = runs / "latest-local"
-    try:
-        if symlink.is_symlink() or symlink.exists():
-            if symlink.is_dir() and not symlink.is_symlink():
-                return
-            symlink.unlink()
-        symlink.symlink_to(run_dir.resolve(), target_is_directory=True)
-    except OSError:
-        pass
+def _source_changed(start: dict[str, Any], finish: dict[str, Any]) -> bool:
+    keys = ("full_head_sha", "worktree_dirty", "worktree_diff_fingerprint_if_dirty")
+    return any(start.get(key) != finish.get(key) for key in keys)

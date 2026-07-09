@@ -33,6 +33,12 @@ class CommandResult:
     log_path: str
     trace_id: str = ""
     timed_out: bool = False
+    command_id: str = ""
+    stage_id: str = ""
+    cwd: str = ""
+    expected_artifacts: list[str] | None = None
+    dependencies: list[str] | None = None
+    timeout_seconds: float | None = None
 
     @property
     def succeeded(self) -> bool:
@@ -75,6 +81,8 @@ def run_command(
     metadata_path = storage.path(command_dir / "command.json")
     log_path = storage.path(command_dir / "command.log")
     safe_command = safe_argv(list(argv))
+    command_id = _safe_name(name)
+    stage_id = _safe_name(stage)
     started_wall = datetime.now(timezone.utc)
     started = time.perf_counter()
     stdout = ""
@@ -90,6 +98,20 @@ def run_command(
         "service.name": "eve-trade-ci",
         "service.language": "python",
     }
+    manifest = {
+        "schema_version": "o11y.command-manifest.v1",
+        "command_id": command_id,
+        "stage_id": stage_id,
+        "name": name,
+        "stage": stage,
+        "argv": safe_command,
+        "working_directory": str((cwd or context.repo_root).resolve()),
+        "expected_artifacts": [],
+        "dependencies": [],
+        "timeout_seconds": timeout,
+        "declared_at": started_wall.isoformat(),
+    }
+    storage.write_json(command_dir / "command-manifest.json", manifest)
     span_context = tracer.span(f"pipeline.command.{name}", attributes) if tracer else _NullSpan()
     with span_context as span:
         try:
@@ -154,6 +176,12 @@ def run_command(
         log_path=log_path.relative_to(context.run_dir).as_posix(),
         trace_id=trace_id,
         timed_out=timed_out,
+        command_id=command_id,
+        stage_id=stage_id,
+        cwd=str((cwd or context.repo_root).resolve()),
+        expected_artifacts=[],
+        dependencies=[],
+        timeout_seconds=timeout,
     )
     storage.write_json(metadata_path.relative_to(context.run_dir), result.to_dict())
     if sentry:

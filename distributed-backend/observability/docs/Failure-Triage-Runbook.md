@@ -2,14 +2,14 @@
 
 ## 1. Open The Report
 
-Download the GitHub Actions artifact and open `failure-report.html`. Start with the failed command, first failing test, classification confidence, and missing-evidence section. The Markdown and JSON forms contain the same portable links.
+Open `run-report.md` or `run-report.html` from the run directory. If a command failed, `failure-report.html` is also written for compatibility. Start with the freshness block; if it is not `EXACT`, treat the report as historical evidence only.
 
 ## 2. Follow The Causal Evidence
 
-1. Open the command log under `commands/<stage>/<command>/command.log`.
-2. Open the failing test source link and likely solution files.
-3. Inspect Kubernetes pods/events first, then bounded per-pod logs.
-4. Inspect `db/metadata.json`, `db/schema.txt`, and only the tables implicated by the failure.
+1. Open `diagnosis.json` and confirm the earliest causal event.
+2. Open the referenced command log under `commands/<stage>/<command>/command.log`.
+3. Check supporting, contradicting, and missing evidence before accepting an inference.
+4. Inspect Kubernetes, Docker, or database artifacts only when the diagnosis has direct evidence for that layer.
 
 ## 3. Honeycomb BubbleUp
 
@@ -33,4 +33,4 @@ Open the linked Sentry event. It contains the run ID, SHA, failed command, first
 - **Sentry empty:** confirm `SENTRY_DSN`, outbound network access, and `sentry-*-error.txt`.
 - **DB snapshot failed:** verify `EVE_TRADE_DATABASE_URL` or `DATABASE_URL` and local `psql` availability.
 - **Kubernetes evidence missing:** verify `kubectl` context and namespace access.
-- **Windows:** use normal argument lists rather than shell quoting. `latest-local.txt` is the reliable latest-run pointer when symlink creation is not permitted.
+- **Windows:** use normal argument lists rather than shell quoting. `latest-local.txt` stores only a portable run ID when present; freshness still comes from `provenance.json` compared with the current repository.

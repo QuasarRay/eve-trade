@@ -1,0 +1,19 @@
+{
+  "name": "docker_daemon_unavailable",
+  "requested_command": "integration",
+  "command": {
+    "name": "compose-build",
+    "stage": "build",
+    "argv": ["docker", "compose", "build"],
+    "exit_code": 1,
+    "metadata_path": "commands/build/compose-build/command.json",
+    "log_path": "commands/build/compose-build/command.log"
+  },
+  "stderr": "Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?",
+  "expected": {
+    "stage": "CONTAINER_RUNTIME",
+    "mechanism": "CONTAINER_RUNTIME",
+    "external_system": "docker-daemon",
+    "harness_status": "BROKEN"
+  }
+}
