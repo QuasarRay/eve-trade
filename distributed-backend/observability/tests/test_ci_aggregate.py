@@ -46,7 +46,7 @@ class CiAggregateTests(unittest.TestCase):
         self.assertIn("if: ${{ always() }}", workflow)
         self.assertIn("needs: [proto, go, rust-trade-settlement, terraform, kubernetes, python, e2e]", workflow)
         self.assertIn("OBS_CI_NEEDS_JSON: ${{ toJson(needs) }}", workflow)
-        self.assertIn("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", workflow)
+        self.assertIn("actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4", workflow)
 
 
 if __name__ == "__main__":
