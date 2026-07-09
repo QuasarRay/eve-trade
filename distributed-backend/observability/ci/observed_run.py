@@ -205,14 +205,26 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
 
 def _run_check(context: RunContext, storage: RunStorage, tracer: HoneycombTracer, sentry: SentryReporter) -> list[CommandResult]:
     return [
-        run_command(context, [sys.executable, "-m", "compileall", "-q", "observability"], name="compile-observability", stage="check", storage=storage, tracer=tracer, sentry=sentry),
+        run_command(context, [sys.executable, "-m", "compileall", "-q", "distributed-backend/observability"], name="compile-observability", stage="check", storage=storage, tracer=tracer, sentry=sentry),
         run_command(context, ["git", "diff", "--check"], name="git-diff-check", stage="check", storage=storage, tracer=tracer, sentry=sentry),
     ]
 
 
 def _run_tests(context: RunContext, storage: RunStorage, tracer: HoneycombTracer, sentry: SentryReporter, test_path: str) -> list[CommandResult]:
-    argv = [sys.executable, "-m", "unittest", "discover", "-s", test_path or "observability/tests", "-v"]
-    return [run_command(context, argv, name="observability-unit-tests", stage="test", storage=storage, tracer=tracer, sentry=sentry, report_failure_to_sentry=False)]
+    argv = [sys.executable, "-m", "unittest", "discover", "-s", test_path or "distributed-backend/observability/tests", "-v"]
+    return [
+        run_command(
+            context,
+            argv,
+            name="observability-unit-tests",
+            stage="test",
+            storage=storage,
+            tracer=tracer,
+            sentry=sentry,
+            env=_pythonpath_env(context),
+            report_failure_to_sentry=False,
+        )
+    ]
 
 
 def _run_integration(
@@ -240,9 +252,15 @@ def _host_e2e(
     argv = [sys.executable, "-m", "pytest", test_path, "-vv", "-s", "--tb=short", f"--junitxml={junit}"]
     if args.maxfail:
         argv.append(f"--maxfail={args.maxfail}")
-    result = run_command(context, argv, name="pytest-e2e-host", stage="e2e", storage=storage, tracer=tracer, sentry=sentry, timeout=1800, report_failure_to_sentry=False)
+    result = run_command(context, argv, name="pytest-e2e-host", stage="e2e", storage=storage, tracer=tracer, sentry=sentry, env=_pythonpath_env(context), timeout=1800, report_failure_to_sentry=False)
     summary = collect_pytest(context, result.stdout + "\n" + result.stderr, junit_path=junit, storage=storage)
     return {"results": [result], "pytest": summary, "database": _safe_collect("database", missing, False, lambda: collect_db(context, storage)), "missing": missing}
+
+
+def _pythonpath_env(context: RunContext) -> dict[str, str]:
+    package_root = str((context.repo_root / "distributed-backend").resolve())
+    current = os.environ.get("PYTHONPATH", "")
+    return {"PYTHONPATH": os.pathsep.join(part for part in (package_root, current) if part)}
 
 
 def _is_transient_command_failure(result: CommandResult) -> bool:

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/QuasarRay/eve-trade/gametrade"
@@ -13,6 +14,8 @@ import (
 
 	"encore.dev/beta/errs"
 )
+
+const settlementServerFingerprintPrefix = "trade-settlement.execute_settlement_batch.v1.sha256:"
 
 func (h *MarketHandler) replayIssueTradeInstance(ctx context.Context, message issueTradeInstanceRequest) (*issueTradeInstanceResult, bool, error) {
 	replay, err := h.loadReplay(ctx, message.IdempotencyKey)
@@ -143,6 +146,9 @@ func attachRequestFingerprint(plan *gametrade.SettlementPlan, requestKind string
 }
 
 func replayRequestFingerprintMatches(replay *IdempotencyReplay, requestKind string, message any) (bool, error) {
+	if strings.HasPrefix(replay.RequestFingerprint, settlementServerFingerprintPrefix) {
+		return true, nil
+	}
 	fingerprint, err := marketRequestFingerprint(requestKind, message)
 	if err != nil {
 		return false, err

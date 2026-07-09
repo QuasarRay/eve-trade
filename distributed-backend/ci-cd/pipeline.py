@@ -111,7 +111,7 @@ ln -sf /root/.encore/bin/encore /usr/local/bin/encore
 set -euo pipefail
 go mod tidy
 git diff --exit-code -- go.mod go.sum
-test -z "$(gofmt -l gateway market settlement settlementworker internal proto/gen go_modules_test.go)"
+test -z "$(gofmt -l distributed-backend/src/gateway distributed-backend/src/market distributed-backend/src/settlement distributed-backend/src/settlementworker distributed-backend/internal gametrade proto/gen go_modules_test.go)"
 encore test ./...
 go vet ./...
 """
@@ -124,12 +124,12 @@ go vet ./...
     async def python_checks(self) -> None:
         script = r"""
 set -euo pipefail
-python -m compileall simulator/eve_trade_simulator simulator/trade_gui distributed-backend/tests/e2e observability
-python -m pip install -r simulator/requirements-test.txt -r observability/requirements-test.txt
+python -m compileall simulator/eve_trade_simulator simulator/trade_gui distributed-backend/tests/e2e distributed-backend/observability
+python -m pip install -r simulator/requirements-test.txt -r distributed-backend/observability/requirements-test.txt
 (cd simulator && python -m coverage run --rcfile=.coveragerc manage.py test trade_gui && python -m coverage report --rcfile=.coveragerc --fail-under=80)
 python -m coverage erase
-python -m coverage run --rcfile=observability/.coveragerc -m unittest discover -s observability/tests -v
-python -m coverage report --rcfile=observability/.coveragerc --fail-under=35
+PYTHONPATH=distributed-backend python -m coverage run --rcfile=distributed-backend/observability/.coveragerc -m unittest discover -s distributed-backend/observability/tests -v
+python -m coverage report --rcfile=distributed-backend/observability/.coveragerc --fail-under=35
 """
         await self.run_container("Python checks", self.client.container().from_(PYTHON_IMAGE).with_directory("/workspace", self.source).with_workdir("/workspace").with_exec(["bash", "-lc", script]))
 

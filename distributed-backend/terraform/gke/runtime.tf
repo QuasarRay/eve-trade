@@ -103,3 +103,24 @@ resource "kubernetes_secret_v1" "trade_settlement_database" {
     google_sql_user.trade_settlement,
   ]
 }
+
+resource "kubernetes_secret_v1" "market_database" {
+  count = nonsensitive(var.market_database_url) != "" ? 1 : 0
+
+  metadata {
+    name      = "market-database"
+    namespace = kubernetes_namespace_v1.app.metadata[0].name
+
+    labels = {
+      "app.kubernetes.io/name"       = "market"
+      "app.kubernetes.io/component"  = "database-readonly"
+      "app.kubernetes.io/managed-by" = "terraform"
+    }
+  }
+
+  data = {
+    MARKET_DATABASE_URL = var.market_database_url
+  }
+
+  type = "Opaque"
+}

@@ -66,7 +66,7 @@ def verify(path: Path) -> list[str]:
                     errors.append(f"workload {kind}/{name} container {container.get('name')} uses mutable or invalid image {image!r}")
 
     required_secret_contracts = {
-        ("Deployment", "encore-backend"): {"gateway-edge-auth", "trade-settlement-database"},
+        ("Deployment", "encore-backend"): {"gateway-edge-auth", "market-database"},
         ("Deployment", "trade-settlement"): {"trade-settlement-database"},
         ("Job", "settlement-db-migrate"): {"trade-settlement-migration-database"},
     }
@@ -81,6 +81,8 @@ def verify(path: Path) -> list[str]:
             errors.append(f"{identity[0]}/{identity[1]} is missing secret references {sorted(missing)}")
         if identity == ("Job", "settlement-db-migrate") and "trade-settlement-database" in actual:
             errors.append("migration job uses the runtime database credential")
+        if identity == ("Deployment", "encore-backend") and "trade-settlement-database" in actual:
+            errors.append("encore-backend uses the settlement writer database credential")
         if identity[0] == "Deployment" and "trade-settlement-migration-database" in actual:
             errors.append(f"runtime workload {identity[1]} uses the migration database credential")
 

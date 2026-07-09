@@ -57,6 +57,7 @@ def service_urls():
             "EVE_TRADE_ENCORE_URL": encore_url,
             "EVE_TRADE_SIMULATOR_URL": simulator_url,
             "EVE_TRADE_DATABASE_URL": database_url,
+            "EVE_TRADE_MARKET_DATABASE_URL": os.environ.get("EVE_TRADE_MARKET_DATABASE_URL"),
             "EVE_TRADE_SETTLEMENT_GRPC": os.environ.get("EVE_TRADE_SETTLEMENT_GRPC"),
             "EVE_TRADE_NSQ_TCP": os.environ.get("EVE_TRADE_NSQ_TCP"),
             "EVE_TRADE_RUNTIME_DATABASE_URL": os.environ.get("EVE_TRADE_RUNTIME_DATABASE_URL"),
@@ -108,6 +109,17 @@ def runtime_db(db, services_ready):
     runtime_url = os.environ.get("EVE_TRADE_RUNTIME_DATABASE_URL")
     require_or_skip(runtime_url, "set EVE_TRADE_RUNTIME_DATABASE_URL to run runtime-role tests")
     database = Database(runtime_url)
+    try:
+        yield database
+    finally:
+        database.close()
+
+
+@pytest.fixture
+def market_db(db, services_ready):
+    market_url = os.environ.get("EVE_TRADE_MARKET_DATABASE_URL")
+    require_or_skip(market_url, "set EVE_TRADE_MARKET_DATABASE_URL to run market-role tests")
+    database = Database(market_url)
     try:
         yield database
     finally:

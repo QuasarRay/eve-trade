@@ -37,23 +37,23 @@ class _Rule:
 RULES = (
     _Rule(
         "dependency/import-error", (r"modulenotfounderror|importerror|no module named|command not found",),
-        ("ci",), ("observability/requirements.txt", "ci-cd/requirements.txt", ".github/workflows/verify.yaml"),
-        ("python -m pip check", "python -m compileall observability"),
+        ("ci",), ("distributed-backend/observability/requirements.txt", "distributed-backend/ci-cd/requirements.txt", ".github/workflows/verify.yaml"),
+        ("python -m pip check", "python -m compileall distributed-backend/observability"),
     ),
     _Rule(
         "runtime-networking", (r"connection refused|temporary failure in name resolution|no such host|network.*not found|quilkin",),
-        ("encore-backend", "quilkin", "nsqd"), ("gateway/udp.go", "distributed-backend/orchestration/kubernetes/overlay/prod/networkpolicies.yaml"),
+        ("encore-backend", "quilkin", "nsqd"), ("distributed-backend/src/gateway/udp.go", "distributed-backend/orchestration/kubernetes/overlay/prod/networkpolicies.yaml"),
         ("kubectl -n eve-trade get pods,svc", "kubectl -n eve-trade logs deploy/encore-backend --tail=200"),
     ),
     _Rule(
         "service-readiness", (r"not ready|healthcheck|timed out waiting|readiness|deadline exceeded",),
-        ("encore-backend", "trade-settlement", "nsqd"), ("gateway/service.go", "market/api.go", "settlementworker/service.go"),
+        ("encore-backend", "trade-settlement", "nsqd"), ("distributed-backend/src/gateway/service.go", "distributed-backend/src/market/api.go", "distributed-backend/src/settlementworker/service.go"),
         ("kubectl -n eve-trade get pods", "kubectl -n eve-trade logs deploy/encore-backend --tail=200"),
     ),
     _Rule(
         "migration/schema-drift", (r"migration|schema.*(differ|drift|missing)|undefined table|undefined column|does not exist",),
         ("postgres", "trade-settlement"), ("distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql", "distributed-backend/orchestration/kubernetes/base/migrate.yaml"),
-        ("python observability/ci/observed_run.py collect-only", "kubectl -n eve-trade logs job/settlement-db-migrate"),
+        ("python distributed-backend/observability/ci/observed_run.py collect-only", "kubectl -n eve-trade logs job/settlement-db-migrate"),
     ),
     _Rule(
         "generated-code-drift", (r"protobuf|proto.*drift|generated.*differ|buf generate",),
@@ -63,16 +63,16 @@ RULES = (
     _Rule(
         "environment-parity", (r"github actions|works locally|environment|version differs|image digest",),
         ("ci",), (".github/workflows/verify.yaml", "ci-cd/pipeline.py"),
-        ("python observability/ci/compare_runs.py --local <local-run> --ci <ci-run>",),
+        ("python distributed-backend/observability/ci/compare_runs.py --local <local-run> --ci <ci-run>",),
     ),
     _Rule(
         "idempotency", (r"idempot|duplicate|replay|settlement.*twice|double",),
-        ("encore-backend", "market", "trade-settlement"), ("gateway/udp.go", "market/handler.go", "settlementworker/service.go", "distributed-backend/src/trade-settlement/src/executor.rs"),
+        ("encore-backend", "market", "trade-settlement"), ("distributed-backend/src/gateway/udp.go", "distributed-backend/src/market/handler.go", "distributed-backend/src/settlementworker/service.go", "distributed-backend/src/trade-settlement/src/executor.rs"),
         ("python -m pytest distributed-backend/tests/e2e -k idempotency -vv -s",),
     ),
     _Rule(
         "cancel-lifecycle", (r"cancel|refund|cancelled",),
-        ("market", "trade-settlement"), ("internal/gametrade/cancel_trade_instance.go", "market/handler.go", "distributed-backend/src/trade-settlement/src/operations.rs"),
+        ("market", "trade-settlement"), ("gametrade/cancel_trade_instance.go", "distributed-backend/src/market/handler.go", "distributed-backend/src/trade-settlement/src/operations.rs"),
         ("python -m pytest distributed-backend/tests/e2e -k cancel -vv -s --maxfail=1",),
     ),
     _Rule(
@@ -82,23 +82,23 @@ RULES = (
     ),
     _Rule(
         "client-tampering", (r"tamper|wrong owner|wrong station|canonical|not owned|forged",),
-        ("market",), ("market/handler.go", "market/repository.go"),
+        ("market",), ("distributed-backend/src/market/handler.go", "distributed-backend/src/market/repository.go"),
         ("python -m pytest distributed-backend/tests/e2e -k 'owner or station or tamper' -vv -s",),
     ),
     _Rule(
         "accept-validation", (r"accept.*(zero|negative|quantity)|rejects_zero_quantity|quantity_requested|insufficient isk|buyer and seller",),
-        ("market", "trade-settlement"), ("internal/gametrade/accept_trade_instance.go", "market/handler.go", "distributed-backend/src/trade-settlement/src/operations.rs"),
+        ("market", "trade-settlement"), ("gametrade/accept_trade_instance.go", "distributed-backend/src/market/handler.go", "distributed-backend/src/trade-settlement/src/operations.rs"),
         ("python -m pytest distributed-backend/tests/e2e -k accepting_trade -vv -s --maxfail=1",),
     ),
     _Rule(
         "settlement-invariant", (r"settlement.*invariant|escrow.*mismatch|settlement step|batch_state",),
-        ("trade-settlement", "settlementworker"), ("distributed-backend/src/trade-settlement/src/executor.rs", "settlementworker/service.go", "distributed-backend/src/trade-settlement/src/operations.rs"),
+        ("trade-settlement", "settlementworker"), ("distributed-backend/src/trade-settlement/src/executor.rs", "distributed-backend/src/settlementworker/service.go", "distributed-backend/src/trade-settlement/src/operations.rs"),
         ("cargo test --manifest-path distributed-backend/src/trade-settlement/Cargo.toml",),
     ),
     _Rule(
         "db-invariant", (r"constraint|sqlstate|ledger.*mismatch|projection.*invariant|foreign key",),
         ("postgres", "trade-settlement"), ("distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql", "distributed-backend/src/trade-settlement/src/operations.rs"),
-        ("python observability/ci/observed_run.py collect-only",),
+        ("python distributed-backend/observability/ci/observed_run.py collect-only",),
     ),
 )
 

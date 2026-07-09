@@ -42,6 +42,7 @@ run "production_plan" {
     database_deletion_protection            = true
     database_availability_type              = "REGIONAL"
     cluster_deletion_protection             = true
+    market_database_url                     = "postgres://market_readonly:placeholder@database.invalid:5432/eve_trade"
   }
 
   assert {
@@ -65,5 +66,13 @@ run "production_plan" {
   assert {
     condition     = kubernetes_secret_v1.trade_settlement_database[0].metadata[0].name == "trade-settlement-database"
     error_message = "the GKE plan must wire the runtime database secret expected by application workloads"
+  }
+
+  assert {
+    condition = (
+      kubernetes_secret_v1.market_database[0].metadata[0].name == "market-database" &&
+      kubernetes_secret_v1.market_database[0].data.MARKET_DATABASE_URL == var.market_database_url
+    )
+    error_message = "the GKE plan must wire a distinct Market read-only database secret"
   }
 }

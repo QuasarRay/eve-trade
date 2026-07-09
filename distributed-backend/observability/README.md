@@ -5,9 +5,9 @@ This directory records CI command evidence, pytest failures, Kubernetes state, P
 ## Quick Start
 
 ```powershell
-python observability/ci/observed_run.py check
-python observability/ci/observed_run.py test
-python observability/ci/observed_run.py collect-only
+python distributed-backend/observability/ci/observed_run.py check
+python distributed-backend/observability/ci/observed_run.py test
+python distributed-backend/observability/ci/observed_run.py collect-only
 ```
 
 Run E2E against an already started Encore/Kubernetes environment:
@@ -16,8 +16,8 @@ Run E2E against an already started Encore/Kubernetes environment:
 $env:EVE_TRADE_ENCORE_URL="http://127.0.0.1:4000"
 $env:EVE_TRADE_SIMULATOR_URL="http://127.0.0.1:8000"
 $env:EVE_TRADE_DATABASE_URL="postgres://postgres:postgres@127.0.0.1:5432/eve_trade"
-python -m pip install -r observability/requirements.txt
-python observability/ci/observed_run.py e2e --maxfail 1
+python -m pip install -r distributed-backend/observability/requirements.txt
+python distributed-backend/observability/ci/observed_run.py e2e --maxfail 1
 ```
 
 The command prints its generated run directory under `.o11y/runs/`. Every run starts with `run-context.json`, `git.json`, `tool-versions.json`, `env-redacted.json`, `hashes.json`, and local span JSON.

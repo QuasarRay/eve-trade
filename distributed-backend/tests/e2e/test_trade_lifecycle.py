@@ -144,6 +144,43 @@ def test_runtime_database_role_has_exact_required_privileges_and_no_administrati
     assert item_stack_row(db, world.seller_stack_id)["quantity"] == 9
 
 
+def test_market_database_role_is_readonly_and_cannot_mutate_settlement_state(db, market_db):
+    required_select = {
+        "item_stack",
+        "wallet",
+        "trade_instance",
+        "item_stack_escrow",
+        "idempotency_record",
+        "settlement_batch",
+        "settlement_step",
+    }
+    actual = {
+        (row["table_name"], row["privilege_type"])
+        for row in market_db.fetchall(
+            """
+            SELECT table_name, privilege_type
+            FROM information_schema.role_table_grants
+            WHERE grantee = current_user AND table_schema = 'public'
+            """
+        )
+    }
+    assert {(table, "SELECT") for table in required_select}.issubset(actual)
+    assert all(privilege == "SELECT" for _, privilege in actual)
+
+    assert market_db.scalar("SELECT count(*) FROM item_stack") >= 0
+    protected_writes = (
+        "UPDATE wallet SET isk_amount = isk_amount",
+        "UPDATE item_stack SET quantity = quantity",
+        "UPDATE trade_instance SET trade_state = trade_state",
+        "INSERT INTO idempotency_record (idempotency_key, request_fingerprint, request_kind, idempotency_state, created_by_service) VALUES ('market-role-write-test', 'x', 'x', 'IN_PROGRESS', 'test')",
+        "DELETE FROM settlement_step",
+        "CREATE TABLE market_role_must_not_create_table (id bigint)",
+    )
+    for statement in protected_writes:
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            market_db.execute(statement)
+
+
 def test_creating_trade_offer_keeps_seller_non_offered_item_quantity_available(db, gateway):
     world = seed_world(db, seller_second_quantity=8)
     create_trade(gateway, world, quantity=4)

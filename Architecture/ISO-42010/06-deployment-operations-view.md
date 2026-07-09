@@ -89,7 +89,7 @@ flowchart TB
 | Local simulator overlay | `distributed-backend/orchestration/kubernetes/overlay/local/simulator.yaml` | Adds the local frontend simulator and local-only packet signing secret; not included in production. |
 | Gateway platform manifests | `distributed-backend/orchestration/kubernetes/platform/gateway/prod` | Defines Gateway API ingress and related platform resources. |
 | Istio platform manifests | `distributed-backend/orchestration/kubernetes/platform/istio/prod` | Defines service mesh operator and related resources. |
-| Observability manifests | `distributed-backend/orchestration/kubernetes/base/observability` and `observability/honeycomb` | Defines collector and telemetry export configuration. |
+| Observability manifests | `distributed-backend/orchestration/kubernetes/base/observability` and `distributed-backend/orchestration/kubernetes/observability/honeycomb` | Defines collector and telemetry export configuration. |
 | Terraform deployment roots | `distributed-backend/terraform/eks`, `distributed-backend/terraform/gke`, `distributed-backend/terraform/talos-omni` | Provision or prepare target-specific infrastructure and runtime assets for AWS/EKS, GCP/GKE, or Omni-managed Talos. |
 
 ## Probe Model
@@ -161,7 +161,8 @@ database destination beyond TCP port `5432`.
 | Image digests | Production overlay README and kustomization | Placeholder/zero digest replacement is described but not enforced. | Not implemented; GATE-003 open |
 | Public hostname | Gateway and HTTPRoute manifests | Example hostname `api.eve-trade.example.com` appears in manifests/docs. | Not implemented; GATE-003 open |
 | ACME email | Gateway platform ClusterIssuer | Placeholder email remains in checked-in platform manifests. | Not implemented; GATE-003 open |
-| Database secret | `trade-settlement-database` secret reference | Runtime expects `DATABASE_URL`; production secret material is not in repo. | Not implemented; GATE-003 open |
+| Market database secret | `market-database` secret reference | Market expects read-only `MARKET_DATABASE_URL`; production secret material is not in repo. | Not implemented; GATE-003 open |
+| Settlement database secret | `trade-settlement-database` secret reference | trade-settlement expects settlement writer `DATABASE_URL`; production secret material is not in repo. | Not implemented; GATE-003 open |
 | Encore Pub/Sub secret | `nsqd` secret reference | Runtime expects broker credentials/URL; production secret material is not in repo. | Not implemented; GATE-003 open |
 | Edge HMAC secret | `encore-backend-edge-auth` secret reference | Runtime expects `GAME_PACKET_HMAC_SECRET`; production secret material is not in repo. | Not implemented; GATE-003 open |
 | Observability secrets | `observability-backends` secret reference | Export credentials are out of band. | Not implemented; GATE-003 open |
@@ -176,7 +177,8 @@ View component ID: `VC-DEP-03`.
 
 | Secret or credential | Consumers | Current source | Owner | Rotation | Access/audit requirement | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| `DATABASE_URL` | Encore backend Market package, trade-settlement, migration job | Kubernetes Secret or local Encore/Kubernetes environment | SRE/database owner | Rotation policy not defined in repo | Secret read access is modeled by workload secret references; break-glass logging is not implemented in repo | Gap recorded |
+| `MARKET_DATABASE_URL` | Encore backend Market package | Kubernetes Secret or local Encore/Kubernetes environment | SRE/database owner | Rotation policy not defined in repo | Must be read-only at the PostgreSQL grant level and separate from settlement writer access. | Enforced by manifest contract; production role provisioning remains out of band |
+| `DATABASE_URL` | trade-settlement and migration job, with separate runtime and migration Secrets | Kubernetes Secret or local Encore/Kubernetes environment | SRE/database owner | Rotation policy not defined in repo | Settlement writer and migration credentials must not be injected into the Encore backend workload. | Enforced by manifest contract |
 | Encore Pub/Sub infrastructure credentials/configuration | Encore backend and NSQ | Infrastructure config or local Encore/Kubernetes environment | SRE/platform owner | Rotation policy not defined in repo | Broker publisher/consumer/admin permission separation is delegated to the selected Pub/Sub backend. | Gap recorded |
 | `GAME_PACKET_HMAC_SECRET` | Encore gateway UDP edge | Production secret manager or Kubernetes Secret | Security/platform owner | Rotation policy not defined in repo | Must match the game frontend signing key without identifying local simulator traffic. | Production blocker |
 | Observability API keys | OpenTelemetry/Honeycomb/Sentry components | Out-of-band secret | Observability owner | Rotation policy not defined in repo | Export credentials are not present in checked-in manifests. | Gap recorded |

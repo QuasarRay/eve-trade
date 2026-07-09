@@ -112,7 +112,8 @@ View component ID: `VC-SEC-02`.
 | Market to Encore Pub/Sub | Market publishes protovalidate-checked settlement commands with deterministic IDs and idempotency data in the Encore Pub/Sub configuration. |
 | Encore Pub/Sub to settlement worker | Queue and DLQ topology exist; per-service broker authorization is not fully documented. |
 | settlement worker to trade-settlement | Production NetworkPolicy models worker-originated settlement execution. |
-| trade-settlement to PostgreSQL | Uses configured `DATABASE_URL`; least-privilege database role details are not documented. |
+| Market to PostgreSQL | Uses configured read-only `MARKET_DATABASE_URL`; manifests keep the settlement writer secret out of the Encore backend workload. |
+| trade-settlement to PostgreSQL | Uses configured settlement writer `DATABASE_URL`; migration uses a separate migration `DATABASE_URL`. |
 | Operators to runtime | Deployment and secret-management approval flows are not fully defined in repo. |
 
 ## Misuse Cases

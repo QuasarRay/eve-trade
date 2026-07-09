@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -24,6 +25,7 @@ type QuilkinUDPServer struct {
 	listenFunc   func(network string, address string) (net.PacketConn, error)
 	rateLimiter  *remoteRateLimiter
 	replayCache  *interactionReplayCache
+	ready        atomic.Bool
 }
 
 type udpPacketJob struct {
@@ -50,6 +52,7 @@ func NewQuilkinUDPServer(config Config, market MarketClient) *QuilkinUDPServer {
 }
 
 func (s *QuilkinUDPServer) ListenAndServe(ctx context.Context) error {
+	s.ready.Store(false)
 	if err := validateListenerConfig(s.maxPacket, s.workers, s.queueDepth); err != nil {
 		return err
 	}
@@ -58,7 +61,9 @@ func (s *QuilkinUDPServer) ListenAndServe(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("listen for Quilkin UDP packets on %s: %w", s.addr, err)
 	}
+	s.ready.Store(true)
 	defer func() {
+		s.ready.Store(false)
 		if closeErr := conn.Close(); closeErr != nil {
 			slog.Warn("quilkin udp close failed", "error", closeErr)
 		}
@@ -87,8 +92,11 @@ func (s *QuilkinUDPServer) ListenAndServe(ctx context.Context) error {
 	for {
 		n, remote, err := conn.ReadFrom(buffer)
 		if err != nil {
-			if ctx.Err() != nil || errors.Is(err, net.ErrClosed) {
+			if ctx.Err() != nil {
 				return nil
+			}
+			if errors.Is(err, net.ErrClosed) {
+				return fmt.Errorf("read Quilkin UDP packet: listener closed")
 			}
 			return fmt.Errorf("read Quilkin UDP packet: %w", err)
 		}
@@ -111,6 +119,10 @@ func (s *QuilkinUDPServer) ListenAndServe(ctx context.Context) error {
 			s.writeError(conn, remote, bestEffortInteractionID(packet), "queue_full", "temporarily overloaded")
 		}
 	}
+}
+
+func (s *QuilkinUDPServer) Ready() bool {
+	return s.ready.Load()
 }
 
 func (s *QuilkinUDPServer) worker(ctx context.Context, conn net.PacketConn, jobs <-chan udpPacketJob) {

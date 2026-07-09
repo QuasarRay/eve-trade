@@ -5,7 +5,7 @@
 Local:
 
 ```powershell
-python observability/ci/observed_run.py e2e --maxfail 1
+python distributed-backend/observability/ci/observed_run.py e2e --maxfail 1
 ```
 
 CI uploads `.o11y/runs/`. Download and extract the artifact without changing the run directory layout.
@@ -13,7 +13,7 @@ CI uploads `.o11y/runs/`. Download and extract the artifact without changing the
 ## Compare
 
 ```powershell
-python observability/ci/compare_runs.py `
+python distributed-backend/observability/ci/compare_runs.py `
   --local .o11y/runs/<local-run> `
   --ci C:\Downloads\eve-trade-observability\<ci-run> `
   --output .o11y/parity

@@ -19,7 +19,7 @@ summer-grpc = "0.7.1"
 summer-opentelemetry = { version = "0.7.1", default-features = false, features = ["http", "more-resource"] }
 summer-sqlx = { version = "0.7.1", default-features = false, features = ["postgres", "runtime-tokio-rustls", "with-uuid", "with-json", "with-chrono"] }
 thiserror = "2"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "sync"] }
 tonic = "0.14.6"
 tonic-prost = "0.14.6"
 tracing = "0.1"

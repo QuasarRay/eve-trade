@@ -42,7 +42,7 @@ spec:
             - configMapRef:
                 name: encore-backend-config
             - secretRef:
-                name: trade-settlement-database
+                name: market-database
           env:
             - name: API_GATEWAY_UDP_HMAC_SECRET
               valueFrom:

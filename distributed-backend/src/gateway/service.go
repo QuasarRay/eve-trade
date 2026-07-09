@@ -3,6 +3,8 @@ package gateway
 import (
 	"context"
 	"log/slog"
+
+	"encore.dev/beta/errs"
 )
 
 //encore:service
@@ -40,6 +42,9 @@ func (s *Service) GatewayHealth(ctx context.Context) (*HealthResponse, error) {
 func (s *Service) GatewayReady(ctx context.Context) (*HealthResponse, error) {
 	if s.server == nil {
 		return &HealthResponse{Status: "ready"}, nil
+	}
+	if !s.server.Ready() {
+		return nil, errs.B().Code(errs.Unavailable).Msg("quilkin UDP listener is not ready").Err()
 	}
 	return &HealthResponse{Status: "ready"}, nil
 }

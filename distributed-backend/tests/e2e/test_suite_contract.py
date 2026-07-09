@@ -126,6 +126,7 @@ def test_production_gate_does_not_inherit_the_all_skipped_escape_hatch(monkeypat
         "EVE_TRADE_SIMULATOR_URL",
         "EVE_TRADE_NSQ_TCP",
         "EVE_TRADE_DATABASE_URL",
+        "EVE_TRADE_MARKET_DATABASE_URL",
         "EVE_TRADE_RUNTIME_DATABASE_URL",
         "EVE_TRADE_QUILKIN_UDP_HOST",
         "EVE_TRADE_EDGE_RESPONSE_SECRET",

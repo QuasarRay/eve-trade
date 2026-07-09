@@ -88,7 +88,8 @@ Model ID: `MODEL-CTX-03`; view component ID: `VC-CTX-03`.
 | gateway to Market | Encore typed service call to market.SubmitTradeGuiInteraction | `Encore service discovery for market.SubmitTradeGuiInteraction` in config. | Request contains only `raw_payload`; source transport/address are not part of the business contract. |
 | Market to Encore Pub/Sub | Encore Pub/Sub publish to exchange `eve.trade.settlement` with routing key `settlement.execute` | Kubernetes base config, local Encore/Kubernetes, and messaging defaults. | Checked-in local Encore/Kubernetes/Kubernetes settlement path. |
 | settlement worker to trade-settlement | standard gRPC call to `ExecuteSettlementBatch` | `TRADE_SETTLEMENT_GRPC_TARGET=trade-settlement:9092`. | Internal privileged settlement API. |
-| Market and trade-settlement to PostgreSQL | PostgreSQL wire protocol | `DATABASE_URL` secret or local Encore/Kubernetes env. | Market reads; trade-settlement writes. |
+| Market to PostgreSQL | PostgreSQL wire protocol | `MARKET_DATABASE_URL` read-only secret or local Encore/Kubernetes env. | Market reads snapshots and replay metadata only. |
+| trade-settlement to PostgreSQL | PostgreSQL wire protocol | `DATABASE_URL` settlement writer secret or local Encore/Kubernetes env. | trade-settlement writes settlement state. |
 
 ## Context View Assertions
 

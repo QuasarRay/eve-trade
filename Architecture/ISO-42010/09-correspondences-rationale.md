@@ -46,7 +46,8 @@ command-shaped public API model.
 | Market to Encore Pub/Sub | Encore Pub/Sub `5672` | Market egress to Encore Pub/Sub and Encore Pub/Sub ingress from Market. | Broker-level per-service authorization not fully documented. |
 | settlement worker to Encore Pub/Sub | Encore Pub/Sub `5672` | Worker egress to Encore Pub/Sub and Encore Pub/Sub ingress from worker. | Broker-level per-service authorization not fully documented. |
 | settlement worker to trade-settlement | `TRADE_SETTLEMENT_GRPC_TARGET=trade-settlement:9092` | Worker egress and trade-settlement ingress on `9092`. | Depends on mesh/service-account policy in production. |
-| Market and trade-settlement to PostgreSQL | `DATABASE_URL` | Broad TCP `5432` egress. | Destination is not selected by pod/namespace policy. |
+| Market to PostgreSQL | `MARKET_DATABASE_URL` read-only credential | Broad TCP `5432` egress. | Destination is not selected by pod/namespace policy. |
+| trade-settlement to PostgreSQL | `DATABASE_URL` settlement writer credential | Broad TCP `5432` egress. | Destination is not selected by pod/namespace policy. |
 | app pods to observability | OTLP `4317`/`4318` | Telemetry egress to collector namespace. | Alert/dashboard definitions remain incomplete. |
 
 ## Correspondence Rules

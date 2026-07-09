@@ -40,6 +40,11 @@ output "database_secret_name" {
   value       = var.database_enabled || nonsensitive(var.external_database_url) != "" ? "trade-settlement-database" : null
 }
 
+output "market_database_secret_name" {
+  description = "Kubernetes Secret containing MARKET_DATABASE_URL for Market read-only access when created."
+  value       = nonsensitive(var.market_database_url) != "" ? "market-database" : null
+}
+
 output "opentelemetry_instrumentation" {
   description = "OpenTelemetry Instrumentation resource when enabled."
   value       = local.opentelemetry_instrumentation

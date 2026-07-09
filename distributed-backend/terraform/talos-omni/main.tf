@@ -120,6 +120,31 @@ resource "kubectl_manifest" "trade_settlement_database" {
   ]
 }
 
+resource "kubectl_manifest" "market_database" {
+  count = nonsensitive(var.market_database_url) != "" ? 1 : 0
+
+  yaml_body = yamlencode({
+    apiVersion = "v1"
+    kind       = "Secret"
+    metadata = {
+      name      = "market-database"
+      namespace = local.app_namespace
+      labels = merge(local.labels, {
+        "app.kubernetes.io/name"      = "market"
+        "app.kubernetes.io/component" = "database-readonly"
+      })
+    }
+    stringData = {
+      MARKET_DATABASE_URL = var.market_database_url
+    }
+    type = "Opaque"
+  })
+
+  depends_on = [
+    kubectl_manifest.app_namespace,
+  ]
+}
+
 resource "kubectl_manifest" "postgres_service" {
   count = var.database_mode == "in_cluster" ? 1 : 0
 

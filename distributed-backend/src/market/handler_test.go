@@ -499,6 +499,28 @@ func TestMarketHandlerRejectsReplayWithDifferentRequestFingerprint(t *testing.T)
 	}
 }
 
+func TestReplayRequestFingerprintAcceptsServerComputedSettlementFingerprint(t *testing.T) {
+	message := issueTradeInstanceRequest{
+		IdempotencyKey:      "issue-server-fingerprint-replay",
+		ExternalRequestID:   "external-original",
+		IssuedByCapsuleerID: 1001,
+		ItemStack:           &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
+		Quantity:            4,
+		UnitPriceISK:        25,
+	}
+	replay := &IdempotencyReplay{
+		RequestFingerprint: settlementServerFingerprintPrefix + strings.Repeat("a", 64),
+	}
+
+	ok, err := replayRequestFingerprintMatches(replay, "issue_trade_instance", message)
+	if err != nil {
+		t.Fatalf("replayRequestFingerprintMatches returned error: %v", err)
+	}
+	if !ok {
+		t.Fatal("server-computed settlement fingerprint should defer replay matching to stored step payloads")
+	}
+}
+
 func TestMarketHandlerRejectsReplayWhenDestinationModeChanged(t *testing.T) {
 	original := acceptTradeInstanceRequest{
 		IdempotencyKey:              "accept-replay",

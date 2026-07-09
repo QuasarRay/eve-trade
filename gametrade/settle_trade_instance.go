@@ -55,7 +55,6 @@ func SettleTradeInstance(plan SettlementPlan) (*settlement.Work, error) {
 		CausedByCapsuleerID: plan.CausedByCapsuleerID,
 		Operations:          plan.Operations,
 		CreatedByService:    CreatedByService,
-		RequestFingerprint:  plan.RequestFingerprint,
 		RequestID:           "",
 	}, nil
 }

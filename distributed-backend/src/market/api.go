@@ -28,9 +28,20 @@ type HealthResponse struct {
 }
 
 var defaultState struct {
-	once    sync.Once
-	handler *MarketHandler
-	err     error
+	mu           sync.Mutex
+	initializing chan struct{}
+	handler      *MarketHandler
+	err          error
+}
+
+var loadMarketConfig = LoadConfig
+
+var openDefaultTradeRepository = func(ctx context.Context, cfg Config) (TradeRepository, error) {
+	return openPostgresRepositoryWithRetry(ctx, cfg)
+}
+
+var newDefaultSettlementPublisher = func() SettlementPublisher {
+	return NewSettlementPublisher()
 }
 
 //encore:api private
@@ -62,16 +73,50 @@ func MarketReady(ctx context.Context) (*HealthResponse, error) {
 }
 
 func defaultMarketHandler(ctx context.Context) (*MarketHandler, error) {
-	defaultState.once.Do(func() {
-		cfg := LoadConfig()
-		repo, err := openPostgresRepositoryWithRetry(ctx, cfg)
-		if err != nil {
-			defaultState.err = err
-			return
+	for {
+		defaultState.mu.Lock()
+		if defaultState.handler != nil {
+			handler := defaultState.handler
+			defaultState.mu.Unlock()
+			return handler, nil
 		}
-		defaultState.handler = NewMarketHandler(NewSettlementPublisher(), repo)
-	})
-	return defaultState.handler, defaultState.err
+		if initializing := defaultState.initializing; initializing != nil {
+			defaultState.mu.Unlock()
+			select {
+			case <-initializing:
+				continue
+			case <-ctx.Done():
+				return nil, fmt.Errorf("initialize market dependencies: %w", ctx.Err())
+			}
+		}
+		initializing := make(chan struct{})
+		defaultState.initializing = initializing
+		defaultState.mu.Unlock()
+
+		handler, err := initializeDefaultMarketHandler(ctx)
+
+		defaultState.mu.Lock()
+		if err == nil {
+			defaultState.handler = handler
+			defaultState.err = nil
+		} else {
+			defaultState.err = err
+		}
+		defaultState.initializing = nil
+		close(initializing)
+		defaultState.mu.Unlock()
+
+		return handler, err
+	}
+}
+
+func initializeDefaultMarketHandler(ctx context.Context) (*MarketHandler, error) {
+	cfg := loadMarketConfig()
+	repo, err := openDefaultTradeRepository(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return NewMarketHandler(newDefaultSettlementPublisher(), repo), nil
 }
 
 func openPostgresRepositoryWithRetry(ctx context.Context, cfg Config) (*PostgresTradeRepository, error) {

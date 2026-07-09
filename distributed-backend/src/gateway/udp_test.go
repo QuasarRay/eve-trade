@@ -211,7 +211,7 @@ func TestQuilkinUDPServerForwardsOnlyRawPayloadToMarket(t *testing.T) {
 }
 
 func TestQuilkinUDPServerAcceptsVersionedProtocolGoldenPacket(t *testing.T) {
-	rawPayload, err := os.ReadFile(filepath.Join("..", "distributed-backend", "protocol", "fixtures", "sell-order.packet.json"))
+	rawPayload, err := os.ReadFile(filepath.Join("..", "..", "protocol", "fixtures", "sell-order.packet.json"))
 	if err != nil {
 		t.Fatalf("read protocol golden packet: %v", err)
 	}
@@ -355,6 +355,121 @@ func TestQuilkinUDPServerListenAndServeRejectsQueueOverflow(t *testing.T) {
 	if market.calls.Load() != 2 {
 		t.Fatalf("admitted downstream calls after shutdown = %d, want exactly 2", market.calls.Load())
 	}
+}
+
+func TestQuilkinUDPServerReadinessTracksSuccessfulBindAndShutdown(t *testing.T) {
+	listener, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen UDP: %v", err)
+	}
+	server := testUDPServer(&recordingMarketClient{})
+	server.listenFunc = func(string, string) (net.PacketConn, error) { return listener, nil }
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- server.ListenAndServe(ctx) }()
+
+	waitForUDPReady(t, server, true)
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("ListenAndServe returned error during shutdown: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("server did not shut down")
+	}
+	waitForUDPReady(t, server, false)
+}
+
+func TestQuilkinUDPServerReadinessStaysFalseOnBindFailure(t *testing.T) {
+	occupied, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen occupied UDP: %v", err)
+	}
+	defer occupied.Close()
+	server := testUDPServer(&recordingMarketClient{})
+	server.addr = occupied.LocalAddr().String()
+
+	err = server.ListenAndServe(context.Background())
+	if err == nil {
+		t.Fatal("ListenAndServe unexpectedly succeeded on an occupied UDP address")
+	}
+	if server.Ready() {
+		t.Fatal("server reported ready after bind failure")
+	}
+}
+
+func TestQuilkinUDPServerReadinessBecomesFalseAfterServeLoopTermination(t *testing.T) {
+	listener, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen UDP: %v", err)
+	}
+	server := testUDPServer(&recordingMarketClient{})
+	server.listenFunc = func(string, string) (net.PacketConn, error) { return listener, nil }
+	done := make(chan error, 1)
+	go func() { done <- server.ListenAndServe(context.Background()) }()
+
+	waitForUDPReady(t, server, true)
+	if err := listener.Close(); err != nil {
+		t.Fatalf("close listener: %v", err)
+	}
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("unexpected listener closure returned nil error")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("server did not exit after listener closure")
+	}
+	waitForUDPReady(t, server, false)
+}
+
+func TestQuilkinUDPServerHasNoFalseReadyWindowBeforeBind(t *testing.T) {
+	listener, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen UDP: %v", err)
+	}
+	defer listener.Close()
+	server := testUDPServer(&recordingMarketClient{})
+	listenStarted := make(chan struct{})
+	allowBind := make(chan struct{})
+	server.listenFunc = func(string, string) (net.PacketConn, error) {
+		close(listenStarted)
+		<-allowBind
+		return listener, nil
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- server.ListenAndServe(ctx) }()
+
+	select {
+	case <-listenStarted:
+	case <-time.After(time.Second):
+		t.Fatal("listen function was not called")
+	}
+	if server.Ready() {
+		t.Fatal("server reported ready before UDP bind completed")
+	}
+	close(allowBind)
+	waitForUDPReady(t, server, true)
+	cancel()
+	if err := <-done; err != nil {
+		t.Fatalf("server shutdown: %v", err)
+	}
+	waitForUDPReady(t, server, false)
+}
+
+func waitForUDPReady(t *testing.T, server *QuilkinUDPServer, want bool) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if server.Ready() == want {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("server readiness = %v, want %v", server.Ready(), want)
 }
 
 func readSignedUDPResponse(t *testing.T, conn net.PacketConn) map[string]any {
@@ -770,6 +885,7 @@ func testUDPServer(market MarketClient) *QuilkinUDPServer {
 		principals: map[string]UDPPrincipalCredential{
 			"primary": {CapsuleerID: 1001, Secret: "edge-secret"},
 		},
+		listenFunc:  net.ListenPacket,
 		market:      market,
 		rateLimiter: newRemoteRateLimiter(100, 100),
 		replayCache: newInteractionReplayCache(time.Minute),

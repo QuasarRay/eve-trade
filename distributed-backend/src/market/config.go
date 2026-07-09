@@ -14,7 +14,7 @@ type Config struct {
 
 func LoadConfig() Config {
 	return Config{
-		DatabaseURL:              envOr("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/eve_trade"),
+		DatabaseURL:              envOr("MARKET_DATABASE_URL", "postgres://postgres:postgres@localhost:5432/eve_trade"),
 		StartupDependencyTimeout: durationEnvOr("MARKET_STARTUP_DEPENDENCY_TIMEOUT", 90*time.Second),
 		StartupRetryInterval:     durationEnvOr("MARKET_STARTUP_RETRY_INTERVAL", 2*time.Second),
 	}

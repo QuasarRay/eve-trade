@@ -22,3 +22,8 @@ output "database_secret_name" {
   description = "Kubernetes secret containing DATABASE_URL for trade-settlement."
   value       = try(kubernetes_secret_v1.trade_settlement_database[0].metadata[0].name, null)
 }
+
+output "market_database_secret_name" {
+  description = "Kubernetes secret containing MARKET_DATABASE_URL for Market read-only access."
+  value       = try(kubernetes_secret_v1.market_database[0].metadata[0].name, null)
+}

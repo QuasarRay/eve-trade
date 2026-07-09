@@ -163,6 +163,13 @@ variable "external_database_url" {
   sensitive   = true
 }
 
+variable "market_database_url" {
+  description = "Read-only PostgreSQL URL for the Market service. Terraform stores it in the market-database Secret as MARKET_DATABASE_URL when set."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "database_name" {
   description = "PostgreSQL database name."
   type        = string

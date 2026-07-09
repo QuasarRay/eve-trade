@@ -23,6 +23,8 @@ const STEP_STATE_FAILED: &str = "FAILED";
 const ATTEMPT_STATE_IN_PROGRESS: &str = "IN_PROGRESS";
 const ATTEMPT_STATE_COMPLETED: &str = "COMPLETED";
 const ATTEMPT_STATE_FAILED: &str = "FAILED";
+const REQUEST_FINGERPRINT_FORMAT: &str = "trade-settlement.execute_settlement_batch.v1";
+const REQUEST_FINGERPRINT_PREFIX: &str = "trade-settlement.execute_settlement_batch.v1.sha256:";
 
 #[derive(Debug, Clone)]
 pub struct SettlementExecutor {
@@ -108,10 +110,8 @@ impl SettlementExecutor {
             ));
         }
 
-        let request_fingerprint = match command.request_fingerprint.clone() {
-            Some(fingerprint) => fingerprint,
-            None => build_request_fingerprint(&command)?,
-        };
+        let request_fingerprint = build_request_fingerprint(&command)?;
+        let client_fingerprint_assertion = command.request_fingerprint.clone();
         drop(_validation_guard);
 
         let mut tx = self.db.begin().await?;
@@ -132,6 +132,10 @@ impl SettlementExecutor {
                     command.idempotency_key
                 )));
             }
+            validate_request_fingerprint_assertion(
+                client_fingerprint_assertion.as_deref(),
+                &request_fingerprint,
+            )?;
 
             match existing.idempotency_state.as_str() {
                 IDEMPOTENCY_STATE_COMPLETED => {
@@ -168,6 +172,10 @@ impl SettlementExecutor {
                 }
             }
         } else {
+            validate_request_fingerprint_assertion(
+                client_fingerprint_assertion.as_deref(),
+                &request_fingerprint,
+            )?;
             insert_idempotency_record(
                 &mut tx,
                 &command.idempotency_key,
@@ -823,19 +831,37 @@ async fn fail_idempotency_record(
 
 #[derive(Serialize)]
 struct FingerprintMaterial<'a> {
+    fingerprint_format: &'static str,
     request_kind: &'static str,
     external_request_id: &'a Option<String>,
     caused_by_capsuleer_id: Option<i64>,
     operations: &'a [SettlementCommand],
 }
 
-fn build_request_fingerprint(command: &ExecuteBatchCommand) -> Result<String> {
-    checksum::hash_json(&FingerprintMaterial {
+pub(crate) fn build_request_fingerprint(command: &ExecuteBatchCommand) -> Result<String> {
+    let digest = checksum::hash_json(&FingerprintMaterial {
+        fingerprint_format: REQUEST_FINGERPRINT_FORMAT,
         request_kind: REQUEST_KIND,
         external_request_id: &command.external_request_id,
         caused_by_capsuleer_id: command.caused_by_capsuleer_id,
         operations: &command.operations,
-    })
+    })?;
+    Ok(format!("{REQUEST_FINGERPRINT_PREFIX}{digest}"))
+}
+
+fn validate_request_fingerprint_assertion(
+    assertion: Option<&str>,
+    request_fingerprint: &str,
+) -> Result<()> {
+    if let Some(assertion) = assertion {
+        if assertion != request_fingerprint {
+            return Err(SettlementError::InvalidArgument(
+                "request_fingerprint assertion does not match canonical settlement request"
+                    .to_string(),
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn kind_name_to_proto(kind_name: &str) -> SettlementOperationKind {
@@ -866,5 +892,884 @@ fn kind_name_to_proto(kind_name: &str) -> SettlementOperationKind {
             SettlementOperationKind::TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner
         }
         _ => SettlementOperationKind::Unspecified,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::commands::{
+        CreateNewTradeInstanceRow, ModifyTradeInstanceState, SettlementCommand,
+        TransferIskAmountFromWalletEscrowToWalletWithNewOwner,
+        TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner,
+        TransferIskAmountFromWalletToWalletEscrow,
+        TransferQuantityFromItemStackEscrowToItemStackWithNewOwner,
+        TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner,
+        TransferQuantityFromItemStackToItemStackEscrow,
+    };
+    use chrono::{Duration, Utc};
+    use sqlx::{postgres::PgPoolOptions, PgPool};
+    use std::sync::LazyLock;
+    use tokio::sync::{Mutex, MutexGuard};
+
+    const SELLER_ID: i64 = 1001;
+    const BUYER_ID: i64 = 2002;
+    const SOURCE_STACK_ID: &str = "11111111-1111-4111-8111-111111111111";
+    const BUYER_STACK_ID: &str = "33333333-3333-4333-8333-333333333333";
+    const OTHER_OWNER_STACK_ID: &str = "44444444-4444-4444-8444-444444444444";
+    const SELLER_WALLET_ID: &str = "00000000-0000-4000-8000-000000001001";
+    const BUYER_WALLET_ID: &str = "00000000-0000-4000-8000-000000002002";
+    const TEST_DATABASE_URL_ENV: &str = "EVE_TRADE_TEST_DATABASE_URL";
+    const TEST_MIGRATION: &str = include_str!("../migrations/0001_settlement_schema.sql");
+    const TEST_SEED: &str = include_str!("../seeds/local_dev_world.sql");
+    static TEST_DATABASE_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
+    struct TestDatabase {
+        pool: PgPool,
+        _guard: MutexGuard<'static, ()>,
+    }
+
+    fn uuid(value: u8) -> Uuid {
+        Uuid::parse_str(&format!("00000000-0000-4000-8000-{value:012}")).unwrap()
+    }
+
+    fn command(total_quantity: i64) -> ExecuteBatchCommand {
+        ExecuteBatchCommand {
+            idempotency_key: "key-1".to_string(),
+            request_fingerprint: None,
+            external_request_id: Some("external-1".to_string()),
+            caused_by_capsuleer_id: Some(1001),
+            operations: vec![SettlementCommand::CreateNewTradeInstanceRow(
+                CreateNewTradeInstanceRow {
+                    trade_instance_id: Some(uuid(1)),
+                    trade_kind: "SELL".to_string(),
+                    trade_state: "OPEN".to_string(),
+                    issuer_id: 1001,
+                    item_type_id: 34,
+                    station_id: 60003760,
+                    total_quantity,
+                    unit_price_isk: 25,
+                    expires_at: None,
+                },
+            )],
+            created_by_service: "market".to_string(),
+            request_id: Some(uuid(2)),
+        }
+    }
+
+    fn seeded_uuid(value: &str) -> Uuid {
+        Uuid::parse_str(value).unwrap()
+    }
+
+    fn create_trade_command(
+        idempotency_key: &str,
+        trade_instance_id: Uuid,
+        total_quantity: i64,
+    ) -> ExecuteBatchCommand {
+        ExecuteBatchCommand {
+            idempotency_key: idempotency_key.to_string(),
+            request_fingerprint: None,
+            external_request_id: Some(format!("external-{idempotency_key}")),
+            caused_by_capsuleer_id: Some(SELLER_ID),
+            operations: vec![SettlementCommand::CreateNewTradeInstanceRow(
+                CreateNewTradeInstanceRow {
+                    trade_instance_id: Some(trade_instance_id),
+                    trade_kind: "SELL".to_string(),
+                    trade_state: "OPEN".to_string(),
+                    issuer_id: SELLER_ID,
+                    item_type_id: 34,
+                    station_id: 60003760,
+                    total_quantity,
+                    unit_price_isk: 25,
+                    expires_at: Some(Utc::now() + Duration::hours(1)),
+                },
+            )],
+            created_by_service: "market".to_string(),
+            request_id: Some(Uuid::new_v4()),
+        }
+    }
+
+    fn issue_trade_command(
+        idempotency_key: &str,
+        trade_instance_id: Uuid,
+        source_item_stack_id: Uuid,
+        item_stack_escrow_id: Uuid,
+        quantity: i64,
+    ) -> ExecuteBatchCommand {
+        ExecuteBatchCommand {
+            idempotency_key: idempotency_key.to_string(),
+            request_fingerprint: None,
+            external_request_id: Some(format!("external-{idempotency_key}")),
+            caused_by_capsuleer_id: Some(SELLER_ID),
+            operations: vec![
+                SettlementCommand::CreateNewTradeInstanceRow(CreateNewTradeInstanceRow {
+                    trade_instance_id: Some(trade_instance_id),
+                    trade_kind: "SELL".to_string(),
+                    trade_state: "OPEN".to_string(),
+                    issuer_id: SELLER_ID,
+                    item_type_id: 34,
+                    station_id: 60003760,
+                    total_quantity: quantity,
+                    unit_price_isk: 25,
+                    expires_at: Some(Utc::now() + Duration::hours(1)),
+                }),
+                SettlementCommand::TransferQuantityFromItemStackToItemStackEscrow(
+                    TransferQuantityFromItemStackToItemStackEscrow {
+                        source_item_stack_id,
+                        item_stack_escrow_id: Some(item_stack_escrow_id),
+                        trade_instance_id,
+                        quantity,
+                    },
+                ),
+            ],
+            created_by_service: "market".to_string(),
+            request_id: Some(Uuid::new_v4()),
+        }
+    }
+
+    fn accept_trade_command(
+        idempotency_key: &str,
+        trade_instance_id: Uuid,
+        item_stack_escrow_id: Uuid,
+        wallet_escrow_id: Uuid,
+        quantity: i64,
+    ) -> ExecuteBatchCommand {
+        let isk_amount = quantity * 25;
+        ExecuteBatchCommand {
+            idempotency_key: idempotency_key.to_string(),
+            request_fingerprint: None,
+            external_request_id: Some(format!("external-{idempotency_key}")),
+            caused_by_capsuleer_id: Some(BUYER_ID),
+            operations: vec![
+                SettlementCommand::TransferIskAmountFromWalletToWalletEscrow(
+                    TransferIskAmountFromWalletToWalletEscrow {
+                        source_wallet_id: seeded_uuid(BUYER_WALLET_ID),
+                        wallet_escrow_id: Some(wallet_escrow_id),
+                        trade_instance_id,
+                        isk_amount,
+                    },
+                ),
+                SettlementCommand::TransferQuantityFromItemStackEscrowToItemStackWithNewOwner(
+                    TransferQuantityFromItemStackEscrowToItemStackWithNewOwner {
+                        item_stack_escrow_id,
+                        destination_item_stack_id: seeded_uuid(BUYER_STACK_ID),
+                        quantity,
+                    },
+                ),
+                SettlementCommand::TransferIskAmountFromWalletEscrowToWalletWithNewOwner(
+                    TransferIskAmountFromWalletEscrowToWalletWithNewOwner {
+                        wallet_escrow_id,
+                        destination_wallet_id: seeded_uuid(SELLER_WALLET_ID),
+                        isk_amount,
+                    },
+                ),
+                SettlementCommand::ModifyTradeInstanceState(ModifyTradeInstanceState {
+                    trade_instance_id,
+                    to_trade_state: "COMPLETED".to_string(),
+                    trade_state_change_kind: "ACCEPTED_BY_BUYER".to_string(),
+                    changed_by_service: "market".to_string(),
+                }),
+            ],
+            created_by_service: "market".to_string(),
+            request_id: Some(Uuid::new_v4()),
+        }
+    }
+
+    fn fund_wallet_escrow_command(
+        idempotency_key: &str,
+        trade_instance_id: Uuid,
+        wallet_escrow_id: Uuid,
+        quantity: i64,
+    ) -> ExecuteBatchCommand {
+        ExecuteBatchCommand {
+            idempotency_key: idempotency_key.to_string(),
+            request_fingerprint: None,
+            external_request_id: Some(format!("external-{idempotency_key}")),
+            caused_by_capsuleer_id: Some(BUYER_ID),
+            operations: vec![
+                SettlementCommand::TransferIskAmountFromWalletToWalletEscrow(
+                    TransferIskAmountFromWalletToWalletEscrow {
+                        source_wallet_id: seeded_uuid(BUYER_WALLET_ID),
+                        wallet_escrow_id: Some(wallet_escrow_id),
+                        trade_instance_id,
+                        isk_amount: quantity * 25,
+                    },
+                ),
+            ],
+            created_by_service: "market".to_string(),
+            request_id: Some(Uuid::new_v4()),
+        }
+    }
+
+    fn release_wallet_escrow_to_new_owner_command(
+        idempotency_key: &str,
+        wallet_escrow_id: Uuid,
+        quantity: i64,
+    ) -> ExecuteBatchCommand {
+        ExecuteBatchCommand {
+            idempotency_key: idempotency_key.to_string(),
+            request_fingerprint: None,
+            external_request_id: Some(format!("external-{idempotency_key}")),
+            caused_by_capsuleer_id: Some(BUYER_ID),
+            operations: vec![
+                SettlementCommand::TransferIskAmountFromWalletEscrowToWalletWithNewOwner(
+                    TransferIskAmountFromWalletEscrowToWalletWithNewOwner {
+                        wallet_escrow_id,
+                        destination_wallet_id: seeded_uuid(SELLER_WALLET_ID),
+                        isk_amount: quantity * 25,
+                    },
+                ),
+            ],
+            created_by_service: "market".to_string(),
+            request_id: Some(Uuid::new_v4()),
+        }
+    }
+
+    fn refund_wallet_escrow_to_previous_owner_command(
+        idempotency_key: &str,
+        wallet_escrow_id: Uuid,
+        quantity: i64,
+    ) -> ExecuteBatchCommand {
+        ExecuteBatchCommand {
+            idempotency_key: idempotency_key.to_string(),
+            request_fingerprint: None,
+            external_request_id: Some(format!("external-{idempotency_key}")),
+            caused_by_capsuleer_id: Some(BUYER_ID),
+            operations: vec![
+                SettlementCommand::TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner(
+                    TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner {
+                        wallet_escrow_id,
+                        destination_wallet_id: seeded_uuid(BUYER_WALLET_ID),
+                        isk_amount: quantity * 25,
+                    },
+                ),
+            ],
+            created_by_service: "market".to_string(),
+            request_id: Some(Uuid::new_v4()),
+        }
+    }
+
+    fn cancel_cleanup_command(
+        idempotency_key: &str,
+        trade_instance_id: Uuid,
+        item_stack_escrow_id: Uuid,
+        quantity: i64,
+    ) -> ExecuteBatchCommand {
+        ExecuteBatchCommand {
+            idempotency_key: idempotency_key.to_string(),
+            request_fingerprint: None,
+            external_request_id: Some(format!("external-{idempotency_key}")),
+            caused_by_capsuleer_id: Some(SELLER_ID),
+            operations: vec![
+                SettlementCommand::ModifyTradeInstanceState(ModifyTradeInstanceState {
+                    trade_instance_id,
+                    to_trade_state: "CANCELLED".to_string(),
+                    trade_state_change_kind: "CANCELLED_BY_ISSUER".to_string(),
+                    changed_by_service: "market".to_string(),
+                }),
+                SettlementCommand::TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner(
+                    TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner {
+                        item_stack_escrow_id,
+                        destination_item_stack_id: seeded_uuid(SOURCE_STACK_ID),
+                        quantity,
+                    },
+                ),
+            ],
+            created_by_service: "market".to_string(),
+            request_id: Some(Uuid::new_v4()),
+        }
+    }
+
+    async fn test_database() -> Option<TestDatabase> {
+        let database_url = match std::env::var(TEST_DATABASE_URL_ENV) {
+            Ok(value) if !value.trim().is_empty() => value,
+            _ => {
+                eprintln!("skipping database-backed settlement test; set {TEST_DATABASE_URL_ENV}");
+                return None;
+            }
+        };
+
+        let guard = TEST_DATABASE_LOCK.lock().await;
+        let pool = PgPoolOptions::new()
+            .max_connections(1)
+            .connect(&database_url)
+            .await
+            .expect("connect to settlement test database");
+        sqlx::raw_sql(TEST_MIGRATION)
+            .execute(&pool)
+            .await
+            .expect("apply settlement migration");
+        sqlx::query(
+            r#"
+            TRUNCATE TABLE
+                trade_state_change,
+                wallet_ledger,
+                item_stack_ledger,
+                wallet_escrow,
+                item_stack_escrow,
+                trade_instance,
+                wallet,
+                item_stack,
+                settlement_step,
+                settlement_batch,
+                request_attempt,
+                idempotency_record,
+                item_type,
+                station,
+                region,
+                capsuleer
+            RESTART IDENTITY CASCADE
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .expect("reset settlement test database");
+        sqlx::raw_sql(TEST_SEED)
+            .execute(&pool)
+            .await
+            .expect("seed settlement test database");
+
+        Some(TestDatabase {
+            pool,
+            _guard: guard,
+        })
+    }
+
+    async fn scalar_i64(pool: &PgPool, sql: &str, id: Uuid) -> i64 {
+        sqlx::query_scalar::<_, i64>(sql)
+            .bind(id)
+            .fetch_one(pool)
+            .await
+            .unwrap()
+    }
+
+    async fn scalar_bool(pool: &PgPool, sql: &str, id: Uuid) -> bool {
+        sqlx::query_scalar::<_, bool>(sql)
+            .bind(id)
+            .fetch_one(pool)
+            .await
+            .unwrap()
+    }
+
+    #[test]
+    fn server_request_fingerprint_is_versioned_and_stable() {
+        let command = command(4);
+        let first = build_request_fingerprint(&command).unwrap();
+        let second = build_request_fingerprint(&command).unwrap();
+
+        assert_eq!(first, second);
+        assert!(first.starts_with(REQUEST_FINGERPRINT_PREFIX));
+    }
+
+    #[test]
+    fn server_request_fingerprint_changes_with_operation_material() {
+        let first = build_request_fingerprint(&command(4)).unwrap();
+        let second = build_request_fingerprint(&command(5)).unwrap();
+
+        assert_ne!(first, second);
+    }
+
+    #[test]
+    fn client_fingerprint_assertion_must_match_server_fingerprint() {
+        let fingerprint = build_request_fingerprint(&command(4)).unwrap();
+
+        validate_request_fingerprint_assertion(Some(&fingerprint), &fingerprint).unwrap();
+        let error = validate_request_fingerprint_assertion(
+            Some("market.issue_trade_instance.sha256:legacy"),
+            &fingerprint,
+        )
+        .unwrap_err();
+
+        assert_eq!(error.code(), "INVALID_ARGUMENT");
+        assert!(error.to_string().contains("request_fingerprint"));
+    }
+
+    #[tokio::test]
+    async fn identical_retry_replays_existing_batch_without_duplicate_effects() {
+        let Some(database) = test_database().await else {
+            return;
+        };
+        let pool = database.pool.clone();
+        let executor = SettlementExecutor::new(pool.clone());
+        let trade_instance_id = Uuid::new_v4();
+        let item_stack_escrow_id = Uuid::new_v4();
+        let command = issue_trade_command(
+            "db-identical-retry",
+            trade_instance_id,
+            seeded_uuid(SOURCE_STACK_ID),
+            item_stack_escrow_id,
+            2,
+        );
+
+        let first = executor.execute_batch(command.clone()).await.unwrap();
+        let second = executor.execute_batch(command).await.unwrap();
+
+        assert!(!first.idempotent_replay);
+        assert!(second.idempotent_replay);
+        assert_eq!(second.settlement_batch_id, first.settlement_batch_id);
+        assert_eq!(
+            scalar_i64(
+                &pool,
+                "SELECT COUNT(*)::BIGINT FROM trade_instance WHERE trade_instance_id = $1",
+                trade_instance_id,
+            )
+            .await,
+            1
+        );
+        assert_eq!(
+            scalar_i64(
+                &pool,
+                "SELECT quantity FROM item_stack_escrow WHERE item_stack_escrow_id = $1",
+                item_stack_escrow_id,
+            )
+            .await,
+            2
+        );
+        let batch_count = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*)::BIGINT FROM settlement_batch WHERE idempotency_key = $1",
+        )
+        .bind("db-identical-retry")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(batch_count, 1);
+    }
+
+    #[tokio::test]
+    async fn same_key_different_body_conflicts_even_with_forged_repeated_client_fingerprint() {
+        let Some(database) = test_database().await else {
+            return;
+        };
+        let pool = database.pool.clone();
+        let executor = SettlementExecutor::new(pool.clone());
+        let key = "db-forged-fingerprint-conflict";
+        let mut first = issue_trade_command(
+            key,
+            Uuid::new_v4(),
+            seeded_uuid(SOURCE_STACK_ID),
+            Uuid::new_v4(),
+            2,
+        );
+        let forged_client_fingerprint = build_request_fingerprint(&first).unwrap();
+        first.request_fingerprint = Some(forged_client_fingerprint.clone());
+        executor.execute_batch(first).await.unwrap();
+
+        let mut second = issue_trade_command(
+            key,
+            Uuid::new_v4(),
+            seeded_uuid(SOURCE_STACK_ID),
+            Uuid::new_v4(),
+            3,
+        );
+        second.request_fingerprint = Some(forged_client_fingerprint);
+
+        let error = executor.execute_batch(second).await.unwrap_err();
+        assert_eq!(error.code(), "CONFLICT");
+        assert!(error.to_string().contains("different request fingerprint"));
+    }
+
+    #[tokio::test]
+    async fn client_fingerprint_assertion_mismatch_is_rejected_before_persistence() {
+        let Some(database) = test_database().await else {
+            return;
+        };
+        let pool = database.pool.clone();
+        let executor = SettlementExecutor::new(pool.clone());
+        let key = "db-client-assertion-mismatch";
+        let mut command = create_trade_command(key, Uuid::new_v4(), 2);
+        command.request_fingerprint =
+            Some("market.issue_trade_instance.sha256:caller-controlled".to_string());
+
+        let error = executor.execute_batch(command).await.unwrap_err();
+
+        assert_eq!(error.code(), "INVALID_ARGUMENT");
+        assert!(error.to_string().contains("request_fingerprint"));
+        let idempotency_count = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*)::BIGINT FROM idempotency_record WHERE idempotency_key = $1",
+        )
+        .bind(key)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(idempotency_count, 0);
+    }
+
+    #[tokio::test]
+    async fn source_stack_owner_must_match_authoritative_trade_issuer() {
+        let Some(database) = test_database().await else {
+            return;
+        };
+        let pool = database.pool.clone();
+        let executor = SettlementExecutor::new(pool.clone());
+        let valid_escrow_id = Uuid::new_v4();
+
+        executor
+            .execute_batch(issue_trade_command(
+                "db-valid-source-owner",
+                Uuid::new_v4(),
+                seeded_uuid(SOURCE_STACK_ID),
+                valid_escrow_id,
+                1,
+            ))
+            .await
+            .unwrap();
+        assert_eq!(
+            scalar_i64(
+                &pool,
+                "SELECT quantity FROM item_stack_escrow WHERE item_stack_escrow_id = $1",
+                valid_escrow_id,
+            )
+            .await,
+            1
+        );
+
+        let other_stack_id = seeded_uuid(OTHER_OWNER_STACK_ID);
+        let other_quantity_before = scalar_i64(
+            &pool,
+            "SELECT quantity FROM item_stack WHERE item_stack_id = $1",
+            other_stack_id,
+        )
+        .await;
+        let other_ledger_count_before = scalar_i64(
+            &pool,
+            "SELECT COUNT(*)::BIGINT FROM item_stack_ledger WHERE item_stack_id = $1",
+            other_stack_id,
+        )
+        .await;
+        let rejected_escrow_id = Uuid::new_v4();
+        let error = executor
+            .execute_batch(issue_trade_command(
+                "db-cross-source-owner",
+                Uuid::new_v4(),
+                other_stack_id,
+                rejected_escrow_id,
+                1,
+            ))
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.code(), "FAILED_PRECONDITION");
+        assert!(error.to_string().contains("owner"));
+        assert_eq!(
+            scalar_i64(
+                &pool,
+                "SELECT quantity FROM item_stack WHERE item_stack_id = $1",
+                other_stack_id
+            )
+            .await,
+            other_quantity_before
+        );
+        assert_eq!(
+            scalar_i64(
+                &pool,
+                "SELECT COUNT(*)::BIGINT FROM item_stack_ledger WHERE item_stack_id = $1",
+                other_stack_id,
+            )
+            .await,
+            other_ledger_count_before
+        );
+        assert!(
+            !scalar_bool(
+                &pool,
+                "SELECT EXISTS (SELECT 1 FROM item_stack_escrow WHERE item_stack_escrow_id = $1)",
+                rejected_escrow_id,
+            )
+            .await
+        );
+    }
+
+    #[tokio::test]
+    async fn live_trade_acceptance_completes_when_executed_before_expiry() {
+        let Some(database) = test_database().await else {
+            return;
+        };
+        let pool = database.pool.clone();
+        let executor = SettlementExecutor::new(pool.clone());
+        let trade_instance_id = Uuid::new_v4();
+        let item_stack_escrow_id = Uuid::new_v4();
+        let wallet_escrow_id = Uuid::new_v4();
+
+        executor
+            .execute_batch(issue_trade_command(
+                "db-live-issue",
+                trade_instance_id,
+                seeded_uuid(SOURCE_STACK_ID),
+                item_stack_escrow_id,
+                2,
+            ))
+            .await
+            .unwrap();
+        executor
+            .execute_batch(accept_trade_command(
+                "db-live-accept",
+                trade_instance_id,
+                item_stack_escrow_id,
+                wallet_escrow_id,
+                2,
+            ))
+            .await
+            .unwrap();
+
+        let trade_state = sqlx::query_scalar::<_, String>(
+            "SELECT trade_state FROM trade_instance WHERE trade_instance_id = $1",
+        )
+        .bind(trade_instance_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(trade_state, "COMPLETED");
+        assert!(
+            scalar_bool(
+                &pool,
+                "SELECT is_released FROM item_stack_escrow WHERE item_stack_escrow_id = $1",
+                item_stack_escrow_id,
+            )
+            .await
+        );
+        assert!(
+            scalar_bool(
+                &pool,
+                "SELECT is_released FROM wallet_escrow WHERE wallet_escrow_id = $1",
+                wallet_escrow_id,
+            )
+            .await
+        );
+    }
+
+    #[tokio::test]
+    async fn expired_trade_rejects_new_owner_wallet_release_but_allows_refund_cleanup() {
+        let Some(database) = test_database().await else {
+            return;
+        };
+        let pool = database.pool.clone();
+        let executor = SettlementExecutor::new(pool.clone());
+        let trade_instance_id = Uuid::new_v4();
+        let item_stack_escrow_id = Uuid::new_v4();
+        let wallet_escrow_id = Uuid::new_v4();
+
+        executor
+            .execute_batch(issue_trade_command(
+                "db-wallet-release-expiring-issue",
+                trade_instance_id,
+                seeded_uuid(SOURCE_STACK_ID),
+                item_stack_escrow_id,
+                2,
+            ))
+            .await
+            .unwrap();
+        executor
+            .execute_batch(fund_wallet_escrow_command(
+                "db-wallet-release-funded-before-expiry",
+                trade_instance_id,
+                wallet_escrow_id,
+                2,
+            ))
+            .await
+            .unwrap();
+
+        let seller_wallet_before = scalar_i64(
+            &pool,
+            "SELECT isk_amount FROM wallet WHERE wallet_id = $1",
+            seeded_uuid(SELLER_WALLET_ID),
+        )
+        .await;
+        let buyer_wallet_after_fund = scalar_i64(
+            &pool,
+            "SELECT isk_amount FROM wallet WHERE wallet_id = $1",
+            seeded_uuid(BUYER_WALLET_ID),
+        )
+        .await;
+        sqlx::query(
+            "UPDATE trade_instance SET expires_at = clock_timestamp() - INTERVAL '1 second' WHERE trade_instance_id = $1",
+        )
+        .bind(trade_instance_id)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        let error = executor
+            .execute_batch(release_wallet_escrow_to_new_owner_command(
+                "db-new-owner-wallet-release-after-expiry",
+                wallet_escrow_id,
+                2,
+            ))
+            .await
+            .unwrap_err();
+
+        assert_eq!(error.code(), "FAILED_PRECONDITION");
+        assert!(error.to_string().contains("expired"));
+        assert_eq!(
+            scalar_i64(
+                &pool,
+                "SELECT isk_amount FROM wallet WHERE wallet_id = $1",
+                seeded_uuid(SELLER_WALLET_ID),
+            )
+            .await,
+            seller_wallet_before
+        );
+        assert!(
+            !scalar_bool(
+                &pool,
+                "SELECT is_released FROM wallet_escrow WHERE wallet_escrow_id = $1",
+                wallet_escrow_id,
+            )
+            .await
+        );
+
+        executor
+            .execute_batch(refund_wallet_escrow_to_previous_owner_command(
+                "db-refund-wallet-escrow-after-expiry",
+                wallet_escrow_id,
+                2,
+            ))
+            .await
+            .unwrap();
+        assert_eq!(
+            scalar_i64(
+                &pool,
+                "SELECT isk_amount FROM wallet WHERE wallet_id = $1",
+                seeded_uuid(BUYER_WALLET_ID),
+            )
+            .await,
+            buyer_wallet_after_fund + 50
+        );
+        assert!(
+            scalar_bool(
+                &pool,
+                "SELECT is_released FROM wallet_escrow WHERE wallet_escrow_id = $1",
+                wallet_escrow_id,
+            )
+            .await
+        );
+    }
+
+    #[tokio::test]
+    async fn expired_trade_rejects_live_acceptance_but_allows_previous_owner_cleanup() {
+        let Some(database) = test_database().await else {
+            return;
+        };
+        let pool = database.pool.clone();
+        let executor = SettlementExecutor::new(pool.clone());
+        let trade_instance_id = Uuid::new_v4();
+        let item_stack_escrow_id = Uuid::new_v4();
+        let wallet_escrow_id = Uuid::new_v4();
+
+        executor
+            .execute_batch(issue_trade_command(
+                "db-expiring-issue",
+                trade_instance_id,
+                seeded_uuid(SOURCE_STACK_ID),
+                item_stack_escrow_id,
+                2,
+            ))
+            .await
+            .unwrap();
+        let accept_command = accept_trade_command(
+            "db-accept-after-expiry",
+            trade_instance_id,
+            item_stack_escrow_id,
+            wallet_escrow_id,
+            2,
+        );
+        let buyer_wallet_before = scalar_i64(
+            &pool,
+            "SELECT isk_amount FROM wallet WHERE wallet_id = $1",
+            seeded_uuid(BUYER_WALLET_ID),
+        )
+        .await;
+        let source_quantity_after_issue = scalar_i64(
+            &pool,
+            "SELECT quantity FROM item_stack WHERE item_stack_id = $1",
+            seeded_uuid(SOURCE_STACK_ID),
+        )
+        .await;
+        let escrow_quantity_after_issue = scalar_i64(
+            &pool,
+            "SELECT quantity FROM item_stack_escrow WHERE item_stack_escrow_id = $1",
+            item_stack_escrow_id,
+        )
+        .await;
+        sqlx::query(
+            "UPDATE trade_instance SET expires_at = clock_timestamp() - INTERVAL '1 second' WHERE trade_instance_id = $1",
+        )
+        .bind(trade_instance_id)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        let error = executor.execute_batch(accept_command).await.unwrap_err();
+
+        assert_eq!(error.code(), "FAILED_PRECONDITION");
+        assert!(error.to_string().contains("expired"));
+        assert_eq!(
+            scalar_i64(
+                &pool,
+                "SELECT isk_amount FROM wallet WHERE wallet_id = $1",
+                seeded_uuid(BUYER_WALLET_ID),
+            )
+            .await,
+            buyer_wallet_before
+        );
+        assert_eq!(
+            scalar_i64(
+                &pool,
+                "SELECT quantity FROM item_stack_escrow WHERE item_stack_escrow_id = $1",
+                item_stack_escrow_id,
+            )
+            .await,
+            escrow_quantity_after_issue
+        );
+        assert_eq!(
+            scalar_i64(
+                &pool,
+                "SELECT quantity FROM item_stack WHERE item_stack_id = $1",
+                seeded_uuid(SOURCE_STACK_ID)
+            )
+            .await,
+            source_quantity_after_issue
+        );
+        assert!(
+            !scalar_bool(
+                &pool,
+                "SELECT EXISTS (SELECT 1 FROM wallet_escrow WHERE wallet_escrow_id = $1)",
+                wallet_escrow_id,
+            )
+            .await
+        );
+
+        executor
+            .execute_batch(cancel_cleanup_command(
+                "db-expired-cleanup",
+                trade_instance_id,
+                item_stack_escrow_id,
+                2,
+            ))
+            .await
+            .unwrap();
+        let trade_state = sqlx::query_scalar::<_, String>(
+            "SELECT trade_state FROM trade_instance WHERE trade_instance_id = $1",
+        )
+        .bind(trade_instance_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(trade_state, "CANCELLED");
+        assert!(
+            scalar_bool(
+                &pool,
+                "SELECT is_released FROM item_stack_escrow WHERE item_stack_escrow_id = $1",
+                item_stack_escrow_id,
+            )
+            .await
+        );
+        assert_eq!(
+            scalar_i64(
+                &pool,
+                "SELECT quantity FROM item_stack WHERE item_stack_id = $1",
+                seeded_uuid(SOURCE_STACK_ID)
+            )
+            .await,
+            100
+        );
     }
 }

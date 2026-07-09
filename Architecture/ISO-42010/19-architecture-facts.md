@@ -93,7 +93,8 @@ reconciliation remain the documented recovery path.
 
 | Secret | Consumers | Current source | Documented owner | Rotation status | Current status |
 | --- | --- | --- | --- | --- | --- |
-| `DATABASE_URL` | Market, trade-settlement, migration job | Kubernetes Secret or local Encore/Kubernetes env | SRE/database owner | Rotation policy not defined in repo | Gap recorded |
+| `MARKET_DATABASE_URL` | Market | `market-database` Kubernetes Secret or local Encore/Kubernetes env | SRE/database owner | Rotation policy not defined in repo | Must be PostgreSQL read-only |
+| `DATABASE_URL` | trade-settlement, migration job | Separate `trade-settlement-database` and `trade-settlement-migration-database` Kubernetes Secrets or local Encore/Kubernetes env | SRE/database owner | Rotation policy not defined in repo | Writer and migration credentials must not be injected into Market |
 | Encore Pub/Sub infrastructure credentials/configuration | Encore Pub/Sub, Market, settlement worker | Kubernetes Secret or local Encore/Kubernetes env | SRE/platform owner | Per-service rotation policy not defined in repo | Gap recorded |
 | `GAME_PACKET_HMAC_SECRET` | Encore gateway UDP edge | Production secret manager or Kubernetes Secret | Security/platform owner | Rotation policy not defined in repo | Gap recorded |
 | Observability API keys | OTEL/Honeycomb/Sentry components | Out-of-band secret | Observability owner | Rotation policy not defined in repo | Gap recorded |

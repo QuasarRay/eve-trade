@@ -45,7 +45,7 @@ func TestIssueTradeInstanceBuildsTradeAndItemEscrowOperations(t *testing.T) {
 	}
 }
 
-func TestSettleTradeInstanceCarriesRequestFingerprint(t *testing.T) {
+func TestSettleTradeInstanceDoesNotSendLegacyMarketFingerprintToSettlement(t *testing.T) {
 	request, err := SettleTradeInstance(SettlementPlan{
 		IdempotencyKey:      "issue-1",
 		RequestFingerprint:  "market.issue_trade_instance.sha256:fingerprint",
@@ -70,8 +70,8 @@ func TestSettleTradeInstanceCarriesRequestFingerprint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SettleTradeInstance returned error: %v", err)
 	}
-	if request.RequestFingerprint != "market.issue_trade_instance.sha256:fingerprint" {
-		t.Fatalf("request fingerprint = %q, want plan fingerprint", request.RequestFingerprint)
+	if request.RequestFingerprint != "" {
+		t.Fatalf("request fingerprint = %q, want empty server-computed fingerprint assertion", request.RequestFingerprint)
 	}
 }
 
