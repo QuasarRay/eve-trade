@@ -59,7 +59,10 @@ jobs:
           cache: true
       - name: Install Encore CLI
         run: |
-          curl -L https://encore.dev/install.sh | bash -s -- --version "$ENCORE_CLI_VERSION"
+          curl -fsSL https://encore.dev/install.sh | bash -s -- --version "$ENCORE_CLI_VERSION" || {
+            mkdir -p "$HOME/.encore/bin"
+            GOBIN="$HOME/.encore/bin" go install "encr.dev/cli/cmd/encore@v$ENCORE_CLI_VERSION"
+          }
           echo "$HOME/.encore/bin" >> "$GITHUB_PATH"
       - run: encore version
       - name: Check Go module metadata

@@ -16,11 +16,6 @@ terraform {
       version               = "~> 2.17"
       configuration_aliases = [helm.addons]
     }
-    kubectl = {
-      source                = "gavinbunney/kubectl"
-      version               = "~> 1.19.0"
-      configuration_aliases = [kubectl.addons]
-    }
     null = {
       source  = "hashicorp/null"
       version = "~> 3.2"

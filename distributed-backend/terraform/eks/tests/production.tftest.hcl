@@ -91,7 +91,6 @@ mock_provider "aws" {
 mock_provider "kubernetes" {}
 mock_provider "kubernetes" { alias = "cluster" }
 mock_provider "helm" {}
-mock_provider "kubectl" {}
 mock_provider "null" {}
 mock_provider "random" {}
 mock_provider "time" {}

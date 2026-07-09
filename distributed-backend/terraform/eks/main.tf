@@ -29,7 +29,6 @@ module "_app_eks" {
     kubernetes.cluster = kubernetes.cluster
     kubernetes.addons  = kubernetes
     helm.addons        = helm
-    kubectl.addons     = kubectl
   }
 
   environment_name               = var.environment_name
