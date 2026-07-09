@@ -192,12 +192,7 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
         storage.write_text("observability-error.txt", redact_text(traceback.format_exc()))
         final_status = "ANALYSIS_FAILED"
         failed = next((result for result in results if not result.succeeded), None)
-        if failed:
-            exit_code = failed.exit_code
-        elif args.strict or not results:
-            exit_code = 2 if args.strict else 1
-        else:
-            exit_code = 0
+        exit_code = failed.exit_code if failed else 2
         if args.strict:
             raise
     finally:
@@ -215,6 +210,9 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
             if diagnosis:
                 generate_run_report(context, diagnosis, provenance=final_provenance, storage=storage)
         except Exception:
+            storage.write_text("observability-finalization-error.txt", redact_text(traceback.format_exc()))
+            if exit_code == 0:
+                exit_code = 2
             if args.strict:
                 raise
         sentry.flush()

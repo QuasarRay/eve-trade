@@ -11,7 +11,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .provenance import collect_git_state, collect_run_provenance, collect_tool_versions as collect_provenance_tool_versions, utc_now
+from .provenance import (
+    build_provenance_envelope,
+    collect_git_state,
+    collect_run_provenance,
+    collect_tool_versions as collect_provenance_tool_versions,
+    source_stability_from_provenance,
+    split_provenance_envelope,
+    utc_now,
+)
 from .redaction import redact_mapping
 from .run_index import record_from_provenance, update_run_index
 from .storage import RunStorage
@@ -39,6 +47,9 @@ class RunContext:
     status: str = "IN_PROGRESS"
     finished_at: str = ""
     provenance: dict[str, Any] = field(default_factory=dict)
+    start_provenance: dict[str, Any] = field(default_factory=dict)
+    finish_provenance: dict[str, Any] = field(default_factory=dict)
+    source_stability: str = "UNKNOWN"
 
     @property
     def is_github_actions(self) -> bool:
@@ -67,7 +78,13 @@ def create_run_context(repo_root: Path | None = None, *, run_id: str | None = No
     resolved_id = run_id or _derive_run_id(now, git.get("sha", "unknown"))
     run_dir = root / ".o11y" / "runs" / resolved_id
     started_at = now.isoformat()
-    provenance = collect_run_provenance(root, run_id=resolved_id, run_started_at=started_at)
+    start_provenance = collect_run_provenance(root, run_id=resolved_id, run_started_at=started_at)
+    provenance = build_provenance_envelope(
+        run_id=resolved_id,
+        start_provenance=start_provenance,
+        source_stability="UNKNOWN",
+        run_status="IN_PROGRESS",
+    )
     context = RunContext(
         run_id=resolved_id,
         run_dir=run_dir,
@@ -80,20 +97,24 @@ def create_run_context(repo_root: Path | None = None, *, run_id: str | None = No
         github_job=os.getenv("GITHUB_JOB", ""),
         github_sha=os.getenv("GITHUB_SHA", "") or git.get("sha", ""),
         github_ref=os.getenv("GITHUB_REF", ""),
-        full_head_sha=provenance["full_head_sha"],
-        short_head_sha=provenance["short_head_sha"],
-        commit_subject=provenance["commit_subject"],
-        branch=provenance["branch"],
-        worktree_dirty=bool(provenance["worktree_dirty"]),
-        worktree_diff_fingerprint_if_dirty=provenance["worktree_diff_fingerprint_if_dirty"],
+        full_head_sha=start_provenance["full_head_sha"],
+        short_head_sha=start_provenance["short_head_sha"],
+        commit_subject=start_provenance["commit_subject"],
+        branch=start_provenance["branch"],
+        worktree_dirty=bool(start_provenance["worktree_dirty"]),
+        worktree_diff_fingerprint_if_dirty=start_provenance["worktree_diff_fingerprint_if_dirty"],
         status="IN_PROGRESS",
         provenance=provenance,
+        start_provenance=start_provenance,
+        finish_provenance={},
+        source_stability="UNKNOWN",
     )
     storage = RunStorage(run_dir)
     storage.write_json("run-context.json", context.to_dict())
     storage.write_json("git.json", git)
     storage.write_json("tool-versions.json", collect_tool_versions(root))
     storage.write_json("env-redacted.json", redact_mapping(dict(os.environ)))
+    storage.write_json("start-provenance.json", start_provenance)
     storage.write_json("provenance.json", provenance)
     storage.write_json("run-status.json", {"run_id": resolved_id, "status": "IN_PROGRESS", "updated_at": utc_now()})
     update_run_index(root, record_from_provenance(root, provenance))
@@ -126,6 +147,9 @@ def load_run_context(run_dir: Path) -> RunContext:
         status=data.get("status", "UNKNOWN"),
         finished_at=data.get("finished_at", ""),
         provenance=data.get("provenance", {}),
+        start_provenance=data.get("start_provenance", {}),
+        finish_provenance=data.get("finish_provenance", {}),
+        source_stability=data.get("source_stability", "UNKNOWN"),
     )
 
 
@@ -169,7 +193,7 @@ def finalize_run_context(
     storage = storage or RunStorage(context.run_dir)
     final_status = status
     finished_at = utc_now()
-    provenance = collect_run_provenance(
+    finish_provenance = collect_run_provenance(
         context.repo_root,
         run_id=context.run_id,
         run_started_at=context.started_at,
@@ -177,10 +201,23 @@ def finalize_run_context(
         status=final_status,
         commands_executed=commands_executed or [],
     )
-    source_changed = _source_changed(context.provenance or {}, provenance)
+    start_provenance, _previous_finish, _previous_stability, _previous_status = split_provenance_envelope(context.provenance or {})
+    if not start_provenance:
+        start_provenance = context.start_provenance or {}
+    source_stability = source_stability_from_provenance(start_provenance, finish_provenance)
+    source_changed = source_stability == "CHANGED"
     if source_changed and final_status == "COMPLETE":
         final_status = "SOURCE_CHANGED_DURING_RUN"
-        provenance["run_status"] = final_status
+        finish_provenance["run_status"] = final_status
+    else:
+        finish_provenance["run_status"] = final_status
+    provenance = build_provenance_envelope(
+        run_id=context.run_id,
+        start_provenance=start_provenance,
+        finish_provenance=finish_provenance,
+        source_stability=source_stability,
+        run_status=final_status,
+    )
     provenance["source_changed_during_run"] = source_changed
     context_value = context.to_dict()
     context_value.update(
@@ -188,15 +225,20 @@ def finalize_run_context(
             "status": final_status,
             "finished_at": finished_at,
             "provenance": provenance,
-            "full_head_sha": provenance["full_head_sha"],
-            "short_head_sha": provenance["short_head_sha"],
-            "commit_subject": provenance["commit_subject"],
-            "branch": provenance["branch"],
-            "worktree_dirty": provenance["worktree_dirty"],
-            "worktree_diff_fingerprint_if_dirty": provenance["worktree_diff_fingerprint_if_dirty"],
+            "start_provenance": start_provenance,
+            "finish_provenance": finish_provenance,
+            "source_stability": source_stability,
+            "full_head_sha": start_provenance.get("full_head_sha", ""),
+            "short_head_sha": start_provenance.get("short_head_sha", ""),
+            "commit_subject": start_provenance.get("commit_subject", ""),
+            "branch": start_provenance.get("branch", ""),
+            "worktree_dirty": start_provenance.get("worktree_dirty", False),
+            "worktree_diff_fingerprint_if_dirty": start_provenance.get("worktree_diff_fingerprint_if_dirty", ""),
         }
     )
     storage.write_json("run-context.json", context_value)
+    storage.write_json("start-provenance.json", start_provenance)
+    storage.write_json("finish-provenance.json", finish_provenance)
     storage.write_json("provenance.json", provenance)
     storage.write_json(
         "run-status.json",
@@ -205,6 +247,7 @@ def finalize_run_context(
             "status": final_status,
             "updated_at": finished_at,
             "source_changed_during_run": source_changed,
+            "source_stability": source_stability,
             "exit_code": exit_code,
         },
     )

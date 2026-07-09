@@ -186,3 +186,34 @@ jobs:
           OTEL_COLLECTOR_CONFIG: ${{ secrets.HONEYCOMB_API_KEY != '' && './distributed-backend/observability/collector/otel-collector.honeycomb.yaml' || './distributed-backend/observability/collector/otel-collector.local.yaml' }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: python distributed-backend/observability/ci/observed_run.py integration --clean
+
+  o11y-aggregate:
+    name: o11y / aggregate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    if: ${{ always() }}
+    needs: [proto, go, rust-trade-settlement, terraform, kubernetes, python, e2e]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+      - name: Aggregate observed CI evidence
+        id: aggregate
+        continue-on-error: true
+        env:
+          OBSERVABILITY_ENV: github-actions
+          OBS_CI_NEEDS_JSON: ${{ toJson(needs) }}
+        run: python distributed-backend/observability/ci/ci_aggregate.py
+      - name: Upload aggregate evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: o11y-aggregate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .o11y/runs/**
+          if-no-files-found: warn
+      - name: Fail if aggregate found failed or incomplete jobs
+        if: ${{ steps.aggregate.outcome == 'failure' }}
+        run: exit 1

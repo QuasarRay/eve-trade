@@ -13,9 +13,10 @@ from typing import Any
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from observability.ci.classify_failure import FailureClassification, classify_failure
+from observability.ci.classify_failure import FailureClassification, classification_from_diagnosis
 from observability.ci.collect_pytest import PytestSummary
 from observability.ci.freshness import classify_freshness
+from observability.ci.diagnosis import diagnose_command_failure
 from observability.ci.links import github_actions_url, honeycomb_investigation, relative_artifact, sentry_event_url, source_url
 from observability.ci.run_command import CommandResult
 from observability.ci.run_context import RunContext, load_run_context
@@ -39,7 +40,8 @@ def generate_failure_report(
 ) -> dict[str, Path]:
     storage = storage or RunStorage(context.run_dir)
     pytest = pytest or PytestSummary()
-    classification = classification or classify_failure(nodeid=pytest.first_failing_test_nodeid, assertion=pytest.assertion_text, logs=command.stderr + "\n" + command.stdout)
+    diagnosis = diagnosis or diagnose_command_failure(command, pytest_summary=pytest)
+    classification = classification or classification_from_diagnosis(diagnosis)
     honeycomb = honeycomb_investigation(
         context,
         trace_id=trace_id or command.trace_id,
@@ -67,7 +69,8 @@ def generate_failure_report(
         "artifacts": artifact_links,
         "parity_hints": parity_hints or [],
         "missing_evidence": missing_evidence or [],
-        "diagnosis": diagnosis or {},
+        "diagnosis": diagnosis,
+        "freshness": classify_freshness(_load_json_if_exists(context.run_dir / "provenance.json") or context.provenance, root=context.repo_root).to_dict(),
     }
     storage.write_json(report_json.relative_to(context.run_dir), summary)
     storage.write_text(report_md.relative_to(context.run_dir), _markdown(summary))
@@ -85,9 +88,10 @@ def generate_run_report(
     storage = storage or RunStorage(context.run_dir)
     provenance = provenance or _load_json_if_exists(context.run_dir / "provenance.json") or context.provenance
     freshness = classify_freshness(provenance, root=context.repo_root).to_dict()
+    run_value = _load_json_if_exists(context.run_dir / "run-context.json") or context.to_dict()
     data = {
         "schema_version": "o11y.run-report.v1",
-        "run": context.to_dict(),
+        "run": run_value,
         "provenance": provenance,
         "freshness": freshness,
         "diagnosis": diagnosis,
@@ -111,12 +115,27 @@ def _markdown(data: dict[str, Any]) -> str:
     classification = data["classification"]
     honeycomb = data["honeycomb"]
     sentry = data["sentry"]
+    freshness = data.get("freshness", {})
     service_logs = [item for item in data["artifacts"] if item["path"].startswith(("runtime/logs/", "kubernetes/logs/"))]
     database_artifacts = [item for item in data["artifacts"] if item["path"].startswith("db/")]
     diagnosis = data.get("diagnosis") or {}
     primary = diagnosis.get("primary_diagnosis", {})
     lines = [
-        "# Eve Trade failure report", "", "## Executive summary", "", data["executive_summary"], "",
+        "# Eve Trade failure report",
+        "",
+        "## Freshness",
+        "",
+        f"- Report SHA: `{freshness.get('report_full_head_sha', '')}`",
+        f"- Current SHA: `{freshness.get('current_full_head_sha', '')}`",
+        f"- Freshness state: `{freshness.get('state', 'UNKNOWN')}`",
+        f"- Source stability: `{freshness.get('source_stability', 'UNKNOWN')}`",
+        f"- Run status: `{freshness.get('run_status', 'UNKNOWN')}`",
+        f"- Reason: {freshness.get('reason', '')}",
+        "",
+        "## Executive summary",
+        "",
+        data["executive_summary"],
+        "",
         "## Run identity", "", f"- Run: `{data['run']['run_id']}`", f"- Environment: `{data['run']['environment']}`",
         f"- Git SHA: `{data['run'].get('github_sha', '')}`",
     ]
@@ -189,8 +208,10 @@ def _run_markdown(data: dict[str, Any]) -> str:
     dims = primary.get("category_dimensions", {})
     freshness = data["freshness"]
     provenance = data["provenance"]
+    start_provenance = provenance.get("start_provenance", provenance) if isinstance(provenance, dict) else {}
     commands = diagnosis.get("commands", [])
     earliest = diagnosis.get("earliest_causal_failure") or {}
+    root_cause = diagnosis.get("most_supported_root_cause_event") or earliest
     lines = [
         "# Eve Trade observed run report",
         "",
@@ -199,7 +220,9 @@ def _run_markdown(data: dict[str, Any]) -> str:
         f"- Report SHA: `{freshness.get('report_full_head_sha', '')}`",
         f"- Current SHA: `{freshness.get('current_full_head_sha', '')}`",
         f"- Freshness state: `{freshness.get('state', 'UNKNOWN')}`",
-        f"- Branch: `{provenance.get('branch', '')}`",
+        f"- Branch: `{start_provenance.get('branch', '')}`",
+        f"- Source stability: `{freshness.get('source_stability', 'UNKNOWN')}`",
+        f"- Run status: `{freshness.get('run_status', 'UNKNOWN')}`",
         f"- Dirty worktree: report `{freshness.get('report_dirty')}`, current `{freshness.get('current_dirty')}`",
         f"- Reason: {freshness.get('reason', '')}",
     ]
@@ -215,6 +238,7 @@ def _run_markdown(data: dict[str, Any]) -> str:
             f"- Validation result: `{diagnosis.get('validation_result', '')}`",
             f"- Harness status: `{diagnosis.get('harness_status', '')}`",
             f"- Product status: `{diagnosis.get('product_status', '')}`",
+            f"- Analysis status: `{diagnosis.get('analysis_status', '')}`",
             "",
             "### Commands Executed",
             "",
@@ -243,6 +267,13 @@ def _run_markdown(data: dict[str, Any]) -> str:
             f"- Component: `{earliest.get('component', 'none')}`",
             f"- Observed error: {earliest.get('message', 'No failing event observed.')}",
             f"- Evidence: `{earliest.get('evidence_reference', '')}`",
+            "",
+            "## Most Supported Root Cause Event",
+            "",
+            f"- Event: `{root_cause.get('event_id', 'none')}`",
+            f"- Source: `{root_cause.get('event_source', 'none')}`",
+            f"- Relation: `{root_cause.get('relation', 'none')}`",
+            f"- Message: {root_cause.get('message', 'No root-cause event observed.')}",
             "",
             "## Diagnosis",
             "",
@@ -344,6 +375,13 @@ def _load_json_if_exists(path: Path) -> dict[str, Any]:
         return {}
 
 
+def _load_text_if_exists(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Regenerate a failure report from an observed run")
     parser.add_argument("run_dir", type=Path)
@@ -354,6 +392,7 @@ def main() -> None:
         raise SystemExit("run contains no command metadata")
     command_values = [json.loads(path.read_text(encoding="utf-8")) for path in command_files]
     value = next((item for item in command_values if int(item.get("exit_code", 0)) != 0), command_values[-1])
+    log_text = _load_text_if_exists(args.run_dir / str(value.get("log_path", "")))
     command = CommandResult(
         name=str(value.get("name", "unknown-command")),
         stage=str(value.get("stage", "unknown")),
@@ -362,7 +401,7 @@ def main() -> None:
         started_at=str(value.get("started_at", "")),
         ended_at=str(value.get("ended_at", "")),
         duration_ms=float(value.get("duration_ms", 0.0)),
-        stdout="",
+        stdout=log_text,
         stderr="",
         metadata_path=str(value.get("metadata_path", command_files[-1].relative_to(args.run_dir).as_posix())),
         log_path=str(value.get("log_path", "")),
@@ -382,7 +421,8 @@ def main() -> None:
             else:
                 values[key] = dataclass_field.default_factory()
         pytest_summary = PytestSummary(**values)
-    outputs = generate_failure_report(context, command, pytest_summary)
+    diagnosis = _load_json_if_exists(args.run_dir / "diagnosis.json")
+    outputs = generate_failure_report(context, command, pytest_summary, diagnosis=diagnosis or None)
     print(outputs["html"])
 
 

@@ -13,6 +13,7 @@ from typing import Any, Iterable
 
 
 PROVENANCE_SCHEMA_VERSION = "o11y.run-provenance.v1"
+PROVENANCE_ENVELOPE_SCHEMA_VERSION = "o11y.run-provenance-envelope.v1"
 RUNNER_VERSION = "o11y-trust-model-2026-07-09"
 SOURCE_PATHSPEC = ("--", ".", ":(exclude).o11y/runs/**", ":(exclude).o11y/index.json")
 
@@ -61,6 +62,71 @@ def collect_run_provenance(
         "commands_executed": commands_executed or [],
         "tool_versions": versions,
     }
+
+
+def repository_identity(provenance: dict[str, Any] | None) -> dict[str, Any]:
+    """Return the source identity fields that decide whether evidence is exact."""
+    provenance = provenance or {}
+    return {
+        "full_head_sha": str(provenance.get("full_head_sha") or provenance.get("github_sha") or ""),
+        "worktree_dirty": _optional_bool(provenance.get("worktree_dirty")),
+        "worktree_diff_fingerprint_if_dirty": str(provenance.get("worktree_diff_fingerprint_if_dirty") or ""),
+    }
+
+
+def build_provenance_envelope(
+    *,
+    run_id: str,
+    start_provenance: dict[str, Any],
+    finish_provenance: dict[str, Any] | None = None,
+    source_stability: str = "UNKNOWN",
+    run_status: str = "IN_PROGRESS",
+) -> dict[str, Any]:
+    finish = finish_provenance or {}
+    return {
+        "schema_version": PROVENANCE_ENVELOPE_SCHEMA_VERSION,
+        "run_id": run_id,
+        "run_status": run_status,
+        "run_started_at": start_provenance.get("run_started_at", ""),
+        "run_finished_at": finish.get("run_finished_at", ""),
+        "source_stability": source_stability,
+        "start_provenance": start_provenance,
+        "finish_provenance": finish,
+        "start_repository_identity": repository_identity(start_provenance),
+        "finish_repository_identity": repository_identity(finish) if finish else {},
+    }
+
+
+def split_provenance_envelope(provenance: dict[str, Any] | None) -> tuple[dict[str, Any], dict[str, Any], str, str]:
+    """Return start provenance, finish provenance, source stability, and run status.
+
+    Older run artifacts stored a single provenance object. For those artifacts we
+    treat the one object as both start and finish so historical readers stay
+    compatible, while new exactness checks can still reject non-authoritative
+    statuses.
+    """
+    value = provenance or {}
+    if "start_provenance" in value or value.get("schema_version") == PROVENANCE_ENVELOPE_SCHEMA_VERSION:
+        start = value.get("start_provenance") if isinstance(value.get("start_provenance"), dict) else {}
+        finish = value.get("finish_provenance") if isinstance(value.get("finish_provenance"), dict) else {}
+        run_status = str(value.get("run_status") or finish.get("run_status") or start.get("run_status") or "UNKNOWN")
+        source_stability = str(value.get("source_stability") or source_stability_from_provenance(start, finish))
+        return start, finish, source_stability, run_status
+    run_status = str(value.get("run_status") or "UNKNOWN")
+    source_stability = "CHANGED" if run_status == "SOURCE_CHANGED_DURING_RUN" else "UNCHANGED"
+    return value, value, source_stability, run_status
+
+
+def source_stability_from_provenance(start: dict[str, Any] | None, finish: dict[str, Any] | None) -> str:
+    if not start or not finish:
+        return "UNKNOWN"
+    return "UNCHANGED" if repository_identity(start) == repository_identity(finish) else "CHANGED"
+
+
+def _optional_bool(value: Any) -> bool | None:
+    if value is None:
+        return None
+    return bool(value)
 
 
 def collect_git_state(root: Path) -> dict[str, Any]:

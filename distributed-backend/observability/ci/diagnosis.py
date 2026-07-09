@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timezone
-from typing import Any, Iterable
+from typing import Any
 
 from .collect_pytest import PytestSummary
 from .provenance import RUNNER_VERSION
@@ -13,6 +13,13 @@ from .run_command import CommandResult
 
 DIAGNOSIS_SCHEMA_VERSION = "o11y.structured-diagnosis.v1"
 CLASSIFIER_VERSION = "o11y-causal-classifier-2026-07-09"
+
+COMMAND_EVENT = "COMMAND_EVENT"
+DATABASE_COLLECTOR_EVENT = "DATABASE_COLLECTOR_EVENT"
+KUBERNETES_COLLECTOR_EVENT = "KUBERNETES_COLLECTOR_EVENT"
+MISSING_EVIDENCE_EVENT = "MISSING_EVIDENCE_EVENT"
+WORKFLOW_EVENT = "WORKFLOW_EVENT"
+TEST_EVENT = "TEST_EVENT"
 
 CONFIRMED = "CONFIRMED"
 HIGH = "HIGH"
@@ -36,15 +43,19 @@ def diagnose_run(
     failed = next((result for result in results if not result.succeeded), None)
     diagnosis = _base_diagnosis(run_id, command, results, pytest_summary, missing_evidence)
     if failed:
+        collector_events = _collector_events(database, kubernetes, missing_evidence)
         failure = diagnose_command_failure(
             failed,
             pytest_summary=pytest_summary,
-            additional_logs=_metadata_hints(database, kubernetes, missing_evidence),
             downstream_results=results[results.index(failed) + 1 :],
         )
+        if collector_events:
+            failure["events"].extend(collector_events)
+            failure["causal_chain"] = [event["event_id"] for event in failure["events"]]
         failure["test_execution"] = _test_truth(command, results, pytest_summary, missing_evidence)
         diagnosis.update(failure)
         diagnosis["validation_result"] = "failed"
+        diagnosis["analysis_status"] = "OK"
         return diagnosis
 
     test_truth = _test_truth(command, results, pytest_summary, missing_evidence)
@@ -55,6 +66,7 @@ def diagnose_run(
         diagnosis["validation_result"] = "passed_with_false_green_risk"
         diagnosis["product_status"] = "UNRESOLVED"
         diagnosis["harness_status"] = "BROKEN"
+        diagnosis["analysis_status"] = "OK"
         diagnosis["primary_diagnosis"] = _primary(
             summary="Validation command exited successfully, but required validation evidence is absent or skipped.",
             stage="CI_HARNESS",
@@ -79,6 +91,7 @@ def diagnose_run(
         diagnosis["validation_result"] = "passed"
         diagnosis["product_status"] = _product_status_from_tests(test_truth)
         diagnosis["harness_status"] = "OK"
+        diagnosis["analysis_status"] = "OK"
         diagnosis["primary_diagnosis"] = _primary(
             summary="No failing command was observed.",
             stage="UNKNOWN",
@@ -104,7 +117,7 @@ def diagnose_command_failure(
 ) -> dict[str, Any]:
     pytest_summary = pytest_summary or PytestSummary()
     downstream_results = downstream_results or []
-    output = "\n".join((command.stdout, command.stderr, additional_logs))
+    output = "\n".join((command.stdout, command.stderr))
     lower = output.lower()
     observations = [
         _observation(
@@ -159,6 +172,7 @@ def diagnose_command_failure(
             "NOT_TESTED",
             test_execution,
             false_red_risks,
+            failed_command=command,
         )
 
     if _has_docker_daemon_failure(lower):
@@ -184,7 +198,7 @@ def diagnose_command_failure(
                 "A successful docker version or docker info call would reject this blocker.",
             )
         )
-        return _failure_payload(observations, derived, inferences, recommendations, events, primary, "BROKEN", "UNRESOLVED", test_execution, false_red_risks)
+        return _failure_payload(observations, derived, inferences, recommendations, events, primary, "BROKEN", "UNRESOLVED", test_execution, false_red_risks, failed_command=command)
 
     if _has_go_mod_unexpected_eof(lower):
         endpoint = _first_match(r"https://([^/\"'\s]+)/", output) or "proxy.golang.org"
@@ -263,7 +277,33 @@ def diagnose_command_failure(
                 ),
             ]
         )
-        return _failure_payload(observations, derived, inferences, recommendations, events, primary, "OK", "UNRESOLVED", test_execution, false_red_risks)
+        return _failure_payload(observations, derived, inferences, recommendations, events, primary, "OK", "UNRESOLVED", test_execution, false_red_risks, failed_command=command)
+
+    if _has_assertion_failure(pytest_summary, output):
+        nodeid = pytest_summary.first_failing_test_nodeid or "unknown test"
+        observations.append(_observation("O3", f"Test assertion failure was extracted for {nodeid}.", command.log_path, CONFIRMED))
+        events = _events(command, _stage_taxonomy(command.stage), "test", "ASSERTION_FAILURE", nodeid, event_source=TEST_EVENT)
+        primary = _primary(
+            summary="A product or test assertion failed after the test command executed.",
+            stage=_stage_taxonomy(command.stage),
+            mechanism="APPLICATION_TEST_FAILURE",
+            component="test",
+            external_system="",
+            confidence_score=0.87,
+            confidence_band=HIGH,
+            supporting=[observations[-1]["summary"], pytest_summary.failure_message or pytest_summary.assertion_text],
+            contradicting=["No earlier infrastructure blocker was observed in the command evidence."],
+            missing=["Service logs and state snapshots around the assertion time."],
+            unsupported=["infrastructure failure"],
+        )
+        recommendations.append(
+            _recommendation(
+                "Debug the named assertion with the captured command log and service state.",
+                "The earliest extracted failure is a test assertion, not an environment setup blocker.",
+                "Reproducing the assertion with healthy dependencies confirms a product/test behavior failure.",
+            )
+        )
+        return _failure_payload(observations, derived, inferences, recommendations, events, primary, "OK", "FAILED", test_execution, false_red_risks, failed_command=command)
 
     if _has_database_refusal(lower):
         endpoint = _first_match(r"([a-zA-Z0-9_.-]+:5432)", output) or "postgres:5432"
@@ -289,7 +329,7 @@ def diagnose_command_failure(
                 "A listening PostgreSQL socket and successful readiness query would reject this blocker.",
             )
         )
-        return _failure_payload(observations, derived, inferences, recommendations, events, primary, "OK", "UNRESOLVED", test_execution, false_red_risks)
+        return _failure_payload(observations, derived, inferences, recommendations, events, primary, "OK", "UNRESOLVED", test_execution, false_red_risks, failed_command=command)
 
     network = _network_mechanism(lower)
     if network:
@@ -316,33 +356,7 @@ def diagnose_command_failure(
                 "DNS lookup, TCP connect, and retry evidence would separate local, proxy, and remote causes.",
             )
         )
-        return _failure_payload(observations, derived, inferences, recommendations, events, primary, "OK", "UNRESOLVED", test_execution, false_red_risks)
-
-    if _has_assertion_failure(pytest_summary, output):
-        nodeid = pytest_summary.first_failing_test_nodeid or "unknown test"
-        observations.append(_observation("O3", f"Test assertion failure was extracted for {nodeid}.", command.log_path, CONFIRMED))
-        events = _events(command, _stage_taxonomy(command.stage), "test", "ASSERTION_FAILURE", nodeid)
-        primary = _primary(
-            summary="A product or test assertion failed after the test command executed.",
-            stage=_stage_taxonomy(command.stage),
-            mechanism="APPLICATION_TEST_FAILURE",
-            component="test",
-            external_system="",
-            confidence_score=0.87,
-            confidence_band=HIGH,
-            supporting=[observations[-1]["summary"], pytest_summary.failure_message or pytest_summary.assertion_text],
-            contradicting=["No earlier infrastructure blocker was observed in the command evidence."],
-            missing=["Service logs and state snapshots around the assertion time."],
-            unsupported=["infrastructure failure"],
-        )
-        recommendations.append(
-            _recommendation(
-                "Debug the named assertion with the captured command log and service state.",
-                "The earliest extracted failure is a test assertion, not an environment setup blocker.",
-                "Reproducing the assertion with healthy dependencies confirms a product/test behavior failure.",
-            )
-        )
-        return _failure_payload(observations, derived, inferences, recommendations, events, primary, "OK", "FAILED", test_execution, false_red_risks)
+        return _failure_payload(observations, derived, inferences, recommendations, events, primary, "OK", "UNRESOLVED", test_execution, false_red_risks, failed_command=command)
 
     inferences.append(
         _inference(
@@ -374,7 +388,7 @@ def diagnose_command_failure(
             "A structured fixture with command, stage, and expected category would make the diagnosis reproducible.",
         )
     )
-    payload = _failure_payload(observations, derived, inferences, recommendations, events, primary, "UNKNOWN", "UNRESOLVED", test_execution, false_red_risks)
+    payload = _failure_payload(observations, derived, inferences, recommendations, events, primary, "UNKNOWN", "UNRESOLVED", test_execution, false_red_risks, failed_command=command)
     payload["abstained"] = True
     return payload
 
@@ -396,6 +410,7 @@ def _base_diagnosis(
         "validation_result": "UNKNOWN",
         "product_status": "UNRESOLVED",
         "harness_status": "UNKNOWN",
+        "analysis_status": "UNKNOWN",
         "commands": [result.to_dict() for result in results],
         "test_execution": _test_truth(command, results, pytest_summary, missing_evidence),
         "observations": [],
@@ -405,6 +420,8 @@ def _base_diagnosis(
         "events": [],
         "causal_chain": [],
         "earliest_causal_failure": None,
+        "earliest_failed_command": None,
+        "most_supported_root_cause_event": None,
         "primary_diagnosis": {},
         "false_green_risks": [],
         "false_red_risks": [],
@@ -424,10 +441,13 @@ def _failure_payload(
     product_status: str,
     test_execution: dict[str, Any],
     false_red_risks: list[dict[str, Any]],
+    failed_command: CommandResult | None = None,
 ) -> dict[str, Any]:
+    root_cause = next((event for event in events if event.get("relation") == "ROOT_CAUSE"), events[0] if events else None)
     return {
         "product_status": product_status,
         "harness_status": harness_status,
+        "analysis_status": "OK",
         "test_execution": test_execution,
         "observations": observations,
         "derived_facts": derived,
@@ -436,6 +456,8 @@ def _failure_payload(
         "events": events,
         "causal_chain": [event["event_id"] for event in events],
         "earliest_causal_failure": events[0] if events else None,
+        "earliest_failed_command": failed_command.to_dict() if failed_command else None,
+        "most_supported_root_cause_event": root_cause,
         "primary_diagnosis": primary,
         "false_red_risks": false_red_risks,
         "abstained": False,
@@ -548,7 +570,7 @@ def _primary(
     }
 
 
-def _events(command: CommandResult, stage: str, component: str, event_type: str, message: str) -> list[dict[str, Any]]:
+def _events(command: CommandResult, stage: str, component: str, event_type: str, message: str, *, event_source: str = COMMAND_EVENT) -> list[dict[str, Any]]:
     return [
         _event(
             "E1",
@@ -563,6 +585,7 @@ def _events(command: CommandResult, stage: str, component: str, event_type: str,
             [],
             "ROOT_CAUSE",
             0.86,
+            event_source=event_source,
         ),
         _event(
             "E2",
@@ -577,6 +600,7 @@ def _events(command: CommandResult, stage: str, component: str, event_type: str,
             ["E1"],
             "SYMPTOM",
             1.0,
+            event_source=COMMAND_EVENT,
         ),
     ]
 
@@ -594,6 +618,8 @@ def _event(
     caused_by: list[str],
     relation: str,
     confidence: float,
+    *,
+    event_source: str = COMMAND_EVENT,
 ) -> dict[str, Any]:
     return {
         "event_id": event_id,
@@ -610,6 +636,7 @@ def _event(
         "caused_by": caused_by,
         "relation": relation,
         "confidence": confidence,
+        "event_source": event_source,
     }
 
 
@@ -640,8 +667,69 @@ def _recommendation(action: str, rationale: str, would_confirm_or_reject: str) -
     }
 
 
-def _metadata_hints(database: dict[str, Any] | None, kubernetes: dict[str, Any] | None, missing_evidence: Iterable[str]) -> str:
-    return "\n".join([str(database or {}), str(kubernetes or {}), *[str(item) for item in missing_evidence]])
+def _collector_events(
+    database: dict[str, Any] | None,
+    kubernetes: dict[str, Any] | None,
+    missing_evidence: list[str],
+) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    if database:
+        message = str(database.get("error") or database.get("status") or "database collector produced metadata")
+        events.append(
+            _event(
+                "C1",
+                datetime.now(timezone.utc).isoformat(),
+                "EVIDENCE_COLLECTION",
+                "database-collector",
+                "postgres",
+                "DATABASE_COLLECTOR_METADATA",
+                "info" if not database.get("error") else "warning",
+                message,
+                "db/",
+                [],
+                "COLLECTOR_CONTEXT",
+                0.5,
+                event_source=DATABASE_COLLECTOR_EVENT,
+            )
+        )
+    if kubernetes:
+        message = str(kubernetes.get("error") or kubernetes.get("namespace") or "kubernetes collector produced metadata")
+        events.append(
+            _event(
+                f"C{len(events) + 1}",
+                datetime.now(timezone.utc).isoformat(),
+                "EVIDENCE_COLLECTION",
+                "kubernetes-collector",
+                "kubernetes",
+                "KUBERNETES_COLLECTOR_METADATA",
+                "info" if not kubernetes.get("error") else "warning",
+                message,
+                "kubernetes/",
+                [],
+                "COLLECTOR_CONTEXT",
+                0.5,
+                event_source=KUBERNETES_COLLECTOR_EVENT,
+            )
+        )
+    for item in missing_evidence:
+        events.append(
+            _event(
+                f"C{len(events) + 1}",
+                datetime.now(timezone.utc).isoformat(),
+                "EVIDENCE_COLLECTION",
+                "evidence-inventory",
+                "observability-runner",
+                "MISSING_EVIDENCE",
+                "warning",
+                str(item),
+                "run-summary.json",
+                [],
+                "MISSING_EVIDENCE",
+                0.8,
+                event_source=MISSING_EVIDENCE_EVENT,
+            )
+        )
+    return events
 
 
 def _stage_taxonomy(stage: str) -> str:

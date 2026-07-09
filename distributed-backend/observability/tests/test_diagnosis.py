@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from observability.ci.classify_failure import classify_failure
-from observability.ci.diagnosis import command_result_from_dict, diagnose_run, pytest_summary_from_dict
+from observability.ci.diagnosis import DATABASE_COLLECTOR_EVENT, KUBERNETES_COLLECTOR_EVENT, command_result_from_dict, diagnose_run, pytest_summary_from_dict
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "diagnosis"
@@ -66,6 +66,57 @@ class DiagnosisFixtureTests(unittest.TestCase):
         self.assertEqual(result.failure_family, "dependency-resolution/network-transport")
         self.assertIn("proxy.golang.org", result.suspected_services)
         self.assertIn("docker-networking", result.unsupported_diagnoses or [])
+
+    def test_database_collector_metadata_does_not_classify_unknown_command_failure(self) -> None:
+        command = command_result_from_dict({"name": "pytest", "stage": "test", "exit_code": 1}, stderr="process exited 1")
+
+        diagnosis = diagnose_run(
+            run_id="collector-db",
+            command="test",
+            results=[command],
+            database={"error": "postgres:5432 connection refused"},
+        )
+        dimensions = diagnosis["primary_diagnosis"]["category_dimensions"]
+
+        self.assertEqual(dimensions["mechanism"], "UNKNOWN")
+        self.assertNotEqual(dimensions["stage"], "DATABASE")
+        self.assertIn(DATABASE_COLLECTOR_EVENT, {event.get("event_source") for event in diagnosis["events"]})
+
+    def test_kubernetes_collector_metadata_is_context_not_root_cause(self) -> None:
+        command = command_result_from_dict({"name": "pytest", "stage": "test", "exit_code": 1}, stderr="process exited 1")
+
+        diagnosis = diagnose_run(
+            run_id="collector-k8s",
+            command="test",
+            results=[command],
+            kubernetes={"error": "pod crashloopbackoff"},
+        )
+        root = diagnosis["most_supported_root_cause_event"]
+
+        self.assertEqual(diagnosis["primary_diagnosis"]["category_dimensions"]["mechanism"], "UNKNOWN")
+        self.assertNotEqual(root.get("event_source"), KUBERNETES_COLLECTOR_EVENT)
+        self.assertIn(KUBERNETES_COLLECTOR_EVENT, {event.get("event_source") for event in diagnosis["events"]})
+
+    def test_structured_pytest_assertion_beats_irrelevant_network_log_line(self) -> None:
+        command = command_result_from_dict(
+            {"name": "pytest", "stage": "test", "exit_code": 1},
+            stdout="debug: old network fixture said connection refused\nE   AssertionError: expected 2 got 1",
+        )
+        pytest_summary = pytest_summary_from_dict(
+            {
+                "first_failing_test_nodeid": "tests/test_prices.py::test_total",
+                "failed_count": 1,
+                "failure_message": "AssertionError: expected 2 got 1",
+                "assertion_text": "assert 1 == 2",
+            }
+        )
+
+        diagnosis = diagnose_run(run_id="assertion-mixed", command="test", results=[command], pytest_summary=pytest_summary)
+        dimensions = diagnosis["primary_diagnosis"]["category_dimensions"]
+
+        self.assertEqual(dimensions["mechanism"], "APPLICATION_TEST_FAILURE")
+        self.assertEqual(diagnosis["product_status"], "FAILED")
+        self.assertEqual(diagnosis["most_supported_root_cause_event"]["event_source"], "TEST_EVENT")
 
 
 if __name__ == "__main__":
