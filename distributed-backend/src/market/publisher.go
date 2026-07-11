@@ -71,7 +71,7 @@ func (p PubSubSettlementPublisher) PublishSettlementWork(ctx context.Context, wo
 		return nil, fmt.Errorf("queue durable settlement operation returned incomplete status")
 	}
 	work.OperationID = operation.GetOperationId()
-	work.QueuedAt = operation.GetQueuedAt().AsTime().UTC()
+	work.QueuedAt = settlementrpc.Time(operation.GetQueuedAt())
 	work.RequestID = work.OperationID
 	messageID, err := p.topic.Publish(ctx, work)
 	if err != nil {

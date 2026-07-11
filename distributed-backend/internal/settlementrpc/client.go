@@ -3,12 +3,14 @@ package settlementrpc
 import (
 	"context"
 	"fmt"
+	"time"
 
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -31,6 +33,17 @@ func New(target string) (*Client, error) {
 
 func NewWithConn(conn grpc.ClientConnInterface) *Client {
 	return &Client{conn: conn}
+}
+
+func Timestamp(value time.Time) *timestamppb.Timestamp {
+	return timestamppb.New(value)
+}
+
+func Time(value *timestamppb.Timestamp) time.Time {
+	if value == nil {
+		return time.Time{}
+	}
+	return value.AsTime().UTC()
 }
 
 type ErrorClass uint8

@@ -117,10 +117,10 @@ func settlementOperationResponse(operation *tradesettlementv1.SettlementOperatio
 		FailureDescription: operation.GetFailureDescription(),
 	}
 	option.PtrOpt(operation.GetQueuedAt()).Inspect(func(value *timestamppb.Timestamp) {
-		response.QueuedAt = value.AsTime().UTC()
+		response.QueuedAt = settlementrpc.Time(value)
 	})
 	option.PtrOpt(operation.GetUpdatedAt()).Inspect(func(value *timestamppb.Timestamp) {
-		response.UpdatedAt = value.AsTime().UTC()
+		response.UpdatedAt = settlementrpc.Time(value)
 	})
 	return response
 }

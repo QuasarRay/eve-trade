@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"encore.dev/beta/errs"
+	"github.com/QuasarRay/eve-trade/distributed-backend/internal/settlementrpc"
 	"github.com/QuasarRay/eve-trade/distributed-backend/src/settlement"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type fakeSettlementExecutor struct {
@@ -404,7 +404,7 @@ func TestMarketHandlerRejectsReplayWithDifferentExpiresAt(t *testing.T) {
 		ItemStack:           validIssueItemStackInput(),
 		Quantity:            4,
 		UnitPriceISK:        25,
-		ExpiresAt:           timestamppb.New(originalExpiresAt),
+		ExpiresAt:           settlementrpc.Timestamp(originalExpiresAt),
 	}
 	handler := NewMarketHandler(fakeSettlementExecutor{}, fakeReplayRepository{
 		replay: &IdempotencyReplay{
@@ -442,7 +442,7 @@ func TestMarketHandlerRejectsReplayWithDifferentExpiresAt(t *testing.T) {
 		ItemStack:           validIssueItemStackInput(),
 		Quantity:            4,
 		UnitPriceISK:        25,
-		ExpiresAt:           timestamppb.New(originalExpiresAt.Add(time.Hour)),
+		ExpiresAt:           settlementrpc.Timestamp(originalExpiresAt.Add(time.Hour)),
 	})
 	if errs.Code(err) != errs.Aborted {
 		t.Fatalf("error code = %v, want aborted: %v", errs.Code(err), err)

@@ -12,7 +12,6 @@ import (
 	"github.com/QuasarRay/eve-trade/distributed-backend/internal/settlementrpc"
 	"github.com/QuasarRay/eve-trade/distributed-backend/src/settlement"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type failingSettlementTopic struct {
@@ -35,7 +34,7 @@ func (lifecycle *recordingSettlementLifecycle) QueueSettlementOperation(context.
 	return &tradesettlementv1.QueueSettlementOperationResponse{
 		Operation: &tradesettlementv1.SettlementOperationStatus{
 			OperationId: "11111111-1111-4111-8111-111111111111",
-			QueuedAt:    timestamppb.New(time.Now()),
+			QueuedAt:    settlementrpc.Timestamp(time.Now()),
 		},
 	}, nil
 }
@@ -81,8 +80,8 @@ func TestSettlementPublicationFailureBecomesDurableTerminalFailure(t *testing.T)
 }
 
 func TestSettlementOperationResponseIsDeterministic(t *testing.T) {
-	queuedAt := timestamppb.New(time.Date(2026, 7, 10, 1, 2, 3, 0, time.UTC))
-	updatedAt := timestamppb.New(time.Date(2026, 7, 10, 1, 3, 4, 0, time.UTC))
+	queuedAt := settlementrpc.Timestamp(time.Date(2026, 7, 10, 1, 2, 3, 0, time.UTC))
+	updatedAt := settlementrpc.Timestamp(time.Date(2026, 7, 10, 1, 3, 4, 0, time.UTC))
 	operation := &tradesettlementv1.SettlementOperationStatus{
 		OperationId:        "11111111-1111-4111-8111-111111111111",
 		IdempotencyKey:     "issue-1",
@@ -99,7 +98,7 @@ func TestSettlementOperationResponseIsDeterministic(t *testing.T) {
 	if !reflect.DeepEqual(first, second) {
 		t.Fatalf("operation response changed between identical queries: first=%+v second=%+v", first, second)
 	}
-	if first.Status != "failed" || !first.QueuedAt.Equal(queuedAt.AsTime()) || !first.UpdatedAt.Equal(updatedAt.AsTime()) {
+	if first.Status != "failed" || !first.QueuedAt.Equal(settlementrpc.Time(queuedAt)) || !first.UpdatedAt.Equal(settlementrpc.Time(updatedAt)) {
 		t.Fatalf("unexpected operation response: %+v", first)
 	}
 }

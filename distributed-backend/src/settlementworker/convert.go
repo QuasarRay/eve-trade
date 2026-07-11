@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"buf.build/go/protovalidate"
+	"github.com/QuasarRay/eve-trade/distributed-backend/internal/settlementrpc"
 	"github.com/QuasarRay/eve-trade/distributed-backend/src/settlement"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func toProtoRequest(work *settlement.Work) (*tradesettlementv1.ExecuteSettlementBatchRequest, error) {
@@ -69,7 +69,7 @@ func toProtoOperation(operation settlement.Operation) (*tradesettlementv1.Settle
 			UnitPriceIsk:    value.UnitPriceISK,
 		}
 		if value.ExpiresAt != nil {
-			protoValue.ExpiresAt = timestamppb.New(*value.ExpiresAt)
+			protoValue.ExpiresAt = settlementrpc.Timestamp(*value.ExpiresAt)
 		}
 		return &tradesettlementv1.SettlementOperation{
 			Operation: &tradesettlementv1.SettlementOperation_CreateNewTradeInstanceRow{CreateNewTradeInstanceRow: protoValue},

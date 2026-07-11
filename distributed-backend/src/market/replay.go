@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/QuasarRay/eve-trade/distributed-backend/internal/settlementrpc"
 	"github.com/QuasarRay/eve-trade/gametrade"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -202,7 +203,7 @@ func timestampFieldMatches(payload map[string]AnyJSON, name string, timestamp *t
 	if value == nil {
 		return false
 	}
-	expected := timestamp.AsTime().UTC()
+	expected := settlementrpc.Time(timestamp)
 	if text, ok := value.(string); ok {
 		actual, err := time.Parse(time.RFC3339Nano, text)
 		return err == nil && actual.UTC().Equal(expected)
