@@ -2,6 +2,7 @@ package market
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -25,9 +26,15 @@ type OperationStatusReader interface {
 	GetSettlementOperation(ctx context.Context, operationID string) (*tradesettlementv1.SettlementOperationStatus, error)
 }
 
+type settlementLifecycle interface {
+	QueueSettlementOperation(context.Context, *tradesettlementv1.QueueSettlementOperationRequest) (*tradesettlementv1.QueueSettlementOperationResponse, error)
+	GetSettlementOperation(context.Context, *tradesettlementv1.GetSettlementOperationRequest) (*tradesettlementv1.GetSettlementOperationResponse, error)
+	UpdateSettlementOperation(context.Context, *tradesettlementv1.UpdateSettlementOperationRequest) (*tradesettlementv1.UpdateSettlementOperationResponse, error)
+}
+
 type PubSubSettlementPublisher struct {
 	topic     pubsub.Publisher[*settlement.Work]
-	lifecycle *settlementrpc.Client
+	lifecycle settlementLifecycle
 	timeout   time.Duration
 }
 
@@ -68,7 +75,19 @@ func (p PubSubSettlementPublisher) PublishSettlementWork(ctx context.Context, wo
 	work.RequestID = work.OperationID
 	messageID, err := p.topic.Publish(ctx, work)
 	if err != nil {
-		return nil, err
+		publishErr := fmt.Errorf("publish settlement work: %w", err)
+		updateCtx, updateCancel := p.callContext(context.WithoutCancel(ctx))
+		defer updateCancel()
+		_, updateErr := p.lifecycle.UpdateSettlementOperation(updateCtx, &tradesettlementv1.UpdateSettlementOperationRequest{
+			OperationId:        work.OperationID,
+			State:              tradesettlementv1.SettlementOperationState_SETTLEMENT_OPERATION_STATE_FAILED,
+			FailureCode:        "WORK_PUBLICATION_FAILED",
+			FailureDescription: "settlement work could not be published",
+		})
+		if updateErr != nil {
+			return nil, errors.Join(publishErr, fmt.Errorf("mark settlement publication failed: %w", updateErr))
+		}
+		return nil, publishErr
 	}
 	return &SettlementPublication{
 		MessageID:   messageID,

@@ -1,17 +1,85 @@
 package market
 
 import (
+	"context"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
 
 	"encore.dev/beta/errs"
+	"encore.dev/pubsub"
 	"github.com/QuasarRay/eve-trade/distributed-backend/src/settlement"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+type failingSettlementTopic struct {
+	cancel context.CancelFunc
+}
+
+func (topic failingSettlementTopic) Publish(context.Context, *settlement.Work) (string, error) {
+	topic.cancel()
+	return "", errors.New("broker unavailable")
+}
+
+func (failingSettlementTopic) Meta() pubsub.TopicMeta { return pubsub.TopicMeta{} }
+
+type recordingSettlementLifecycle struct {
+	updateContextErr error
+	update           *tradesettlementv1.UpdateSettlementOperationRequest
+}
+
+func (lifecycle *recordingSettlementLifecycle) QueueSettlementOperation(context.Context, *tradesettlementv1.QueueSettlementOperationRequest) (*tradesettlementv1.QueueSettlementOperationResponse, error) {
+	return &tradesettlementv1.QueueSettlementOperationResponse{
+		Operation: &tradesettlementv1.SettlementOperationStatus{
+			OperationId: "11111111-1111-4111-8111-111111111111",
+			QueuedAt:    timestamppb.New(time.Now()),
+		},
+	}, nil
+}
+
+func (*recordingSettlementLifecycle) GetSettlementOperation(context.Context, *tradesettlementv1.GetSettlementOperationRequest) (*tradesettlementv1.GetSettlementOperationResponse, error) {
+	return nil, errors.New("unexpected get")
+}
+
+func (lifecycle *recordingSettlementLifecycle) UpdateSettlementOperation(ctx context.Context, request *tradesettlementv1.UpdateSettlementOperationRequest) (*tradesettlementv1.UpdateSettlementOperationResponse, error) {
+	lifecycle.updateContextErr = ctx.Err()
+	lifecycle.update = request
+	return &tradesettlementv1.UpdateSettlementOperationResponse{}, nil
+}
+
+func TestSettlementPublicationFailureBecomesDurableTerminalFailure(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	lifecycle := new(recordingSettlementLifecycle)
+	publisher := PubSubSettlementPublisher{
+		topic:     failingSettlementTopic{cancel: cancel},
+		lifecycle: lifecycle,
+		timeout:   time.Second,
+	}
+
+	_, err := publisher.PublishSettlementWork(ctx, &settlement.Work{
+		IdempotencyKey:      "issue-publish-failure",
+		RequestFingerprint:  "market-request-fingerprint.v1:test",
+		Intent:              settlement.IntentIssue,
+		CausedByCapsuleerID: 1001,
+	})
+
+	if err == nil || err.Error() != "publish settlement work: broker unavailable" {
+		t.Fatalf("unexpected publication error: %v", err)
+	}
+	if lifecycle.updateContextErr != nil {
+		t.Fatalf("terminal update inherited cancelled publication context: %v", lifecycle.updateContextErr)
+	}
+	if lifecycle.update == nil || lifecycle.update.GetState() != tradesettlementv1.SettlementOperationState_SETTLEMENT_OPERATION_STATE_FAILED {
+		t.Fatalf("publication failure did not mark operation failed: %+v", lifecycle.update)
+	}
+	if lifecycle.update.GetFailureCode() != "WORK_PUBLICATION_FAILED" {
+		t.Fatalf("failure code = %q", lifecycle.update.GetFailureCode())
+	}
+}
 
 func TestSettlementOperationResponseIsDeterministic(t *testing.T) {
 	queuedAt := timestamppb.New(time.Date(2026, 7, 10, 1, 2, 3, 0, time.UTC))
