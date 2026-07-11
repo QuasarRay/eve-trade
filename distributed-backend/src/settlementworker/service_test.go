@@ -6,10 +6,9 @@ import (
 	"testing"
 
 	"encore.dev/pubsub"
+	"github.com/QuasarRay/eve-trade/distributed-backend/internal/settlementrpc"
 	"github.com/QuasarRay/eve-trade/distributed-backend/src/settlement"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type recordingExecutor struct {
@@ -164,7 +163,7 @@ func TestHandleSettlementWorkRetriesOnlyResultDeliveryAfterSettlementCommit(t *t
 }
 
 func TestHandleSettlementWorkPublishesPermanentFailure(t *testing.T) {
-	executor := &recordingExecutor{err: status.Error(codes.PermissionDenied, "unauthorized actor")}
+	executor := &recordingExecutor{err: settlementrpc.NewError(settlementrpc.ErrorPermissionDenied, "unauthorized actor")}
 	results := &recordingResultPublisher{}
 	service := &Service{executor: executor, results: results}
 
@@ -174,7 +173,7 @@ func TestHandleSettlementWorkPublishesPermanentFailure(t *testing.T) {
 	if executor.currentOperation().GetState() != tradesettlementv1.SettlementOperationState_SETTLEMENT_OPERATION_STATE_FAILED {
 		t.Fatalf("operation state = %s, want FAILED", executor.currentOperation().GetState())
 	}
-	if len(results.results) != 1 || results.results[0].FailureCode != codes.PermissionDenied.String() {
+	if len(results.results) != 1 || results.results[0].FailureCode != settlementrpc.ErrorClassName(settlementrpc.ErrorPermissionDenied) {
 		t.Fatalf("failure result = %+v", results.results)
 	}
 }

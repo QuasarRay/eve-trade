@@ -9,10 +9,9 @@ import (
 
 	"encore.dev/beta/errs"
 	"encore.dev/pubsub"
+	"github.com/QuasarRay/eve-trade/distributed-backend/internal/settlementrpc"
 	"github.com/QuasarRay/eve-trade/distributed-backend/src/settlement"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -90,7 +89,7 @@ func TestSettlementOperationResponseIsDeterministic(t *testing.T) {
 		State:              tradesettlementv1.SettlementOperationState_SETTLEMENT_OPERATION_STATE_FAILED,
 		QueuedAt:           queuedAt,
 		UpdatedAt:          updatedAt,
-		FailureCode:        codes.PermissionDenied.String(),
+		FailureCode:        settlementrpc.ErrorClassName(settlementrpc.ErrorPermissionDenied),
 		FailureDescription: "unauthorized actor",
 	}
 
@@ -107,18 +106,18 @@ func TestSettlementOperationResponseIsDeterministic(t *testing.T) {
 
 func TestSettlementOperationAPIErrorsPreserveClientMeaning(t *testing.T) {
 	tests := []struct {
-		grpcCode codes.Code
-		want     errs.ErrCode
+		errorClass settlementrpc.ErrorClass
+		want       errs.ErrCode
 	}{
-		{grpcCode: codes.InvalidArgument, want: errs.InvalidArgument},
-		{grpcCode: codes.NotFound, want: errs.NotFound},
-		{grpcCode: codes.DeadlineExceeded, want: errs.Unavailable},
-		{grpcCode: codes.Unavailable, want: errs.Unavailable},
-		{grpcCode: codes.Internal, want: errs.Internal},
+		{errorClass: settlementrpc.ErrorInvalidArgument, want: errs.InvalidArgument},
+		{errorClass: settlementrpc.ErrorNotFound, want: errs.NotFound},
+		{errorClass: settlementrpc.ErrorDeadlineExceeded, want: errs.Unavailable},
+		{errorClass: settlementrpc.ErrorUnavailable, want: errs.Unavailable},
+		{errorClass: settlementrpc.ErrorInternal, want: errs.Internal},
 	}
 	for _, test := range tests {
-		t.Run(test.grpcCode.String(), func(t *testing.T) {
-			err := settlementOperationAPIError(status.Error(test.grpcCode, "failure"))
+		t.Run(settlementrpc.ErrorClassName(test.errorClass), func(t *testing.T) {
+			err := settlementOperationAPIError(settlementrpc.NewError(test.errorClass, "failure"))
 			if got := errs.Code(err); got != test.want {
 				t.Fatalf("error code = %v, want %v: %v", got, test.want, err)
 			}
@@ -153,7 +152,7 @@ func TestSettlementResultMustMatchDurableTerminalState(t *testing.T) {
 		t.Fatal("non-terminal durable operation accepted a result")
 	}
 	operation.State = tradesettlementv1.SettlementOperationState_SETTLEMENT_OPERATION_STATE_FAILED
-	operation.FailureCode = codes.PermissionDenied.String()
+	operation.FailureCode = settlementrpc.ErrorClassName(settlementrpc.ErrorPermissionDenied)
 	if err := validateSettlementResult(&settlement.Result{OperationID: operation.OperationId}, operation); err == nil {
 		t.Fatal("mismatched durable failure accepted")
 	}

@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"encore.dev/beta/errs"
+	"github.com/QuasarRay/eve-trade/distributed-backend/internal/settlementrpc"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 	"github.com/andeya/gust/option"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -127,12 +126,12 @@ func settlementOperationResponse(operation *tradesettlementv1.SettlementOperatio
 }
 
 func settlementOperationAPIError(err error) error {
-	switch status.Code(err) {
-	case codes.InvalidArgument:
+	switch settlementrpc.ClassifyError(err) {
+	case settlementrpc.ErrorInvalidArgument:
 		return errs.WrapCode(err, errs.InvalidArgument, "invalid settlement operation query")
-	case codes.NotFound:
+	case settlementrpc.ErrorNotFound:
 		return errs.WrapCode(err, errs.NotFound, "settlement operation not found")
-	case codes.DeadlineExceeded, codes.Unavailable:
+	case settlementrpc.ErrorDeadlineExceeded, settlementrpc.ErrorUnavailable:
 		return errs.WrapCode(err, errs.Unavailable, "settlement lifecycle unavailable")
 	default:
 		return errs.WrapCode(err, errs.Internal, "load settlement operation")

@@ -8,10 +8,9 @@ import (
 	"encore.dev/beta/errs"
 	"encore.dev/pubsub"
 	fpArray "github.com/IBM/fp-go/v2/array"
+	"github.com/QuasarRay/eve-trade/distributed-backend/internal/settlementrpc"
 	"github.com/QuasarRay/eve-trade/distributed-backend/src/settlement"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 //encore:service
@@ -94,7 +93,7 @@ func (s *Service) HandleSettlementWork(ctx context.Context, work *settlement.Wor
 		operation, updateErr := s.executor.UpdateSettlementOperation(ctx, &tradesettlementv1.UpdateSettlementOperationRequest{
 			OperationId:        work.OperationID,
 			State:              tradesettlementv1.SettlementOperationState_SETTLEMENT_OPERATION_STATE_FAILED,
-			FailureCode:        status.Code(err).String(),
+			FailureCode:        settlementrpc.ErrorCodeString(err),
 			FailureDescription: err.Error(),
 		})
 		if updateErr != nil {
@@ -149,15 +148,8 @@ var isTerminalOperation = containsValue(fpArray.From(
 	tradesettlementv1.SettlementOperationState_SETTLEMENT_OPERATION_STATE_EXPIRED,
 ))
 
-var isPermanentSettlementCode = containsValue(fpArray.From(
-	codes.InvalidArgument,
-	codes.PermissionDenied,
-	codes.FailedPrecondition,
-	codes.NotFound,
-))
-
 func isPermanentSettlementFailure(err error) bool {
-	return isPermanentSettlementCode(status.Code(err))
+	return settlementrpc.IsPermanentError(err)
 }
 
 func containsValue[T comparable](values []T) func(T) bool {

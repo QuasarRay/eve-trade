@@ -6,7 +6,9 @@ import (
 
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -29,6 +31,77 @@ func New(target string) (*Client, error) {
 
 func NewWithConn(conn grpc.ClientConnInterface) *Client {
 	return &Client{conn: conn}
+}
+
+type ErrorClass uint8
+
+const (
+	ErrorUnknown ErrorClass = iota
+	ErrorInvalidArgument
+	ErrorNotFound
+	ErrorDeadlineExceeded
+	ErrorUnavailable
+	ErrorPermissionDenied
+	ErrorInternal
+)
+
+func ErrorCodeString(err error) string {
+	return status.Code(err).String()
+}
+
+func ClassifyError(err error) ErrorClass {
+	switch status.Code(err) {
+	case codes.InvalidArgument:
+		return ErrorInvalidArgument
+	case codes.NotFound:
+		return ErrorNotFound
+	case codes.DeadlineExceeded:
+		return ErrorDeadlineExceeded
+	case codes.Unavailable:
+		return ErrorUnavailable
+	case codes.PermissionDenied:
+		return ErrorPermissionDenied
+	case codes.Internal:
+		return ErrorInternal
+	default:
+		return ErrorUnknown
+	}
+}
+
+func NewError(class ErrorClass, message string) error {
+	return status.Error(grpcCode(class), message)
+}
+
+func ErrorClassName(class ErrorClass) string {
+	return grpcCode(class).String()
+}
+
+func grpcCode(class ErrorClass) codes.Code {
+	switch class {
+	case ErrorInvalidArgument:
+		return codes.InvalidArgument
+	case ErrorNotFound:
+		return codes.NotFound
+	case ErrorDeadlineExceeded:
+		return codes.DeadlineExceeded
+	case ErrorUnavailable:
+		return codes.Unavailable
+	case ErrorPermissionDenied:
+		return codes.PermissionDenied
+	case ErrorInternal:
+		return codes.Internal
+	default:
+		return codes.Unknown
+	}
+}
+
+func IsPermanentError(err error) bool {
+	switch status.Code(err) {
+	case codes.InvalidArgument, codes.PermissionDenied, codes.FailedPrecondition, codes.NotFound:
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *Client) QueueSettlementOperation(ctx context.Context, request *tradesettlementv1.QueueSettlementOperationRequest) (*tradesettlementv1.QueueSettlementOperationResponse, error) {
