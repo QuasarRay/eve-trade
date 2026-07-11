@@ -63,14 +63,14 @@ extend buf.validate.StringRules {
 
   optional bool edge_schema_version = 50009 [(buf.validate.predefined).cel = {
     id: "eve.string.edge_schema_version"
-    message: "schema_version must be eve-trade-edge.v1"
-    expression: "this == 'eve-trade-edge.v1'"
+    message: "schema_version must be eve-trade-edge.v2"
+    expression: "this == 'eve-trade-edge.v2'"
   }];
 
   optional bool edge_response_schema_version = 50010 [(buf.validate.predefined).cel = {
     id: "eve.string.edge_response_schema_version"
-    message: "schema_version must be eve-trade-edge-response.v1"
-    expression: "this == 'eve-trade-edge-response.v1'"
+    message: "schema_version must be eve-trade-edge-response.v2"
+    expression: "this == 'eve-trade-edge-response.v2'"
   }];
 
   optional bool hmac_sha256_algorithm = 50011 [(buf.validate.predefined).cel = {

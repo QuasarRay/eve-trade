@@ -44,11 +44,14 @@ func (h *MarketHandler) cancelTradeInstance(ctx context.Context, message cancelT
 		return nil, apiError(errs.InvalidArgument, err)
 	}
 
-	if _, err = h.executePlan(ctx, plan); err != nil {
+	publication, err := h.executePlan(ctx, plan)
+	if err != nil {
 		span.RecordError(err)
 		return nil, err
 	}
 	return &cancelTradeInstanceResult{
+		OperationID:       publication.OperationID,
+		QueuedAt:          publication.QueuedAt,
 		SettlementBatchID: "",
 	}, nil
 }

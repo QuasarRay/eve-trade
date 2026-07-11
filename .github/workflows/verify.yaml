@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, experimental]
   pull_request:
-    branches: [main]
+    branches: [main, experimental]
   workflow_dispatch:
 
 permissions:
@@ -18,6 +18,7 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
   ENCORE_CLI_VERSION: "1.57.9"
+  ENCORE_CLI_SHA256: "dfd43dcd456f91414a823315480da921333e6d1e3535ab48c47c09225d022af5"
 
 jobs:
   proto:
@@ -28,6 +29,12 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
+      - uses: ./.github/actions/ci-evidence
+        with:
+          mode: start
+          job-id: proto
+          job-name: proto / buf
+          artifact-key: proto
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
@@ -45,6 +52,15 @@ jobs:
         run: buf breaking --against '.git#branch=main'
       - run: buf generate
       - run: git diff --exit-code -- proto/gen
+      - if: ${{ always() }}
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: finish
+          job-id: proto
+          job-name: proto / buf
+          artifact-key: proto
+          status: ${{ job.status }}
+          command-identity: verify/proto
 
   go:
     name: go / encore
@@ -53,18 +69,22 @@ jobs:
     needs: [proto]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: ./.github/actions/ci-evidence
+        with:
+          mode: start
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
           cache: true
       - name: Install Encore CLI
         run: |
-          curl -fsSL https://encore.dev/install.sh | bash -s -- --version "$ENCORE_CLI_VERSION" || {
-            mkdir -p "$HOME/.encore/bin"
-            GOBIN="$HOME/.encore/bin" go install "encr.dev/cli/cmd/encore@v$ENCORE_CLI_VERSION"
-          }
+          ENCORE_INSTALL="$HOME/.encore" bash scripts/install_encore_cli.sh
           echo "$HOME/.encore/bin" >> "$GITHUB_PATH"
-      - run: encore version
+      - name: Verify Encore CLI executable
+        run: encore --help >/dev/null
       - name: Check Go module metadata
         run: |
           go mod tidy
@@ -82,6 +102,25 @@ jobs:
         run: encore test -run '^$' -fuzz '^FuzzAuthenticatedPayload' -fuzztime 10s ./distributed-backend/src/gateway
       - name: Build Encore image
         run: encore build docker --config infra/encore/self-host.nsq.json eve-trade/encore-backend:${{ github.sha }}
+      - name: Scan Encore image
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0, post-incident safe pin
+        with:
+          image-ref: eve-trade/encore-backend:${{ github.sha }}
+          version: v0.69.3
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          cache: "false"
+      - if: ${{ always() }}
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: finish
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          status: ${{ job.status }}
+          command-identity: verify/go
+          dependencies: proto
 
   rust-trade-settlement:
     name: rust / trade-settlement
@@ -92,6 +131,12 @@ jobs:
         working-directory: distributed-backend/src/trade-settlement
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: ./.github/actions/ci-evidence
+        with:
+          mode: start
+          job-id: rust-trade-settlement
+          job-name: rust / trade-settlement
+          artifact-key: rust-trade-settlement
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           toolchain: "1.95.0"
@@ -101,6 +146,15 @@ jobs:
       - run: cargo check --locked --all-targets --all-features
       - run: cargo test --locked --all-features
       - run: cargo clippy --locked --all-targets --all-features -- -D warnings
+      - if: ${{ always() }}
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: finish
+          job-id: rust-trade-settlement
+          job-name: rust / trade-settlement
+          artifact-key: rust-trade-settlement
+          status: ${{ job.status }}
+          command-identity: verify/rust-trade-settlement
 
   terraform:
     name: terraform / ${{ matrix.provider }}
@@ -118,13 +172,28 @@ jobs:
             root: distributed-backend/terraform/talos-omni
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: ./.github/actions/ci-evidence
+        with:
+          mode: start
+          job-id: terraform
+          job-name: terraform / ${{ matrix.provider }}
+          artifact-key: terraform-${{ matrix.provider }}
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
         with:
-          terraform_version: 1.10.5
+          terraform_version: 1.15.8
       - run: terraform fmt -check -recursive distributed-backend/terraform
       - run: terraform -chdir=${{ matrix.root }} init -backend=false
       - run: terraform -chdir=${{ matrix.root }} validate
       - run: terraform -chdir=${{ matrix.root }} test
+      - if: ${{ always() }}
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: finish
+          job-id: terraform
+          job-name: terraform / ${{ matrix.provider }}
+          artifact-key: terraform-${{ matrix.provider }}
+          status: ${{ job.status }}
+          command-identity: verify/terraform/${{ matrix.provider }}
 
   kubernetes:
     name: kubernetes / render
@@ -132,6 +201,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: ./.github/actions/ci-evidence
+        with:
+          mode: start
+          job-id: kubernetes
+          job-name: kubernetes / render
+          artifact-key: kubernetes
       - uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5
         with:
           version: v1.33.0
@@ -143,7 +218,17 @@ jobs:
           kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/local >/tmp/eve-trade-local.yaml
           kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/prod >/tmp/eve-trade-prod.yaml
           kubectl kustomize distributed-backend/orchestration/kubernetes/chaos/litmus/overlays/prod >/tmp/eve-trade-chaos.yaml
-      - run: python scripts/verify_rendered_kubernetes.py /tmp/eve-trade-prod.yaml
+      - run: python scripts/verify_rendered_kubernetes.py --expect-unresolved-image-template /tmp/eve-trade-prod.yaml
+      - run: python -m unittest discover -s scripts/tests -v
+      - if: ${{ always() }}
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: finish
+          job-id: kubernetes
+          job-name: kubernetes / render
+          artifact-key: kubernetes
+          status: ${{ job.status }}
+          command-identity: verify/kubernetes
 
   python:
     name: python / simulator and observability
@@ -151,6 +236,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: ./.github/actions/ci-evidence
+        with:
+          mode: start
+          job-id: python
+          job-name: python / simulator and observability
+          artifact-key: python
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
@@ -164,14 +255,149 @@ jobs:
           python -m pip install -r distributed-backend/observability/requirements-test.txt
           PYTHONPATH=distributed-backend python -m coverage run --rcfile=distributed-backend/observability/.coveragerc -m unittest discover -s distributed-backend/observability/tests -v
           python -m coverage report --rcfile=distributed-backend/observability/.coveragerc --fail-under=35
+      - if: ${{ always() }}
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: finish
+          job-id: python
+          job-name: python / simulator and observability
+          artifact-key: python
+          status: ${{ job.status }}
+          command-identity: verify/python
+
+  architecture:
+    name: architecture / boundaries and schema
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: ./.github/actions/ci-evidence
+        with:
+          mode: start
+          job-id: architecture
+          job-name: architecture / boundaries and schema
+          artifact-key: architecture
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+      - run: python scripts/verify_architecture_boundaries.py
+      - run: python scripts/verify_schema_ownership.py
+      - run: python -m unittest discover -s scripts/tests -v
+      - if: ${{ always() }}
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: finish
+          job-id: architecture
+          job-name: architecture / boundaries and schema
+          artifact-key: architecture
+          status: ${{ job.status }}
+          command-identity: verify/architecture
+
+  gui-contract:
+    name: gui / contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: ./.github/actions/ci-evidence
+        with:
+          mode: start
+          job-id: gui-contract
+          job-name: gui / contract
+          artifact-key: gui-contract
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: "24.7.0"
+          package-manager-cache: false
+      - run: npm run gui:test
+      - if: ${{ always() }}
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: finish
+          job-id: gui-contract
+          job-name: gui / contract
+          artifact-key: gui-contract
+          status: ${{ job.status }}
+          command-identity: verify/gui-contract
+
+  security:
+    name: security / dependencies and source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/ci-evidence
+        with:
+          mode: start
+          job-id: security
+          job-name: security / dependencies and source
+          artifact-key: security
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Go vulnerability audit
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+          govulncheck ./...
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: "1.95.0"
+      - name: Rust advisory audit
+        working-directory: distributed-backend/src/trade-settlement
+        run: |
+          cargo install cargo-audit --locked --version 0.22.2
+          # RUSTSEC-2023-0071 has no fixed release and rsa is retained only by
+          # SQLx's inactive MySQL lockfile branch; cargo tree --all-features
+          # confirms it is absent from the settlement service build graph.
+          cargo audit --deny warnings --ignore RUSTSEC-2023-0071
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+      - name: Python dependency audits
+        run: |
+          python -m pip install pip-audit==2.10.1
+          pip-audit --requirement simulator/requirements.txt
+          pip-audit --requirement simulator/requirements-test.txt
+          pip-audit --requirement distributed-backend/tests/e2e/requirements.txt
+          pip-audit --requirement distributed-backend/observability/requirements.txt
+          pip-audit --requirement distributed-backend/observability/requirements-test.txt
+      - name: Secret and infrastructure scan
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0, post-incident safe pin
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          version: v0.69.3
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          cache: "false"
+      - if: ${{ always() }}
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: finish
+          job-id: security
+          job-name: security / dependencies and source
+          artifact-key: security
+          status: ${{ job.status }}
+          command-identity: verify/security
 
   e2e:
     name: e2e / observed
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    needs: [go, rust-trade-settlement, kubernetes, python]
+    needs: [go, rust-trade-settlement, terraform, kubernetes, python, architecture, gui-contract, security]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: ./.github/actions/ci-evidence
+        with:
+          mode: start
+          job-id: e2e
+          job-name: e2e / observed
+          artifact-key: e2e
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
@@ -186,13 +412,23 @@ jobs:
           OTEL_COLLECTOR_CONFIG: ${{ secrets.HONEYCOMB_API_KEY != '' && './distributed-backend/observability/collector/otel-collector.honeycomb.yaml' || './distributed-backend/observability/collector/otel-collector.local.yaml' }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: python distributed-backend/observability/ci/observed_run.py integration --clean
+      - if: ${{ always() }}
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: finish
+          job-id: e2e
+          job-name: e2e / observed
+          artifact-key: e2e
+          status: ${{ job.status }}
+          command-identity: verify/e2e-observed
+          dependencies: go rust-trade-settlement terraform kubernetes python architecture gui-contract security
 
   o11y-aggregate:
     name: o11y / aggregate
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     if: ${{ always() }}
-    needs: [proto, go, rust-trade-settlement, terraform, kubernetes, python, e2e]
+    needs: [proto, go, rust-trade-settlement, terraform, kubernetes, python, architecture, gui-contract, security, e2e]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -200,9 +436,13 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
+      - name: Download current-run producer evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: o11y-producer-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .o11y/producer-artifacts
+          merge-multiple: true
       - name: Aggregate observed CI evidence
-        id: aggregate
-        continue-on-error: true
         env:
           OBSERVABILITY_ENV: github-actions
           OBS_CI_NEEDS_JSON: ${{ toJson(needs) }}
@@ -213,7 +453,4 @@ jobs:
         with:
           name: o11y-aggregate-${{ github.run_id }}-${{ github.run_attempt }}
           path: .o11y/runs/**
-          if-no-files-found: warn
-      - name: Fail if aggregate found failed or incomplete jobs
-        if: ${{ steps.aggregate.outcome == 'failure' }}
-        run: exit 1
+          if-no-files-found: error

@@ -4,3 +4,7 @@ pub const FILE_DESCRIPTOR_SET_BYTES: &[u8] =
 pub mod trade_settlement {
     tonic::include_proto!("eve.trade_settlement.v1");
 }
+
+pub mod health {
+    tonic::include_proto!("grpc.health.v1");
+}

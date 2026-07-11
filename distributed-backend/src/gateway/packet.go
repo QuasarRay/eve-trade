@@ -10,14 +10,18 @@ import (
 
 	"github.com/QuasarRay/eve-trade/distributed-backend/src/market"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
+type replaySpan interface {
+	SetAttributes(...attribute.KeyValue)
+}
+
 func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketConn, remote net.Addr, packet []byte) {
-	ctx, receiveSpan := udpTracer.Start(parent, "gateway.receive_ui_activity", trace.WithAttributes(
+	ctx, receiveSpan := udpTracer.Start(parent, "gateway.receive_ui_activity")
+	receiveSpan.SetAttributes(
 		attribute.Int("network.packet.size", len(packet)),
 		attribute.String("network.transport", "udp"),
-	))
+	)
 	defer receiveSpan.End()
 
 	if rejection := validateInboundPacket(packet); rejection != nil {
@@ -25,6 +29,12 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 		slog.Warn("udp packet rejected", "reason", "empty_packet", "remote", remoteKey(remote))
 		recordUDPPacket(parent, "empty_packet", 0)
 		s.writeError(conn, remote, "", "empty_packet", "empty packet")
+		return
+	}
+	if !s.allowSource(remote) {
+		receiveSpan.SetAttributes(attribute.String("validation.result", "dropped"), attribute.String("rejection.reason", "source_rate_limited"))
+		recordUDPPacket(parent, "source_rate_limited", len(packet))
+		recordUDPState(parent, s)
 		return
 	}
 
@@ -36,7 +46,7 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 	if err != nil {
 		receiveSpan.RecordError(err)
 		receiveSpan.SetAttributes(attribute.String("validation.result", "rejected"), attribute.String("rejection.reason", err.Code))
-		slog.Warn("udp packet rejected", "reason", err.Code, "remote", remoteKey(remote))
+		slog.Debug("udp packet rejected", "reason", err.Code, "remote", remoteKey(remote))
 		recordUDPPacket(parent, err.Code, len(packet))
 		s.writeError(conn, remote, interactionID, err.Code, err.ClientMessage)
 		return
@@ -90,9 +100,15 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 	recordUDPPacket(parent, "success", len(packet))
 }
 
-func (s *QuilkinUDPServer) handleReplay(parent context.Context, conn net.PacketConn, remote net.Addr, packet []byte, interactionID string, fingerprint [sha256.Size]byte, span trace.Span) bool {
+func (s *QuilkinUDPServer) handleReplay(parent context.Context, conn net.PacketConn, remote net.Addr, packet []byte, interactionID string, fingerprint [sha256.Size]byte, span replaySpan) bool {
+	defer recordUDPState(parent, s)
 	replayState, cachedResponse := s.replay().begin(interactionID, fingerprint)
 	switch replayState {
+	case replayOverflow:
+		span.SetAttributes(attribute.String("interaction_id", interactionID), attribute.String("validation.result", "retry_later"), attribute.String("rejection.reason", "replay_capacity"))
+		recordUDPPacket(parent, "replay_capacity", len(packet))
+		s.writeError(conn, remote, interactionID, "gateway_capacity", "temporarily overloaded")
+		return true
 	case replayCached:
 		span.SetAttributes(attribute.String("interaction_id", interactionID), attribute.String("validation.result", "cached"))
 		slog.Info("udp retry served from response cache", "remote", remoteKey(remote), "interaction_id", interactionID)
@@ -120,7 +136,8 @@ func (s *QuilkinUDPServer) handleReplay(parent context.Context, conn net.PacketC
 
 func (s *QuilkinUDPServer) forwardToMarket(ctx context.Context, interactionID string, rawPayload []byte) ([]byte, time.Duration, error) {
 	start := time.Now()
-	forwardCtx, forwardSpan := udpTracer.Start(ctx, "gateway.forward_to_market", trace.WithAttributes(attribute.String("interaction_id", interactionID)))
+	forwardCtx, forwardSpan := udpTracer.Start(ctx, "gateway.forward_to_market")
+	forwardSpan.SetAttributes(attribute.String("interaction_id", interactionID))
 	response, callErr := s.market.SubmitTradeGuiInteraction(forwardCtx, &market.SubmitTradeGuiInteractionRequest{
 		RawPayload: rawPayload,
 	})

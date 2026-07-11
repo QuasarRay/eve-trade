@@ -41,20 +41,23 @@ spec:
             - secretRef:
                 name: trade-settlement-database
           startupProbe:
-            tcpSocket:
-              port: grpc
+            grpc:
+              port: 9092
+              service: liveness
             periodSeconds: 5
             timeoutSeconds: 2
             failureThreshold: 18
           readinessProbe:
-            tcpSocket:
-              port: grpc
+            grpc:
+              port: 9092
+              service: readiness
             periodSeconds: 5
             timeoutSeconds: 2
             failureThreshold: 3
           livenessProbe:
-            tcpSocket:
-              port: grpc
+            grpc:
+              port: 9092
+              service: liveness
             initialDelaySeconds: 15
             periodSeconds: 20
             timeoutSeconds: 2

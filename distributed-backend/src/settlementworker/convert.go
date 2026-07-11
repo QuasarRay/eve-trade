@@ -22,12 +22,12 @@ func toProtoRequest(work *settlement.Work) (*tradesettlementv1.ExecuteSettlement
 		operations = append(operations, operation)
 	}
 	request := &tradesettlementv1.ExecuteSettlementBatchRequest{
-		IdempotencyKey:     work.IdempotencyKey,
-		RequestFingerprint: work.RequestFingerprint,
-		ExternalRequestId:  work.ExternalRequestID,
-		Operations:         operations,
-		CreatedByService:   work.CreatedByService,
-		RequestId:          work.RequestID,
+		Intent:            settlementIntent(work.Intent),
+		IdempotencyKey:    work.IdempotencyKey,
+		ExternalRequestId: work.ExternalRequestID,
+		Operations:        operations,
+		CreatedByService:  work.CreatedByService,
+		RequestId:         work.RequestID,
 	}
 	if work.CausedByCapsuleerID != 0 {
 		request.CausedByCapsuleerId = &work.CausedByCapsuleerID
@@ -36,6 +36,19 @@ func toProtoRequest(work *settlement.Work) (*tradesettlementv1.ExecuteSettlement
 		return nil, err
 	}
 	return request, nil
+}
+
+func settlementIntent(intent string) tradesettlementv1.SettlementIntent {
+	switch intent {
+	case settlement.IntentIssue:
+		return tradesettlementv1.SettlementIntent_SETTLEMENT_INTENT_ISSUE
+	case settlement.IntentAccept:
+		return tradesettlementv1.SettlementIntent_SETTLEMENT_INTENT_ACCEPT
+	case settlement.IntentCancel:
+		return tradesettlementv1.SettlementIntent_SETTLEMENT_INTENT_CANCEL
+	default:
+		return tradesettlementv1.SettlementIntent_SETTLEMENT_INTENT_UNSPECIFIED
+	}
 }
 
 func toProtoOperation(operation settlement.Operation) (*tradesettlementv1.SettlementOperation, error) {

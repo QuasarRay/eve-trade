@@ -1,10 +1,12 @@
 package market
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -56,6 +58,8 @@ type TradeRepository interface {
 }
 
 type IdempotencyReplay struct {
+	OperationID         string
+	QueuedAt            time.Time
 	SettlementBatchID   string
 	RequestFingerprint  string
 	ExternalRequestID   string
@@ -237,12 +241,15 @@ func (r *PostgresTradeRepository) LoadCompletedIdempotencyReplay(ctx context.Con
 		SELECT ir.result_settlement_batch_id::text,
 		       ir.request_fingerprint,
 		       COALESCE(sb.external_request_id, ''),
-		       COALESCE(sb.caused_by_capsuleer_id, 0)
+		       COALESCE(sb.caused_by_capsuleer_id, 0),
+		       COALESCE(op.operation_id::text, ''),
+		       COALESCE(op.queued_at, sb.started_at)
 		FROM idempotency_record ir
 		JOIN settlement_batch sb ON sb.settlement_batch_id = ir.result_settlement_batch_id
+		LEFT JOIN settlement_operation op ON op.idempotency_key = ir.idempotency_key
 		WHERE ir.idempotency_key = $1
 		  AND ir.idempotency_state = 'COMPLETED'
-	`, idempotencyKey).Scan(&replay.SettlementBatchID, &replay.RequestFingerprint, &replay.ExternalRequestID, &replay.CausedByCapsuleerID)
+	`, idempotencyKey).Scan(&replay.SettlementBatchID, &replay.RequestFingerprint, &replay.ExternalRequestID, &replay.CausedByCapsuleerID, &replay.OperationID, &replay.QueuedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -267,13 +274,32 @@ func (r *PostgresTradeRepository) LoadCompletedIdempotencyReplay(ctx context.Con
 		if err := rows.Scan(&step.StepKind, &payloadBytes); err != nil {
 			return nil, fmt.Errorf("scan idempotency replay step %s: %w", idempotencyKey, err)
 		}
-		if err := json.Unmarshal(payloadBytes, &step.Payload); err != nil {
+		payload, err := decodeReplayStepPayload(payloadBytes)
+		if err != nil {
 			return nil, fmt.Errorf("decode idempotency replay step %s: %w", idempotencyKey, err)
 		}
+		step.Payload = payload
 		replay.Steps = append(replay.Steps, step)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate idempotency replay steps %s: %w", idempotencyKey, err)
 	}
 	return &replay, nil
+}
+
+func decodeReplayStepPayload(payloadBytes []byte) (map[string]AnyJSON, error) {
+	var payload map[string]AnyJSON
+	decoder := json.NewDecoder(bytes.NewReader(payloadBytes))
+	decoder.UseNumber()
+	if err := decoder.Decode(&payload); err != nil {
+		return nil, err
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		if err == nil {
+			err = fmt.Errorf("trailing JSON data")
+		}
+		return nil, err
+	}
+	return payload, nil
 }

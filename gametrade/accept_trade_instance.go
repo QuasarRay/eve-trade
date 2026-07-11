@@ -98,6 +98,7 @@ func AcceptTradeInstance(input AcceptTradeInstanceInput) (SettlementPlan, error)
 	}
 
 	return SettlementPlan{
+		Intent:                 settlement.IntentAccept,
 		IdempotencyKey:         input.IdempotencyKey,
 		ExternalRequestID:      input.ExternalRequestID,
 		CausedByCapsuleerID:    input.BuyerCapsuleerID,

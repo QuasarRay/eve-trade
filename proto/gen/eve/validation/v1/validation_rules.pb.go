@@ -198,10 +198,10 @@ const file_eve_validation_v1_validation_rules_proto_rawDesc = "" +
 	"\x1beve.string.trade_gui_action\x12\x1cunsupported trade GUI action\x1a\xff\x01this in ['market_place_sell_order', 'contract_create_item_exchange', 'direct_trade_offer', 'market_buy_from_sell_order', 'contract_accept_item_exchange', 'direct_trade_accept', 'market_cancel_order', 'contract_cancel_item_exchange', 'direct_trade_cancel']R\x0etradeGuiAction:\xb9\x01\n" +
 	"\x13edge_schema_version\x12\x19.buf.validate.StringRules\x18ن\x03 \x01(\bBl\xc2Hi\n" +
 	"g\n" +
-	"\x1eeve.string.edge_schema_version\x12(schema_version must be eve-trade-edge.v1\x1a\x1bthis == 'eve-trade-edge.v1'R\x11edgeSchemaVersion:\xe8\x01\n" +
+	"\x1eeve.string.edge_schema_version\x12(schema_version must be eve-trade-edge.v2\x1a\x1bthis == 'eve-trade-edge.v2'R\x11edgeSchemaVersion:\xe8\x01\n" +
 	"\x1cedge_response_schema_version\x12\x19.buf.validate.StringRules\x18چ\x03 \x01(\bB\x89\x01\xc2H\x85\x01\n" +
 	"\x82\x01\n" +
-	"'eve.string.edge_response_schema_version\x121schema_version must be eve-trade-edge-response.v1\x1a$this == 'eve-trade-edge-response.v1'R\x19edgeResponseSchemaVersion:\xae\x01\n" +
+	"'eve.string.edge_response_schema_version\x121schema_version must be eve-trade-edge-response.v2\x1a$this == 'eve-trade-edge-response.v2'R\x19edgeResponseSchemaVersion:\xae\x01\n" +
 	"\x15hmac_sha256_algorithm\x12\x19.buf.validate.StringRules\x18ۆ\x03 \x01(\bB]\xc2HZ\n" +
 	"X\n" +
 	" eve.string.hmac_sha256_algorithm\x12\x1dalgorithm must be hmac-sha256\x1a\x15this == 'hmac-sha256'R\x13hmacSha256Algorithm:\x87\x01\n" +

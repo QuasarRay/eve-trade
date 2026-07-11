@@ -33,3 +33,7 @@ __pycache__/
 /.o11y/runs/latest-local.txt
 /.o11y/runs/local-*
 /.o11y/runs/gha-*
+encore.gen.go
+encore.gen.cue
+/.encore
+/encore.gen

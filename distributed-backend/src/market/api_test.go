@@ -27,8 +27,8 @@ func resetDefaultMarketStateForTest(t *testing.T) {
 			StartupRetryInterval:     time.Millisecond,
 		}
 	}
-	newDefaultSettlementPublisher = func() SettlementPublisher {
-		return fakeSettlementExecutor{}
+	newDefaultSettlementPublisher = func(Config) (SettlementPublisher, error) {
+		return fakeSettlementExecutor{}, nil
 	}
 	t.Cleanup(func() {
 		defaultState.mu.Lock()

@@ -128,11 +128,37 @@ func actorRejection(actor *api_gatewayv1.AuthenticatedTradeGuiActor, err error) 
 				return reject("missing_principal", "capsuleer identity is required")
 			}
 			return reject("principal_mismatch", "authenticated capsuleer does not match request actor")
-		case "gateway.actor.item_stack_owner_matches_principal", "gateway.actor.all_known_actor_claims_match_principal":
-			return reject("principal_mismatch", "authenticated capsuleer does not match actor field")
+		case "gateway.actor.item_stack_owner_matches_principal":
+			return reject("principal_mismatch", "authenticated capsuleer does not match item_stack.owner_id")
+		case "gateway.actor.all_known_actor_claims_match_principal":
+			return reject("principal_mismatch", fmt.Sprintf(
+				"authenticated capsuleer does not match %s",
+				mismatchedActorField(actor),
+			))
 		}
 	}
 	return reject("malformed_packet", "malformed packet")
+}
+
+func mismatchedActorField(actor *api_gatewayv1.AuthenticatedTradeGuiActor) string {
+	principalID := actor.GetAuthenticatedCapsuleerId()
+	claims := []struct {
+		name  string
+		value int64
+	}{
+		{"issued_by_capsuleer_id", actor.GetIssuedByCapsuleerId()},
+		{"buyer_capsuleer_id", actor.GetBuyerCapsuleerId()},
+		{"cancelled_by_capsuleer_id", actor.GetCancelledByCapsuleerId()},
+		{"seller_capsuleer_id", actor.GetSellerCapsuleerId()},
+		{"accepted_by_capsuleer_id", actor.GetAcceptedByCapsuleerId()},
+		{"delegated_capsuleer_id", actor.GetDelegatedCapsuleerId()},
+	}
+	for _, claim := range claims {
+		if claim.value != 0 && claim.value != principalID {
+			return claim.name
+		}
+	}
+	return "actor field"
 }
 
 func validationViolations(err error) []*protovalidate.Violation {

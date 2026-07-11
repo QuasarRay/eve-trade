@@ -725,6 +725,7 @@ type TradeGuiUi struct {
 	Window        string                 `protobuf:"bytes,1,opt,name=window,proto3" json:"window,omitempty"`
 	Button        string                 `protobuf:"bytes,2,opt,name=button,proto3" json:"button,omitempty"`
 	Action        string                 `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
+	ControlId     string                 `protobuf:"bytes,4,opt,name=control_id,json=controlId,proto3" json:"control_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -780,6 +781,13 @@ func (x *TradeGuiUi) GetAction() string {
 	return ""
 }
 
+func (x *TradeGuiUi) GetControlId() string {
+	if x != nil {
+		return x.ControlId
+	}
+	return ""
+}
+
 type TradeGuiInput struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	IdempotencyKey              string                 `protobuf:"bytes,1,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
@@ -798,6 +806,9 @@ type TradeGuiInput struct {
 	SellerCapsuleerId           int64                  `protobuf:"varint,14,opt,name=seller_capsuleer_id,json=sellerCapsuleerId,proto3" json:"seller_capsuleer_id,omitempty"`
 	AcceptedByCapsuleerId       int64                  `protobuf:"varint,15,opt,name=accepted_by_capsuleer_id,json=acceptedByCapsuleerId,proto3" json:"accepted_by_capsuleer_id,omitempty"`
 	DelegatedCapsuleerId        int64                  `protobuf:"varint,16,opt,name=delegated_capsuleer_id,json=delegatedCapsuleerId,proto3" json:"delegated_capsuleer_id,omitempty"`
+	ItemTypeId                  int64                  `protobuf:"varint,17,opt,name=item_type_id,json=itemTypeId,proto3" json:"item_type_id,omitempty"`
+	StationId                   int64                  `protobuf:"varint,18,opt,name=station_id,json=stationId,proto3" json:"station_id,omitempty"`
+	SellerWalletId              string                 `protobuf:"bytes,19,opt,name=seller_wallet_id,json=sellerWalletId,proto3" json:"seller_wallet_id,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -944,6 +955,27 @@ func (x *TradeGuiInput) GetDelegatedCapsuleerId() int64 {
 	return 0
 }
 
+func (x *TradeGuiInput) GetItemTypeId() int64 {
+	if x != nil {
+		return x.ItemTypeId
+	}
+	return 0
+}
+
+func (x *TradeGuiInput) GetStationId() int64 {
+	if x != nil {
+		return x.StationId
+	}
+	return 0
+}
+
+func (x *TradeGuiInput) GetSellerWalletId() string {
+	if x != nil {
+		return x.SellerWalletId
+	}
+	return ""
+}
+
 var File_eve_market_v1_market_proto protoreflect.FileDescriptor
 
 const file_eve_market_v1_market_proto_rawDesc = "" +
@@ -1002,20 +1034,23 @@ const file_eve_market_v1_market_proto_rawDesc = "" +
 	"\x11trade_instance_id\x18\x04 \x01(\tR\x0ftradeInstanceId\x12/\n" +
 	"\x14item_stack_escrow_id\x18\x05 \x01(\tR\x11itemStackEscrowId\x12(\n" +
 	"\x10wallet_escrow_id\x18\x06 \x01(\tR\x0ewalletEscrowId\x12D\n" +
-	"\x1fbuyer_destination_item_stack_id\x18\a \x01(\tR\x1bbuyerDestinationItemStackId\"\xf4\t\n" +
+	"\x1fbuyer_destination_item_stack_id\x18\a \x01(\tR\x1bbuyerDestinationItemStackId\"\x87\n" +
+	"\n" +
 	"\x13TradeGuiInteraction\x120\n" +
 	"\x0eschema_version\x18\x01 \x01(\tB\t\xbaH\x06r\x04\xb8\xb5\x18\x01R\rschemaVersion\x120\n" +
 	"\x0einteraction_id\x18\x02 \x01(\tB\t\xbaH\x06r\x04\x80\xb5\x18\x01R\rinteractionId\x121\n" +
 	"\x02ui\x18\x03 \x01(\v2\x19.eve.market.v1.TradeGuiUiB\x06\xbaH\x03\xc8\x01\x01R\x02ui\x12:\n" +
-	"\x05input\x18\x04 \x01(\v2\x1c.eve.market.v1.TradeGuiInputB\x06\xbaH\x03\xc8\x01\x01R\x05input:\x89\b\xbaH\x85\b\x1a\xde\x02\n" +
-	" market.gui.issue_required_fields\x12Kissue trade GUI input requires seller, item stack, quantity, and unit price\x1a\xec\x01!(this.ui.action in ['market_place_sell_order', 'contract_create_item_exchange', 'direct_trade_offer']) || (this.input.issued_by_capsuleer_id > 0 && has(this.input.item_stack) && this.input.quantity > 0 && this.input.unit_price_isk > 0)\x1a\x8e\x03\n" +
-	"!market.gui.accept_required_fields\x12Haccept trade GUI input requires buyer, trade, quantity, and buyer wallet\x1a\x9e\x02!(this.ui.action in ['market_buy_from_sell_order', 'contract_accept_item_exchange', 'direct_trade_accept']) || (this.input.buyer_capsuleer_id > 0 && this.input.trade_instance_id != '' && (this.input.quantity_requested > 0 || this.input.quantity > 0) && this.input.buyer_wallet_id != '')\x1a\x90\x02\n" +
-	"!market.gui.cancel_required_fields\x120cancel trade GUI input requires issuer and trade\x1a\xb8\x01!(this.ui.action in ['market_cancel_order', 'contract_cancel_item_exchange', 'direct_trade_cancel']) || (this.input.cancelled_by_capsuleer_id > 0 && this.input.trade_instance_id != '')\"_\n" +
+	"\x05input\x18\x04 \x01(\v2\x1c.eve.market.v1.TradeGuiInputB\x06\xbaH\x03\xc8\x01\x01R\x05input:\x9c\b\xbaH\x98\b\x1a\xde\x02\n" +
+	" market.gui.issue_required_fields\x12Kissue trade GUI input requires seller, item stack, quantity, and unit price\x1a\xec\x01!(this.ui.action in ['market_place_sell_order', 'contract_create_item_exchange', 'direct_trade_offer']) || (this.input.issued_by_capsuleer_id > 0 && has(this.input.item_stack) && this.input.quantity > 0 && this.input.unit_price_isk > 0)\x1a\xa1\x03\n" +
+	"!market.gui.accept_required_fields\x12[accept trade GUI input requires buyer, trade, positive quantity_requested, and buyer wallet\x1a\x9e\x02!(this.ui.action in ['market_buy_from_sell_order', 'contract_accept_item_exchange', 'direct_trade_accept']) || (this.input.buyer_capsuleer_id > 0 && this.input.trade_instance_id != '' && (this.input.quantity_requested > 0 || this.input.quantity > 0) && this.input.buyer_wallet_id != '')\x1a\x90\x02\n" +
+	"!market.gui.cancel_required_fields\x120cancel trade GUI input requires issuer and trade\x1a\xb8\x01!(this.ui.action in ['market_cancel_order', 'contract_cancel_item_exchange', 'direct_trade_cancel']) || (this.input.cancelled_by_capsuleer_id > 0 && this.input.trade_instance_id != '')\"~\n" +
 	"\n" +
 	"TradeGuiUi\x12\x16\n" +
 	"\x06window\x18\x01 \x01(\tR\x06window\x12\x16\n" +
 	"\x06button\x18\x02 \x01(\tR\x06button\x12!\n" +
-	"\x06action\x18\x03 \x01(\tB\t\xbaH\x06r\x04\xc0\xb5\x18\x01R\x06action\"\xed\x06\n" +
+	"\x06action\x18\x03 \x01(\tB\t\xbaH\x06r\x04\xc0\xb5\x18\x01R\x06action\x12\x1d\n" +
+	"\n" +
+	"control_id\x18\x04 \x01(\tR\tcontrolId\"\xe3\a\n" +
 	"\rTradeGuiInput\x12'\n" +
 	"\x0fidempotency_key\x18\x01 \x01(\tR\x0eidempotencyKey\x12.\n" +
 	"\x13external_request_id\x18\x02 \x01(\tR\x11externalRequestId\x123\n" +
@@ -1035,7 +1070,12 @@ const file_eve_market_v1_market_proto_rawDesc = "" +
 	"expires_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\b\xbaH\x05\xb2\x01\x02@\x01R\texpiresAt\x12.\n" +
 	"\x13seller_capsuleer_id\x18\x0e \x01(\x03R\x11sellerCapsuleerId\x127\n" +
 	"\x18accepted_by_capsuleer_id\x18\x0f \x01(\x03R\x15acceptedByCapsuleerId\x124\n" +
-	"\x16delegated_capsuleer_id\x18\x10 \x01(\x03R\x14delegatedCapsuleerId2\xd6\x03\n" +
+	"\x16delegated_capsuleer_id\x18\x10 \x01(\x03R\x14delegatedCapsuleerId\x12 \n" +
+	"\fitem_type_id\x18\x11 \x01(\x03R\n" +
+	"itemTypeId\x12\x1d\n" +
+	"\n" +
+	"station_id\x18\x12 \x01(\x03R\tstationId\x123\n" +
+	"\x10seller_wallet_id\x18\x13 \x01(\tB\t\xbaH\x06r\x04\x90\xb5\x18\x01R\x0esellerWalletId2\xd6\x03\n" +
 	"\rMarketService\x12i\n" +
 	"\x12IssueTradeInstance\x12(.eve.market.v1.IssueTradeInstanceRequest\x1a).eve.market.v1.IssueTradeInstanceResponse\x12l\n" +
 	"\x13AcceptTradeInstance\x12).eve.market.v1.AcceptTradeInstanceRequest\x1a*.eve.market.v1.AcceptTradeInstanceResponse\x12l\n" +

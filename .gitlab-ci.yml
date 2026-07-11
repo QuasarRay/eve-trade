@@ -1,2 +1,2 @@
 include:
-  - local: ci-cd/gitlab/eve-trade.gitlab-ci.yml
+  - local: distributed-backend/ci-cd/gitlab/eve-trade.gitlab-ci.yml

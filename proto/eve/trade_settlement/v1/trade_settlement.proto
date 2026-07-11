@@ -10,6 +10,9 @@ option go_package = "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settleme
 
 service TradeSettlementService {
   rpc ExecuteSettlementBatch(ExecuteSettlementBatchRequest) returns (ExecuteSettlementBatchResponse);
+  rpc QueueSettlementOperation(QueueSettlementOperationRequest) returns (QueueSettlementOperationResponse);
+  rpc GetSettlementOperation(GetSettlementOperationRequest) returns (GetSettlementOperationResponse);
+  rpc UpdateSettlementOperation(UpdateSettlementOperationRequest) returns (UpdateSettlementOperationResponse);
 }
 
 message ExecuteSettlementBatchRequest {
@@ -20,6 +23,81 @@ message ExecuteSettlementBatchRequest {
   repeated SettlementOperation operations = 5 [(buf.validate.field).repeated.min_items = 1];
   string created_by_service = 6 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
   string request_id = 7 [(buf.validate.field).string.(eve.validation.v1.optional_uuid_string) = true];
+  SettlementIntent intent = 8 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+}
+
+enum SettlementIntent {
+  SETTLEMENT_INTENT_UNSPECIFIED = 0;
+  SETTLEMENT_INTENT_ISSUE = 1;
+  SETTLEMENT_INTENT_ACCEPT = 2;
+  SETTLEMENT_INTENT_CANCEL = 3;
+}
+
+enum SettlementOperationState {
+  SETTLEMENT_OPERATION_STATE_UNSPECIFIED = 0;
+  SETTLEMENT_OPERATION_STATE_QUEUED = 1;
+  SETTLEMENT_OPERATION_STATE_PROCESSING = 2;
+  SETTLEMENT_OPERATION_STATE_SUCCEEDED = 3;
+  SETTLEMENT_OPERATION_STATE_FAILED = 4;
+  SETTLEMENT_OPERATION_STATE_CANCELLED = 5;
+  SETTLEMENT_OPERATION_STATE_EXPIRED = 6;
+}
+
+message QueueSettlementOperationRequest {
+  string idempotency_key = 1 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+  string request_fingerprint = 2 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+  SettlementIntent intent = 3 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  int64 caused_by_capsuleer_id = 4 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  string external_request_id = 5;
+}
+
+message GetSettlementOperationRequest {
+  string operation_id = 1 [(buf.validate.field).string.(eve.validation.v1.uuid_string) = true];
+}
+
+message UpdateSettlementOperationRequest {
+  string operation_id = 1 [(buf.validate.field).string.(eve.validation.v1.uuid_string) = true];
+  SettlementOperationState state = 2 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  string settlement_batch_id = 3 [(buf.validate.field).string.(eve.validation.v1.optional_uuid_string) = true];
+  string failure_code = 4;
+  string failure_description = 5;
+  bool result_published = 6;
+}
+
+message SettlementOperationStatus {
+  string operation_id = 1;
+  string idempotency_key = 2;
+  string request_fingerprint = 3;
+  SettlementIntent intent = 4;
+  int64 caused_by_capsuleer_id = 5;
+  SettlementOperationState state = 6;
+  google.protobuf.Timestamp queued_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  string settlement_batch_id = 9;
+  string failure_code = 10;
+  string failure_description = 11;
+  bool result_published = 12;
+}
+
+message QueueSettlementOperationResponse {
+  SettlementOperationStatus operation = 1;
+}
+
+message GetSettlementOperationResponse {
+  SettlementOperationStatus operation = 1;
+}
+
+message UpdateSettlementOperationResponse {
+  SettlementOperationStatus operation = 1;
 }
 
 message ExecuteSettlementBatchResponse {

@@ -73,6 +73,7 @@ func IssueTradeInstance(input IssueTradeInstanceInput) (SettlementPlan, error) {
 	}
 
 	return SettlementPlan{
+		Intent:              settlement.IntentIssue,
 		IdempotencyKey:      input.IdempotencyKey,
 		ExternalRequestID:   input.ExternalRequestID,
 		CausedByCapsuleerID: input.IssuedByCapsuleerID,

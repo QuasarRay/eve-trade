@@ -32,6 +32,10 @@ OTHER_STATION_ID = 60008494
 ITEM_TYPE_ID = 34
 OTHER_ITEM_TYPE_ID = 35
 CHECKSUM_ALGORITHM = "sha256-v1"
+EDGE_REQUEST_SCHEMA = "eve-trade-edge.v2"
+EDGE_RESPONSE_SCHEMA = "eve-trade-edge-response.v2"
+HMAC_SHA256_ALGORITHM = "hmac-sha256"
+ENVELOPE_SIGNING_DOMAIN = "eve-trade.udp-envelope.hmac-sha256.v1"
 
 _SETTLEMENT_PROTO_CACHE: tuple[Any, Any] | None = None
 _SETTLEMENT_PROTO_TMPDIR: tempfile.TemporaryDirectory[str] | None = None
@@ -150,7 +154,7 @@ class GatewayClient:
         state = str(row["batch_state"])
         if state == "COMPLETED":
             return
-        code = str(row.get("failure_code") or "settlement_failed").lower()
+        code = settlement_failure_rpc_code(row.get("failure_code"))
         message = str(row.get("failure_message") or f"settlement batch {state}")
         raise RpcFailure(500, code, message, row)
 
@@ -165,7 +169,7 @@ class GatewayClient:
                     SELECT settlement_batch_id, batch_state, failure_code, failure_message
                     FROM settlement_batch
                     WHERE idempotency_key = %s
-                    ORDER BY created_at DESC
+                    ORDER BY started_at DESC
                     LIMIT 1
                     """,
                     (idempotency_key,),
@@ -175,11 +179,30 @@ class GatewayClient:
                 last_state = str(row["batch_state"])
                 if last_state in {"COMPLETED", "FAILED"}:
                     return row
+            with self.settlement_db.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT operation_id::text AS settlement_batch_id,
+                           CASE operation_state
+                               WHEN 'SUCCEEDED' THEN 'COMPLETED'
+                               ELSE operation_state
+                           END AS batch_state,
+                           failure_code,
+                           failure_description AS failure_message
+                    FROM settlement_operation
+                    WHERE idempotency_key = %s
+                    """,
+                    (idempotency_key,),
+                )
+                operation = cursor.fetchone()
+            if operation is not None:
+                last_state = str(operation["batch_state"])
+                if last_state in {"COMPLETED", "FAILED"}:
+                    return operation
             time.sleep(0.1)
         raise RuntimeError(
             f"settlement batch for idempotency key {idempotency_key!r} did not complete; last state={last_state}"
         )
-
     def _button_id(self, action: str) -> int:
         if self._buttons_by_action is None:
             response = self.http.get(f"{self.simulator_url}/api/gui/buttons/")
@@ -198,6 +221,21 @@ class GatewayClient:
             raise RuntimeError(f"simulator button for action {action!r} was not seeded") from exc
 
 
+def settlement_failure_rpc_code(value: Any) -> str:
+    code = str(value or "SETTLEMENT_FAILED").upper()
+    return {
+        "INSUFFICIENT_FUNDS": "failed_precondition",
+        "INSUFFICIENT_QUANTITY": "failed_precondition",
+        "FAILED_PRECONDITION": "failed_precondition",
+        "FAILEDPRECONDITION": "failed_precondition",
+        "PERMISSION_DENIED": "permission_denied",
+        "PERMISSIONDENIED": "permission_denied",
+        "INVALID_ARGUMENT": "invalid_argument",
+        "NOT_FOUND": "not_found",
+        "CONFLICT": "aborted",
+    }.get(code, code.lower())
+
+
 class AuthenticatedEdgeClient:
     def __init__(self, host: str, port: int, response_secret: str, response_key_id: str):
         self.endpoint = (host, port)
@@ -205,15 +243,20 @@ class AuthenticatedEdgeClient:
         self.response_key_id = response_key_id
 
     def submit(self, packet: dict[str, Any], key_id: str, principal_secret: str) -> dict[str, Any]:
-        raw_payload = json.dumps(packet, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        signing_bytes = envelope_signing_bytes(
+            EDGE_REQUEST_SCHEMA,
+            HMAC_SHA256_ALGORITHM,
+            key_id,
+            packet,
+        )
         signature = base64.urlsafe_b64encode(
-            hmac.new(principal_secret.encode("utf-8"), raw_payload, hashlib.sha256).digest()
+            hmac.new(principal_secret.encode("utf-8"), signing_bytes, hashlib.sha256).digest()
         ).rstrip(b"=").decode("ascii")
         envelope = json.dumps(
             {
-                "schema_version": "eve-trade-edge.v1",
+                "schema_version": EDGE_REQUEST_SCHEMA,
                 "payload": packet,
-                "auth": {"algorithm": "hmac-sha256", "key_id": key_id, "signature": signature},
+                "auth": {"algorithm": HMAC_SHA256_ALGORITHM, "key_id": key_id, "signature": signature},
             },
             separators=(",", ":"),
             sort_keys=True,
@@ -229,11 +272,11 @@ class AuthenticatedEdgeClient:
         if source[0] not in expected_ips or source[1] != self.endpoint[1]:
             raise AssertionError(f"edge response source {source!r} does not match {self.endpoint!r}")
         decoded = json.loads(response)
-        if decoded.get("schema_version") != "eve-trade-edge-response.v1":
+        if decoded.get("schema_version") != EDGE_RESPONSE_SCHEMA:
             raise AssertionError(f"edge response is unsigned: {decoded!r}")
         auth = decoded.get("auth") or {}
         payload = decoded.get("payload")
-        if auth.get("algorithm") != "hmac-sha256" or auth.get("key_id") != self.response_key_id:
+        if auth.get("algorithm") != HMAC_SHA256_ALGORITHM or auth.get("key_id") != self.response_key_id:
             raise AssertionError(f"edge response authentication metadata is invalid: {auth!r}")
         canonical = response_signing_bytes(
             decoded["schema_version"],
@@ -289,6 +332,10 @@ def settlement_proto_modules() -> tuple[Any, Any, Any]:
     repo_root = Path(__file__).resolve().parents[3]
     proto_root = repo_root / "proto"
     proto_file = proto_root / "eve" / "trade_settlement" / "v1" / "trade_settlement.proto"
+    validation_files = [
+        proto_root / "buf" / "validate" / "validate.proto",
+        proto_root / "eve" / "validation" / "v1" / "validation_rules.proto",
+    ]
     _SETTLEMENT_PROTO_TMPDIR = tempfile.TemporaryDirectory(prefix="eve-trade-proto-")
     out_dir = Path(_SETTLEMENT_PROTO_TMPDIR.name)
     include_google = Path(grpc_tools.__file__).resolve().parent / "_proto"
@@ -300,6 +347,7 @@ def settlement_proto_modules() -> tuple[Any, Any, Any]:
             f"-I{include_google}",
             f"--python_out={out_dir}",
             f"--grpc_python_out={out_dir}",
+            *(str(path) for path in validation_files),
             str(proto_file),
         ]
     )
@@ -1058,15 +1106,21 @@ def expect_rpc_error(
 
 
 def response_signing_bytes(schema_version: str, key_id: str, payload: Any) -> bytes:
+    return envelope_signing_bytes(schema_version, HMAC_SHA256_ALGORITHM, key_id, payload)
+
+
+def envelope_signing_bytes(schema_version: str, algorithm: str, key_id: str, payload: Any) -> bytes:
     return json.dumps(
         {
-            "algorithm": "hmac-sha256",
+            "algorithm": algorithm,
+            "domain": ENVELOPE_SIGNING_DOMAIN,
             "key_id": key_id,
             "payload": payload,
             "schema_version": schema_version,
         },
         separators=(",", ":"),
         sort_keys=True,
+        ensure_ascii=False,
     ).encode("utf-8")
 
 

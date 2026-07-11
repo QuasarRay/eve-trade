@@ -29,7 +29,7 @@
 | Encore gateway | Go UDP edge and UDP-to-gRPC forwarder. It validates transport safety, UDP edge envelope/config/actor binding through proto rules, and forwards raw game GUI payloads to Market in the current runtime path. Restored API gateway proto contracts define typed internal gRPC shapes without moving trade mechanics into the gateway. |
 | Market proto service adapter | Small Go adapter that maps restored `eve.market.v1` protobuf request/response messages to the existing Market handler and domain planner. |
 | Quilkin | UDP proxy/routing component between game frontend traffic and the Encore gateway UDP listener. |
-| Edge envelope | Signed `eve-trade-edge.v1` UDP JSON envelope carrying the raw game GUI payload and HMAC authentication data. |
+| Edge envelope | Domain-separated, metadata-bound `eve-trade-edge.v2` UDP JSON envelope carrying the canonical game GUI payload and HMAC authentication data. |
 | GUI interaction payload | Production game packet payload with `schema_version`, `interaction_id`, `ui`, and `input` fields. The local simulator and real frontend use the same shape. |
 | Market | Go service that interprets game GUI interactions, performs trade mechanics, validation, settlement planning, and settlement command publication. |
 | settlement worker | Go worker that consumes Encore Pub/Sub settlement commands and calls trade-settlement. |

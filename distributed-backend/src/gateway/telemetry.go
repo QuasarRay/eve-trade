@@ -16,6 +16,7 @@ var (
 	udpPacketCounter   metric.Int64Counter
 	udpPacketBytes     metric.Int64Histogram
 	udpDownstreamCalls metric.Float64Histogram
+	udpStateEntries    metric.Int64Histogram
 )
 
 func init() {
@@ -31,6 +32,25 @@ func init() {
 	udpDownstreamCalls, err = udpMeter.Float64Histogram("eve_trade_api_gateway_udp_downstream_seconds")
 	if err != nil {
 		slog.Warn("create udp downstream histogram failed", "error", err)
+	}
+	udpStateEntries, err = udpMeter.Int64Histogram("eve_trade_api_gateway_udp_state_entries")
+	if err != nil {
+		slog.Warn("create udp state cardinality histogram failed", "error", err)
+	}
+}
+
+func recordUDPState(ctx context.Context, server *QuilkinUDPServer) {
+	if udpStateEntries == nil {
+		return
+	}
+	if server.replayCache != nil {
+		udpStateEntries.Record(ctx, int64(server.replayCache.size()), metric.WithAttributes(attribute.String("state", "replay")))
+	}
+	if server.rateLimiter != nil {
+		udpStateEntries.Record(ctx, int64(server.rateLimiter.size()), metric.WithAttributes(attribute.String("state", "principal_limiter")))
+	}
+	if server.sourceLimiter != nil {
+		udpStateEntries.Record(ctx, int64(server.sourceLimiter.size()), metric.WithAttributes(attribute.String("state", "source_limiter")))
 	}
 }
 

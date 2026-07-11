@@ -8,6 +8,8 @@ import (
 
 type Config struct {
 	DatabaseURL              string
+	TradeSettlementTarget    string
+	TradeSettlementTimeout   time.Duration
 	StartupDependencyTimeout time.Duration
 	StartupRetryInterval     time.Duration
 }
@@ -15,6 +17,8 @@ type Config struct {
 func LoadConfig() Config {
 	return Config{
 		DatabaseURL:              envOr("MARKET_DATABASE_URL", "postgres://postgres:postgres@localhost:5432/eve_trade"),
+		TradeSettlementTarget:    envOr("TRADE_SETTLEMENT_GRPC_TARGET", "127.0.0.1:9092"),
+		TradeSettlementTimeout:   durationEnvOr("SETTLEMENT_WORKER_REQUEST_TIMEOUT", 10*time.Second),
 		StartupDependencyTimeout: durationEnvOr("MARKET_STARTUP_DEPENDENCY_TIMEOUT", 90*time.Second),
 		StartupRetryInterval:     durationEnvOr("MARKET_STARTUP_RETRY_INTERVAL", 2*time.Second),
 	}

@@ -158,7 +158,7 @@ database destination beyond TCP port `5432`.
 
 | Placeholder or input | Source | Current repository state | Enforcement status |
 | --- | --- | --- | --- |
-| Image digests | Production overlay README and kustomization | Placeholder/zero digest replacement is described but not enforced. | Not implemented; GATE-003 open |
+| Image digests | Production overlay README and kustomization | Source templates remain unresolved until release promotion. The verifier rejects zero, repeated, sentinel, example-registry, and registry-unresolvable identities. | Strict release verification enforced; unresolved-template mode is explicit and non-production |
 | Public hostname | Gateway and HTTPRoute manifests | Example hostname `api.eve-trade.example.com` appears in manifests/docs. | Not implemented; GATE-003 open |
 | ACME email | Gateway platform ClusterIssuer | Placeholder email remains in checked-in platform manifests. | Not implemented; GATE-003 open |
 | Market database secret | `market-database` secret reference | Market expects read-only `MARKET_DATABASE_URL`; production secret material is not in repo. | Not implemented; GATE-003 open |
@@ -167,9 +167,10 @@ database destination beyond TCP port `5432`.
 | Edge HMAC secret | `encore-backend-edge-auth` secret reference | Runtime expects `GAME_PACKET_HMAC_SECRET`; production secret material is not in repo. | Not implemented; GATE-003 open |
 | Observability secrets | `observability-backends` secret reference | Export credentials are out of band. | Not implemented; GATE-003 open |
 
-No checked-in CI check, release script, policy-as-code rule, or admission policy
-currently rejects example hosts, placeholder emails, zero image digests, or
-missing production secrets.
+Checked-in render policy rejects placeholder image identities and unresolved
+production templates in strict mode. Hostnames, ACME identity, and production
+secret material remain release/operator inputs and are not represented as valid
+runtime credentials in source.
 
 ## Secrets Model
 
@@ -200,7 +201,7 @@ View component ID: `VC-DEP-03`.
 | Local Encore and Kubernetes both preserve the same logical service chain. | Enforced by manifest | Both include Encore gateway, Market, Encore Pub/Sub, settlementworker, trade-settlement, and PostgreSQL/migration path. |
 | Migrations are operationally part of startup. | Enforced by manifest | Local support services and Kubernetes migration job apply the settlement schema. |
 | Network policies encode intended service reachability rules. | Partially enforced | Business flows are encoded; database egress is broad TCP `5432`. |
-| Readiness probes cover only part of downstream dependency health. | Partially enforced | Encore gateway and Market readiness cover some dependencies; trade-settlement uses TCP probe only and Market does not probe the full settlement reply path. |
+| Readiness reflects owned dependencies and advertised paths. | Enforced by probes/tests | Gateway readiness requires Market and a live UDP listener; Rust exposes standard gRPC liveness/readiness with database checks; worker readiness uses health RPC and never invokes mutation. |
 | Observability is deployed as platform support for all business services. | Partially enforced | Collector manifests exist; alert/dashboard requirements are documented in Observability view. |
 
 ## Concern Satisfaction

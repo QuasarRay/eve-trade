@@ -46,6 +46,7 @@ func normalizeTradeGUIInteraction(interaction *marketv1.TradeGuiInteraction) {
 		interaction.Ui.Window = strings.TrimSpace(interaction.Ui.GetWindow())
 		interaction.Ui.Button = strings.TrimSpace(interaction.Ui.GetButton())
 		interaction.Ui.Action = strings.TrimSpace(interaction.Ui.GetAction())
+		interaction.Ui.ControlId = strings.TrimSpace(interaction.Ui.GetControlId())
 	}
 	if interaction.Input != nil {
 		input := interaction.Input

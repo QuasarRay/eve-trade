@@ -15,6 +15,8 @@ import (
 	"encore.dev/beta/errs"
 )
 
+const maxUDPResponseBytes = 1200
+
 func (s *QuilkinUDPServer) writeError(conn net.PacketConn, remote net.Addr, interactionID string, code string, message string) {
 	body, _ := json.Marshal(map[string]string{
 		"interaction_id": interactionID,
@@ -37,7 +39,7 @@ func (s *QuilkinUDPServer) writeCachedError(conn net.PacketConn, remote net.Addr
 }
 
 func errorResponseStatus(code string) string {
-	if code == "request_in_progress" || code == "downstream_timeout" || code == "downstream_unavailable" || code == "queue_full" || code == "rate_limited" {
+	if code == "request_in_progress" || code == "downstream_timeout" || code == "downstream_unavailable" || code == "queue_full" || code == "rate_limited" || code == "gateway_capacity" {
 		return "retryable"
 	}
 	return "rejected"
@@ -51,7 +53,7 @@ func (s *QuilkinUDPServer) writeResponse(conn net.PacketConn, remote net.Addr, i
 			return fmt.Errorf("canonicalize UDP response: %w", err)
 		}
 		mac := hmac.New(sha256.New, s.hmacSecret)
-		signingBytes, err := responseSigningBytes(edgeResponseEnvelopeSchema, s.hmacKeyID, canonicalBody)
+		signingBytes, err := envelopeSigningBytes(edgeResponseEnvelopeSchema, hmacSHA256Algorithm, s.hmacKeyID, canonicalBody)
 		if err != nil {
 			return fmt.Errorf("bind UDP response authentication metadata: %w", err)
 		}
@@ -60,7 +62,7 @@ func (s *QuilkinUDPServer) writeResponse(conn net.PacketConn, remote net.Addr, i
 			SchemaVersion: edgeResponseEnvelopeSchema,
 			Payload:       json.RawMessage(canonicalBody),
 			Auth: &edgeAuth{
-				Algorithm: "hmac-sha256",
+				Algorithm: hmacSHA256Algorithm,
 				KeyID:     s.hmacKeyID,
 				Signature: base64.RawURLEncoding.EncodeToString(mac.Sum(nil)),
 			},
@@ -68,6 +70,9 @@ func (s *QuilkinUDPServer) writeResponse(conn net.PacketConn, remote net.Addr, i
 		if err != nil {
 			return fmt.Errorf("encode signed UDP response: %w", err)
 		}
+	}
+	if len(responseBody) > maxUDPResponseBytes {
+		return fmt.Errorf("UDP response exceeds %d byte limit", maxUDPResponseBytes)
 	}
 	if _, writeErr := conn.WriteTo(responseBody, remote); writeErr != nil {
 		slog.Warn("udp response write failed", "remote", remoteKey(remote), "interaction_id", interactionID, "error", writeErr)
@@ -77,14 +82,19 @@ func (s *QuilkinUDPServer) writeResponse(conn net.PacketConn, remote net.Addr, i
 }
 
 func responseSigningBytes(schemaVersion string, keyID string, canonicalBody []byte) ([]byte, error) {
+	return envelopeSigningBytes(schemaVersion, hmacSHA256Algorithm, keyID, canonicalBody)
+}
+
+func envelopeSigningBytes(schemaVersion string, algorithm string, keyID string, canonicalBody []byte) ([]byte, error) {
 	var payload any
 	decoder := json.NewDecoder(bytes.NewReader(canonicalBody))
 	decoder.UseNumber()
 	if err := decoder.Decode(&payload); err != nil {
 		return nil, err
 	}
-	return json.Marshal(map[string]any{
-		"algorithm":      "hmac-sha256",
+	return marshalCanonicalJSON(map[string]any{
+		"algorithm":      algorithm,
+		"domain":         envelopeSigningDomain,
 		"key_id":         keyID,
 		"payload":        payload,
 		"schema_version": schemaVersion,
@@ -98,7 +108,17 @@ func canonicalJSON(body []byte) ([]byte, error) {
 	if err := decoder.Decode(&value); err != nil {
 		return nil, err
 	}
-	return json.Marshal(value)
+	return marshalCanonicalJSON(value)
+}
+
+func marshalCanonicalJSON(value any) ([]byte, error) {
+	var output bytes.Buffer
+	encoder := json.NewEncoder(&output)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(value); err != nil {
+		return nil, err
+	}
+	return bytes.TrimSuffix(output.Bytes(), []byte("\n")), nil
 }
 
 func stableDownstreamCode(err error) string {

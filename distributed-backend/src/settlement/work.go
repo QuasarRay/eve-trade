@@ -9,6 +9,12 @@ import (
 const CreatedByMarket = "market"
 
 const (
+	IntentIssue  = "ISSUE"
+	IntentAccept = "ACCEPT"
+	IntentCancel = "CANCEL"
+)
+
+const (
 	OperationCreateNewTradeInstanceRow                                       = "create_new_trade_instance_row"
 	OperationModifyTradeInstanceState                                        = "modify_trade_instance_state"
 	OperationCreateNewEmptyItemStack                                         = "create_new_empty_item_stack"
@@ -33,6 +39,9 @@ var ResultTopic = pubsub.NewTopic[*Result]("settlement-results", pubsub.TopicCon
 })
 
 type Work struct {
+	OperationID         string      `json:"operation_id"`
+	QueuedAt            time.Time   `json:"queued_at"`
+	Intent              string      `json:"intent"`
 	IdempotencyKey      string      `json:"idempotency_key" pubsub-attr:"idempotency-key"`
 	RequestFingerprint  string      `json:"request_fingerprint"`
 	ExternalRequestID   string      `json:"external_request_id,omitempty"`
@@ -43,6 +52,7 @@ type Work struct {
 }
 
 type Result struct {
+	OperationID        string `json:"operation_id"`
 	IdempotencyKey     string `json:"idempotency_key" pubsub-attr:"idempotency-key"`
 	RequestID          string `json:"request_id,omitempty"`
 	SettlementBatchID  string `json:"settlement_batch_id,omitempty"`

@@ -56,6 +56,7 @@ func CancelTradeInstance(input CancelTradeInstanceInput) (SettlementPlan, error)
 	})
 
 	return SettlementPlan{
+		Intent:              settlement.IntentCancel,
 		IdempotencyKey:      input.IdempotencyKey,
 		ExternalRequestID:   input.ExternalRequestID,
 		CausedByCapsuleerID: input.CancelledByCapsuleerID,

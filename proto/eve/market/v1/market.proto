@@ -99,7 +99,7 @@ message TradeGuiInteraction {
   };
   option (buf.validate.message).cel = {
     id: "market.gui.accept_required_fields"
-    message: "accept trade GUI input requires buyer, trade, quantity, and buyer wallet"
+      message: "accept trade GUI input requires buyer, trade, positive quantity_requested, and buyer wallet"
     expression: "!(this.ui.action in ['market_buy_from_sell_order', 'contract_accept_item_exchange', 'direct_trade_accept']) || (this.input.buyer_capsuleer_id > 0 && this.input.trade_instance_id != '' && (this.input.quantity_requested > 0 || this.input.quantity > 0) && this.input.buyer_wallet_id != '')"
   };
   option (buf.validate.message).cel = {
@@ -118,6 +118,7 @@ message TradeGuiUi {
   string window = 1;
   string button = 2;
   string action = 3 [(buf.validate.field).string.(eve.validation.v1.trade_gui_action) = true];
+  string control_id = 4;
 }
 
 message TradeGuiInput {
@@ -137,4 +138,7 @@ message TradeGuiInput {
   int64 seller_capsuleer_id = 14;
   int64 accepted_by_capsuleer_id = 15;
   int64 delegated_capsuleer_id = 16;
+  int64 item_type_id = 17;
+  int64 station_id = 18;
+  string seller_wallet_id = 19 [(buf.validate.field).string.(eve.validation.v1.optional_uuid_string) = true];
 }

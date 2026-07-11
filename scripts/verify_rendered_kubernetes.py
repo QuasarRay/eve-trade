@@ -10,8 +10,12 @@ from typing import Any
 import yaml
 
 
-DIGEST_IMAGE = re.compile(r"^\S+@sha256:[0-9a-f]{64}$")
+DIGEST_IMAGE = re.compile(r"^(?P<repository>\S+)@sha256:(?P<digest>[0-9a-f]{64})$")
 WORKLOAD_KINDS = {"Deployment", "StatefulSet", "DaemonSet", "Job"}
+KNOWN_SENTINEL_DIGESTS = {
+    "deadbeef" * 8,
+    "0123456789abcdef" * 4,
+}
 
 
 def nested(value: dict[str, Any], *keys: str) -> Any:
@@ -42,6 +46,26 @@ def secret_references(value: Any) -> set[str]:
     return found
 
 
+def image_reference_error(image: str) -> str | None:
+    match = DIGEST_IMAGE.fullmatch(image)
+    if match is None:
+        return "mutable or syntactically invalid"
+    digest = match.group("digest")
+    repository = match.group("repository")
+    if len(set(digest)) == 1 or digest in KNOWN_SENTINEL_DIGESTS:
+        return "placeholder digest"
+    if repository.startswith("registry.example.com/"):
+        return "placeholder registry"
+    return None
+
+
+def env_value(container: dict[str, Any], name: str) -> str:
+    for row in container.get("env", []):
+        if isinstance(row, dict) and row.get("name") == name:
+            return str(row.get("value") or "")
+    return ""
+
+
 def verify(path: Path) -> list[str]:
     resources = [row for row in yaml.safe_load_all(path.read_text(encoding="utf-8")) if isinstance(row, dict)]
     errors: list[str] = []
@@ -62,8 +86,15 @@ def verify(path: Path) -> list[str]:
                 errors.append(f"workload {kind}/{name} has no containers")
             for container in containers:
                 image = str(container.get("image") or "")
-                if not DIGEST_IMAGE.fullmatch(image):
-                    errors.append(f"workload {kind}/{name} container {container.get('name')} uses mutable or invalid image {image!r}")
+                if reason := image_reference_error(image):
+                    errors.append(f"workload {kind}/{name} container {container.get('name')} uses {reason} image {image!r}")
+                if name == "quilkin" and container.get("name") == "quilkin":
+                    upstream = env_value(container, "QUILKIN_BACKEND_ENDPOINT")
+                    if upstream != "encore-backend.eve-trade.svc.cluster.local:26000":
+                        errors.append("quilkin must use the stable Encore service FQDN")
+                    rendered = yaml.safe_dump(container)
+                    if "ENCORE_BACKEND_SERVICE_HOST" in rendered:
+                        errors.append("quilkin depends on disabled Kubernetes service-link variables")
 
     required_secret_contracts = {
         ("Deployment", "encore-backend"): {"gateway-edge-auth", "market-database"},
@@ -103,8 +134,27 @@ def verify(path: Path) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("manifest", type=Path)
+    parser.add_argument(
+        "--expect-unresolved-image-template",
+        action="store_true",
+        help="validate a checked-in template while requiring unresolved image identities",
+    )
     args = parser.parse_args()
     errors = verify(args.manifest)
+    if args.expect_unresolved_image_template:
+        image_errors = [
+            error
+            for error in errors
+            if "placeholder digest image" in error or "placeholder registry image" in error
+        ]
+        errors = [error for error in errors if error not in image_errors]
+        if not image_errors:
+            errors.append("production template unexpectedly contains no unresolved image identities")
+        else:
+            print(
+                f"production template retains {len(image_errors)} unresolved image identities; "
+                "release provenance is required"
+            )
     for error in errors:
         print(f"rendered Kubernetes policy violation: {error}", file=sys.stderr)
     if errors:

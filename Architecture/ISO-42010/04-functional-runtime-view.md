@@ -18,7 +18,7 @@ Governed by:
 
 | Component | Primary responsibilities | Must not own |
 | --- | --- | --- |
-| Game frontend or local simulator | Build a production-shaped `eve-trade-gui.v1` GUI interaction packet and sign it in an `eve-trade-edge.v1` UDP envelope. | Backend trade decisioning, gateway metadata, simulator/framework identity in outbound packets. |
+| Game frontend or local simulator | Build a production-shaped `eve-trade-gui.v1` GUI interaction packet and sign its schema, algorithm, key ID, and canonical payload in an `eve-trade-edge.v2` UDP envelope. | Backend trade decisioning, gateway metadata, simulator/framework identity in outbound packets. |
 | Quilkin | UDP proxy/routing edge between frontend traffic and Encore gateway UDP. | Game trade parsing, settlement planning, database mutation. |
 | Encore gateway | UDP edge safety, HMAC integrity, packet-size and empty-packet rejection, bounded worker/queue handling, per-remote rate limiting, replay rejection, downstream timeout, compact UDP responses, logs/metrics/traces, raw-payload forwarding to Market. | Business interpretation of GUI packets, issue/accept/cancel decisioning, source metadata in Market requests, durable mutation. |
 | Market | Interpret GUI window/action/control and player input, call protovalidate-backed game-trade input validation, perform durable idempotency/replay checks, read current item/wallet/trade snapshots, compose low-level settlement operation batches, and publish typed settlement work. | UDP edge behavior, gateway-specific metadata handling, direct durable mutation of trade/wallet/item/ledger state. |

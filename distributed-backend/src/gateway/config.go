@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lainio/err2"
+	"github.com/lainio/err2/try"
 )
 
 type UDPPrincipalCredential struct {
@@ -25,7 +29,12 @@ type Config struct {
 	QuilkinQueueDepth int
 	UDPRatePerSecond  float64
 	UDPRateBurst      int
+	UDPSourceRate     float64
+	UDPSourceBurst    int
+	UDPLimiterMaxIDs  int
+	UDPLimiterIdleTTL time.Duration
 	UDPReplayTTL      time.Duration
+	UDPReplayMaxIDs   int
 	UDPAuthRequired   bool
 	UDPHMACSecret     string
 	UDPHMACKeyID      string
@@ -33,65 +42,28 @@ type Config struct {
 	DownstreamTimeout time.Duration
 }
 
-func LoadConfig() (Config, error) {
-	principalKeys, err := parseUDPPrincipalKeys(os.Getenv("API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON"))
-	if err != nil {
-		return Config{}, err
-	}
-	udpEnabled, err := boolEnv("API_GATEWAY_QUILKIN_UDP_ENABLED", true)
-	if err != nil {
-		return Config{}, err
-	}
-	maxPacket, err := positiveIntEnv("API_GATEWAY_QUILKIN_MAX_PACKET_BYTES", 8192)
-	if err != nil {
-		return Config{}, err
-	}
-	workers, err := positiveIntEnv("API_GATEWAY_QUILKIN_WORKERS", 8)
-	if err != nil {
-		return Config{}, err
-	}
-	queueDepth, err := positiveIntEnv("API_GATEWAY_QUILKIN_QUEUE_DEPTH", 1024)
-	if err != nil {
-		return Config{}, err
-	}
-	ratePerSecond, err := positiveFloatEnv("API_GATEWAY_UDP_RATE_LIMIT_PER_SECOND", 50)
-	if err != nil {
-		return Config{}, err
-	}
-	rateBurst, err := positiveIntEnv("API_GATEWAY_UDP_RATE_LIMIT_BURST", 100)
-	if err != nil {
-		return Config{}, err
-	}
-	replayTTL, err := positiveDurationEnv("API_GATEWAY_UDP_REPLAY_TTL", 10*time.Minute)
-	if err != nil {
-		return Config{}, err
-	}
-	authRequired, err := boolEnv("API_GATEWAY_UDP_AUTH_REQUIRED", true)
-	if err != nil {
-		return Config{}, err
-	}
-	downstreamTimeout, err := positiveDurationEnv("API_GATEWAY_DOWNSTREAM_TIMEOUT", 5*time.Second)
-	if err != nil {
-		return Config{}, err
-	}
-	hmacKeyID, err := nonBlankEnv("API_GATEWAY_UDP_HMAC_KEY_ID", "primary")
-	if err != nil {
-		return Config{}, err
-	}
-	config := Config{
+func LoadConfig() (config Config, err error) {
+	defer err2.Handle(&err, "load gateway configuration")
+
+	config = Config{
 		QuilkinUDPAddr:    envOr("API_GATEWAY_QUILKIN_UDP_ADDR", ":26000"),
-		QuilkinUDPEnabled: udpEnabled,
-		QuilkinMaxPacket:  maxPacket,
-		QuilkinWorkers:    workers,
-		QuilkinQueueDepth: queueDepth,
-		UDPRatePerSecond:  ratePerSecond,
-		UDPRateBurst:      rateBurst,
-		UDPReplayTTL:      replayTTL,
-		UDPAuthRequired:   authRequired,
+		QuilkinUDPEnabled: try.To1(boolEnv("API_GATEWAY_QUILKIN_UDP_ENABLED", true)),
+		QuilkinMaxPacket:  try.To1(positiveIntEnv("API_GATEWAY_QUILKIN_MAX_PACKET_BYTES", 8192)),
+		QuilkinWorkers:    try.To1(positiveIntEnv("API_GATEWAY_QUILKIN_WORKERS", 8)),
+		QuilkinQueueDepth: try.To1(positiveIntEnv("API_GATEWAY_QUILKIN_QUEUE_DEPTH", 1024)),
+		UDPRatePerSecond:  try.To1(positiveFloatEnv("API_GATEWAY_UDP_RATE_LIMIT_PER_SECOND", 50)),
+		UDPRateBurst:      try.To1(positiveIntEnv("API_GATEWAY_UDP_RATE_LIMIT_BURST", 100)),
+		UDPSourceRate:     try.To1(positiveFloatEnv("API_GATEWAY_UDP_SOURCE_RATE_LIMIT_PER_SECOND", 100)),
+		UDPSourceBurst:    try.To1(positiveIntEnv("API_GATEWAY_UDP_SOURCE_RATE_LIMIT_BURST", 200)),
+		UDPLimiterMaxIDs:  try.To1(positiveIntEnv("API_GATEWAY_UDP_LIMITER_MAX_IDENTITIES", defaultLimiterMaxIdentities)),
+		UDPLimiterIdleTTL: try.To1(positiveDurationEnv("API_GATEWAY_UDP_LIMITER_IDLE_TTL", defaultLimiterIdleTTL)),
+		UDPReplayTTL:      try.To1(positiveDurationEnv("API_GATEWAY_UDP_REPLAY_TTL", 10*time.Minute)),
+		UDPReplayMaxIDs:   try.To1(positiveIntEnv("API_GATEWAY_UDP_REPLAY_MAX_ENTRIES", defaultReplayMaxEntries)),
+		UDPAuthRequired:   try.To1(boolEnv("API_GATEWAY_UDP_AUTH_REQUIRED", true)),
 		UDPHMACSecret:     envOr("API_GATEWAY_UDP_HMAC_SECRET", ""),
-		UDPHMACKeyID:      hmacKeyID,
-		UDPPrincipalKeys:  principalKeys,
-		DownstreamTimeout: downstreamTimeout,
+		UDPHMACKeyID:      try.To1(nonBlankEnv("API_GATEWAY_UDP_HMAC_KEY_ID", "primary")),
+		UDPPrincipalKeys:  try.To1(parseUDPPrincipalKeys(os.Getenv("API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON"))),
+		DownstreamTimeout: try.To1(positiveDurationEnv("API_GATEWAY_DOWNSTREAM_TIMEOUT", 5*time.Second)),
 	}
 	if config.QuilkinUDPEnabled && config.UDPAuthRequired && len(config.UDPPrincipalKeys) == 0 {
 		return Config{}, fmt.Errorf("API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON must define at least one authenticated capsuleer")
@@ -99,7 +71,7 @@ func LoadConfig() (Config, error) {
 	if config.QuilkinUDPEnabled && strings.TrimSpace(config.UDPHMACSecret) == "" {
 		return Config{}, fmt.Errorf("API_GATEWAY_UDP_HMAC_SECRET is required to authenticate UDP responses")
 	}
-	return config, nil
+	return config, err
 }
 
 func parseUDPPrincipalKeys(value string) (map[string]UDPPrincipalCredential, error) {
@@ -118,6 +90,7 @@ func parseUDPPrincipalKeys(value string) (map[string]UDPPrincipalCredential, err
 	}
 	credentials := make(map[string]UDPPrincipalCredential)
 	capsuleerKeys := make(map[int64]string)
+	secretKeys := make(map[[sha256.Size]byte]string)
 	for decoder.More() {
 		token, err := decoder.Token()
 		if err != nil {
@@ -140,8 +113,14 @@ func parseUDPPrincipalKeys(value string) (map[string]UDPPrincipalCredential, err
 		if previous, duplicate := capsuleerKeys[credential.CapsuleerID]; duplicate {
 			return nil, fmt.Errorf("API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON maps capsuleer %d to duplicate key IDs %q and %q", credential.CapsuleerID, previous, keyID)
 		}
+		credential.Secret = strings.TrimSpace(credential.Secret)
+		secretFingerprint := sha256.Sum256([]byte(credential.Secret))
+		if previous, duplicate := secretKeys[secretFingerprint]; duplicate {
+			return nil, fmt.Errorf("API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON reuses secret material for key IDs %q and %q", previous, keyID)
+		}
 		credentials[keyID] = credential
 		capsuleerKeys[credential.CapsuleerID] = keyID
+		secretKeys[secretFingerprint] = keyID
 	}
 	if _, err := decoder.Token(); err != nil {
 		return nil, fmt.Errorf("parse API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON: %w", err)

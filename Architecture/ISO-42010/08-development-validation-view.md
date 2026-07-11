@@ -98,7 +98,7 @@ Governed by: [VP-07 Development And Validation Viewpoint](./02-viewpoints.md#vp-
 | --- | --- |
 | Buf breaking against the older main branch would flag intentional RPC deletion and proto relocation in this experimental branch. | Not enabled for this refactor; generated freshness and boundary guards are enforced. |
 | Python formatting/linting does not use a project ruff/black config. | CI runs compile, tests, `pip check`, and `pip-audit`; adding a style config is future work. |
-| Production image digests/secrets are placeholders in source. | CI validates renderability; release injection and secret provisioning remain deployment responsibilities. |
+| Production image references and secrets are unresolved templates in source. | Strict verification rejects them as deployable artifacts; release promotion must inject registry-resolved digests and out-of-band secrets. |
 | Full local e2e depends on runtime dependencies and Encore tooling availability. | CI/runtime scripts own the complete e2e path; local command results for this refactor are recorded in `changes/v9/changes.md`. |
 
 ## Development View Assertions
@@ -108,5 +108,14 @@ Governed by: [VP-07 Development And Validation Viewpoint](./02-viewpoints.md#vp-
 | API contracts, generated code, service implementation, tests, docs, and CI must change together. | Enforced by CI | `verify.yaml` and boundary guard. |
 | Gateway is not a business service. | Enforced by tests/guard | Gateway has no production command service and forwards raw payload only. |
 | Simulator packet shape conforms to the versioned repository contract. | Enforced by cross-language test | Python validates the actual socket payload against JSON Schema and a golden packet; Go consumes the same golden packet. External-client identity is not claimed. |
-| trade-settlement remains game-mechanic agnostic. | Enforced by contract review | Settlement proto exposes low-level operation batches only. |
+| trade-settlement owns semantic safety without duplicating Market planning. | Enforced by Rust tests | Settlement proto carries typed parent intent plus low-level operations; Rust validates grammar and authority while Market remains the planner. |
 | A change is not architecture-consistent until its runtime path and validation path are both known. | Governance rule | Change Impact Matrix and CI gates. |
+
+## Go Functional Conventions
+
+Boundary parsing and typed optional metadata use `gust` where absence would
+otherwise be represented by sentinels. Reusable immutable orchestration and
+collection transformations use `fp-go/v2`. Linear initialization and side-effect
+pipelines use `err2` for contextual propagation. Transaction boundaries, explicit
+domain branching, and the benchmarked UDP packet loop remain imperative. Conversion
+between these models occurs only at layer boundaries.

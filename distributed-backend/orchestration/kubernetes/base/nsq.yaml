@@ -31,8 +31,9 @@ spec:
         - name: nsqd
           image: nsqio/nsq@sha256:1ceea517773270f5dd75f92777d4f7a49d8728b3884e28c749524ad6b031ca18
           imagePullPolicy: IfNotPresent
-          args:
+          command:
             - /nsqd
+          args:
             - --data-path=/data
             - --broadcast-address=nsqd.eve-trade.svc.cluster.local
           ports:

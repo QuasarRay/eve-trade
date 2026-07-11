@@ -18,6 +18,11 @@ RETRYABLE_RESPONSE_CODES = {
     "downstream_unavailable",
 }
 
+EDGE_REQUEST_SCHEMA = "eve-trade-edge.v2"
+EDGE_RESPONSE_SCHEMA = "eve-trade-edge-response.v2"
+HMAC_SHA256_ALGORITHM = "hmac-sha256"
+ENVELOPE_SIGNING_DOMAIN = "eve-trade.udp-envelope.hmac-sha256.v1"
+
 
 def encode_udp_packet(packet: dict[str, Any]) -> bytes:
     payload = json.dumps(packet, separators=(",", ":"), sort_keys=True).encode("utf-8")
@@ -31,12 +36,18 @@ def encode_udp_packet(packet: dict[str, Any]) -> bytes:
         raise ValueError(f"no signing credential is configured for capsuleer {principal_id}") from exc
     if not key_id or not secret:
         raise ValueError(f"invalid signing credential for capsuleer {principal_id}")
-    signature = base64.urlsafe_b64encode(hmac.new(secret, payload, hashlib.sha256).digest()).rstrip(b"=").decode("ascii")
+    signing_bytes = envelope_signing_bytes(
+        EDGE_REQUEST_SCHEMA,
+        HMAC_SHA256_ALGORITHM,
+        key_id,
+        packet,
+    )
+    signature = base64.urlsafe_b64encode(hmac.new(secret, signing_bytes, hashlib.sha256).digest()).rstrip(b"=").decode("ascii")
     envelope = {
-        "schema_version": "eve-trade-edge.v1",
+        "schema_version": EDGE_REQUEST_SCHEMA,
         "payload": packet,
         "auth": {
-            "algorithm": "hmac-sha256",
+            "algorithm": HMAC_SHA256_ALGORITHM,
             "key_id": key_id,
             "signature": signature,
         },
@@ -111,12 +122,12 @@ def decode_udp_response(response: bytes) -> dict[str, Any]:
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ValueError("UDP response is not valid JSON") from exc
     if isinstance(decoded, dict):
-        if decoded.get("schema_version") == "eve-trade-edge-response.v1":
+        if decoded.get("schema_version") == EDGE_RESPONSE_SCHEMA:
             payload = decoded.get("payload")
             auth = decoded.get("auth")
             if not isinstance(payload, dict) or not isinstance(auth, dict):
                 raise ValueError("signed UDP response envelope is malformed")
-            if auth.get("algorithm") != "hmac-sha256" or auth.get("key_id") != settings.GAME_PACKET_HMAC_KEY_ID:
+            if auth.get("algorithm") != HMAC_SHA256_ALGORITHM or auth.get("key_id") != settings.GAME_PACKET_HMAC_KEY_ID:
                 raise ValueError("signed UDP response uses unexpected authentication metadata")
             canonical = response_signing_bytes(
                 decoded["schema_version"],
@@ -134,15 +145,26 @@ def decode_udp_response(response: bytes) -> dict[str, Any]:
 
 
 def response_signing_bytes(schema_version: str, key_id: str, payload: dict[str, Any]) -> bytes:
+    return envelope_signing_bytes(schema_version, HMAC_SHA256_ALGORITHM, key_id, payload)
+
+
+def envelope_signing_bytes(
+    schema_version: str,
+    algorithm: str,
+    key_id: str,
+    payload: dict[str, Any],
+) -> bytes:
     return json.dumps(
         {
-            "algorithm": "hmac-sha256",
+            "algorithm": algorithm,
+            "domain": ENVELOPE_SIGNING_DOMAIN,
             "key_id": key_id,
             "payload": payload,
             "schema_version": schema_version,
         },
         separators=(",", ":"),
         sort_keys=True,
+        ensure_ascii=False,
     ).encode("utf-8")
 
 

@@ -118,6 +118,13 @@ class DiagnosisFixtureTests(unittest.TestCase):
         self.assertEqual(diagnosis["product_status"], "FAILED")
         self.assertEqual(diagnosis["most_supported_root_cause_event"]["event_source"], "TEST_EVENT")
 
+    def test_successful_command_does_not_claim_absolute_confidence(self) -> None:
+        command = command_result_from_dict({"name": "pytest", "stage": "test", "exit_code": 0})
+
+        diagnosis = diagnose_run(run_id="observed-green", command="test", results=[command])
+
+        self.assertLess(diagnosis["primary_diagnosis"]["confidence_score"], 1.0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -86,11 +86,14 @@ func (h *MarketHandler) acceptTradeInstance(ctx context.Context, message acceptT
 		return nil, apiError(errs.InvalidArgument, err)
 	}
 
-	if _, err = h.executePlan(ctx, plan); err != nil {
+	publication, err := h.executePlan(ctx, plan)
+	if err != nil {
 		span.RecordError(err)
 		return nil, err
 	}
 	return &acceptTradeInstanceResult{
+		OperationID:                 publication.OperationID,
+		QueuedAt:                    publication.QueuedAt,
 		WalletEscrowID:              plan.WalletEscrowID,
 		BuyerDestinationItemStackID: plan.DestinationItemStackID,
 		SettlementBatchID:           "",

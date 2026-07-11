@@ -19,6 +19,7 @@ static PROTO_VALIDATOR: LazyLock<Validator> = LazyLock::new(|| {
 
 #[derive(Debug, Clone)]
 pub struct ExecuteBatchCommand {
+    pub intent: SettlementIntent,
     pub idempotency_key: String,
     pub request_fingerprint: Option<String>,
     pub external_request_id: Option<String>,
@@ -26,6 +27,15 @@ pub struct ExecuteBatchCommand {
     pub operations: Vec<SettlementCommand>,
     pub created_by_service: String,
     pub request_id: Option<Uuid>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum SettlementIntent {
+    Unspecified,
+    Issue,
+    Accept,
+    Cancel,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -234,6 +244,16 @@ impl TryFrom<pb::ExecuteSettlementBatchRequest> for ExecuteBatchCommand {
         let idempotency_key = required_string(value.idempotency_key, "idempotency_key")?;
         let created_by_service = required_string(value.created_by_service, "created_by_service")?;
         let request_id = optional_uuid(value.request_id, "request_id")?;
+        let intent = match pb::SettlementIntent::try_from(value.intent).ok() {
+            Some(pb::SettlementIntent::Issue) => SettlementIntent::Issue,
+            Some(pb::SettlementIntent::Accept) => SettlementIntent::Accept,
+            Some(pb::SettlementIntent::Cancel) => SettlementIntent::Cancel,
+            _ => {
+                return Err(SettlementError::InvalidArgument(
+                    "settlement intent must be ISSUE, ACCEPT, or CANCEL".to_string(),
+                ))
+            }
+        };
 
         let operations = value
             .operations
@@ -242,6 +262,7 @@ impl TryFrom<pb::ExecuteSettlementBatchRequest> for ExecuteBatchCommand {
             .collect::<Result<Vec<_>>>()?;
 
         Ok(Self {
+            intent,
             idempotency_key,
             request_fingerprint: optional_string(value.request_fingerprint),
             external_request_id: optional_string(value.external_request_id),
@@ -502,6 +523,7 @@ mod tests {
         operation: pb::SettlementOperation,
     ) -> pb::ExecuteSettlementBatchRequest {
         pb::ExecuteSettlementBatchRequest {
+            intent: pb::SettlementIntent::Issue as i32,
             idempotency_key: "key-1".into(),
             operations: vec![operation],
             created_by_service: "market".into(),
@@ -848,6 +870,7 @@ mod tests {
     fn execute_batch_preserves_fingerprint_and_request_id() {
         let request_id = uuid(9);
         let request = pb::ExecuteSettlementBatchRequest {
+            intent: pb::SettlementIntent::Issue as i32,
             idempotency_key: "key-1".into(),
             request_fingerprint: "sha256:fingerprint".into(),
             external_request_id: "external-1".into(),

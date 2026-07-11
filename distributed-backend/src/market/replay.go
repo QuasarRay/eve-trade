@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/QuasarRay/eve-trade/gametrade"
@@ -14,8 +13,6 @@ import (
 
 	"encore.dev/beta/errs"
 )
-
-const settlementServerFingerprintPrefix = "trade-settlement.execute_settlement_batch.v1.sha256:"
 
 func (h *MarketHandler) replayIssueTradeInstance(ctx context.Context, message issueTradeInstanceRequest) (*issueTradeInstanceResult, bool, error) {
 	replay, err := h.loadReplay(ctx, message.IdempotencyKey)
@@ -45,6 +42,8 @@ func (h *MarketHandler) replayIssueTradeInstance(ctx context.Context, message is
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
 	return &issueTradeInstanceResult{
+		OperationID:       replay.OperationID,
+		QueuedAt:          replay.QueuedAt,
 		TradeInstanceID:   stringField(createTrade, "trade_instance_id"),
 		ItemStackEscrowID: stringField(itemEscrow, "item_stack_escrow_id"),
 		SettlementBatchID: replay.SettlementBatchID,
@@ -82,6 +81,8 @@ func (h *MarketHandler) replayAcceptTradeInstance(ctx context.Context, message a
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
 	return &acceptTradeInstanceResult{
+		OperationID:                 replay.OperationID,
+		QueuedAt:                    replay.QueuedAt,
 		WalletEscrowID:              stringField(walletEscrow, "wallet_escrow_id"),
 		BuyerDestinationItemStackID: destinationItemStackID,
 		SettlementBatchID:           replay.SettlementBatchID,
@@ -106,6 +107,8 @@ func (h *MarketHandler) replayCancelTradeInstance(ctx context.Context, message c
 		return nil, false, idempotencyConflict(message.IdempotencyKey)
 	}
 	return &cancelTradeInstanceResult{
+		OperationID:       replay.OperationID,
+		QueuedAt:          replay.QueuedAt,
 		SettlementBatchID: replay.SettlementBatchID,
 	}, true, nil
 }
@@ -146,9 +149,6 @@ func attachRequestFingerprint(plan *gametrade.SettlementPlan, requestKind string
 }
 
 func replayRequestFingerprintMatches(replay *IdempotencyReplay, requestKind string, message any) (bool, error) {
-	if strings.HasPrefix(replay.RequestFingerprint, settlementServerFingerprintPrefix) {
-		return true, nil
-	}
 	fingerprint, err := marketRequestFingerprint(requestKind, message)
 	if err != nil {
 		return false, err
@@ -179,15 +179,19 @@ func stringField(payload map[string]AnyJSON, name string) string {
 
 func int64Field(payload map[string]AnyJSON, name string) int64 {
 	switch value := payload[name].(type) {
+	case json.Number:
+		parsed, err := value.Int64()
+		if err == nil {
+			return parsed
+		}
 	case float64:
 		return int64(value)
 	case int64:
 		return value
 	case int:
 		return int64(value)
-	default:
-		return 0
 	}
+	return 0
 }
 
 func timestampFieldMatches(payload map[string]AnyJSON, name string, timestamp *timestamppb.Timestamp) bool {

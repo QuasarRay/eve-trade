@@ -81,3 +81,18 @@ Model ID: `MODEL-OBS-01`; view component ID: `VC-OBS-01`.
 | Settlement metadata is the authoritative diagnostic source for durable execution outcome. | Enforced by schema | Settlement tables record idempotency, attempts, batches, and steps. |
 | Distributed trace coverage across Encore gateway, Market, messaging, worker, settlement, and DB effects is not verified. | Partially enforced | OpenTelemetry code exists; end-to-end trace verification not recorded. |
 | Alert thresholds and dashboards are not defined in repository docs. | Gap recorded | Alert thresholds and dashboards are not defined in repository docs. |
+
+## CI Evidence And Causality
+
+Each required producer job emits a versioned evidence bundle containing repository,
+ref, exact SHA, workflow/run/attempt/job/step identity, timestamps, stable command
+identity, exit status, normalized diagnostics, collector status, and a validated
+artifact digest. Aggregation rejects stale, mismatched, missing, and corrupted
+evidence instead of inferring detail from job-result JSON.
+
+Events begin as `OBSERVED_FAILURE`, `BLOCKED`, `SKIPPED_DUE_TO_DEPENDENCY`,
+`INDEPENDENT_FAILURE`, or `INSUFFICIENT_EVIDENCE`. `LIKELY_CAUSE` and
+`CONFIRMED_CAUSE` require explicit dependency, chronology, provenance, and direct
+diagnostic support. Parallel failures remain independent absent a causal link.
+Confidence is evidence-weighted and capped below absolute certainty; mandatory
+missing evidence fails the aggregate correctness gate.

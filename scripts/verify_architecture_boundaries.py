@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ast
+import re
 import sys
 from pathlib import Path
 
@@ -22,12 +23,29 @@ FORBIDDEN_ACTIVE_REFERENCES = (
 )
 REMOVED_PATHS = (
     "distributed-backend/src/" + "api" + "-" + "gateway",
-    "distributed-backend/src/market",
     "distributed-backend/src/messaging",
     "distributed-backend/src/" + "settlement" + "-" + "worker",
     "distributed-backend/" + "proto/eve/" + "market",
     "distributed-backend/" + "proto/" + "gen",
 )
+
+
+def check_source_boundaries(root: Path) -> list[str]:
+    errors: list[str] = []
+    for path in (root / "gametrade").glob("*.go"):
+        text = path.read_text(encoding="utf-8")
+        for forbidden in ("encore.dev/", "github.com/jackc/pgx", "/src/gateway", "/src/market"):
+            if forbidden in text:
+                errors.append(f"{path.relative_to(root)} crosses game-domain boundary via {forbidden}")
+    for path in (root / "distributed-backend" / "src" / "market").glob("*.go"):
+        text = path.read_text(encoding="utf-8")
+        if re.search(r"\b(INSERT|UPDATE|DELETE|TRUNCATE)\b", text, re.IGNORECASE):
+            errors.append(f"{path.relative_to(root)} contains database mutation outside Rust settlement")
+    for path in (root / "distributed-backend" / "src" / "gateway").glob("*.go"):
+        text = path.read_text(encoding="utf-8")
+        if "/gametrade" in text or "/trade-settlement" in text:
+            errors.append(f"{path.relative_to(root)} leaks domain settlement into transport")
+    return errors
 SKIP_PARTS = {
     ".git",
     "vendor",
@@ -35,6 +53,7 @@ SKIP_PARTS = {
     ".terraform",
     ".o11y",
     "artifacts",
+    "fixtures",
     ".gomodcache",
     # Historical change logs are append-only records; current architecture
     # conformance is checked in active code, manifests, scripts, and docs.
@@ -69,7 +88,7 @@ def check_simulator_packet_test(errors: list[str]) -> None:
 
 
 def main() -> int:
-    errors: list[str] = []
+    errors = check_source_boundaries(ROOT)
     if not (ROOT / "encore.app").exists():
         errors.append("encore.app is missing")
     for removed in REMOVED_PATHS:

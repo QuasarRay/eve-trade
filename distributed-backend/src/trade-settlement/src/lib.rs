@@ -1,8 +1,10 @@
+pub mod authorization;
 pub mod checksum;
 pub mod commands;
 pub mod error;
 pub mod executor;
 pub mod observability;
 pub mod operations;
+pub mod plan;
 pub mod proto;
 pub mod service;

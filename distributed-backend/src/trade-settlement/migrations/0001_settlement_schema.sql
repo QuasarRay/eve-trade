@@ -691,6 +691,26 @@ DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
 EXECUTE FUNCTION enforce_trade_wallet_escrow_closed_state_invariant();
 
+CREATE TABLE IF NOT EXISTS settlement_operation (
+    operation_id UUID PRIMARY KEY,
+    idempotency_key TEXT NOT NULL UNIQUE,
+    request_fingerprint TEXT NOT NULL,
+    intent TEXT NOT NULL CHECK (intent IN ('ISSUE', 'ACCEPT', 'CANCEL')),
+    caused_by_capsuleer_id BIGINT NOT NULL REFERENCES capsuleer(capsuleer_id),
+    external_request_id TEXT,
+    operation_state TEXT NOT NULL CHECK (operation_state IN ('QUEUED', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'CANCELLED', 'EXPIRED')),
+    settlement_batch_id UUID REFERENCES settlement_batch(settlement_batch_id),
+    failure_code TEXT,
+    failure_description TEXT,
+    result_published BOOLEAN NOT NULL DEFAULT false,
+    queued_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS settlement_operation_state_idx
+ON settlement_operation (operation_state, updated_at);
+
 DROP TRIGGER IF EXISTS wallet_escrow_closed_trade_invariant_trigger ON wallet_escrow;
 CREATE CONSTRAINT TRIGGER wallet_escrow_closed_trade_invariant_trigger
 AFTER INSERT OR UPDATE OR DELETE ON wallet_escrow

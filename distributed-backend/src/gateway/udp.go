@@ -12,20 +12,22 @@ import (
 )
 
 type QuilkinUDPServer struct {
-	addr         string
-	maxPacket    int
-	timeout      time.Duration
-	workers      int
-	queueDepth   int
-	authRequired bool
-	hmacSecret   []byte
-	hmacKeyID    string
-	principals   map[string]UDPPrincipalCredential
-	market       MarketClient
-	listenFunc   func(network string, address string) (net.PacketConn, error)
-	rateLimiter  *remoteRateLimiter
-	replayCache  *interactionReplayCache
-	ready        atomic.Bool
+	addr          string
+	maxPacket     int
+	timeout       time.Duration
+	workers       int
+	queueDepth    int
+	authRequired  bool
+	hmacSecret    []byte
+	hmacKeyID     string
+	principals    map[string]UDPPrincipalCredential
+	market        MarketClient
+	listenFunc    func(network string, address string) (net.PacketConn, error)
+	rateLimiter   *remoteRateLimiter
+	sourceLimiter *remoteRateLimiter
+	replayCache   *interactionReplayCache
+	ready         atomic.Bool
+	failed        atomic.Bool
 }
 
 type udpPacketJob struct {
@@ -35,24 +37,31 @@ type udpPacketJob struct {
 
 func NewQuilkinUDPServer(config Config, market MarketClient) *QuilkinUDPServer {
 	return &QuilkinUDPServer{
-		addr:         config.QuilkinUDPAddr,
-		maxPacket:    config.QuilkinMaxPacket,
-		timeout:      config.DownstreamTimeout,
-		workers:      config.QuilkinWorkers,
-		queueDepth:   config.QuilkinQueueDepth,
-		authRequired: config.UDPAuthRequired,
-		hmacSecret:   []byte(config.UDPHMACSecret),
-		hmacKeyID:    config.UDPHMACKeyID,
-		principals:   config.UDPPrincipalKeys,
-		market:       market,
-		listenFunc:   net.ListenPacket,
-		rateLimiter:  newRemoteRateLimiter(config.UDPRatePerSecond, config.UDPRateBurst),
-		replayCache:  newInteractionReplayCache(config.UDPReplayTTL),
+		addr:          config.QuilkinUDPAddr,
+		maxPacket:     config.QuilkinMaxPacket,
+		timeout:       config.DownstreamTimeout,
+		workers:       config.QuilkinWorkers,
+		queueDepth:    config.QuilkinQueueDepth,
+		authRequired:  config.UDPAuthRequired,
+		hmacSecret:    []byte(config.UDPHMACSecret),
+		hmacKeyID:     config.UDPHMACKeyID,
+		principals:    config.UDPPrincipalKeys,
+		market:        market,
+		listenFunc:    net.ListenPacket,
+		rateLimiter:   newBoundedRemoteRateLimiter(config.UDPRatePerSecond, config.UDPRateBurst, config.UDPLimiterMaxIDs, config.UDPLimiterIdleTTL),
+		sourceLimiter: newBoundedRemoteRateLimiter(config.UDPSourceRate, config.UDPSourceBurst, config.UDPLimiterMaxIDs, config.UDPLimiterIdleTTL),
+		replayCache:   newInteractionReplayCache(config.UDPReplayTTL, config.UDPReplayMaxIDs),
 	}
 }
 
-func (s *QuilkinUDPServer) ListenAndServe(ctx context.Context) error {
+func (s *QuilkinUDPServer) ListenAndServe(ctx context.Context) (serveErr error) {
 	s.ready.Store(false)
+	s.failed.Store(false)
+	defer func() {
+		if serveErr != nil && ctx.Err() == nil {
+			s.failed.Store(true)
+		}
+	}()
 	if err := validateListenerConfig(s.maxPacket, s.workers, s.queueDepth); err != nil {
 		return err
 	}
@@ -101,7 +110,6 @@ func (s *QuilkinUDPServer) ListenAndServe(ctx context.Context) error {
 			return fmt.Errorf("read Quilkin UDP packet: %w", err)
 		}
 
-		slog.Info("udp packet received", "remote", remoteKey(remote), "bytes", n)
 		recordUDPPacket(ctx, "received", n)
 
 		if n > s.maxPacket {
@@ -123,6 +131,10 @@ func (s *QuilkinUDPServer) ListenAndServe(ctx context.Context) error {
 
 func (s *QuilkinUDPServer) Ready() bool {
 	return s.ready.Load()
+}
+
+func (s *QuilkinUDPServer) Failed() bool {
+	return s.failed.Load()
 }
 
 func (s *QuilkinUDPServer) worker(ctx context.Context, conn net.PacketConn, jobs <-chan udpPacketJob) {

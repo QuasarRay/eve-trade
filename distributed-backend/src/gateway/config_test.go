@@ -51,6 +51,7 @@ func TestLoadConfigRejectsMalformedOrIncompletePrincipalKeyring(t *testing.T) {
 		"no secret":              `{"seller":{"capsuleer_id":1001}}`,
 		"duplicate key id":       `{"seller":{"capsuleer_id":1001,"secret":"one"},"seller":{"capsuleer_id":2002,"secret":"two"}}`,
 		"duplicate capsuleer":    `{"seller-old":{"capsuleer_id":1001,"secret":"one"},"seller-new":{"capsuleer_id":1001,"secret":"two"}}`,
+		"duplicate secret":       `{"seller":{"capsuleer_id":1001,"secret":"same"},"buyer":{"capsuleer_id":2002,"secret":"same"}}`,
 		"unknown credential key": `{"seller":{"capsuleer_id":1001,"secret":"one","disabled":false}}`,
 		"trailing json":          `{"seller":{"capsuleer_id":1001,"secret":"one"}} []`,
 	} {
@@ -59,6 +60,16 @@ func TestLoadConfigRejectsMalformedOrIncompletePrincipalKeyring(t *testing.T) {
 				t.Fatalf("parseUDPPrincipalKeys(%q) succeeded", value)
 			}
 		})
+	}
+}
+
+func TestLoadConfigAcceptsDistinctRotatedPrincipalSecrets(t *testing.T) {
+	credentials, err := parseUDPPrincipalKeys(`{"seller-old":{"capsuleer_id":1001,"secret":"old-secret"},"seller-new":{"capsuleer_id":2002,"secret":"new-secret"}}`)
+	if err != nil {
+		t.Fatalf("parseUDPPrincipalKeys returned error: %v", err)
+	}
+	if len(credentials) != 2 {
+		t.Fatalf("credentials = %d, want 2", len(credentials))
 	}
 }
 
@@ -75,7 +86,12 @@ func TestLoadConfigRejectsEveryMalformedTypedEnvironmentValue(t *testing.T) {
 		{name: "API_GATEWAY_QUILKIN_QUEUE_DEPTH", value: "many"},
 		{name: "API_GATEWAY_UDP_RATE_LIMIT_PER_SECOND", value: "NaN"},
 		{name: "API_GATEWAY_UDP_RATE_LIMIT_BURST", value: "0"},
+		{name: "API_GATEWAY_UDP_SOURCE_RATE_LIMIT_PER_SECOND", value: "0"},
+		{name: "API_GATEWAY_UDP_SOURCE_RATE_LIMIT_BURST", value: "many"},
+		{name: "API_GATEWAY_UDP_LIMITER_MAX_IDENTITIES", value: "-1"},
+		{name: "API_GATEWAY_UDP_LIMITER_IDLE_TTL", value: "forever"},
 		{name: "API_GATEWAY_UDP_REPLAY_TTL", value: "forever"},
+		{name: "API_GATEWAY_UDP_REPLAY_MAX_ENTRIES", value: "0"},
 		{name: "API_GATEWAY_DOWNSTREAM_TIMEOUT", value: "0s"},
 		{name: "API_GATEWAY_UDP_HMAC_KEY_ID", value: ""},
 	}

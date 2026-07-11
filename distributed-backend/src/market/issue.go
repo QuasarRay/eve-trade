@@ -59,11 +59,14 @@ func (h *MarketHandler) issueTradeInstance(ctx context.Context, message issueTra
 	}
 	span.Set(slog.String("trade_id", plan.TradeInstanceID), slog.String("trade_state", "OPEN"))
 
-	if _, err = h.executePlan(ctx, plan); err != nil {
+	publication, err := h.executePlan(ctx, plan)
+	if err != nil {
 		span.RecordError(err)
 		return nil, err
 	}
 	return &issueTradeInstanceResult{
+		OperationID:       publication.OperationID,
+		QueuedAt:          publication.QueuedAt,
 		TradeInstanceID:   plan.TradeInstanceID,
 		ItemStackEscrowID: plan.ItemStackEscrowID,
 		SettlementBatchID: "",

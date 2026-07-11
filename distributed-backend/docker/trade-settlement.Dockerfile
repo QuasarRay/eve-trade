@@ -10,13 +10,19 @@ WORKDIR /workspace
 # It exists because the Rust crate reads shared protobuf files outside its own package directory.
 COPY . .
 
-# This block builds the  trade-settlement executable in locked mode.
-# It exists so the container cannot silently change dependency versions compared with Cargo.lock.
+# This block fetches the locked graph, exposes the pinned vendored protoc to
+# every dependency build script, and builds the trade-settlement executable.
+# The crate's own build.rs runs too late to configure protoc for transitive
+# protobuf build scripts, so the Docker build must provide it globally.
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
     cd distributed-backend/src/trade-settlement \
     && for attempt in 1 2 3; do \
-         cargo build --locked --release && break; \
+         cargo fetch --locked \
+         && PROTOC="$(find /usr/local/cargo/registry/src -path '*/protoc-bin-vendored-linux-x86_64-3.2.0/bin/protoc' -print -quit)" \
+         && test -x "$PROTOC" \
+         && PROTOC="$PROTOC" cargo build --locked --release \
+         && break; \
          status=$?; \
          [ "$attempt" -eq 3 ] && exit "$status"; \
          sleep $((attempt * 2)); \

@@ -182,7 +182,7 @@ The system runs in two intended environments:
 The main local Encore/Kubernetes and Kubernetes trade path is:
 
 1. A real game frontend, or the local simulator using the same packet shape,
-   sends a signed `eve-trade-edge.v1` UDP envelope containing an
+   sends a domain-separated, metadata-bound `eve-trade-edge.v2` UDP envelope containing an
    `eve-trade-gui.v1` game GUI interaction payload to Quilkin.
 2. Quilkin forwards UDP traffic to the Encore gateway UDP listener.
 3. Encore gateway performs only edge safety work: packet size checks,

@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	edgeEnvelopeSchema         = "eve-trade-edge.v1"
-	edgeResponseEnvelopeSchema = "eve-trade-edge-response.v1"
+	edgeEnvelopeSchema         = "eve-trade-edge.v2"
+	edgeResponseEnvelopeSchema = "eve-trade-edge-response.v2"
+	hmacSHA256Algorithm        = "hmac-sha256"
+	envelopeSigningDomain      = "eve-trade.udp-envelope.hmac-sha256.v1"
 )
 
 type edgeEnvelope struct {
@@ -65,7 +67,7 @@ func (s *QuilkinUDPServer) authenticatedPayload(packet []byte) ([]byte, string, 
 	if rejection := validateEdgeEnvelope(envelope); rejection != nil {
 		return nil, "", 0, rejection
 	}
-	rawPayload, err := compactJSON(envelope.Payload)
+	canonicalPayload, err := canonicalJSON(envelope.Payload)
 	if err != nil {
 		return nil, "", 0, reject("malformed_packet", "malformed packet")
 	}
@@ -78,26 +80,27 @@ func (s *QuilkinUDPServer) authenticatedPayload(packet []byte) ([]byte, string, 
 		return nil, "", 0, reject("invalid_signature", "invalid signature")
 	}
 	mac := hmac.New(sha256.New, []byte(credential.Secret))
-	_, _ = mac.Write(rawPayload)
-	if !hmac.Equal(signature, mac.Sum(nil)) {
-		return nil, "", 0, reject("invalid_signature", "invalid signature")
-	}
-	interactionID, err := extractInteractionID(rawPayload)
+	signingBytes, err := envelopeSigningBytes(
+		envelope.SchemaVersion,
+		envelope.Auth.Algorithm,
+		envelope.Auth.KeyID,
+		canonicalPayload,
+	)
 	if err != nil {
 		return nil, "", 0, reject("malformed_packet", "malformed packet")
 	}
-	if rejection := validateAuthenticatedActor(rawPayload, credential.CapsuleerID); rejection != nil {
+	_, _ = mac.Write(signingBytes)
+	if !hmac.Equal(signature, mac.Sum(nil)) {
+		return nil, "", 0, reject("invalid_signature", "invalid signature")
+	}
+	interactionID, err := extractInteractionID(canonicalPayload)
+	if err != nil {
+		return nil, "", 0, reject("malformed_packet", "malformed packet")
+	}
+	if rejection := validateAuthenticatedActor(canonicalPayload, credential.CapsuleerID); rejection != nil {
 		return nil, "", 0, rejection
 	}
-	return rawPayload, interactionID, credential.CapsuleerID, nil
-}
-
-func compactJSON(body []byte) ([]byte, error) {
-	var buffer bytes.Buffer
-	if err := json.Compact(&buffer, body); err != nil {
-		return nil, err
-	}
-	return buffer.Bytes(), nil
+	return canonicalPayload, interactionID, credential.CapsuleerID, nil
 }
 
 func extractInteractionID(rawPayload []byte) (string, error) {

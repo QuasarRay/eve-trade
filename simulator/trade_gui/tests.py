@@ -13,7 +13,7 @@ from django.test import Client, TestCase, override_settings
 from jsonschema import Draft202012Validator
 
 from .models import GameGuiButton, GameGuiInteraction
-from .udp_client import response_signing_bytes
+from .udp_client import EDGE_REQUEST_SCHEMA, EDGE_RESPONSE_SCHEMA, envelope_signing_bytes, response_signing_bytes
 from .views import udp_error_http_status
 
 
@@ -139,7 +139,7 @@ class TamperedResponseVersionSocket(CapturingSocket):
     def recvfrom(self, size: int) -> tuple[bytes, tuple[str, int]]:
         response, address = super().recvfrom(size)
         envelope = json.loads(response)
-        envelope["schema_version"] = "eve-trade-edge-response.v2"
+        envelope["schema_version"] = "eve-trade-edge-response.v1"
         return json.dumps(envelope).encode("utf-8"), address
 
 
@@ -154,13 +154,13 @@ class AlwaysTimeoutSocket(CapturingSocket):
 
 
 def signed_response(payload: dict[str, Any]) -> bytes:
-    canonical = response_signing_bytes("eve-trade-edge-response.v1", "primary", payload)
+    canonical = response_signing_bytes(EDGE_RESPONSE_SCHEMA, "primary", payload)
     signature = base64.urlsafe_b64encode(
         hmac.new(b"edge-secret", canonical, hashlib.sha256).digest()
     ).rstrip(b"=").decode("ascii")
     return json.dumps(
         {
-            "schema_version": "eve-trade-edge-response.v1",
+            "schema_version": EDGE_RESPONSE_SCHEMA,
             "payload": payload,
             "auth": {
                 "algorithm": "hmac-sha256",
@@ -227,7 +227,7 @@ class GameGuiPacketBoundaryTests(TestCase):
         self.assertEqual(address, ("127.0.0.1", 26001))
 
         envelope = json.loads(payload.decode("utf-8"))
-        self.assertEqual(envelope["schema_version"], "eve-trade-edge.v1")
+        self.assertEqual(envelope["schema_version"], EDGE_REQUEST_SCHEMA)
         self.assertEqual(envelope["auth"]["algorithm"], "hmac-sha256")
         self.assertEqual(envelope["auth"]["key_id"], "seller")
 
@@ -246,7 +246,12 @@ class GameGuiPacketBoundaryTests(TestCase):
         self.assertNotIn("idempotency_key", game_packet["input"])
         self.assertEqual(game_packet["input"]["external_request_id"], "local-request-1")
 
-        signed_payload = json.dumps(game_packet, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        signed_payload = envelope_signing_bytes(
+            EDGE_REQUEST_SCHEMA,
+            "hmac-sha256",
+            "seller",
+            game_packet,
+        )
         expected_signature = base64.urlsafe_b64encode(
             hmac.new(b"edge-secret", signed_payload, hashlib.sha256).digest()
         ).rstrip(b"=").decode("ascii")
@@ -457,7 +462,21 @@ class GameGuiErrorPropagationTests(TestCase):
         "trade_gui.views.send_gui_packet",
         return_value={"interaction_id": "unknown", "status": "queued"},
     )
-    def test_http_202_requires_an_explicit_accepted_gateway_status(self, _send) -> None:
+    def test_http_202_accepts_explicit_queued_gateway_status(self, _send) -> None:
+        response = Client().post(
+            f"/api/gui/buttons/{self.button.id}/press/",
+            data=json.dumps({"interaction_id": "unknown", "player_input": {"issued_by_capsuleer_id": 1001}}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 202)
+        interaction = GameGuiInteraction.objects.get()
+        self.assertEqual(interaction.status, GameGuiInteraction.Status.SENT)
+
+    @patch(
+        "trade_gui.views.send_gui_packet",
+        return_value={"interaction_id": "unknown", "status": "processing"},
+    )
+    def test_http_202_requires_an_explicit_acceptance_state(self, _send) -> None:
         response = Client().post(
             f"/api/gui/buttons/{self.button.id}/press/",
             data=json.dumps({"interaction_id": "unknown", "player_input": {"issued_by_capsuleer_id": 1001}}),

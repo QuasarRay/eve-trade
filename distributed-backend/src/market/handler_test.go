@@ -3,6 +3,7 @@ package market
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -17,11 +18,11 @@ type fakeSettlementExecutor struct {
 	err error
 }
 
-func (f fakeSettlementExecutor) PublishSettlementWork(context.Context, *settlement.Work) (string, error) {
+func (f fakeSettlementExecutor) PublishSettlementWork(context.Context, *settlement.Work) (*SettlementPublication, error) {
 	if f.err != nil {
-		return "", f.err
+		return nil, f.err
 	}
-	return "settlement-message", nil
+	return &SettlementPublication{MessageID: "settlement-message", OperationID: "operation-1", QueuedAt: time.Unix(100, 0)}, nil
 }
 
 type recordingSettlementExecutor struct {
@@ -29,11 +30,11 @@ type recordingSettlementExecutor struct {
 	requests []*settlement.Work
 }
 
-func (r *recordingSettlementExecutor) PublishSettlementWork(_ context.Context, request *settlement.Work) (string, error) {
+func (r *recordingSettlementExecutor) PublishSettlementWork(_ context.Context, request *settlement.Work) (*SettlementPublication, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.requests = append(r.requests, request)
-	return "settlement-message", nil
+	return &SettlementPublication{MessageID: "settlement-message", OperationID: "operation-1", QueuedAt: time.Unix(100, 0)}, nil
 }
 
 func (r *recordingSettlementExecutor) count() int {
@@ -119,6 +120,16 @@ func mustMarketRequestFingerprint(t *testing.T, requestKind string, message any)
 		t.Fatalf("marketRequestFingerprint returned error: %v", err)
 	}
 	return fingerprint
+}
+
+func validIssueItemStackInput() *tradeGUIItemStackInput {
+	return &tradeGUIItemStackInput{
+		ItemStackID: "11111111-1111-4111-8111-111111111111",
+		OwnerID:     1001,
+		ItemTypeID:  34,
+		StationID:   60003760,
+		Quantity:    10,
+	}
 }
 
 type fakeInactiveIssueRepository struct {
@@ -336,7 +347,7 @@ func TestMarketHandlerRejectsReplayWithDifferentExternalRequestID(t *testing.T) 
 		IdempotencyKey:      "issue-replay",
 		ExternalRequestID:   "external-original",
 		IssuedByCapsuleerID: 1001,
-		ItemStack:           &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
+		ItemStack:           validIssueItemStackInput(),
 		Quantity:            4,
 		UnitPriceISK:        25,
 	}
@@ -372,7 +383,7 @@ func TestMarketHandlerRejectsReplayWithDifferentExternalRequestID(t *testing.T) 
 		IdempotencyKey:      "issue-replay",
 		ExternalRequestID:   "external-different",
 		IssuedByCapsuleerID: 1001,
-		ItemStack:           &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
+		ItemStack:           validIssueItemStackInput(),
 		Quantity:            4,
 		UnitPriceISK:        25,
 	})
@@ -390,7 +401,7 @@ func TestMarketHandlerRejectsReplayWithDifferentExpiresAt(t *testing.T) {
 		IdempotencyKey:      "issue-replay",
 		ExternalRequestID:   "external-original",
 		IssuedByCapsuleerID: 1001,
-		ItemStack:           &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
+		ItemStack:           validIssueItemStackInput(),
 		Quantity:            4,
 		UnitPriceISK:        25,
 		ExpiresAt:           timestamppb.New(originalExpiresAt),
@@ -428,7 +439,7 @@ func TestMarketHandlerRejectsReplayWithDifferentExpiresAt(t *testing.T) {
 		IdempotencyKey:      "issue-replay",
 		ExternalRequestID:   "external-original",
 		IssuedByCapsuleerID: 1001,
-		ItemStack:           &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
+		ItemStack:           validIssueItemStackInput(),
 		Quantity:            4,
 		UnitPriceISK:        25,
 		ExpiresAt:           timestamppb.New(originalExpiresAt.Add(time.Hour)),
@@ -443,12 +454,9 @@ func TestMarketHandlerRejectsReplayWithDifferentRequestFingerprint(t *testing.T)
 		IdempotencyKey:      "issue-replay",
 		ExternalRequestID:   "external-original",
 		IssuedByCapsuleerID: 1001,
-		ItemStack: &tradeGUIItemStackInput{
-			ItemStackID: "11111111-1111-4111-8111-111111111111",
-			OwnerID:     1001,
-		},
-		Quantity:     4,
-		UnitPriceISK: 25,
+		ItemStack:           validIssueItemStackInput(),
+		Quantity:            4,
+		UnitPriceISK:        25,
 	}
 	fingerprint, err := marketRequestFingerprint("issue_trade_instance", original)
 	if err != nil {
@@ -489,7 +497,10 @@ func TestMarketHandlerRejectsReplayWithDifferentRequestFingerprint(t *testing.T)
 		IssuedByCapsuleerID: 1001,
 		ItemStack: &tradeGUIItemStackInput{
 			ItemStackID: "11111111-1111-4111-8111-111111111111",
-			OwnerID:     3003,
+			OwnerID:     1001,
+			ItemTypeID:  34,
+			StationID:   60003760,
+			Quantity:    9,
 		},
 		Quantity:     4,
 		UnitPriceISK: 25,
@@ -499,7 +510,7 @@ func TestMarketHandlerRejectsReplayWithDifferentRequestFingerprint(t *testing.T)
 	}
 }
 
-func TestReplayRequestFingerprintAcceptsServerComputedSettlementFingerprint(t *testing.T) {
+func TestReplayRequestFingerprintRejectsSettlementDomainFingerprint(t *testing.T) {
 	message := issueTradeInstanceRequest{
 		IdempotencyKey:      "issue-server-fingerprint-replay",
 		ExternalRequestID:   "external-original",
@@ -509,15 +520,33 @@ func TestReplayRequestFingerprintAcceptsServerComputedSettlementFingerprint(t *t
 		UnitPriceISK:        25,
 	}
 	replay := &IdempotencyReplay{
-		RequestFingerprint: settlementServerFingerprintPrefix + strings.Repeat("a", 64),
+		RequestFingerprint: "trade-settlement.execute_settlement_batch.v1.sha256:" + strings.Repeat("a", 64),
 	}
 
 	ok, err := replayRequestFingerprintMatches(replay, "issue_trade_instance", message)
 	if err != nil {
 		t.Fatalf("replayRequestFingerprintMatches returned error: %v", err)
 	}
-	if !ok {
-		t.Fatal("server-computed settlement fingerprint should defer replay matching to stored step payloads")
+	if ok {
+		t.Fatal("settlement-domain fingerprint matched a Market request")
+	}
+}
+
+func TestDecodeReplayStepPayloadPreservesInt64Boundaries(t *testing.T) {
+	for _, value := range []int64{1<<53 - 1, 1 << 53, 1<<53 + 1, 9223372036854775807} {
+		t.Run(fmt.Sprintf("%d", value), func(t *testing.T) {
+			payload, err := decodeReplayStepPayload(fmt.Appendf(nil, `{"payload":{"value":%d}}`, value))
+			if err != nil {
+				t.Fatalf("decodeReplayStepPayload returned error: %v", err)
+			}
+			nested, ok := payload["payload"].(map[string]AnyJSON)
+			if !ok {
+				t.Fatalf("decoded payload = %#v", payload)
+			}
+			if got := int64Field(nested, "value"); got != value {
+				t.Fatalf("decoded value = %d, want %d", got, value)
+			}
+		})
 	}
 }
 
@@ -578,8 +607,11 @@ func TestMarketHandlerReportsReplayLoadErrorUnavailable(t *testing.T) {
 	handler := NewMarketHandler(fakeSettlementExecutor{}, fakeReplayRepository{err: errors.New("postgres unavailable")})
 
 	_, err := handler.issueTradeInstance(context.Background(), issueTradeInstanceRequest{
-		IdempotencyKey: "issue-replay-load-error",
-		ItemStack:      &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
+		IdempotencyKey:      "issue-replay-load-error",
+		ItemStack:           validIssueItemStackInput(),
+		IssuedByCapsuleerID: 1001,
+		Quantity:            4,
+		UnitPriceISK:        25,
 	})
 	if errs.Code(err) != errs.Unavailable {
 		t.Fatalf("error code = %v, want unavailable: %v", errs.Code(err), err)
@@ -592,7 +624,7 @@ func TestMarketHandlerRejectsInactiveIssueItemStack(t *testing.T) {
 	_, err := handler.issueTradeInstance(context.Background(), issueTradeInstanceRequest{
 		IdempotencyKey:      "issue-inactive",
 		IssuedByCapsuleerID: 1001,
-		ItemStack:           &tradeGUIItemStackInput{ItemStackID: "11111111-1111-4111-8111-111111111111"},
+		ItemStack:           validIssueItemStackInput(),
 		Quantity:            4,
 		UnitPriceISK:        25,
 	})

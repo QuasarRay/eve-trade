@@ -10,6 +10,8 @@ pub enum SettlementError {
     Conflict(String),
     #[error("failed precondition: {0}")]
     FailedPrecondition(String),
+    #[error("permission denied: {0}")]
+    PermissionDenied(String),
     #[error("insufficient funds: {0}")]
     InsufficientFunds(String),
     #[error("insufficient quantity: {0}")]
@@ -31,6 +33,7 @@ impl SettlementError {
             SettlementError::NotFound(_) => "NOT_FOUND",
             SettlementError::Conflict(_) => "CONFLICT",
             SettlementError::FailedPrecondition(_) => "FAILED_PRECONDITION",
+            SettlementError::PermissionDenied(_) => "PERMISSION_DENIED",
             SettlementError::InsufficientFunds(_) => "INSUFFICIENT_FUNDS",
             SettlementError::InsufficientQuantity(_) => "INSUFFICIENT_QUANTITY",
             SettlementError::Database(_) => "DATABASE_ERROR",
@@ -48,6 +51,7 @@ impl SettlementError {
             SettlementError::NotFound(message) => Status::not_found(message),
             SettlementError::Conflict(message) => Status::aborted(message),
             SettlementError::FailedPrecondition(message) => Status::failed_precondition(message),
+            SettlementError::PermissionDenied(message) => Status::permission_denied(message),
             SettlementError::InsufficientFunds(message) => Status::failed_precondition(message),
             SettlementError::InsufficientQuantity(message) => Status::failed_precondition(message),
             SettlementError::Database(error) => Status::internal(error.to_string()),

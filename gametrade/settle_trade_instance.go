@@ -30,6 +30,7 @@ type ItemStackRow struct {
 }
 
 type SettlementPlan struct {
+	Intent                 string
 	IdempotencyKey         string
 	RequestFingerprint     string
 	ExternalRequestID      string
@@ -48,9 +49,14 @@ func SettleTradeInstance(plan SettlementPlan) (*settlement.Work, error) {
 	if len(plan.Operations) == 0 {
 		return nil, fmt.Errorf("settlement plan must contain at least one operation")
 	}
+	if plan.Intent != settlement.IntentIssue && plan.Intent != settlement.IntentAccept && plan.Intent != settlement.IntentCancel {
+		return nil, fmt.Errorf("settlement plan intent is required")
+	}
 
 	return &settlement.Work{
+		Intent:              plan.Intent,
 		IdempotencyKey:      plan.IdempotencyKey,
+		RequestFingerprint:  plan.RequestFingerprint,
 		ExternalRequestID:   plan.ExternalRequestID,
 		CausedByCapsuleerID: plan.CausedByCapsuleerID,
 		Operations:          plan.Operations,

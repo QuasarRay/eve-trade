@@ -69,7 +69,7 @@ Model ID: `MODEL-CTX-03`; view component ID: `VC-CTX-03`.
 
 | Interface | Provider | Consumer | Contract source | Purpose |
 | --- | --- | --- | --- | --- |
-| Signed `eve-trade-edge.v1` UDP envelope | Game frontend or local simulator | Quilkin/Encore gateway | `simulator/trade_gui/udp_client.py`, `gateway/auth.go`, `gateway/packet.go`, `gateway/udp.go` | Carries authenticated raw GUI payload without simulator/test identity. |
+| Signed `eve-trade-edge.v2` UDP envelope | Game frontend or local simulator | Quilkin/Encore gateway | `simulator/trade_gui/udp_client.py`, `gateway/auth.go`, `gateway/packet.go`, `gateway/udp.go` | Domain-separates and authenticates schema, algorithm, key ID, and canonical GUI payload without simulator/test identity. |
 | `eve-trade-gui.v1` GUI payload | Game frontend or local simulator | Market through Encore gateway | `simulator/trade_gui/views.py`, Market GUI handler structs | Represents UI window/action/control and player-provided trade inputs. |
 | `market.SubmitTradeGuiInteraction Encore API` | Market | Encore gateway | `market/api.go` | Runtime UDP path receives only `bytes raw_payload`; Market interprets the game GUI interaction. |
 | Restored API gateway and Market proto/gRPC contracts | API gateway, Market | Internal generated-code and future gRPC callers | `proto/eve/api_gateway/v1/api_gateway.proto`, `proto/eve/market/v1/market.proto` | Define typed issue, accept, cancel, and GUI submission messages with protovalidate request-shape rules. |

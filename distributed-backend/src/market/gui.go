@@ -76,6 +76,8 @@ func (h *MarketHandler) submitIssueTrade(ctx context.Context, interactionID stri
 	}
 	return &SubmitTradeGuiInteractionResponse{
 		InteractionID:     interactionID,
+		OperationID:       response.OperationID,
+		QueuedAt:          response.QueuedAt,
 		Status:            "queued",
 		SettlementBatchID: response.SettlementBatchID,
 		TradeInstanceID:   response.TradeInstanceID,
@@ -98,6 +100,8 @@ func (h *MarketHandler) submitAcceptTrade(ctx context.Context, interactionID str
 	}
 	return &SubmitTradeGuiInteractionResponse{
 		InteractionID:               interactionID,
+		OperationID:                 response.OperationID,
+		QueuedAt:                    response.QueuedAt,
 		Status:                      "queued",
 		SettlementBatchID:           response.SettlementBatchID,
 		WalletEscrowID:              response.WalletEscrowID,
@@ -117,6 +121,8 @@ func (h *MarketHandler) submitCancelTrade(ctx context.Context, interactionID str
 	}
 	return &SubmitTradeGuiInteractionResponse{
 		InteractionID:     interactionID,
+		OperationID:       response.OperationID,
+		QueuedAt:          response.QueuedAt,
 		Status:            "queued",
 		SettlementBatchID: response.SettlementBatchID,
 	}, nil

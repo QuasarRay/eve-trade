@@ -14,6 +14,7 @@ stages:
 
 variables:
   DAGGER_VERSION: "0.21.7"
+  DAGGER_SHA256: "44430afc6f9c390fc47c4f352b15de9309a5e97ebd1ae563839617d6df8e8cc5"
   GIT_DEPTH: "0"
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
@@ -40,9 +41,9 @@ variables:
     - apk add --no-cache curl python3 py3-pip
     - python3 -m venv .ci-venv
     - . .ci-venv/bin/activate
-    - pip install --upgrade pip
-    - pip install -r ci-cd/requirements.txt
-    - curl -fsSLo /tmp/dagger.tar.gz "https://github.com/dagger/dagger/releases/download/v${DAGGER_VERSION}/dagger_v${DAGGER_VERSION}_linux_amd64.tar.gz"
+    - pip install -r distributed-backend/ci-cd/requirements.txt
+    - curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error --output /tmp/dagger.tar.gz "https://github.com/dagger/dagger/releases/download/v${DAGGER_VERSION}/dagger_v${DAGGER_VERSION}_linux_amd64.tar.gz"
+    - echo "${DAGGER_SHA256}  /tmp/dagger.tar.gz" | sha256sum --check --strict
     - tar -C /usr/local/bin -xzf /tmp/dagger.tar.gz dagger
     - chmod +x /usr/local/bin/dagger
     - dagger version
@@ -52,25 +53,25 @@ validate:check:
   stage: validate
   script:
     - . .ci-venv/bin/activate
-    - python ci-cd/pipeline.py check
+    - python distributed-backend/ci-cd/pipeline.py check
   artifacts:
     when: always
     expire_in: 30 days
     paths:
-      - ci-cd/out/sbom/
+      - distributed-backend/ci-cd/out/sbom/
 
 validate:chaos:
   extends: .dagger
   stage: validate
   script:
     - . .ci-venv/bin/activate
-    - mkdir -p ci-cd/out
-    - python ci-cd/pipeline.py render-chaos --output ci-cd/out/chaos-litmus.yaml
+    - mkdir -p distributed-backend/ci-cd/out
+    - python distributed-backend/ci-cd/pipeline.py render-chaos --output distributed-backend/ci-cd/out/chaos-litmus.yaml
   artifacts:
     when: always
     expire_in: 30 days
     paths:
-      - ci-cd/out/chaos-litmus.yaml
+      - distributed-backend/ci-cd/out/chaos-litmus.yaml
 
 test:unit:
   extends: .dagger
@@ -79,7 +80,7 @@ test:unit:
     - validate:check
   script:
     - . .ci-venv/bin/activate
-    - python ci-cd/pipeline.py test
+    - python distributed-backend/ci-cd/pipeline.py test
 
 test:e2e:
   extends: .dagger
@@ -88,7 +89,7 @@ test:e2e:
     - validate:check
   script:
     - . .ci-venv/bin/activate
-    - python ci-cd/pipeline.py integration
+    - python distributed-backend/ci-cd/pipeline.py integration
 
 build:images:
   extends: .dagger
@@ -98,7 +99,7 @@ build:images:
     - test:e2e
   script:
     - . .ci-venv/bin/activate
-    - python ci-cd/pipeline.py build --tag "$IMAGE_TAG"
+    - python distributed-backend/ci-cd/pipeline.py build --tag "$IMAGE_TAG"
 
 publish:images:
   extends: .dagger
@@ -112,11 +113,11 @@ publish:images:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   script:
     - . .ci-venv/bin/activate
-    - python ci-cd/pipeline.py publish --cloud-provider "$EVE_TRADE_CLOUD_PROVIDER" --tag "$IMAGE_TAG"
+    - python distributed-backend/ci-cd/pipeline.py publish --cloud-provider "$EVE_TRADE_CLOUD_PROVIDER" --tag "$IMAGE_TAG"
   artifacts:
     expire_in: 30 days
     paths:
-      - ci-cd/out/image-digests.json
+      - distributed-backend/ci-cd/out/image-digests.json
 
 deploy:render:
   extends: .dagger
@@ -130,14 +131,14 @@ deploy:render:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   script:
     - . .ci-venv/bin/activate
-    - mkdir -p ci-cd/out
-    - python ci-cd/pipeline.py render-kubernetes --cloud-provider "$EVE_TRADE_CLOUD_PROVIDER" --tag "$IMAGE_TAG" --output ci-cd/out/kubernetes.yaml
+    - mkdir -p distributed-backend/ci-cd/out
+    - python distributed-backend/ci-cd/pipeline.py render-kubernetes --cloud-provider "$EVE_TRADE_CLOUD_PROVIDER" --tag "$IMAGE_TAG" --output distributed-backend/ci-cd/out/kubernetes.yaml
   artifacts:
     when: always
     expire_in: 30 days
     paths:
-      - ci-cd/out/kubernetes.yaml
-      - ci-cd/out/image-digests.json
+      - distributed-backend/ci-cd/out/kubernetes.yaml
+      - distributed-backend/ci-cd/out/image-digests.json
 
 deploy:production:
   extends: .dagger
@@ -157,7 +158,7 @@ deploy:production:
     name: $DEPLOY_ENVIRONMENT
   script:
     - . .ci-venv/bin/activate
-    - python ci-cd/pipeline.py deploy --cloud-provider "$EVE_TRADE_CLOUD_PROVIDER" --tag "$IMAGE_TAG"
+    - python distributed-backend/ci-cd/pipeline.py deploy --cloud-provider "$EVE_TRADE_CLOUD_PROVIDER" --tag "$IMAGE_TAG"
 
 chaos:production:
   extends: .dagger
@@ -180,4 +181,4 @@ chaos:production:
     action: verify
   script:
     - . .ci-venv/bin/activate
-    - python ci-cd/pipeline.py chaos --namespace "$CHAOS_NAMESPACE" --selector "$CHAOS_SELECTOR" --timeout-seconds "$CHAOS_TIMEOUT_SECONDS"
+    - python distributed-backend/ci-cd/pipeline.py chaos --namespace "$CHAOS_NAMESPACE" --selector "$CHAOS_SELECTOR" --timeout-seconds "$CHAOS_TIMEOUT_SECONDS"

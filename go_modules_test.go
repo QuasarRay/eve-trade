@@ -67,7 +67,7 @@ func TestProductionOverlayTemplatesDigestsAndDeployRequiresPublishedDigests(t *t
 	if regexp.MustCompile(`(?m)^\s+newTag:`).Match(manifest) {
 		t.Fatal("production overlay contains a mutable newTag entry")
 	}
-	pipeline, err := os.ReadFile(filepath.FromSlash("ci-cd/pipeline.py"))
+	pipeline, err := os.ReadFile(filepath.FromSlash("distributed-backend/ci-cd/pipeline.py"))
 	if err != nil {
 		t.Fatal(err)
 	}

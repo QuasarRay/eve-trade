@@ -3,10 +3,12 @@ use sqlx::{PgPool, Postgres, Transaction};
 use tracing::{error, info_span, Instrument};
 use uuid::Uuid;
 
+use crate::authorization::authorize_plan;
 use crate::checksum;
-use crate::commands::{ExecuteBatchCommand, SettlementCommand};
+use crate::commands::{ExecuteBatchCommand, SettlementCommand, SettlementIntent};
 use crate::error::{Result, SettlementError};
 use crate::operations::{execute_settlement_command, OperationOutput};
+use crate::plan::validate_plan_semantics;
 use crate::proto::trade_settlement::SettlementOperationKind;
 
 const REQUEST_KIND: &str = "trade_settlement.execute_settlement_batch";
@@ -98,6 +100,9 @@ impl SettlementExecutor {
         &self,
         command: ExecuteBatchCommand,
     ) -> Result<BatchExecutionResult> {
+        if command.intent != SettlementIntent::Unspecified {
+            validate_plan_semantics(&command)?;
+        }
         let validation_span = info_span!(
             "settlement.validate_batch",
             idempotency_key = %command.idempotency_key,
@@ -139,13 +144,15 @@ impl SettlementExecutor {
 
             match existing.idempotency_state.as_str() {
                 IDEMPOTENCY_STATE_COMPLETED => {
-                    tx.rollback().await?;
                     let batch_id = existing.result_settlement_batch_id.ok_or_else(|| {
                         SettlementError::FailedPrecondition(format!(
                             "idempotency_key {} completed without a result batch",
                             command.idempotency_key
                         ))
                     })?;
+                    complete_operation_if_present(&mut tx, &command.idempotency_key, batch_id)
+                        .await?;
+                    tx.commit().await?;
                     let step_results = self.load_replayed_steps(batch_id).await?;
                     return Ok(BatchExecutionResult {
                         settlement_batch_id: batch_id,
@@ -183,6 +190,10 @@ impl SettlementExecutor {
                 &command.created_by_service,
             )
             .await?;
+        }
+
+        if command.intent != SettlementIntent::Unspecified {
+            authorize_plan(&mut tx, &command).await?;
         }
 
         let request_id = command.request_id.unwrap_or_else(Uuid::new_v4);
@@ -348,6 +359,30 @@ async fn complete_execution(
     complete_batch(tx, settlement_batch_id).await?;
     complete_request_attempt(tx, request_id).await?;
     complete_idempotency_record(tx, idempotency_key, settlement_batch_id).await?;
+    complete_operation_if_present(tx, idempotency_key, settlement_batch_id).await?;
+    Ok(())
+}
+
+async fn complete_operation_if_present(
+    tx: &mut Transaction<'_, Postgres>,
+    idempotency_key: &str,
+    settlement_batch_id: Uuid,
+) -> Result<()> {
+    sqlx::query(
+        r#"
+        UPDATE settlement_operation
+        SET operation_state = 'SUCCEEDED',
+            settlement_batch_id = $2,
+            updated_at = now(),
+            completed_at = COALESCE(completed_at, now())
+        WHERE idempotency_key = $1
+          AND operation_state IN ('QUEUED', 'PROCESSING', 'SUCCEEDED')
+        "#,
+    )
+    .bind(idempotency_key)
+    .bind(settlement_batch_id)
+    .execute(&mut **tx)
+    .await?;
     Ok(())
 }
 
@@ -833,6 +868,7 @@ async fn fail_idempotency_record(
 struct FingerprintMaterial<'a> {
     fingerprint_format: &'static str,
     request_kind: &'static str,
+    intent: SettlementIntent,
     external_request_id: &'a Option<String>,
     caused_by_capsuleer_id: Option<i64>,
     operations: &'a [SettlementCommand],
@@ -842,6 +878,7 @@ pub(crate) fn build_request_fingerprint(command: &ExecuteBatchCommand) -> Result
     let digest = checksum::hash_json(&FingerprintMaterial {
         fingerprint_format: REQUEST_FINGERPRINT_FORMAT,
         request_kind: REQUEST_KIND,
+        intent: command.intent,
         external_request_id: &command.external_request_id,
         caused_by_capsuleer_id: command.caused_by_capsuleer_id,
         operations: &command.operations,
@@ -935,6 +972,7 @@ mod tests {
 
     fn command(total_quantity: i64) -> ExecuteBatchCommand {
         ExecuteBatchCommand {
+            intent: SettlementIntent::Unspecified,
             idempotency_key: "key-1".to_string(),
             request_fingerprint: None,
             external_request_id: Some("external-1".to_string()),
@@ -967,6 +1005,7 @@ mod tests {
         total_quantity: i64,
     ) -> ExecuteBatchCommand {
         ExecuteBatchCommand {
+            intent: SettlementIntent::Unspecified,
             idempotency_key: idempotency_key.to_string(),
             request_fingerprint: None,
             external_request_id: Some(format!("external-{idempotency_key}")),
@@ -997,6 +1036,7 @@ mod tests {
         quantity: i64,
     ) -> ExecuteBatchCommand {
         ExecuteBatchCommand {
+            intent: SettlementIntent::Issue,
             idempotency_key: idempotency_key.to_string(),
             request_fingerprint: None,
             external_request_id: Some(format!("external-{idempotency_key}")),
@@ -1036,6 +1076,7 @@ mod tests {
     ) -> ExecuteBatchCommand {
         let isk_amount = quantity * 25;
         ExecuteBatchCommand {
+            intent: SettlementIntent::Accept,
             idempotency_key: idempotency_key.to_string(),
             request_fingerprint: None,
             external_request_id: Some(format!("external-{idempotency_key}")),
@@ -1082,6 +1123,7 @@ mod tests {
         quantity: i64,
     ) -> ExecuteBatchCommand {
         ExecuteBatchCommand {
+            intent: SettlementIntent::Unspecified,
             idempotency_key: idempotency_key.to_string(),
             request_fingerprint: None,
             external_request_id: Some(format!("external-{idempotency_key}")),
@@ -1107,6 +1149,7 @@ mod tests {
         quantity: i64,
     ) -> ExecuteBatchCommand {
         ExecuteBatchCommand {
+            intent: SettlementIntent::Unspecified,
             idempotency_key: idempotency_key.to_string(),
             request_fingerprint: None,
             external_request_id: Some(format!("external-{idempotency_key}")),
@@ -1131,6 +1174,7 @@ mod tests {
         quantity: i64,
     ) -> ExecuteBatchCommand {
         ExecuteBatchCommand {
+            intent: SettlementIntent::Unspecified,
             idempotency_key: idempotency_key.to_string(),
             request_fingerprint: None,
             external_request_id: Some(format!("external-{idempotency_key}")),
@@ -1156,17 +1200,12 @@ mod tests {
         quantity: i64,
     ) -> ExecuteBatchCommand {
         ExecuteBatchCommand {
+            intent: SettlementIntent::Cancel,
             idempotency_key: idempotency_key.to_string(),
             request_fingerprint: None,
             external_request_id: Some(format!("external-{idempotency_key}")),
             caused_by_capsuleer_id: Some(SELLER_ID),
             operations: vec![
-                SettlementCommand::ModifyTradeInstanceState(ModifyTradeInstanceState {
-                    trade_instance_id,
-                    to_trade_state: "CANCELLED".to_string(),
-                    trade_state_change_kind: "CANCELLED_BY_ISSUER".to_string(),
-                    changed_by_service: "market".to_string(),
-                }),
                 SettlementCommand::TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner(
                     TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner {
                         item_stack_escrow_id,
@@ -1174,6 +1213,12 @@ mod tests {
                         quantity,
                     },
                 ),
+                SettlementCommand::ModifyTradeInstanceState(ModifyTradeInstanceState {
+                    trade_instance_id,
+                    to_trade_state: "CANCELLED".to_string(),
+                    trade_state_change_kind: "CANCELLED_BY_ISSUER".to_string(),
+                    changed_by_service: "market".to_string(),
+                }),
             ],
             created_by_service: "market".to_string(),
             request_id: Some(Uuid::new_v4()),
@@ -1214,6 +1259,7 @@ mod tests {
                 settlement_batch,
                 request_attempt,
                 idempotency_record,
+                settlement_operation,
                 item_type,
                 station,
                 region,
@@ -1233,6 +1279,77 @@ mod tests {
             pool,
             _guard: guard,
         })
+    }
+
+    #[tokio::test]
+    async fn settlement_commit_atomically_completes_durable_operation() {
+        let Some(database) = test_database().await else {
+            return;
+        };
+        let pool = database.pool.clone();
+        let executor = SettlementExecutor::new(pool.clone());
+        let idempotency_key = "db-atomic-operation-completion";
+        let operation_id = Uuid::new_v4();
+        sqlx::query(
+            r#"
+            INSERT INTO settlement_operation (
+                operation_id, idempotency_key, request_fingerprint, intent,
+                caused_by_capsuleer_id, operation_state
+            ) VALUES ($1, $2, 'market.issue.sha256:test', 'ISSUE', $3, 'PROCESSING')
+            "#,
+        )
+        .bind(operation_id)
+        .bind(idempotency_key)
+        .bind(SELLER_ID)
+        .execute(&pool)
+        .await
+        .unwrap();
+        let command = issue_trade_command(
+            idempotency_key,
+            Uuid::new_v4(),
+            seeded_uuid(SOURCE_STACK_ID),
+            Uuid::new_v4(),
+            1,
+        );
+
+        let result = executor.execute_batch(command.clone()).await.unwrap();
+        let row = sqlx::query_as::<_, (String, Option<Uuid>, bool)>(
+            r#"
+            SELECT operation_state, settlement_batch_id, result_published
+            FROM settlement_operation
+            WHERE operation_id = $1
+            "#,
+        )
+        .bind(operation_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+        assert_eq!(row.0, "SUCCEEDED");
+        assert_eq!(row.1, Some(result.settlement_batch_id));
+        assert!(!row.2);
+
+        sqlx::query(
+            "UPDATE settlement_operation SET operation_state = 'PROCESSING', settlement_batch_id = NULL WHERE operation_id = $1",
+        )
+        .bind(operation_id)
+        .execute(&pool)
+        .await
+        .unwrap();
+        let replay = executor.execute_batch(command).await.unwrap();
+        let repaired = sqlx::query_as::<_, (String, Option<Uuid>)>(
+            "SELECT operation_state, settlement_batch_id FROM settlement_operation WHERE operation_id = $1",
+        )
+        .bind(operation_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+        assert!(replay.idempotent_replay);
+        assert_eq!(
+            repaired,
+            ("SUCCEEDED".to_string(), Some(result.settlement_batch_id))
+        );
     }
 
     async fn scalar_i64(pool: &PgPool, sql: &str, id: Uuid) -> i64 {
@@ -1448,8 +1565,8 @@ mod tests {
             .await
             .unwrap_err();
 
-        assert_eq!(error.code(), "FAILED_PRECONDITION");
-        assert!(error.to_string().contains("owner"));
+        assert_eq!(error.code(), "PERMISSION_DENIED");
+        assert!(error.to_string().contains("source item stack"));
         assert_eq!(
             scalar_i64(
                 &pool,
@@ -1476,6 +1593,108 @@ mod tests {
             )
             .await
         );
+    }
+
+    #[tokio::test]
+    async fn actor_cannot_debit_another_capsuleers_wallet() {
+        let Some(database) = test_database().await else {
+            return;
+        };
+        let executor = SettlementExecutor::new(database.pool.clone());
+        let trade_instance_id = Uuid::new_v4();
+        let item_stack_escrow_id = Uuid::new_v4();
+        executor
+            .execute_batch(issue_trade_command(
+                "db-wallet-auth-issue",
+                trade_instance_id,
+                seeded_uuid(SOURCE_STACK_ID),
+                item_stack_escrow_id,
+                1,
+            ))
+            .await
+            .unwrap();
+        let mut command = accept_trade_command(
+            "db-wallet-auth-accept",
+            trade_instance_id,
+            item_stack_escrow_id,
+            Uuid::new_v4(),
+            1,
+        );
+        command.caused_by_capsuleer_id = Some(SELLER_ID);
+
+        let error = executor.execute_batch(command).await.unwrap_err();
+        assert_eq!(error.code(), "PERMISSION_DENIED");
+        assert!(error.to_string().contains("debited wallet"));
+    }
+
+    #[tokio::test]
+    async fn actor_cannot_cancel_another_capsuleers_trade() {
+        let Some(database) = test_database().await else {
+            return;
+        };
+        let executor = SettlementExecutor::new(database.pool.clone());
+        let trade_instance_id = Uuid::new_v4();
+        let item_stack_escrow_id = Uuid::new_v4();
+        executor
+            .execute_batch(issue_trade_command(
+                "db-cancel-auth-issue",
+                trade_instance_id,
+                seeded_uuid(SOURCE_STACK_ID),
+                item_stack_escrow_id,
+                1,
+            ))
+            .await
+            .unwrap();
+        let mut command = cancel_cleanup_command(
+            "db-cancel-auth-cancel",
+            trade_instance_id,
+            item_stack_escrow_id,
+            1,
+        );
+        command.caused_by_capsuleer_id = Some(BUYER_ID);
+
+        let error = executor.execute_batch(command).await.unwrap_err();
+        assert_eq!(error.code(), "PERMISSION_DENIED");
+        assert!(error.to_string().contains("trade issuer"));
+    }
+
+    #[tokio::test]
+    async fn accept_destination_must_belong_to_accepting_actor() {
+        let Some(database) = test_database().await else {
+            return;
+        };
+        let executor = SettlementExecutor::new(database.pool.clone());
+        let trade_instance_id = Uuid::new_v4();
+        let item_stack_escrow_id = Uuid::new_v4();
+        executor
+            .execute_batch(issue_trade_command(
+                "db-destination-auth-issue",
+                trade_instance_id,
+                seeded_uuid(SOURCE_STACK_ID),
+                item_stack_escrow_id,
+                1,
+            ))
+            .await
+            .unwrap();
+        let mut command = accept_trade_command(
+            "db-destination-auth-accept",
+            trade_instance_id,
+            item_stack_escrow_id,
+            Uuid::new_v4(),
+            1,
+        );
+        for operation in &mut command.operations {
+            if let SettlementCommand::TransferQuantityFromItemStackEscrowToItemStackWithNewOwner(
+                value,
+            ) = operation
+            {
+                value.destination_item_stack_id = seeded_uuid(OTHER_OWNER_STACK_ID);
+            }
+        }
+
+        let error = executor.execute_batch(command).await.unwrap_err();
+        assert_eq!(error.code(), "PERMISSION_DENIED");
+        assert!(error.to_string().contains("destination item stack"));
     }
 
     #[tokio::test]

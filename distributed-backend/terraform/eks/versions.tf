@@ -1,5 +1,6 @@
 terraform {
-  required_version = ">= 1.0.0"
+  # Provider mocking in tests requires Terraform 1.7 or newer.
+  required_version = ">= 1.7.0"
 
   required_providers {
     aws = {

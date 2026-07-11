@@ -413,8 +413,27 @@ function captureServiceLogs(since) {
   return issues;
 }
 
-function serviceEvidenceIssues(logs) {
-  return logs.split(/\r?\n/).filter((line) => /\b(panic|fatal|out of memory|oomkilled|unhandled exception|stack trace)\b|sql.*(fatal|panic)/i.test(line));
+function serviceEvidenceIssues(logs, containers = [], restartCounts = {}) {
+  const issues = logs
+    .split(/\r?\n/)
+    .filter((line) => /\b(panic|fatal|out of memory|oomkilled|unhandled exception|stack trace)\b|sql.*(fatal|panic)/i.test(line));
+  for (const container of containers) {
+    const id = String(container.ID || container.Id || "");
+    const service = String(container.Service || container.Name || id || "unknown");
+    const state = String(container.State || "").toLowerCase();
+    const health = String(container.Health || "").toLowerCase();
+    if (state && state !== "running") {
+      issues.push(`${service} state=${state}`);
+    }
+    if (health && health !== "healthy") {
+      issues.push(`${service} health=${health}`);
+    }
+    const restarts = Number(restartCounts[id] || 0);
+    if (restarts > 0) {
+      issues.push(`${service} restarted ${restarts} times`);
+    }
+  }
+  return issues;
 }
 
 function enforceSuccessfulGate(runResults, serviceHealthIssues) {

@@ -26,6 +26,8 @@ spec:
       terminationGracePeriodSeconds: 45
       securityContext:
         runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -56,7 +58,7 @@ spec:
                   key: GAME_PACKET_PRINCIPAL_KEYS_JSON
           readinessProbe:
             httpGet:
-              path: /market/readyz
+              path: /gateway/readyz
               port: http
             periodSeconds: 5
             timeoutSeconds: 2

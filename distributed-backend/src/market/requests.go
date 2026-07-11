@@ -1,6 +1,10 @@
 package market
 
-import "google.golang.org/protobuf/types/known/timestamppb"
+import (
+	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
+)
 
 type tradeGUIItemStackInput struct {
 	ItemStackID string `json:"item_stack_id"`
@@ -21,6 +25,8 @@ type issueTradeInstanceRequest struct {
 }
 
 type issueTradeInstanceResult struct {
+	OperationID       string
+	QueuedAt          time.Time
 	TradeInstanceID   string
 	ItemStackEscrowID string
 	SettlementBatchID string
@@ -37,6 +43,8 @@ type acceptTradeInstanceRequest struct {
 }
 
 type acceptTradeInstanceResult struct {
+	OperationID                 string
+	QueuedAt                    time.Time
 	WalletEscrowID              string
 	BuyerDestinationItemStackID string
 	SettlementBatchID           string
@@ -50,6 +58,8 @@ type cancelTradeInstanceRequest struct {
 }
 
 type cancelTradeInstanceResult struct {
+	OperationID       string
+	QueuedAt          time.Time
 	SettlementBatchID string
 }
 
