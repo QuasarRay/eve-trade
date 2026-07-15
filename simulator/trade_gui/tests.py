@@ -13,7 +13,13 @@ from django.test import Client, TestCase, override_settings
 from jsonschema import Draft202012Validator
 
 from .models import GameGuiButton, GameGuiInteraction
-from .udp_client import EDGE_REQUEST_SCHEMA, EDGE_RESPONSE_SCHEMA, envelope_signing_bytes, response_signing_bytes
+from .udp_client import (
+    EDGE_REQUEST_SCHEMA,
+    EDGE_RESPONSE_SCHEMA,
+    envelope_signing_bytes,
+    reset_udp_session_pool,
+    response_signing_bytes,
+)
 from .views import udp_error_http_status
 
 
@@ -35,6 +41,7 @@ FORBIDDEN_PACKET_TERMS = {
 class CapturingSocket:
     sent: list[tuple[bytes, tuple[str, int]]] = []
     instances = 0
+    closed = 0
 
     def __init__(self, *args: Any, **kwargs: Any):
         type(self).instances += 1
@@ -45,6 +52,9 @@ class CapturingSocket:
 
     def __exit__(self, *args: Any) -> None:
         return None
+
+    def close(self) -> None:
+        type(self).closed += 1
 
     def settimeout(self, timeout: float) -> None:
         self.timeout = timeout
@@ -184,16 +194,21 @@ def signed_response(payload: dict[str, Any]) -> bytes:
 )
 class GameGuiPacketBoundaryTests(TestCase):
     def setUp(self) -> None:
+        reset_udp_session_pool()
         CapturingSocket.sent = []
         CapturingSocket.instances = 0
+        CapturingSocket.closed = 0
         TimeoutThenSuccessSocket.sent = []
         TimeoutThenSuccessSocket.instances = 0
+        TimeoutThenSuccessSocket.closed = 0
         TimeoutThenSuccessSocket.recv_calls = 0
         RetryableResponseThenSuccessSocket.sent = []
         RetryableResponseThenSuccessSocket.instances = 0
+        RetryableResponseThenSuccessSocket.closed = 0
         RetryableResponseThenSuccessSocket.recv_calls = 0
         AlwaysTimeoutSocket.sent = []
         AlwaysTimeoutSocket.instances = 0
+        AlwaysTimeoutSocket.closed = 0
         self.button = GameGuiButton.objects.create(
             window=GameGuiButton.Window.REGIONAL_MARKET,
             label="Sell This Item",
@@ -201,6 +216,9 @@ class GameGuiPacketBoundaryTests(TestCase):
             default_payload={},
             enabled=True,
         )
+
+    def tearDown(self) -> None:
+        reset_udp_session_pool()
 
     def test_button_press_conforms_to_versioned_protocol_schema_and_golden_packet(self) -> None:
         client = Client()
@@ -293,6 +311,7 @@ class GameGuiPacketBoundaryTests(TestCase):
         self.assertEqual(response.json()["response_payload"]["status"], "accepted")
         self.assertEqual(len(TimeoutThenSuccessSocket.sent), 2)
         self.assertEqual(TimeoutThenSuccessSocket.instances, 2)
+        self.assertEqual(TimeoutThenSuccessSocket.closed, 1)
         first_packet, _ = TimeoutThenSuccessSocket.sent[0]
         second_packet, _ = TimeoutThenSuccessSocket.sent[1]
         self.assertEqual(first_packet, second_packet)
@@ -318,10 +337,32 @@ class GameGuiPacketBoundaryTests(TestCase):
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.json()["response_payload"]["status"], "accepted")
         self.assertEqual(len(RetryableResponseThenSuccessSocket.sent), 2)
-        self.assertEqual(RetryableResponseThenSuccessSocket.instances, 2)
+        self.assertEqual(RetryableResponseThenSuccessSocket.instances, 1)
+        self.assertEqual(RetryableResponseThenSuccessSocket.closed, 0)
         first_packet, _ = RetryableResponseThenSuccessSocket.sent[0]
         second_packet, _ = RetryableResponseThenSuccessSocket.sent[1]
         self.assertEqual(first_packet, second_packet)
+
+    @override_settings(QUILKIN_UDP_SESSION_POOL_SIZE=1)
+    def test_sequential_button_presses_reuse_healthy_quilkin_session(self) -> None:
+        client = Client()
+        with patch("trade_gui.udp_client.socket.socket", CapturingSocket):
+            for index in range(25):
+                response = client.post(
+                    f"/api/gui/buttons/{self.button.id}/press/",
+                    data=json.dumps(
+                        {
+                            "interaction_id": f"pooled-{index}",
+                            "player_input": {"issued_by_capsuleer_id": 1001, "quantity": 4},
+                        }
+                    ),
+                    content_type="application/json",
+                )
+                self.assertEqual(response.status_code, 202)
+
+        self.assertEqual(CapturingSocket.instances, 1)
+        self.assertEqual(len(CapturingSocket.sent), 25)
+        self.assertEqual(CapturingSocket.closed, 0)
 
     @override_settings(
         QUILKIN_UDP_MAX_ATTEMPTS=2,
@@ -338,6 +379,7 @@ class GameGuiPacketBoundaryTests(TestCase):
         self.assertEqual(response.status_code, 502)
         self.assertEqual(len(AlwaysTimeoutSocket.sent), 2)
         self.assertEqual(AlwaysTimeoutSocket.instances, 2)
+        self.assertEqual(AlwaysTimeoutSocket.closed, 2)
         self.assertEqual(response.json()["status"], "failed")
 
     def test_button_press_rejects_response_with_invalid_signature(self) -> None:

@@ -5,9 +5,13 @@ import hmac
 import hashlib
 import base64
 import errno
+import queue
 import socket
+import threading
 import time
-from typing import Any
+from contextlib import contextmanager
+from dataclasses import dataclass
+from typing import Any, Iterator
 
 from django.conf import settings
 
@@ -22,6 +26,71 @@ EDGE_REQUEST_SCHEMA = "eve-trade-edge.v2"
 EDGE_RESPONSE_SCHEMA = "eve-trade-edge-response.v2"
 HMAC_SHA256_ALGORITHM = "hmac-sha256"
 ENVELOPE_SIGNING_DOMAIN = "eve-trade.udp-envelope.hmac-sha256.v1"
+
+
+@dataclass
+class _UdpSession:
+    sock: Any | None = None
+
+    def get_socket(self) -> Any:
+        if self.sock is None:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.settimeout(settings.QUILKIN_UDP_TIMEOUT_SECONDS)
+        return self.sock
+
+    def reset(self) -> None:
+        if self.sock is not None:
+            self.sock.close()
+            self.sock = None
+
+
+class _UdpSessionPool:
+    def __init__(self, size: int):
+        self.sessions = [_UdpSession() for _ in range(size)]
+        self.available: queue.LifoQueue[_UdpSession] = queue.LifoQueue(maxsize=size)
+        for session in self.sessions:
+            self.available.put_nowait(session)
+
+    @contextmanager
+    def checkout(self) -> Iterator[_UdpSession]:
+        session = self.available.get()
+        try:
+            yield session
+        finally:
+            self.available.put_nowait(session)
+
+    def close(self) -> None:
+        for session in self.sessions:
+            session.reset()
+
+
+_session_pool_guard = threading.Lock()
+_session_pool_state: tuple[tuple[str, int, float, int], _UdpSessionPool] | None = None
+
+
+def reset_udp_session_pool() -> None:
+    global _session_pool_state
+    with _session_pool_guard:
+        if _session_pool_state is not None:
+            _session_pool_state[1].close()
+            _session_pool_state = None
+
+
+def _get_udp_session_pool() -> _UdpSessionPool:
+    global _session_pool_state
+    pool_size = max(1, settings.QUILKIN_UDP_SESSION_POOL_SIZE)
+    config = (
+        settings.QUILKIN_UDP_HOST,
+        settings.QUILKIN_UDP_PORT,
+        settings.QUILKIN_UDP_TIMEOUT_SECONDS,
+        pool_size,
+    )
+    with _session_pool_guard:
+        if _session_pool_state is None or _session_pool_state[0] != config:
+            if _session_pool_state is not None:
+                _session_pool_state[1].close()
+            _session_pool_state = (config, _UdpSessionPool(pool_size))
+        return _session_pool_state[1]
 
 
 def encode_udp_packet(packet: dict[str, Any]) -> bytes:
@@ -84,38 +153,37 @@ def send_gui_packet(packet: dict[str, Any]) -> dict[str, Any]:
     address = (settings.QUILKIN_UDP_HOST, settings.QUILKIN_UDP_PORT)
     max_attempts = max(1, settings.QUILKIN_UDP_MAX_ATTEMPTS)
     retry_backoff = max(0.0, settings.QUILKIN_UDP_RETRY_BACKOFF_SECONDS)
-    last_error: OSError | None = None
 
-    for attempt in range(1, max_attempts + 1):
-        # A Quilkin session is keyed by the client UDP socket. Rotate the socket
-        # after retryable failures so one stale proxy session cannot consume the
-        # whole retry budget while preserving the exact signed request packet.
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.settimeout(settings.QUILKIN_UDP_TIMEOUT_SECONDS)
+    pool = _get_udp_session_pool()
+    with pool.checkout() as session:
+        for attempt in range(1, max_attempts + 1):
+            sock = session.get_socket()
             try:
                 sock.sendto(payload, address)
                 response, response_address = sock.recvfrom(65535)
             except OSError as exc:
-                last_error = exc
+                session.reset()
                 if attempt >= max_attempts or not is_transient_socket_error(exc):
                     raise
                 time.sleep(retry_backoff * attempt)
                 continue
 
-            if not response_from_expected_endpoint(response_address, address):
-                raise ValueError(f"UDP response came from unexpected endpoint {response_address!r}")
-            decoded = decode_udp_response(response)
-            if decoded.get("interaction_id") != packet.get("interaction_id"):
-                raise ValueError("UDP response interaction_id does not match request")
+            try:
+                if not response_from_expected_endpoint(response_address, address):
+                    raise ValueError(f"UDP response came from unexpected endpoint {response_address!r}")
+                decoded = decode_udp_response(response)
+                if decoded.get("interaction_id") != packet.get("interaction_id"):
+                    raise ValueError("UDP response interaction_id does not match request")
+            except ValueError:
+                session.reset()
+                raise
             if decoded.get("code") not in RETRYABLE_RESPONSE_CODES or attempt >= max_attempts:
                 return decoded
-        retry_delay = retry_backoff * attempt
-        if decoded.get("code") == "request_in_progress":
-            retry_delay = max(retry_delay, settings.QUILKIN_UDP_TIMEOUT_SECONDS)
-        time.sleep(retry_delay)
+            retry_delay = retry_backoff * attempt
+            if decoded.get("code") == "request_in_progress":
+                retry_delay = max(retry_delay, settings.QUILKIN_UDP_TIMEOUT_SECONDS)
+            time.sleep(retry_delay)
 
-    if last_error is not None:
-        raise last_error
     raise TimeoutError("UDP request did not produce a terminal response")
 
 

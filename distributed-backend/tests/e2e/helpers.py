@@ -6,6 +6,7 @@ import base64
 import importlib
 import json
 import os
+import queue
 import re
 import socket
 import sys
@@ -256,6 +257,19 @@ class AuthenticatedEdgeClient:
         self.endpoint = (host, port)
         self.response_secret = response_secret.encode("utf-8")
         self.response_key_id = response_key_id
+        self.sockets: queue.LifoQueue[socket.socket] = queue.LifoQueue(maxsize=10)
+        for _ in range(10):
+            self.sockets.put_nowait(self._new_socket())
+
+    @staticmethod
+    def _new_socket() -> socket.socket:
+        udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        udp.settimeout(10)
+        return udp
+
+    def close(self) -> None:
+        while not self.sockets.empty():
+            self.sockets.get_nowait().close()
 
     def submit(self, packet: dict[str, Any], key_id: str, principal_secret: str) -> dict[str, Any]:
         signing_bytes = envelope_signing_bytes(
@@ -276,10 +290,16 @@ class AuthenticatedEdgeClient:
             separators=(",", ":"),
             sort_keys=True,
         ).encode("utf-8")
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
-            udp.settimeout(10)
+        udp = self.sockets.get()
+        try:
             udp.sendto(envelope, self.endpoint)
             response, source = udp.recvfrom(65535)
+        except OSError:
+            udp.close()
+            udp = self._new_socket()
+            raise
+        finally:
+            self.sockets.put_nowait(udp)
         expected_ips = {
             row[4][0]
             for row in socket.getaddrinfo(self.endpoint[0], self.endpoint[1], socket.AF_INET, socket.SOCK_DGRAM)

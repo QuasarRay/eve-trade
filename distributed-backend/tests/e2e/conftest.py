@@ -159,9 +159,13 @@ def authenticated_edge(services_ready):
         "response_secret": os.environ.get("EVE_TRADE_EDGE_RESPONSE_SECRET"),
     }
     require_or_skip(all(required.values()), "set authenticated edge test credentials to run principal-binding tests")
-    return AuthenticatedEdgeClient(
+    client = AuthenticatedEdgeClient(
         required["host"],
         int(os.environ.get("EVE_TRADE_QUILKIN_UDP_PORT", "26001")),
         required["response_secret"],
         os.environ.get("EVE_TRADE_EDGE_RESPONSE_KEY_ID", "primary"),
     )
+    try:
+        yield client
+    finally:
+        client.close()
