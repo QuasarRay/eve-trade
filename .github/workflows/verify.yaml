@@ -246,7 +246,7 @@ jobs:
           job-name: go / encore
           artifact-key: go
           step-name: Fuzz UDP authentication parser
-          command: GOFLAGS=-mod=mod encore test -run '^$' -fuzz '^FuzzAuthenticatedPayload' -fuzztime 10s ./distributed-backend/src/gateway
+          command: ENCORERUNTIME_NOPANIC=1 go test -run '^$' -fuzz '^FuzzAuthenticatedPayload' -fuzztime 10s ./distributed-backend/src/gateway
       - name: Build Encore image
         uses: ./.github/actions/ci-evidence
         with:
@@ -409,6 +409,18 @@ jobs:
           artifact-key: terraform-${{ matrix.provider }}
           step-name: Terraform init
           command: terraform -chdir=${{ matrix.root }} init -backend=false ${{ matrix.lockfile_args }} -no-color
+      - name: Verify EKS dependency lock
+        if: matrix.provider == 'eks'
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: terraform
+          job-name: terraform / ${{ matrix.provider }}
+          artifact-key: terraform-${{ matrix.provider }}
+          step-name: Verify EKS dependency lock
+          command: |
+            terraform -chdir=distributed-backend/terraform/eks providers lock -platform=linux_amd64 -platform=windows_amd64
+            git diff --exit-code -- distributed-backend/terraform/eks/.terraform.lock.hcl
       - name: Terraform providers
         uses: ./.github/actions/ci-evidence
         with:
@@ -445,6 +457,13 @@ jobs:
           artifact-key: terraform-${{ matrix.provider }}
           status: ${{ job.status }}
           command-identity: verify/terraform/${{ matrix.provider }}
+      - name: Upload EKS dependency lock
+        if: ${{ always() && matrix.provider == 'eks' }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: terraform-lock-eks-${{ github.run_id }}-${{ github.run_attempt }}
+          path: distributed-backend/terraform/eks/.terraform.lock.hcl
+          if-no-files-found: error
 
   kubernetes:
     name: kubernetes / render
@@ -519,6 +538,15 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
+      - name: Install architecture test dependencies
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: architecture
+          job-name: architecture / boundaries and schema
+          artifact-key: architecture
+          step-name: Install architecture test dependencies
+          command: python -m pip install PyYAML==6.0.3
       - name: Compile Python sources
         uses: ./.github/actions/ci-evidence
         with:

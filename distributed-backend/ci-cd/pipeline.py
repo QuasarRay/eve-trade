@@ -130,6 +130,7 @@ GOBIN=/usr/local/bin go install honnef.co/go/tools/cmd/staticcheck@v0.7.0
 staticcheck ./...
 GOBIN=/usr/local/bin go install golang.org/x/vuln/cmd/govulncheck@v1.5.0
 govulncheck ./...
+ENCORERUNTIME_NOPANIC=1 go test -run '^$' -fuzz '^FuzzAuthenticatedPayload' -fuzztime 10s ./distributed-backend/src/gateway
 """
         await self.run_container("Encore Go checks", self.go_base().with_exec(["bash", "-lc", script]))
 
@@ -142,6 +143,7 @@ govulncheck ./...
 set -euo pipefail
 python -m compileall simulator/eve_trade_simulator simulator/trade_gui distributed-backend/tests/e2e distributed-backend/observability
 python -m pip install -r simulator/requirements-test.txt -r distributed-backend/observability/requirements-test.txt
+python -m pip install PyYAML==6.0.3
 python -m pip_audit --requirement simulator/requirements.txt
 python -m pip_audit --requirement simulator/requirements-test.txt
 python -m pip_audit --requirement distributed-backend/tests/e2e/requirements.txt
@@ -182,7 +184,10 @@ python -m unittest discover -s scripts/tests -v
         for provider in providers:
             root = TERRAFORM_ROOTS[provider]
             lockfile_args = TERRAFORM_LOCKFILE_ARGS[provider]
-            script = f"terraform fmt -check -recursive distributed-backend/terraform && terraform -chdir={root} init -backend=false {lockfile_args} && terraform -chdir={root} validate && terraform -chdir={root} test"
+            lock_check = ""
+            if provider == "eks":
+                lock_check = f" && terraform -chdir={root} providers lock -platform=linux_amd64 -platform=windows_amd64 && git diff --exit-code -- {root}/.terraform.lock.hcl"
+            script = f"terraform fmt -check -recursive distributed-backend/terraform && terraform -chdir={root} init -backend=false {lockfile_args}{lock_check} && terraform -chdir={root} providers && terraform -chdir={root} validate && terraform -chdir={root} test"
             await self.run_container(f"Terraform {provider}", self.client.container().from_(TERRAFORM_IMAGE).with_directory("/workspace", self.source).with_workdir("/workspace").with_exec(["sh", "-c", script]))
 
     async def build_images(self, registry: str, tag: str) -> None:

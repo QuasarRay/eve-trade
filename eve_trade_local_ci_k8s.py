@@ -69,6 +69,7 @@ def protobuf() -> None:
 
 def architecture() -> None:
     require("python", "git")
+    run(["python", "-m", "pip", "install", "PyYAML==6.0.3"])
     run(["python", "scripts/verify_architecture_boundaries.py"])
     run(["python", "scripts/verify_schema_ownership.py"])
     run(["python", "-m", "unittest", "discover", "-s", "scripts/tests", "-v"])
@@ -117,7 +118,7 @@ def go() -> None:
     run(["staticcheck", "./..."])
     run(["govulncheck", "-version"])
     run(["govulncheck", "./..."])
-    run(["encore", "test", "-run", "^$", "-fuzz", "^FuzzAuthenticatedPayload", "-fuzztime", "10s", "./distributed-backend/src/gateway"], env=encore_env)
+    run(["go", "test", "-run", "^$", "-fuzz", "^FuzzAuthenticatedPayload", "-fuzztime", "10s", "./distributed-backend/src/gateway"], env=race_env)
     image = f"eve-trade/encore-backend:{subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()}"
     run(["encore", "build", "docker", "--config", "infra/encore/self-host.nsq.json", image], env=encore_env)
 
@@ -150,6 +151,9 @@ def terraform() -> None:
         if lockfile_arg:
             init.append(lockfile_arg)
         run([*init, "-no-color"])
+        if root == "distributed-backend/terraform/eks":
+            run(["terraform", f"-chdir={root}", "providers", "lock", "-platform=linux_amd64", "-platform=windows_amd64"])
+            run(["git", "diff", "--exit-code", "--", f"{root}/.terraform.lock.hcl"])
         run(["terraform", f"-chdir={root}", "providers"])
         run(["terraform", f"-chdir={root}", "validate", "-no-color"])
         run(["terraform", f"-chdir={root}", "test", "-no-color"])
