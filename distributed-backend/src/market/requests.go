@@ -63,17 +63,6 @@ type cancelTradeInstanceResult struct {
 	SettlementBatchID string
 }
 
-type tradeGUIInteraction struct {
-	SchemaVersion string `json:"schema_version"`
-	InteractionID string `json:"interaction_id"`
-	UI            struct {
-		Window string `json:"window"`
-		Button string `json:"button"`
-		Action string `json:"action"`
-	} `json:"ui"`
-	Input tradeGUIInput `json:"input"`
-}
-
 type tradeGUIInput struct {
 	IdempotencyKey              string                  `json:"idempotency_key"`
 	ExternalRequestID           string                  `json:"external_request_id"`

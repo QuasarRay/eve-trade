@@ -99,7 +99,7 @@ message TradeGuiInteraction {
   };
   option (buf.validate.message).cel = {
     id: "market.gui.accept_required_fields"
-      message: "accept trade GUI input requires buyer, trade, positive quantity_requested, and buyer wallet"
+    message: "accept trade GUI input requires buyer, trade, positive quantity_requested, and buyer wallet"
     expression: "!(this.ui.action in ['market_buy_from_sell_order', 'contract_accept_item_exchange', 'direct_trade_accept']) || (this.input.buyer_capsuleer_id > 0 && this.input.trade_instance_id != '' && (this.input.quantity_requested > 0 || this.input.quantity > 0) && this.input.buyer_wallet_id != '')"
   };
   option (buf.validate.message).cel = {

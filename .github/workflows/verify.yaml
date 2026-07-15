@@ -37,21 +37,76 @@ jobs:
           artifact-key: proto
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
-          go-version-file: go.mod
+          go-version: "1.26.5"
           cache: true
       - uses: bufbuild/buf-action@fd21066df7214747548607aaa45548ba2b9bc1ff # v1
         with:
           setup_only: true
           version: "1.70.0"
       - name: Install protobuf plugin
-        run: go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
-      - run: buf build --error-format github-actions
-      - run: buf lint --error-format github-actions
-      - run: buf format --diff --exit-code
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: proto
+          job-name: proto / buf
+          artifact-key: proto
+          step-name: Install protobuf plugin
+          command: go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
+      - name: Buf build
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: proto
+          job-name: proto / buf
+          artifact-key: proto
+          step-name: Buf build
+          command: buf build --error-format github-actions
+      - name: Buf lint
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: proto
+          job-name: proto / buf
+          artifact-key: proto
+          step-name: Buf lint
+          command: buf lint --error-format github-actions
+      - name: Buf format
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: proto
+          job-name: proto / buf
+          artifact-key: proto
+          step-name: Buf format
+          command: buf format --diff --exit-code
       - if: github.event_name == 'pull_request'
-        run: buf breaking --against '.git#branch=main'
-      - run: buf generate
-      - run: git diff --exit-code -- proto/gen
+        name: Buf breaking
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: proto
+          job-name: proto / buf
+          artifact-key: proto
+          step-name: Buf breaking
+          command: buf breaking --against '.git#branch=main'
+      - name: Buf generate
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: proto
+          job-name: proto / buf
+          artifact-key: proto
+          step-name: Buf generate
+          command: buf generate
+      - name: Verify generated protobuf
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: proto
+          job-name: proto / buf
+          artifact-key: proto
+          step-name: Verify generated protobuf
+          command: git diff --exit-code -- proto/gen
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:
@@ -77,31 +132,130 @@ jobs:
           artifact-key: go
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
-          go-version-file: go.mod
+          go-version: "1.26.5"
           cache: true
       - name: Install Encore CLI
-        run: |
-          ENCORE_INSTALL="$HOME/.encore" bash scripts/install_encore_cli.sh
-          echo "$HOME/.encore/bin" >> "$GITHUB_PATH"
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          step-name: Install Encore CLI
+          command: |
+            ENCORE_INSTALL="$HOME/.encore" bash scripts/install_encore_cli.sh
+            echo "$HOME/.encore/bin" >> "$GITHUB_PATH"
       - name: Verify Encore CLI executable
-        run: encore --help >/dev/null
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          step-name: Verify Encore CLI executable
+          command: encore --help >/dev/null
       - name: Check Go module metadata
-        run: |
-          go mod tidy
-          git diff --exit-code -- go.mod go.sum
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          step-name: Check Go module metadata
+          command: |
+            go version
+            go mod download
+            go mod verify
+            go mod tidy
+            git diff --exit-code -- go.mod go.sum
       - name: Check Go formatting
-        run: |
-          files="$(gofmt -l distributed-backend/src/gateway distributed-backend/src/market distributed-backend/src/settlement distributed-backend/src/settlementworker distributed-backend/internal gametrade proto/gen go_modules_test.go)"
-          if [ -n "$files" ]; then
-            echo "$files"
-            exit 1
-          fi
-      - run: encore test ./...
-      - run: go vet ./...
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          step-name: Check Go formatting
+          command: |
+            files="$(gofmt -l distributed-backend/src/gateway distributed-backend/src/market distributed-backend/src/settlement distributed-backend/src/settlementworker distributed-backend/internal gametrade proto/gen go_modules_test.go)"
+            if [ -n "$files" ]; then
+              echo "$files"
+              exit 1
+            fi
+      - name: Run Go tests
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          step-name: Run Go tests
+          command: GOFLAGS=-mod=mod encore test ./...
+      - name: Run Go race detector
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          step-name: Run Go race detector
+          command: |
+            # Encore v1.57.9's custom race runtime crashes in reqtrack before
+            # application tests start. Run the standard Go race detector over
+            # every concurrency-sensitive package and settlement lifecycle.
+            ENCORERUNTIME_NOPANIC=1 go test -race ./distributed-backend/src/gateway ./distributed-backend/src/settlementworker ./distributed-backend/internal/... ./gametrade
+            ENCORERUNTIME_NOPANIC=1 go test -race ./distributed-backend/src/market -run '^TestSettlement' -skip 'APIErrors'
+            ENCORERUNTIME_NOPANIC=1 go test -race ./distributed-backend/src/market -run '^TestDuplicateSettlementResultProjectionIsHarmless$'
+      - name: Run Go vet
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          step-name: Run Go vet
+          command: go vet ./...
+      - name: Run static analysis
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          step-name: Run static analysis
+          command: |
+            go install honnef.co/go/tools/cmd/staticcheck@v0.7.0
+            staticcheck ./...
+      - name: Run Go vulnerability audit
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          step-name: Run Go vulnerability audit
+          command: |
+            go install golang.org/x/vuln/cmd/govulncheck@v1.5.0
+            govulncheck -version
+            govulncheck ./...
       - name: Fuzz UDP authentication parser
-        run: encore test -run '^$' -fuzz '^FuzzAuthenticatedPayload' -fuzztime 10s ./distributed-backend/src/gateway
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          step-name: Fuzz UDP authentication parser
+          command: GOFLAGS=-mod=mod encore test -run '^$' -fuzz '^FuzzAuthenticatedPayload' -fuzztime 10s ./distributed-backend/src/gateway
       - name: Build Encore image
-        run: encore build docker --config infra/encore/self-host.nsq.json eve-trade/encore-backend:${{ github.sha }}
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          step-name: Build Encore image
+          command: GOFLAGS=-mod=mod encore build docker --config infra/encore/self-host.nsq.json eve-trade/encore-backend:${{ github.sha }}
       - name: Scan Encore image
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0, post-incident safe pin
         with:
@@ -141,11 +295,55 @@ jobs:
         with:
           toolchain: "1.95.0"
           components: rustfmt, clippy
-      - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-      - run: cargo fmt --all -- --check
-      - run: cargo check --locked --all-targets --all-features
-      - run: cargo test --locked --all-features
-      - run: cargo clippy --locked --all-targets --all-features -- -D warnings
+      - name: Install Rust system dependencies
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: rust-trade-settlement
+          job-name: rust / trade-settlement
+          artifact-key: rust-trade-settlement
+          step-name: Install Rust system dependencies
+          command: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Check Rust formatting
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: rust-trade-settlement
+          job-name: rust / trade-settlement
+          artifact-key: rust-trade-settlement
+          step-name: Check Rust formatting
+          working-directory: distributed-backend/src/trade-settlement
+          command: cargo fmt --all -- --check
+      - name: Check Rust targets
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: rust-trade-settlement
+          job-name: rust / trade-settlement
+          artifact-key: rust-trade-settlement
+          step-name: Check Rust targets
+          working-directory: distributed-backend/src/trade-settlement
+          command: cargo check --locked --all-targets --all-features
+      - name: Run Rust tests
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: rust-trade-settlement
+          job-name: rust / trade-settlement
+          artifact-key: rust-trade-settlement
+          step-name: Run Rust tests
+          working-directory: distributed-backend/src/trade-settlement
+          command: cargo test --locked --all-features
+      - name: Run Rust clippy
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: rust-trade-settlement
+          job-name: rust / trade-settlement
+          artifact-key: rust-trade-settlement
+          step-name: Run Rust clippy
+          working-directory: distributed-backend/src/trade-settlement
+          command: cargo clippy --locked --all-targets --all-features -- -D warnings
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:
@@ -166,10 +364,13 @@ jobs:
         include:
           - provider: eks
             root: distributed-backend/terraform/eks
+            lockfile_args: -lockfile=readonly
           - provider: gke
             root: distributed-backend/terraform/gke
+            lockfile_args: ""
           - provider: talos-omni
             root: distributed-backend/terraform/talos-omni
+            lockfile_args: -lockfile=readonly
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: ./.github/actions/ci-evidence
@@ -181,10 +382,60 @@ jobs:
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
         with:
           terraform_version: 1.15.8
-      - run: terraform fmt -check -recursive distributed-backend/terraform
-      - run: terraform -chdir=${{ matrix.root }} init -backend=false
-      - run: terraform -chdir=${{ matrix.root }} validate
-      - run: terraform -chdir=${{ matrix.root }} test
+      - name: Terraform version
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: terraform
+          job-name: terraform / ${{ matrix.provider }}
+          artifact-key: terraform-${{ matrix.provider }}
+          step-name: Terraform version
+          command: terraform version
+      - name: Terraform format
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: terraform
+          job-name: terraform / ${{ matrix.provider }}
+          artifact-key: terraform-${{ matrix.provider }}
+          step-name: Terraform format
+          command: terraform fmt -check -recursive distributed-backend/terraform
+      - name: Terraform init
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: terraform
+          job-name: terraform / ${{ matrix.provider }}
+          artifact-key: terraform-${{ matrix.provider }}
+          step-name: Terraform init
+          command: terraform -chdir=${{ matrix.root }} init -backend=false ${{ matrix.lockfile_args }} -no-color
+      - name: Terraform providers
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: terraform
+          job-name: terraform / ${{ matrix.provider }}
+          artifact-key: terraform-${{ matrix.provider }}
+          step-name: Terraform providers
+          command: terraform -chdir=${{ matrix.root }} providers
+      - name: Terraform validate
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: terraform
+          job-name: terraform / ${{ matrix.provider }}
+          artifact-key: terraform-${{ matrix.provider }}
+          step-name: Terraform validate
+          command: terraform -chdir=${{ matrix.root }} validate -no-color
+      - name: Terraform test
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: terraform
+          job-name: terraform / ${{ matrix.provider }}
+          artifact-key: terraform-${{ matrix.provider }}
+          step-name: Terraform test
+          command: terraform -chdir=${{ matrix.root }} test -no-color
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:
@@ -211,15 +462,38 @@ jobs:
         with:
           version: v1.33.0
       - name: Render manifests
-        run: |
-          kubectl kustomize distributed-backend/orchestration/kubernetes/platform/istio/prod >/tmp/eve-trade-istio.yaml
-          kubectl kustomize distributed-backend/orchestration/kubernetes/platform/gateway/prod >/tmp/eve-trade-gateway.yaml
-          kubectl kustomize distributed-backend/orchestration/kubernetes/base/observability >/tmp/eve-trade-observability.yaml
-          kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/local >/tmp/eve-trade-local.yaml
-          kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/prod >/tmp/eve-trade-prod.yaml
-          kubectl kustomize distributed-backend/orchestration/kubernetes/chaos/litmus/overlays/prod >/tmp/eve-trade-chaos.yaml
-      - run: python scripts/verify_rendered_kubernetes.py --expect-unresolved-image-template /tmp/eve-trade-prod.yaml
-      - run: python -m unittest discover -s scripts/tests -v
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: kubernetes
+          job-name: kubernetes / render
+          artifact-key: kubernetes
+          step-name: Render manifests
+          command: |
+            kubectl kustomize distributed-backend/orchestration/kubernetes/platform/istio/prod >/tmp/eve-trade-istio.yaml
+            kubectl kustomize distributed-backend/orchestration/kubernetes/platform/gateway/prod >/tmp/eve-trade-gateway.yaml
+            kubectl kustomize distributed-backend/orchestration/kubernetes/base/observability >/tmp/eve-trade-observability.yaml
+            kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/local >/tmp/eve-trade-local.yaml
+            kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/prod >/tmp/eve-trade-prod.yaml
+            kubectl kustomize distributed-backend/orchestration/kubernetes/chaos/litmus/overlays/prod >/tmp/eve-trade-chaos.yaml
+      - name: Verify rendered Kubernetes
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: kubernetes
+          job-name: kubernetes / render
+          artifact-key: kubernetes
+          step-name: Verify rendered Kubernetes
+          command: python scripts/verify_rendered_kubernetes.py --expect-unresolved-image-template /tmp/eve-trade-prod.yaml
+      - name: Run Kubernetes policy tests
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: kubernetes
+          job-name: kubernetes / render
+          artifact-key: kubernetes
+          step-name: Run Kubernetes policy tests
+          command: python -m unittest discover -s scripts/tests -v
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:
@@ -245,16 +519,40 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
-      - run: python -m compileall simulator/eve_trade_simulator simulator/trade_gui distributed-backend/tests/e2e distributed-backend/observability
-      - working-directory: simulator
-        run: |
-          python -m pip install -r requirements-test.txt
-          python -m coverage run --rcfile=.coveragerc manage.py test trade_gui
-          python -m coverage report --rcfile=.coveragerc --fail-under=80
-      - run: |
-          python -m pip install -r distributed-backend/observability/requirements-test.txt
-          PYTHONPATH=distributed-backend python -m coverage run --rcfile=distributed-backend/observability/.coveragerc -m unittest discover -s distributed-backend/observability/tests -v
-          python -m coverage report --rcfile=distributed-backend/observability/.coveragerc --fail-under=35
+      - name: Compile Python sources
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: python
+          job-name: python / simulator and observability
+          artifact-key: python
+          step-name: Compile Python sources
+          command: python -m compileall simulator/eve_trade_simulator simulator/trade_gui distributed-backend/tests/e2e distributed-backend/observability
+      - name: Test simulator
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: python
+          job-name: python / simulator and observability
+          artifact-key: python
+          step-name: Test simulator
+          working-directory: simulator
+          command: |
+            python -m pip install -r requirements-test.txt
+            python -m coverage run --rcfile=.coveragerc manage.py test trade_gui
+            python -m coverage report --rcfile=.coveragerc --fail-under=80
+      - name: Test observability
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: python
+          job-name: python / simulator and observability
+          artifact-key: python
+          step-name: Test observability
+          command: |
+            python -m pip install -r distributed-backend/observability/requirements-test.txt
+            PYTHONPATH=distributed-backend python -m coverage run --rcfile=distributed-backend/observability/.coveragerc -m unittest discover -s distributed-backend/observability/tests -v
+            python -m coverage report --rcfile=distributed-backend/observability/.coveragerc --fail-under=35
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:
@@ -280,9 +578,33 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
-      - run: python scripts/verify_architecture_boundaries.py
-      - run: python scripts/verify_schema_ownership.py
-      - run: python -m unittest discover -s scripts/tests -v
+      - name: Verify architecture boundaries
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: architecture
+          job-name: architecture / boundaries and schema
+          artifact-key: architecture
+          step-name: Verify architecture boundaries
+          command: python scripts/verify_architecture_boundaries.py
+      - name: Verify schema ownership
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: architecture
+          job-name: architecture / boundaries and schema
+          artifact-key: architecture
+          step-name: Verify schema ownership
+          command: python scripts/verify_schema_ownership.py
+      - name: Run architecture tests
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: architecture
+          job-name: architecture / boundaries and schema
+          artifact-key: architecture
+          step-name: Run architecture tests
+          command: python -m unittest discover -s scripts/tests -v
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:
@@ -305,11 +627,33 @@ jobs:
           job-id: gui-contract
           job-name: gui / contract
           artifact-key: gui-contract
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: "11.7.0"
+          run_install: false
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: "24.7.0"
-          package-manager-cache: false
-      - run: npm run gui:test
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install GUI dependencies
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: gui-contract
+          job-name: gui / contract
+          artifact-key: gui-contract
+          step-name: Install GUI dependencies
+          command: pnpm install --frozen-lockfile
+      - name: Run GUI contract test
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: gui-contract
+          job-name: gui / contract
+          artifact-key: gui-contract
+          step-name: Run GUI contract test
+          command: pnpm run gui:test
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:
@@ -336,34 +680,57 @@ jobs:
           artifact-key: security
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
-          go-version-file: go.mod
+          go-version: "1.26.5"
           cache: true
       - name: Go vulnerability audit
-        run: |
-          go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
-          govulncheck ./...
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: security
+          job-name: security / dependencies and source
+          artifact-key: security
+          step-name: Go vulnerability audit
+          command: |
+            go version
+            go install golang.org/x/vuln/cmd/govulncheck@v1.5.0
+            govulncheck -version
+            govulncheck ./...
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           toolchain: "1.95.0"
       - name: Rust advisory audit
-        working-directory: distributed-backend/src/trade-settlement
-        run: |
-          cargo install cargo-audit --locked --version 0.22.2
-          # RUSTSEC-2023-0071 has no fixed release and rsa is retained only by
-          # SQLx's inactive MySQL lockfile branch; cargo tree --all-features
-          # confirms it is absent from the settlement service build graph.
-          cargo audit --deny warnings --ignore RUSTSEC-2023-0071
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: security
+          job-name: security / dependencies and source
+          artifact-key: security
+          step-name: Rust advisory audit
+          working-directory: distributed-backend/src/trade-settlement
+          command: |
+            cargo install cargo-audit --locked --version 0.22.2
+            # RUSTSEC-2023-0071 has no fixed release and rsa is retained only by
+            # SQLx's inactive MySQL lockfile branch; cargo tree --all-features
+            # confirms it is absent from the settlement service build graph.
+            cargo audit --deny warnings --ignore RUSTSEC-2023-0071
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
       - name: Python dependency audits
-        run: |
-          python -m pip install pip-audit==2.10.1
-          pip-audit --requirement simulator/requirements.txt
-          pip-audit --requirement simulator/requirements-test.txt
-          pip-audit --requirement distributed-backend/tests/e2e/requirements.txt
-          pip-audit --requirement distributed-backend/observability/requirements.txt
-          pip-audit --requirement distributed-backend/observability/requirements-test.txt
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: security
+          job-name: security / dependencies and source
+          artifact-key: security
+          step-name: Python dependency audits
+          command: |
+            python -m pip install pip-audit==2.10.1
+            pip-audit --requirement simulator/requirements.txt
+            pip-audit --requirement simulator/requirements-test.txt
+            pip-audit --requirement distributed-backend/tests/e2e/requirements.txt
+            pip-audit --requirement distributed-backend/observability/requirements.txt
+            pip-audit --requirement distributed-backend/observability/requirements-test.txt
       - name: Secret and infrastructure scan
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0, post-incident safe pin
         with:
@@ -388,7 +755,7 @@ jobs:
   e2e:
     name: e2e / observed
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     needs: [go, rust-trade-settlement, terraform, kubernetes, python, architecture, gui-contract, security]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -401,8 +768,33 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
-      - run: python -m pip install -r distributed-backend/observability/requirements.txt
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.26.5"
+          cache: true
+      - uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
+        with:
+          version: v0.31.0
+          cluster_name: eve-trade-ci
+          config: .github/kind-e2e.yaml
+          node_image: kindest/node:v1.34.3@sha256:08497ee19eace7b4b5348db5c6a1591d7752b164530a36f855cb0f2bdcbadd48
+          wait: 120s
+      - name: Install E2E tooling
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: e2e
+          job-name: e2e / observed
+          artifact-key: e2e
+          step-name: Install E2E tooling
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+            python -m pip install -r distributed-backend/tests/e2e/requirements.txt -r distributed-backend/observability/requirements.txt
+            ENCORE_INSTALL="$HOME/.encore" bash scripts/install_encore_cli.sh
+            echo "$HOME/.encore/bin" >> "$GITHUB_PATH"
       - name: Run observed integration tests
+        uses: ./.github/actions/ci-evidence
         env:
           OBSERVABILITY_ENV: github-actions
           OBSERVABILITY_STRICT: "true"
@@ -411,7 +803,13 @@ jobs:
           HONEYCOMB_DATASET: eve-trade-ci
           OTEL_COLLECTOR_CONFIG: ${{ secrets.HONEYCOMB_API_KEY != '' && './distributed-backend/observability/collector/otel-collector.honeycomb.yaml' || './distributed-backend/observability/collector/otel-collector.local.yaml' }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-        run: python distributed-backend/observability/ci/observed_run.py integration --clean
+        with:
+          mode: run
+          job-id: e2e
+          job-name: e2e / observed
+          artifact-key: e2e
+          step-name: Run observed integration tests
+          command: bash scripts/run_kind_e2e.sh
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:

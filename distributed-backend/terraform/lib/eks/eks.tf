@@ -117,7 +117,7 @@ resource "aws_security_group_rule" "dns_tcp" {
 
 module "eks_blueprints_addons" {
   source  = "aws-ia/eks-blueprints-addons/aws"
-  version = "~> 1.0"
+  version = "1.24.3"
 
   providers = {
     helm       = helm.addons

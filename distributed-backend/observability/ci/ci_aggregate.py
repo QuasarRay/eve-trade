@@ -71,6 +71,20 @@ def assess_evidence(
         bundles = by_job.get(job["job"], [])
         if not bundles:
             missing.append(f"mandatory producer evidence is missing for job {job['job']}")
+        elif job["result"] != "skipped" and not any(bundle.get("commands") for bundle in bundles):
+            missing.append(f"mandatory command evidence is missing for job {job['job']}")
+        if job["job"] == "e2e" and job["result"] == "success" and not _successful_e2e_command(bundles):
+            missing.append("successful e2e job lacks nonzero-duration passing test evidence")
+        if job["job"] == "go" and job["result"] == "success":
+            required = {"Run Go tests", "Run Go race detector", "Run Go vulnerability audit"}
+            observed = {
+                command.get("step_name")
+                for bundle in bundles
+                for command in bundle.get("commands", [])
+                if command.get("exit_code") == 0
+            }
+            for step in sorted(required - observed):
+                missing.append(f"successful go job lacks passing command evidence for {step}")
         assessed.append({**job, "evidence": bundles})
     return assessed, missing
 
@@ -94,6 +108,13 @@ def diagnose_ci_needs(
     product_status = "PASSED" if all_success and e2e_status == "PASSED" else "FAILED" if e2e_status == "FAILED" else "UNRESOLVED"
     observed_failures = [event for event in events if event["classification"] == "OBSERVED_FAILURE"]
     primary = _primary_diagnosis(jobs, observed_failures, missing)
+    commands = [
+        command
+        for job in jobs
+        for bundle in job["evidence"]
+        for command in bundle.get("commands", [])
+    ]
+    e2e_summary = _e2e_summary(commands)
     return {
         "schema_version": DIAGNOSIS_SCHEMA_VERSION,
         "classifier_version": CLASSIFIER_VERSION,
@@ -105,16 +126,17 @@ def diagnose_ci_needs(
         "product_status": product_status,
         "harness_status": "OK" if all_success else "INSUFFICIENT_EVIDENCE" if missing else "CI_WORKFLOW_FAILED",
         "analysis_status": "OK" if evidence_complete else "INSUFFICIENT_EVIDENCE",
-        "commands": [],
+        "commands": commands,
         "ci_jobs": [{key: value for key, value in job.items() if key != "evidence"} for job in jobs],
         "test_execution": {
             "E2E_TEST": {
                 "status": e2e_status,
-                "tests_collected": 0,
-                "tests_started": 0,
-                "tests_passed": 0,
-                "tests_failed": 0,
-                "tests_skipped": 0,
+                "tests_collected": int(e2e_summary.get("collected_count", 0)),
+                "tests_started": int(e2e_summary.get("collected_count", 0)),
+                "tests_passed": int(e2e_summary.get("passed_count", 0)),
+                "tests_failed": int(e2e_summary.get("failed_count", 0)) + int(e2e_summary.get("error_count", 0)),
+                "tests_skipped": int(e2e_summary.get("skipped_count", 0)),
+                "duration_seconds": float(e2e_summary.get("duration_seconds", 0.0)),
             }
         },
         "observations": [
@@ -161,6 +183,27 @@ def aggregate_exit_code(
     if not jobs or missing:
         return 1
     return 0 if all(job["result"] == "success" for job in jobs) else 1
+
+
+def _e2e_summary(commands: list[dict[str, Any]]) -> dict[str, Any]:
+    for command in commands:
+        for diagnostic in command.get("diagnostics", []):
+            if diagnostic.get("type") == "e2e":
+                return diagnostic
+    return {}
+
+
+def _successful_e2e_command(bundles: list[dict[str, Any]]) -> bool:
+    commands = [command for bundle in bundles for command in bundle.get("commands", [])]
+    summary = _e2e_summary(commands)
+    return bool(
+        any(command.get("step_name") == "Run observed integration tests" and command.get("exit_code") == 0 for command in commands)
+        and int(summary.get("collected_count", 0)) > 0
+        and int(summary.get("passed_count", 0)) > 0
+        and int(summary.get("failed_count", 0)) == 0
+        and int(summary.get("error_count", 0)) == 0
+        and float(summary.get("duration_seconds", 0.0)) > 0
+    )
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -299,8 +342,8 @@ def _e2e_status(e2e: dict[str, Any] | None, failed_names: set[str]) -> str:
     if not e2e:
         return "NOT_SCHEDULED"
     result = e2e["result"]
-    if result == "success" and e2e["evidence"]:
-        return "PASSED"
+    if result == "success":
+        return "PASSED" if _successful_e2e_command(e2e["evidence"]) else "INSUFFICIENT_EVIDENCE"
     if result == "failure":
         return "FAILED"
     if result == "skipped":

@@ -13,7 +13,7 @@ terraform {
     }
     helm = {
       source  = "hashicorp/helm"
-      version = "= 2.17.0"
+      version = "= 3.2.0"
     }
     kubectl = {
       source  = "gavinbunney/kubectl"
@@ -60,7 +60,7 @@ provider "kubectl" {
 }
 
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     host                   = module._app_eks.cluster_endpoint
     cluster_ca_certificate = base64decode(module._app_eks.cluster_certificate_authority_data)
     token                  = data.aws_eks_cluster_auth.this.token

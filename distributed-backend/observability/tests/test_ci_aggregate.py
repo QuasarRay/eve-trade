@@ -18,6 +18,41 @@ CONTEXT = {
 
 
 def evidence(job: str, status: str = "success", started_at: str = "2026-07-10T00:00:00+00:00") -> dict[str, object]:
+    command_status = 0 if status == "success" else 1
+    commands: list[dict[str, object]] = [
+        {
+            "step_name": f"Run {job}",
+            "exit_code": command_status,
+            "stdout_excerpt": "",
+            "stderr_excerpt": "",
+            "diagnostics": [],
+        }
+    ]
+    if job == "go" and status == "success":
+        commands = [
+            {"step_name": step, "exit_code": 0, "stdout_excerpt": "", "stderr_excerpt": "", "diagnostics": []}
+            for step in ("Run Go tests", "Run Go race detector", "Run Go vulnerability audit")
+        ]
+    if job == "e2e" and status == "success":
+        commands = [
+            {
+                "step_name": "Run observed integration tests",
+                "exit_code": 0,
+                "stdout_excerpt": "",
+                "stderr_excerpt": "",
+                "diagnostics": [
+                    {
+                        "type": "e2e",
+                        "collected_count": 131,
+                        "passed_count": 131,
+                        "failed_count": 0,
+                        "error_count": 0,
+                        "skipped_count": 0,
+                        "duration_seconds": 95.13,
+                    }
+                ],
+            }
+        ]
     bundle: dict[str, object] = {
         "schema_version": EVIDENCE_SCHEMA_VERSION,
         **CONTEXT,
@@ -34,6 +69,7 @@ def evidence(job: str, status: str = "success", started_at: str = "2026-07-10T00
             "caused_by": [],
         },
         "dependencies": [],
+        "commands": commands,
         "collector_status": "COMPLETE",
         "provenance": {},
     }
@@ -101,6 +137,21 @@ class CiAggregateTests(unittest.TestCase):
         self.assertEqual(diagnosis["validation_result"], "passed")
         self.assertEqual(diagnosis["test_execution"]["E2E_TEST"]["status"], "PASSED")
         self.assertEqual(diagnosis["product_status"], "PASSED")
+        self.assertEqual(diagnosis["test_execution"]["E2E_TEST"]["tests_passed"], 131)
+        self.assertGreater(diagnosis["test_execution"]["E2E_TEST"]["duration_seconds"], 0)
+
+    def test_e2e_success_without_executed_tests_cannot_pass_aggregate(self) -> None:
+        bundle = evidence("e2e")
+        bundle["commands"] = [
+            {"step_name": "Run observed integration tests", "exit_code": 0, "diagnostics": []}
+        ]
+        bundle["artifact_digest"] = canonical_digest(bundle)
+
+        diagnosis = diagnose_ci_needs(run_id="ci-run", needs={"e2e": {"result": "success"}}, evidence=[bundle])
+
+        self.assertEqual(aggregate_exit_code({"e2e": {"result": "success"}}, [bundle]), 1)
+        self.assertEqual(diagnosis["test_execution"]["E2E_TEST"]["status"], "INSUFFICIENT_EVIDENCE")
+        self.assertIn("successful e2e job lacks nonzero-duration passing test evidence", diagnosis["missing_evidence"])
 
     def test_corrupt_or_context_mismatched_artifacts_fail_gate(self) -> None:
         needs = {"go": {"result": "success"}}

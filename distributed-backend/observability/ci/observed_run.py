@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 import time
@@ -224,6 +225,8 @@ def execute(args: argparse.Namespace) -> tuple[int, RunContext]:
             except Exception:
                 if args.strict:
                     raise
+        if pytest_summary is not None:
+            print(f"E2E_SUMMARY={json.dumps(pytest_summary.to_dict(), sort_keys=True)}")
         print(context.run_dir)
     return exit_code, context
 

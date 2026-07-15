@@ -29,6 +29,11 @@ TERRAFORM_ROOTS = {
     "gcp": "distributed-backend/terraform/gke",
     "talos-omni": "distributed-backend/terraform/talos-omni",
 }
+TERRAFORM_LOCKFILE_ARGS = {
+    "aws": "-lockfile=readonly",
+    "gcp": "",
+    "talos-omni": "-lockfile=readonly",
+}
 SOURCE_EXCLUDES = [
     ".git",
     ".cache",
@@ -111,11 +116,20 @@ ln -sf /root/.encore/bin/encore /usr/local/bin/encore
     async def go_checks(self) -> None:
         script = r"""
 set -euo pipefail
+go mod download
+go mod verify
 go mod tidy
 git diff --exit-code -- go.mod go.sum
 test -z "$(gofmt -l distributed-backend/src/gateway distributed-backend/src/market distributed-backend/src/settlement distributed-backend/src/settlementworker distributed-backend/internal gametrade proto/gen go_modules_test.go)"
-encore test ./...
+GOFLAGS=-mod=mod encore test ./...
+ENCORERUNTIME_NOPANIC=1 go test -race ./distributed-backend/src/gateway ./distributed-backend/src/settlementworker ./distributed-backend/internal/... ./gametrade
+ENCORERUNTIME_NOPANIC=1 go test -race ./distributed-backend/src/market -run '^TestSettlement' -skip 'APIErrors'
+ENCORERUNTIME_NOPANIC=1 go test -race ./distributed-backend/src/market -run '^TestDuplicateSettlementResultProjectionIsHarmless$'
 go vet ./...
+GOBIN=/usr/local/bin go install honnef.co/go/tools/cmd/staticcheck@v0.7.0
+staticcheck ./...
+GOBIN=/usr/local/bin go install golang.org/x/vuln/cmd/govulncheck@v1.5.0
+govulncheck ./...
 """
         await self.run_container("Encore Go checks", self.go_base().with_exec(["bash", "-lc", script]))
 
@@ -149,7 +163,7 @@ python -m unittest discover -s scripts/tests -v
             .from_(NODE_IMAGE)
             .with_directory("/workspace", self.source)
             .with_workdir("/workspace")
-            .with_exec(["npm", "run", "gui:test"])
+            .with_exec(["sh", "-c", "corepack enable && corepack prepare pnpm@11.7.0 --activate && pnpm install --frozen-lockfile && pnpm run gui:test"])
         )
         await self.run_container("GUI contract checks", container)
 
@@ -167,11 +181,12 @@ python -m unittest discover -s scripts/tests -v
     async def terraform_checks(self, providers: tuple[str, ...]) -> None:
         for provider in providers:
             root = TERRAFORM_ROOTS[provider]
-            script = f"terraform fmt -check -recursive distributed-backend/terraform && terraform -chdir={root} init -backend=false && terraform -chdir={root} validate && terraform -chdir={root} test"
+            lockfile_args = TERRAFORM_LOCKFILE_ARGS[provider]
+            script = f"terraform fmt -check -recursive distributed-backend/terraform && terraform -chdir={root} init -backend=false {lockfile_args} && terraform -chdir={root} validate && terraform -chdir={root} test"
             await self.run_container(f"Terraform {provider}", self.client.container().from_(TERRAFORM_IMAGE).with_directory("/workspace", self.source).with_workdir("/workspace").with_exec(["sh", "-c", script]))
 
     async def build_images(self, registry: str, tag: str) -> None:
-        script = f"encore build docker --config infra/encore/self-host.nsq.json {registry}/encore-backend:{tag}"
+        script = f"GOFLAGS=-mod=mod encore build docker --config infra/encore/self-host.nsq.json {registry}/encore-backend:{tag}"
         await self.run_container("Build Encore backend image", self.go_base().with_exec(["bash", "-lc", script]))
         Path("distributed-backend/ci-cd/out").mkdir(parents=True, exist_ok=True)
         Path("distributed-backend/ci-cd/out/image-digests.json").write_text(json.dumps({name: f"{registry}/{name}:{tag}" for name in SERVICE_IMAGE_NAMES}, indent=2), encoding="utf-8")

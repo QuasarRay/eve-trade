@@ -14,6 +14,7 @@ type Service struct {
 	marketReady func(context.Context) error
 }
 
+//lint:ignore U1000 Encore invokes this initializer through generated service wiring.
 func initService() (*Service, error) {
 	cfg, err := LoadConfig()
 	if err != nil {
@@ -59,6 +60,7 @@ func (s *Service) GatewayReady(ctx context.Context) (*HealthResponse, error) {
 	return &HealthResponse{Status: "ready"}, nil
 }
 
+//lint:ignore U1000 Referenced by the Service constructed through Encore-generated initialization.
 func marketReadiness(ctx context.Context) error {
 	_, err := market.MarketReady(ctx)
 	return err

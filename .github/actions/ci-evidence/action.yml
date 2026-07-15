@@ -2,7 +2,7 @@ name: CI evidence
 description: Create or finalize a provenance-bound producer evidence bundle.
 inputs:
   mode:
-    description: start or finish
+    description: start, run, or finish
     required: true
   job-id:
     description: Stable GitHub job identifier
@@ -25,6 +25,18 @@ inputs:
     description: Space-separated stable dependency job identifiers
     required: false
     default: ""
+  step-name:
+    description: Human-readable command step name
+    required: false
+    default: unspecified
+  command:
+    description: Bash command to execute and record
+    required: false
+    default: ""
+  working-directory:
+    description: Command working directory relative to the workspace
+    required: false
+    default: "."
 runs:
   using: composite
   steps:
@@ -37,6 +49,19 @@ runs:
         --job-id "${{ inputs.job-id }}"
         --job-name "${{ inputs.job-name }}"
         --path ".o11y/producer/${{ inputs.artifact-key }}.start.json"
+    - name: Run evidenced command
+      if: inputs.mode == 'run'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        CI_EVIDENCE_COMMAND: ${{ inputs.command }}
+      run: >-
+        python distributed-backend/observability/ci/ci_evidence.py run
+        --job-id "${{ inputs.job-id }}"
+        --job-name "${{ inputs.job-name }}"
+        --step-name "${{ inputs.step-name }}"
+        --working-directory "${{ inputs.working-directory }}"
+        --output-path ".o11y/commands/${{ inputs.artifact-key }}/${{ inputs.step-name }}.json"
     - name: Finalize producer evidence
       if: inputs.mode == 'finish'
       shell: bash
@@ -54,6 +79,7 @@ runs:
           --status "${{ inputs.status }}" \
           --start-path ".o11y/producer/${{ inputs.artifact-key }}.start.json" \
           --output-path ".o11y/producer-artifacts/${{ inputs.artifact-key }}.json" \
+          --commands-path ".o11y/commands/${{ inputs.artifact-key }}" \
           "${dependency_args[@]}"
     - name: Upload producer evidence
       if: inputs.mode == 'finish'

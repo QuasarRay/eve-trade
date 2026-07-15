@@ -19,6 +19,7 @@ type Service struct {
 	results  pubsub.Publisher[*settlement.Result]
 }
 
+//lint:ignore U1000 Encore invokes this initializer through generated service wiring.
 func initService() (*Service, error) {
 	cfg := LoadConfig()
 	executor, err := NewGRPCSettlementExecutor(cfg.TradeSettlementTarget, cfg.RequestTimeout)

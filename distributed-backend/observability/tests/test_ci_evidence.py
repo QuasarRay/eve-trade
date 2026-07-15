@@ -1,15 +1,20 @@
 from __future__ import annotations
 
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 from observability.ci.ci_evidence import (
+    MAX_EXCERPT_CHARS,
+    bounded_excerpt,
     canonical_digest,
     finish_evidence,
     load_evidence_directory,
+    run_command_evidence,
     start_evidence,
+    structured_diagnostics,
 )
 
 
@@ -96,6 +101,81 @@ class CiEvidenceTests(unittest.TestCase):
             bundles, corrupt_errors = load_evidence_directory(output.parent, self.expected)
             self.assertEqual(bundles, [])
             self.assertTrue(any("corrupted artifact" in error for error in corrupt_errors))
+
+    def test_command_evidence_preserves_failure_and_redacts_bounded_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "commands" / "failure.json"
+            exit_code = run_command_evidence(
+                output,
+                job_id="go",
+                job_name="go / encore",
+                step_name="Go vulnerability audit",
+                command=(
+                    "import sys; sys.stderr.write('TOKEN=secret-value\\nVulnerability #1: GO-2026-5856\\n'"
+                    "+ '    Found in: crypto/tls@go1.26.4\\n    Fixed in: crypto/tls@go1.26.5\\n'"
+                    "+ '    Example traces found:\\n      #1: gateway calls tls.Conn.Write\\n'); raise SystemExit(3)"
+                ),
+                working_directory=Path(temp),
+                environment=self.environment,
+                runner=(sys.executable, "-c"),
+            )
+            record = json.loads(output.read_text(encoding="utf-8"))
+
+        self.assertEqual(exit_code, 3)
+        self.assertEqual(record["exit_code"], 3)
+        self.assertNotIn("secret-value", record["stderr_excerpt"])
+        self.assertEqual(record["diagnostics"][0]["vulnerability_id"], "GO-2026-5856")
+        self.assertEqual(record["diagnostics"][0]["fixed_version"], "go1.26.5")
+        self.assertEqual(record["diagnostics"][0]["package"], "crypto/tls")
+        self.assertEqual(record["diagnostics"][0]["module"], "standard-library")
+        self.assertIn("tls.Conn.Write", record["diagnostics"][0]["call_traces"][0])
+
+    def test_command_evidence_is_bound_into_final_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            commands = root / "commands"
+            run_command_evidence(
+                commands / "step.json",
+                job_id="go",
+                job_name="go / encore",
+                step_name="Go version",
+                command="print('go version go1.26.5 linux/amd64')",
+                working_directory=root,
+                environment=self.environment,
+                runner=(sys.executable, "-c"),
+            )
+            start = root / "start.json"
+            output = root / "evidence.json"
+            start_evidence(start, job_id="go", job_name="go / encore", environment=self.environment)
+            bundle = finish_evidence(
+                start,
+                output,
+                job_id="go",
+                job_name="go / encore",
+                step_identity="ci-evidence/finalize",
+                command_identity="verify/go",
+                status="success",
+                dependencies=["proto"],
+                commands_path=commands,
+                environment=self.environment,
+            )
+
+        self.assertEqual(len(bundle["commands"]), 1)
+        self.assertIn("go1.26.5", bundle["commands"][0]["stdout_excerpt"])
+        self.assertEqual(bundle["artifact_digest"], canonical_digest(bundle))
+
+    def test_excerpts_and_buf_diagnostics_are_bounded(self) -> None:
+        excerpt = bounded_excerpt("a" * (MAX_EXCERPT_CHARS * 2))
+        diagnostics = structured_diagnostics(
+            "Buf format",
+            "buf format --diff --exit-code",
+            "diff -u proto/x.proto.orig proto/x.proto\n",
+            "",
+            100,
+        )
+
+        self.assertLessEqual(len(excerpt), MAX_EXCERPT_CHARS)
+        self.assertEqual(diagnostics, [{"type": "buf_format", "path": "proto/x.proto"}])
 
 
 if __name__ == "__main__":
