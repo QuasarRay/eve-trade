@@ -2,7 +2,7 @@ locals {
   app_namespace = "eve-trade"
   database_port = 5432
 
-  database_url = var.database_enabled ? "postgres://${var.database_username}:${random_password.database[0].result}@${google_sql_database_instance.trade_settlement[0].private_ip_address}:${local.database_port}/${var.database_name}" : var.external_database_url
+  database_url = var.database_enabled ? "postgres://${var.database_username}:${random_password.database[0].result}@${google_sql_database_instance.trade_settlement[0].private_ip_address}:${local.database_port}/${var.database_name}?sslmode=require" : var.external_database_url
 }
 
 resource "random_password" "database" {
@@ -37,6 +37,7 @@ resource "google_sql_database_instance" "trade_settlement" {
     ip_configuration {
       ipv4_enabled    = false
       private_network = module.network.network_id
+      ssl_mode        = "ENCRYPTED_ONLY"
     }
   }
 

@@ -58,9 +58,15 @@ run "production_plan" {
       google_sql_database_instance.trade_settlement[0].settings[0].disk_autoresize &&
       google_sql_database_instance.trade_settlement[0].settings[0].backup_configuration[0].enabled &&
       google_sql_database_instance.trade_settlement[0].settings[0].backup_configuration[0].point_in_time_recovery_enabled &&
-      !google_sql_database_instance.trade_settlement[0].settings[0].ip_configuration[0].ipv4_enabled
+      !google_sql_database_instance.trade_settlement[0].settings[0].ip_configuration[0].ipv4_enabled &&
+      google_sql_database_instance.trade_settlement[0].settings[0].ip_configuration[0].ssl_mode == "ENCRYPTED_ONLY"
     )
-    error_message = "the planned Cloud SQL instance must be regional, private, SSD-backed, backed up with PITR, and deletion protected"
+    error_message = "the planned Cloud SQL instance must be regional, private, TLS-only, SSD-backed, backed up with PITR, and deletion protected"
+  }
+
+  assert {
+    condition     = var.enable_private_endpoint || length(var.master_authorized_networks) > 0
+    error_message = "the GKE control plane must be private or restricted to explicit authorized networks"
   }
 
   assert {

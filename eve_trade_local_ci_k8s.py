@@ -87,6 +87,11 @@ def go() -> None:
     print(version)
     if "go1.26.5" not in version:
         raise RuntimeError(f"full verification requires Go 1.26.5, found: {version}")
+    encore_binary = shutil.which("encore")
+    if encore_binary is None:
+        raise RuntimeError("encore executable disappeared after prerequisite validation")
+    encore_install = Path(encore_binary).resolve().parent.parent
+    run(["bash", "scripts/harden_encore_install.sh", str(encore_install)])
     run(["go", "mod", "download"])
     run(["go", "mod", "verify"])
     run(["go", "mod", "tidy"])
@@ -187,7 +192,7 @@ def security() -> None:
         run(["pip-audit", "--requirement", requirement])
     image = f"eve-trade/encore-backend:{subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()}"
     run(["trivy", "image", "--scanners", "vuln", "--severity", "HIGH,CRITICAL", "--ignore-unfixed", "--exit-code", "1", image])
-    run(["trivy", "fs", "--scanners", "vuln,secret,misconfig", "--severity", "HIGH,CRITICAL", "--ignore-unfixed", "--exit-code", "1", "."])
+    run(["trivy", "fs", "--scanners", "vuln,secret,misconfig", "--severity", "HIGH,CRITICAL", "--ignore-unfixed", "--ignorefile", ".trivyignore.yaml", "--show-suppressed", "--exit-code", "1", "."])
 
 
 def e2e() -> None:

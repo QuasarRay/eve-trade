@@ -22,6 +22,16 @@ variable "cluster_endpoint_public_access" {
   default     = false
 }
 
+variable "node_egress_ipv4_cidrs" {
+  description = "Explicit IPv4 CIDRs for approved HTTPS egress proxies or private registry endpoints used by EKS nodes."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.node_egress_ipv4_cidrs) > 0 && alltrue([for cidr in var.node_egress_ipv4_cidrs : can(cidrnetmask(cidr)) && cidr != "0.0.0.0/0"])
+    error_message = "node_egress_ipv4_cidrs must contain at least one valid explicit IPv4 CIDR and must not allow 0.0.0.0/0."
+  }
+}
+
 variable "container_image_overrides" {
   description = "Optional per-service image overrides keyed by encore-backend, trade-settlement, or quilkin. Each value may include repository and tag."
   type        = map(any)

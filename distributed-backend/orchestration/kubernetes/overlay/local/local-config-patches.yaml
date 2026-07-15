@@ -21,6 +21,12 @@ metadata:
 spec:
   template:
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: migrate
           args:
@@ -35,6 +41,12 @@ spec:
             - name: runtime-role
               mountPath: /runtime-role
               readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
       volumes:
         - name: runtime-role
           configMap:

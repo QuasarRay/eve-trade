@@ -65,17 +65,13 @@ resource "google_container_cluster" "this" {
     }
   }
 
-  dynamic "master_authorized_networks_config" {
-    for_each = length(var.master_authorized_networks) > 0 ? [1] : []
+  master_authorized_networks_config {
+    dynamic "cidr_blocks" {
+      for_each = var.master_authorized_networks
 
-    content {
-      dynamic "cidr_blocks" {
-        for_each = var.master_authorized_networks
-
-        content {
-          cidr_block   = cidr_blocks.value.cidr_block
-          display_name = cidr_blocks.value.display_name
-        }
+      content {
+        cidr_block   = cidr_blocks.value.cidr_block
+        display_name = cidr_blocks.value.display_name
       }
     }
   }
@@ -111,6 +107,13 @@ resource "google_container_cluster" "this" {
       start_time = "2026-01-01T03:00:00Z"
       end_time   = "2026-01-01T07:00:00Z"
       recurrence = "FREQ=WEEKLY;BYDAY=SU"
+    }
+  }
+
+  lifecycle {
+    precondition {
+      condition     = var.enable_private_endpoint || length(var.master_authorized_networks) > 0
+      error_message = "A public GKE control-plane endpoint requires at least one authorized network."
     }
   }
 }

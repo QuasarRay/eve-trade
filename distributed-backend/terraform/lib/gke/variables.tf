@@ -60,7 +60,7 @@ variable "cluster_deletion_protection" {
 variable "enable_private_endpoint" {
   description = "Whether the GKE control plane endpoint is private-only."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "master_ipv4_cidr_block" {

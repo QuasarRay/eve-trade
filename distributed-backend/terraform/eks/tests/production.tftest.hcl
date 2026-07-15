@@ -103,6 +103,7 @@ run "production_plan" {
     database_multi_az                = true
     database_backup_retention_period = 7
     database_deletion_protection     = true
+    node_egress_ipv4_cidrs           = ["10.0.0.10/32"]
     market_database_url              = "postgres://market_readonly:placeholder@database.invalid:5432/eve_trade"
   }
 
@@ -137,6 +138,11 @@ run "production_plan" {
   assert {
     condition     = kubernetes_secret_v1.trade_settlement_database[0].metadata[0].name == "trade-settlement-database"
     error_message = "the EKS plan must wire the runtime database secret expected by application workloads"
+  }
+
+  assert {
+    condition     = alltrue([for cidr in var.node_egress_ipv4_cidrs : cidr != "0.0.0.0/0"])
+    error_message = "EKS nodes must use explicit approved HTTPS egress endpoints"
   }
 
   assert {

@@ -144,6 +144,7 @@ jobs:
           step-name: Install Encore CLI
           command: |
             ENCORE_INSTALL="$HOME/.encore" bash scripts/install_encore_cli.sh
+            bash scripts/harden_encore_install.sh "$HOME/.encore"
             echo "$HOME/.encore/bin" >> "$GITHUB_PATH"
       - name: Verify Encore CLI executable
         uses: ./.github/actions/ci-evidence
@@ -256,15 +257,19 @@ jobs:
           artifact-key: go
           step-name: Build Encore image
           command: GOFLAGS=-mod=mod encore build docker --config infra/encore/self-host.nsq.json eve-trade/encore-backend:${{ github.sha }}
-      - name: Scan Encore image
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0, post-incident safe pin
+      - uses: aquasecurity/setup-trivy@e6c2c5e321ed9123bda567646e2f96565e34abe1 # v0.2.6
         with:
-          image-ref: eve-trade/encore-backend:${{ github.sha }}
           version: v0.69.3
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: "1"
-          cache: "false"
+          cache: false
+      - name: Scan Encore image
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: go
+          job-name: go / encore
+          artifact-key: go
+          step-name: Scan Encore image
+          command: trivy image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress eve-trade/encore-backend:${{ github.sha }}
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:
@@ -464,6 +469,7 @@ jobs:
           name: terraform-lock-eks-${{ github.run_id }}-${{ github.run_attempt }}
           path: distributed-backend/terraform/eks/.terraform.lock.hcl
           if-no-files-found: error
+          include-hidden-files: true
 
   kubernetes:
     name: kubernetes / render
@@ -538,15 +544,6 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
-      - name: Install architecture test dependencies
-        uses: ./.github/actions/ci-evidence
-        with:
-          mode: run
-          job-id: architecture
-          job-name: architecture / boundaries and schema
-          artifact-key: architecture
-          step-name: Install architecture test dependencies
-          command: python -m pip install PyYAML==6.0.3
       - name: Compile Python sources
         uses: ./.github/actions/ci-evidence
         with:
@@ -606,6 +603,15 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
+      - name: Install architecture test dependencies
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: architecture
+          job-name: architecture / boundaries and schema
+          artifact-key: architecture
+          step-name: Install architecture test dependencies
+          command: python -m pip install PyYAML==6.0.3
       - name: Verify architecture boundaries
         uses: ./.github/actions/ci-evidence
         with:
@@ -759,17 +765,19 @@ jobs:
             pip-audit --requirement distributed-backend/tests/e2e/requirements.txt
             pip-audit --requirement distributed-backend/observability/requirements.txt
             pip-audit --requirement distributed-backend/observability/requirements-test.txt
-      - name: Secret and infrastructure scan
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0, post-incident safe pin
+      - uses: aquasecurity/setup-trivy@e6c2c5e321ed9123bda567646e2f96565e34abe1 # v0.2.6
         with:
-          scan-type: fs
-          scan-ref: .
-          scanners: vuln,secret,misconfig
           version: v0.69.3
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: "1"
-          cache: "false"
+          cache: false
+      - name: Secret and infrastructure scan
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: security
+          job-name: security / dependencies and source
+          artifact-key: security
+          step-name: Secret and infrastructure scan
+          command: trivy fs --scanners vuln,secret,misconfig --severity HIGH,CRITICAL --ignore-unfixed --ignorefile .trivyignore.yaml --show-suppressed --exit-code 1 --no-progress .
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:
@@ -820,6 +828,7 @@ jobs:
             sudo apt-get install -y postgresql-client
             python -m pip install -r distributed-backend/tests/e2e/requirements.txt -r distributed-backend/observability/requirements.txt
             ENCORE_INSTALL="$HOME/.encore" bash scripts/install_encore_cli.sh
+            bash scripts/harden_encore_install.sh "$HOME/.encore"
             echo "$HOME/.encore/bin" >> "$GITHUB_PATH"
       - name: Run observed integration tests
         uses: ./.github/actions/ci-evidence

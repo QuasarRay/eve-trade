@@ -10,7 +10,7 @@ from pathlib import Path
 import dagger
 
 
-GO_IMAGE = "golang:1.26-bookworm@sha256:5f68ec6805843bd3981a951ffada82a26a0bd2631045c8f7dba483fa868f5ec5"
+GO_IMAGE = "golang:1.26.5-bookworm@sha256:1ecb7edf62a0408027bd5729dfd6b1b8766e578e8df93995b225dfd0944eb651"
 RUST_IMAGE = "rust:1-bookworm@sha256:19817ead3289c8c631c73df281e18b59b172f6a31f4f563290f69cddd06c30e9"
 PYTHON_IMAGE = "python:3.13-slim@sha256:c33f0bc4364a6881bed1ec0cc2665e6c53c87a43e774aaeab88e6f17af105e4f"
 NODE_IMAGE = "node:24.7.0-alpine@sha256:be4d5e92ac68483ec71440bf5934865b4b7fcb93588f17a24d411d15f0204e4f"
@@ -87,6 +87,7 @@ set -euo pipefail
 GOBIN=/usr/local/bin go install github.com/bufbuild/buf/cmd/buf@v{BUF_VERSION}
 GOBIN=/usr/local/bin go install google.golang.org/protobuf/cmd/protoc-gen-go@v{PROTOC_GEN_GO_VERSION}
 ENCORE_CLI_VERSION={ENCORE_CLI_VERSION} ENCORE_CLI_SHA256={ENCORE_CLI_SHA256} ENCORE_INSTALL=/root/.encore bash scripts/install_encore_cli.sh
+bash scripts/harden_encore_install.sh /root/.encore
 ln -sf /root/.encore/bin/encore /usr/local/bin/encore
 """
         return (
