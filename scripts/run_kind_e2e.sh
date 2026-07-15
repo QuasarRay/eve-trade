@@ -15,6 +15,10 @@ cleanup() {
   if (( status != 0 )); then
     kubectl -n "$namespace" get pods,svc,jobs -o wide
     kubectl -n "$namespace" get events --sort-by=.lastTimestamp | tail -n 100
+    kubectl -n "$namespace" logs deployment/postgres --all-containers --tail=200
+    kubectl -n "$namespace" logs deployment/postgres --all-containers --previous --tail=200
+    kubectl -n "$namespace" logs job/settlement-db-migrate --all-containers --tail=200
+    kubectl -n "$namespace" logs job/local-dev-world-seed --all-containers --tail=200
     kubectl -n "$namespace" logs deployment/encore-backend --all-containers --tail=200
     kubectl -n "$namespace" logs deployment/trade-settlement --all-containers --tail=200
     kubectl -n "$namespace" logs deployment/quilkin --all-containers --tail=200
