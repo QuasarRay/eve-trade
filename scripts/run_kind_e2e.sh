@@ -78,6 +78,8 @@ kubectl -n "$namespace" port-forward service/trade-settlement 19092:9092 >"$log_
 forward_pids+=("$!")
 kubectl -n "$namespace" port-forward service/nsqd 14150:4150 >"$log_root/nsqd-forward.log" 2>&1 &
 forward_pids+=("$!")
+kubectl -n "$namespace" port-forward service/nsqd 14151:4151 >"$log_root/nsqd-http-forward.log" 2>&1 &
+forward_pids+=("$!")
 kubectl -n "$namespace" port-forward service/postgres 15432:5432 >"$log_root/postgres-forward.log" 2>&1 &
 forward_pids+=("$!")
 
@@ -91,6 +93,7 @@ export EVE_TRADE_ENCORE_URL=http://127.0.0.1:14000
 export EVE_TRADE_SIMULATOR_URL=http://127.0.0.1:18000
 export EVE_TRADE_SETTLEMENT_GRPC=127.0.0.1:19092
 export EVE_TRADE_NSQ_TCP=127.0.0.1:14150
+export EVE_TRADE_NSQ_HTTP=http://127.0.0.1:14151
 export EVE_TRADE_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:15432/eve_trade
 export EVE_TRADE_MARKET_DATABASE_URL=postgres://eve_trade_market_readonly:market-readonly-password@127.0.0.1:15432/eve_trade
 export EVE_TRADE_RUNTIME_DATABASE_URL=postgres://eve_trade_runtime:runtime-password@127.0.0.1:15432/eve_trade

@@ -39,6 +39,10 @@ ENVELOPE_SIGNING_DOMAIN = "eve-trade.udp-envelope.hmac-sha256.v1"
 
 _SETTLEMENT_PROTO_CACHE: tuple[Any, Any] | None = None
 _SETTLEMENT_PROTO_TMPDIR: tempfile.TemporaryDirectory[str] | None = None
+_E2E_PUBSUB_CHANNELS = (
+    ("settlement-work", "trade-settlement-executor"),
+    ("settlement-results", "market-settlement-result-projection"),
+)
 
 
 class RpcFailure(Exception):
@@ -166,10 +170,16 @@ class GatewayClient:
             with self.settlement_db.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT settlement_batch_id, batch_state, failure_code, failure_message
-                    FROM settlement_batch
-                    WHERE idempotency_key = %s
-                    ORDER BY started_at DESC
+                    SELECT batch.settlement_batch_id,
+                           batch.batch_state,
+                           batch.failure_code,
+                           batch.failure_message,
+                           operation.result_published
+                    FROM settlement_batch AS batch
+                    JOIN settlement_operation AS operation
+                      ON operation.idempotency_key = batch.idempotency_key
+                    WHERE batch.idempotency_key = %s
+                    ORDER BY batch.started_at DESC
                     LIMIT 1
                     """,
                     (idempotency_key,),
@@ -177,8 +187,10 @@ class GatewayClient:
                 row = cursor.fetchone()
             if row is not None:
                 last_state = str(row["batch_state"])
-                if last_state in {"COMPLETED", "FAILED"}:
+                if last_state in {"COMPLETED", "FAILED"} and row["result_published"]:
                     return row
+                if last_state in {"COMPLETED", "FAILED"}:
+                    last_state += "_RESULT_PENDING"
             with self.settlement_db.cursor() as cursor:
                 cursor.execute(
                     """
@@ -188,7 +200,8 @@ class GatewayClient:
                                ELSE operation_state
                            END AS batch_state,
                            failure_code,
-                           failure_description AS failure_message
+                           failure_description AS failure_message,
+                           result_published
                     FROM settlement_operation
                     WHERE idempotency_key = %s
                     """,
@@ -197,8 +210,10 @@ class GatewayClient:
                 operation = cursor.fetchone()
             if operation is not None:
                 last_state = str(operation["batch_state"])
-                if last_state in {"COMPLETED", "FAILED"}:
+                if last_state in {"COMPLETED", "FAILED"} and operation["result_published"]:
                     return operation
+                if last_state in {"COMPLETED", "FAILED"}:
+                    last_state += "_RESULT_PENDING"
             time.sleep(0.1)
         raise RuntimeError(
             f"settlement batch for idempotency key {idempotency_key!r} did not complete; last state={last_state}"
@@ -494,6 +509,66 @@ def wait_for_pubsub(endpoint: str, timeout_seconds: float = 60.0) -> None:
     if not separator or not host:
         raise RuntimeError(f"invalid NSQ endpoint {endpoint!r}")
     wait_for_tcp(host, int(port_text), "NSQ", timeout_seconds)
+
+
+def pubsub_pending_messages(stats: dict[str, Any]) -> int:
+    topics = stats.get("topics")
+    if not isinstance(topics, list):
+        raise ValueError("NSQ stats response must contain a topics list")
+    topics_by_name = {
+        str(topic.get("topic_name")): topic
+        for topic in topics
+        if isinstance(topic, dict) and topic.get("topic_name")
+    }
+    pending = 0
+    for topic_name, channel_name in _E2E_PUBSUB_CHANNELS:
+        topic = topics_by_name.get(topic_name)
+        if topic is None:
+            continue
+        channels = topic.get("channels")
+        if not isinstance(channels, list):
+            raise ValueError(f"NSQ topic {topic_name!r} must contain a channels list")
+        channel = next(
+            (
+                candidate
+                for candidate in channels
+                if isinstance(candidate, dict) and candidate.get("channel_name") == channel_name
+            ),
+            None,
+        )
+        if channel is None:
+            pending += _nsq_count(topic, "depth") + _nsq_count(topic, "backend_depth")
+            continue
+        pending += sum(
+            _nsq_count(channel, field)
+            for field in ("depth", "backend_depth", "in_flight_count", "deferred_count")
+        )
+    return pending
+
+
+def wait_for_pubsub_idle(nsq_http_url: str, timeout_seconds: float = 30.0) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    last_error: Exception | None = None
+    url = nsq_http_url.rstrip("/") + "/stats"
+    while time.monotonic() < deadline:
+        try:
+            response = httpx.get(url, params={"format": "json"}, timeout=2.0)
+            response.raise_for_status()
+            pending = pubsub_pending_messages(response.json())
+            if pending == 0:
+                return
+            last_error = RuntimeError(f"{pending} settlement messages remain pending")
+        except Exception as exc:  # noqa: BLE001 - preserve the final NSQ diagnostic.
+            last_error = exc
+        time.sleep(0.1)
+    raise RuntimeError(f"NSQ settlement channels did not become idle: {last_error}")
+
+
+def _nsq_count(row: dict[str, Any], field: str) -> int:
+    value = row.get(field, 0)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"NSQ stats field {field!r} must be a non-negative integer")
+    return value
 
 
 def wait_for_tcp(host: str, port: int, service: str, timeout_seconds: float) -> None:

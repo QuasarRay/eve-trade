@@ -11,6 +11,7 @@ from helpers import (
     wait_for_gateway,
     wait_for_market,
     wait_for_pubsub,
+    wait_for_pubsub_idle,
     wait_for_settlement,
     wait_for_simulator,
 )
@@ -60,6 +61,7 @@ def service_urls():
             "EVE_TRADE_MARKET_DATABASE_URL": os.environ.get("EVE_TRADE_MARKET_DATABASE_URL"),
             "EVE_TRADE_SETTLEMENT_GRPC": os.environ.get("EVE_TRADE_SETTLEMENT_GRPC"),
             "EVE_TRADE_NSQ_TCP": os.environ.get("EVE_TRADE_NSQ_TCP"),
+            "EVE_TRADE_NSQ_HTTP": os.environ.get("EVE_TRADE_NSQ_HTTP"),
             "EVE_TRADE_RUNTIME_DATABASE_URL": os.environ.get("EVE_TRADE_RUNTIME_DATABASE_URL"),
             "EVE_TRADE_QUILKIN_UDP_HOST": os.environ.get("EVE_TRADE_QUILKIN_UDP_HOST"),
             "EVE_TRADE_EDGE_RESPONSE_SECRET": os.environ.get("EVE_TRADE_EDGE_RESPONSE_SECRET"),
@@ -97,6 +99,9 @@ def services_ready(service_urls):
 def db(service_urls, services_ready):
     _, _, database_url = service_urls
     database = Database(database_url)
+    nsq_http_url = os.environ.get("EVE_TRADE_NSQ_HTTP")
+    if nsq_http_url:
+        wait_for_pubsub_idle(nsq_http_url)
     database.reset()
     try:
         yield database

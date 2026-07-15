@@ -887,5 +887,5 @@ jobs:
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: o11y-aggregate-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .o11y/runs/**
+          path: .o11y/runs/gha-${{ github.run_id }}-${{ github.run_attempt }}-*
           if-no-files-found: error

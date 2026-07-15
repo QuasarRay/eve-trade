@@ -5,7 +5,7 @@ import os
 import pytest
 
 import conftest
-from helpers import Trade, World, accept_payload, cancel_payload, issue_payload
+from helpers import Trade, World, accept_payload, cancel_payload, issue_payload, pubsub_pending_messages
 
 
 def contract_world() -> World:
@@ -125,6 +125,7 @@ def test_production_gate_does_not_inherit_the_all_skipped_escape_hatch(monkeypat
         "EVE_TRADE_SETTLEMENT_GRPC",
         "EVE_TRADE_SIMULATOR_URL",
         "EVE_TRADE_NSQ_TCP",
+        "EVE_TRADE_NSQ_HTTP",
         "EVE_TRADE_DATABASE_URL",
         "EVE_TRADE_MARKET_DATABASE_URL",
         "EVE_TRADE_RUNTIME_DATABASE_URL",
@@ -144,3 +145,57 @@ def test_production_gate_fails_each_missing_dependency_or_credential(missing_nam
     monkeypatch.delenv(missing_name, raising=False)
     with pytest.raises(pytest.fail.Exception, match=missing_name):
         conftest.service_urls.__wrapped__()
+
+
+def test_pubsub_pending_messages_covers_queue_and_active_delivery_states():
+    stats = {
+        "topics": [
+            {
+                "topic_name": "settlement-work",
+                "channels": [
+                    {
+                        "channel_name": "trade-settlement-executor",
+                        "depth": 1,
+                        "backend_depth": 2,
+                        "in_flight_count": 3,
+                        "deferred_count": 4,
+                    }
+                ],
+            },
+            {
+                "topic_name": "settlement-results",
+                "channels": [
+                    {
+                        "channel_name": "market-settlement-result-projection",
+                        "depth": 5,
+                        "backend_depth": 6,
+                        "in_flight_count": 7,
+                        "deferred_count": 8,
+                    }
+                ],
+            },
+        ]
+    }
+
+    assert pubsub_pending_messages(stats) == sum(range(1, 9))
+
+
+def test_pubsub_pending_messages_ignores_unrelated_channels():
+    stats = {
+        "topics": [
+            {
+                "topic_name": "unrelated",
+                "channels": [
+                    {
+                        "channel_name": "unrelated",
+                        "depth": 99,
+                        "backend_depth": 0,
+                        "in_flight_count": 0,
+                        "deferred_count": 0,
+                    }
+                ],
+            }
+        ]
+    }
+
+    assert pubsub_pending_messages(stats) == 0

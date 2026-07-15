@@ -132,9 +132,12 @@ func (s *Service) publishDurableResult(ctx context.Context, work *settlement.Wor
 		return err
 	}
 	_, err := s.executor.UpdateSettlementOperation(ctx, &tradesettlementv1.UpdateSettlementOperationRequest{
-		OperationId:     work.OperationID,
-		State:           operation.GetState(),
-		ResultPublished: true,
+		OperationId:        work.OperationID,
+		State:              operation.GetState(),
+		SettlementBatchId:  operation.GetSettlementBatchId(),
+		FailureCode:        operation.GetFailureCode(),
+		FailureDescription: operation.GetFailureDescription(),
+		ResultPublished:    true,
 	})
 	if err != nil {
 		return fmt.Errorf("mark settlement result published: %w", err)

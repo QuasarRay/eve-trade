@@ -35,6 +35,9 @@ func (e *recordingExecutor) GetSettlementOperation(context.Context, string) (*tr
 
 func (e *recordingExecutor) UpdateSettlementOperation(_ context.Context, request *tradesettlementv1.UpdateSettlementOperationRequest) (*tradesettlementv1.SettlementOperationStatus, error) {
 	e.updates = append(e.updates, request)
+	if request.State == tradesettlementv1.SettlementOperationState_SETTLEMENT_OPERATION_STATE_FAILED && request.FailureCode == "" {
+		return nil, errors.New("FAILED operation requires failure_code")
+	}
 	if request.ResultPublished && e.updateErr != nil {
 		return nil, e.updateErr
 	}
@@ -175,6 +178,10 @@ func TestHandleSettlementWorkPublishesPermanentFailure(t *testing.T) {
 	}
 	if len(results.results) != 1 || results.results[0].FailureCode != settlementrpc.ErrorClassName(settlementrpc.ErrorPermissionDenied) {
 		t.Fatalf("failure result = %+v", results.results)
+	}
+	published := executor.updates[len(executor.updates)-1]
+	if !published.GetResultPublished() || published.GetFailureCode() != settlementrpc.ErrorClassName(settlementrpc.ErrorPermissionDenied) {
+		t.Fatalf("published failure update = %+v, want durable failure code", published)
 	}
 }
 
