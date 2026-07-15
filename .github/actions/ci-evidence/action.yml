@@ -1,0 +1,91 @@
+name: CI evidence
+description: Create or finalize a provenance-bound producer evidence bundle.
+inputs:
+  mode:
+    description: start, run, or finish
+    required: true
+  job-id:
+    description: Stable GitHub job identifier
+    required: true
+  job-name:
+    description: Human-readable job name
+    required: true
+  artifact-key:
+    description: Unique artifact key, including matrix dimensions
+    required: true
+  status:
+    description: Final job status
+    required: false
+    default: success
+  command-identity:
+    description: Stable identity for the job's canonical command set
+    required: false
+    default: unspecified
+  dependencies:
+    description: Space-separated stable dependency job identifiers
+    required: false
+    default: ""
+  step-name:
+    description: Human-readable command step name
+    required: false
+    default: unspecified
+  command:
+    description: Bash command to execute and record
+    required: false
+    default: ""
+  working-directory:
+    description: Command working directory relative to the workspace
+    required: false
+    default: "."
+runs:
+  using: composite
+  steps:
+    - name: Mark producer start
+      if: inputs.mode == 'start'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: >-
+        python distributed-backend/observability/ci/ci_evidence.py start
+        --job-id "${{ inputs.job-id }}"
+        --job-name "${{ inputs.job-name }}"
+        --path ".o11y/producer/${{ inputs.artifact-key }}.start.json"
+    - name: Run evidenced command
+      if: inputs.mode == 'run'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        CI_EVIDENCE_COMMAND: ${{ inputs.command }}
+      run: >-
+        python distributed-backend/observability/ci/ci_evidence.py run
+        --job-id "${{ inputs.job-id }}"
+        --job-name "${{ inputs.job-name }}"
+        --step-name "${{ inputs.step-name }}"
+        --working-directory "${{ inputs.working-directory }}"
+        --output-path ".o11y/commands/${{ inputs.artifact-key }}/${{ inputs.step-name }}.json"
+    - name: Finalize producer evidence
+      if: inputs.mode == 'finish'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        dependency_args=()
+        for dependency in ${{ inputs.dependencies }}; do
+          dependency_args+=(--dependency "$dependency")
+        done
+        python distributed-backend/observability/ci/ci_evidence.py finish \
+          --job-id "${{ inputs.job-id }}" \
+          --job-name "${{ inputs.job-name }}" \
+          --step-identity "ci-evidence/finalize" \
+          --command-identity "${{ inputs.command-identity }}" \
+          --status "${{ inputs.status }}" \
+          --start-path ".o11y/producer/${{ inputs.artifact-key }}.start.json" \
+          --output-path ".o11y/producer-artifacts/${{ inputs.artifact-key }}.json" \
+          --commands-path ".o11y/commands/${{ inputs.artifact-key }}" \
+          "${dependency_args[@]}"
+    - name: Upload producer evidence
+      if: inputs.mode == 'finish'
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      with:
+        name: o11y-producer-${{ inputs.artifact-key }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: .o11y/producer-artifacts/${{ inputs.artifact-key }}.json
+        if-no-files-found: error
+        retention-days: 14

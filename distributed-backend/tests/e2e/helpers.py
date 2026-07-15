@@ -5,13 +5,14 @@ import hmac
 import base64
 import importlib
 import json
+import os
+import queue
 import re
 import socket
 import sys
 import tempfile
 import time
 import uuid
-from urllib.parse import urlparse
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -32,9 +33,17 @@ OTHER_STATION_ID = 60008494
 ITEM_TYPE_ID = 34
 OTHER_ITEM_TYPE_ID = 35
 CHECKSUM_ALGORITHM = "sha256-v1"
+EDGE_REQUEST_SCHEMA = "eve-trade-edge.v2"
+EDGE_RESPONSE_SCHEMA = "eve-trade-edge-response.v2"
+HMAC_SHA256_ALGORITHM = "hmac-sha256"
+ENVELOPE_SIGNING_DOMAIN = "eve-trade.udp-envelope.hmac-sha256.v1"
 
 _SETTLEMENT_PROTO_CACHE: tuple[Any, Any] | None = None
 _SETTLEMENT_PROTO_TMPDIR: tempfile.TemporaryDirectory[str] | None = None
+_E2E_PUBSUB_CHANNELS = (
+    ("settlement-work", "trade-settlement-executor"),
+    ("settlement-results", "market-settlement-result-projection"),
+)
 
 
 class RpcFailure(Exception):
@@ -81,9 +90,19 @@ class GatewayClient:
         self.simulator_url = simulator_url.rstrip("/")
         self.http = httpx.Client(timeout=httpx.Timeout(20.0))
         self._buttons_by_action: dict[str, int] | None = None
+        self.settlement_db = None
+        database_url = os.environ.get("EVE_TRADE_DATABASE_URL")
+        if database_url:
+            self.settlement_db = psycopg.connect(
+                database_url,
+                autocommit=True,
+                row_factory=dict_row,
+            )
 
     def close(self) -> None:
         self.http.close()
+        if self.settlement_db is not None:
+            self.settlement_db.close()
 
 
     def issue_trade_instance(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -125,8 +144,81 @@ class GatewayClient:
             )
         if not isinstance(gateway_payload, dict):
             raise RpcFailure(response.status_code, "invalid_response", str(gateway_payload), body)
-        return snake_to_camel(gateway_payload)
+        result = snake_to_camel(gateway_payload)
+        self._wait_for_queued_settlement(payload, result)
+        return result
 
+    def _wait_for_queued_settlement(self, payload: dict[str, Any], response: dict[str, Any]) -> None:
+        if response.get("status") not in {"queued", "accepted"}:
+            return
+        idempotency_key = str(payload.get("idempotencyKey") or payload.get("idempotency_key") or "")
+        if not idempotency_key or self.settlement_db is None:
+            return
+        row = self._wait_for_settlement_batch(idempotency_key)
+        response.setdefault("settlementBatchId", row["settlement_batch_id"])
+        state = str(row["batch_state"])
+        if state == "COMPLETED":
+            return
+        code = settlement_failure_rpc_code(row.get("failure_code"))
+        message = str(row.get("failure_message") or f"settlement batch {state}")
+        raise RpcFailure(500, code, message, row)
+
+    def _wait_for_settlement_batch(self, idempotency_key: str, timeout_seconds: float = 20.0) -> dict[str, Any]:
+        assert self.settlement_db is not None
+        deadline = time.monotonic() + timeout_seconds
+        last_state = "missing"
+        while time.monotonic() < deadline:
+            with self.settlement_db.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT batch.settlement_batch_id,
+                           batch.batch_state,
+                           batch.failure_code,
+                           batch.failure_message,
+                           operation.result_published
+                    FROM settlement_batch AS batch
+                    JOIN settlement_operation AS operation
+                      ON operation.idempotency_key = batch.idempotency_key
+                    WHERE batch.idempotency_key = %s
+                    ORDER BY batch.started_at DESC
+                    LIMIT 1
+                    """,
+                    (idempotency_key,),
+                )
+                row = cursor.fetchone()
+            if row is not None:
+                last_state = str(row["batch_state"])
+                if last_state in {"COMPLETED", "FAILED"} and row["result_published"]:
+                    return row
+                if last_state in {"COMPLETED", "FAILED"}:
+                    last_state += "_RESULT_PENDING"
+            with self.settlement_db.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT operation_id::text AS settlement_batch_id,
+                           CASE operation_state
+                               WHEN 'SUCCEEDED' THEN 'COMPLETED'
+                               ELSE operation_state
+                           END AS batch_state,
+                           failure_code,
+                           failure_description AS failure_message,
+                           result_published
+                    FROM settlement_operation
+                    WHERE idempotency_key = %s
+                    """,
+                    (idempotency_key,),
+                )
+                operation = cursor.fetchone()
+            if operation is not None:
+                last_state = str(operation["batch_state"])
+                if last_state in {"COMPLETED", "FAILED"} and operation["result_published"]:
+                    return operation
+                if last_state in {"COMPLETED", "FAILED"}:
+                    last_state += "_RESULT_PENDING"
+            time.sleep(0.1)
+        raise RuntimeError(
+            f"settlement batch for idempotency key {idempotency_key!r} did not complete; last state={last_state}"
+        )
     def _button_id(self, action: str) -> int:
         if self._buttons_by_action is None:
             response = self.http.get(f"{self.simulator_url}/api/gui/buttons/")
@@ -145,30 +237,69 @@ class GatewayClient:
             raise RuntimeError(f"simulator button for action {action!r} was not seeded") from exc
 
 
+def settlement_failure_rpc_code(value: Any) -> str:
+    code = str(value or "SETTLEMENT_FAILED").upper()
+    return {
+        "INSUFFICIENT_FUNDS": "failed_precondition",
+        "INSUFFICIENT_QUANTITY": "failed_precondition",
+        "FAILED_PRECONDITION": "failed_precondition",
+        "FAILEDPRECONDITION": "failed_precondition",
+        "PERMISSION_DENIED": "permission_denied",
+        "PERMISSIONDENIED": "permission_denied",
+        "INVALID_ARGUMENT": "invalid_argument",
+        "NOT_FOUND": "not_found",
+        "CONFLICT": "aborted",
+    }.get(code, code.lower())
+
+
 class AuthenticatedEdgeClient:
     def __init__(self, host: str, port: int, response_secret: str, response_key_id: str):
         self.endpoint = (host, port)
         self.response_secret = response_secret.encode("utf-8")
         self.response_key_id = response_key_id
+        self.sockets: queue.LifoQueue[socket.socket] = queue.LifoQueue(maxsize=10)
+        for _ in range(10):
+            self.sockets.put_nowait(self._new_socket())
+
+    @staticmethod
+    def _new_socket() -> socket.socket:
+        udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        udp.settimeout(10)
+        return udp
+
+    def close(self) -> None:
+        while not self.sockets.empty():
+            self.sockets.get_nowait().close()
 
     def submit(self, packet: dict[str, Any], key_id: str, principal_secret: str) -> dict[str, Any]:
-        raw_payload = json.dumps(packet, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        signing_bytes = envelope_signing_bytes(
+            EDGE_REQUEST_SCHEMA,
+            HMAC_SHA256_ALGORITHM,
+            key_id,
+            packet,
+        )
         signature = base64.urlsafe_b64encode(
-            hmac.new(principal_secret.encode("utf-8"), raw_payload, hashlib.sha256).digest()
+            hmac.new(principal_secret.encode("utf-8"), signing_bytes, hashlib.sha256).digest()
         ).rstrip(b"=").decode("ascii")
         envelope = json.dumps(
             {
-                "schema_version": "eve-trade-edge.v1",
+                "schema_version": EDGE_REQUEST_SCHEMA,
                 "payload": packet,
-                "auth": {"algorithm": "hmac-sha256", "key_id": key_id, "signature": signature},
+                "auth": {"algorithm": HMAC_SHA256_ALGORITHM, "key_id": key_id, "signature": signature},
             },
             separators=(",", ":"),
             sort_keys=True,
         ).encode("utf-8")
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
-            udp.settimeout(10)
+        udp = self.sockets.get()
+        try:
             udp.sendto(envelope, self.endpoint)
             response, source = udp.recvfrom(65535)
+        except OSError:
+            udp.close()
+            udp = self._new_socket()
+            raise
+        finally:
+            self.sockets.put_nowait(udp)
         expected_ips = {
             row[4][0]
             for row in socket.getaddrinfo(self.endpoint[0], self.endpoint[1], socket.AF_INET, socket.SOCK_DGRAM)
@@ -176,11 +307,11 @@ class AuthenticatedEdgeClient:
         if source[0] not in expected_ips or source[1] != self.endpoint[1]:
             raise AssertionError(f"edge response source {source!r} does not match {self.endpoint!r}")
         decoded = json.loads(response)
-        if decoded.get("schema_version") != "eve-trade-edge-response.v1":
+        if decoded.get("schema_version") != EDGE_RESPONSE_SCHEMA:
             raise AssertionError(f"edge response is unsigned: {decoded!r}")
         auth = decoded.get("auth") or {}
         payload = decoded.get("payload")
-        if auth.get("algorithm") != "hmac-sha256" or auth.get("key_id") != self.response_key_id:
+        if auth.get("algorithm") != HMAC_SHA256_ALGORITHM or auth.get("key_id") != self.response_key_id:
             raise AssertionError(f"edge response authentication metadata is invalid: {auth!r}")
         canonical = response_signing_bytes(
             decoded["schema_version"],
@@ -234,8 +365,12 @@ def settlement_proto_modules() -> tuple[Any, Any, Any]:
     from grpc_tools import protoc
 
     repo_root = Path(__file__).resolve().parents[3]
-    proto_root = repo_root / "distributed-backend" / "proto"
+    proto_root = repo_root / "proto"
     proto_file = proto_root / "eve" / "trade_settlement" / "v1" / "trade_settlement.proto"
+    validation_files = [
+        proto_root / "buf" / "validate" / "validate.proto",
+        proto_root / "eve" / "validation" / "v1" / "validation_rules.proto",
+    ]
     _SETTLEMENT_PROTO_TMPDIR = tempfile.TemporaryDirectory(prefix="eve-trade-proto-")
     out_dir = Path(_SETTLEMENT_PROTO_TMPDIR.name)
     include_google = Path(grpc_tools.__file__).resolve().parent / "_proto"
@@ -247,6 +382,7 @@ def settlement_proto_modules() -> tuple[Any, Any, Any]:
             f"-I{include_google}",
             f"--python_out={out_dir}",
             f"--grpc_python_out={out_dir}",
+            *(str(path) for path in validation_files),
             str(proto_file),
         ]
     )
@@ -350,7 +486,7 @@ def wait_for_database(database_url: str, timeout_seconds: float = 60.0) -> None:
 def wait_for_gateway(api_gateway_url: str, timeout_seconds: float = 60.0) -> None:
     deadline = time.monotonic() + timeout_seconds
     last_error: Exception | None = None
-    url = api_gateway_url.rstrip("/") + "/healthz"
+    url = api_gateway_url.rstrip("/") + "/gateway/healthz"
     while time.monotonic() < deadline:
         try:
             response = httpx.get(url, timeout=2.0)
@@ -359,11 +495,11 @@ def wait_for_gateway(api_gateway_url: str, timeout_seconds: float = 60.0) -> Non
         except Exception as exc:  # noqa: BLE001 - preserve final connection error.
             last_error = exc
             time.sleep(0.5)
-    raise RuntimeError(f"api gateway did not become reachable: {last_error}")
+    raise RuntimeError(f"Encore gateway did not become reachable: {last_error}")
 
 
 def wait_for_market(market_url: str, timeout_seconds: float = 60.0) -> None:
-    wait_for_http_health(market_url.rstrip("/") + "/readyz", "Market", timeout_seconds)
+    wait_for_http_health(market_url.rstrip("/") + "/market/readyz", "Encore backend", timeout_seconds)
 
 
 def wait_for_http_health(url: str, service: str, timeout_seconds: float) -> None:
@@ -388,11 +524,71 @@ def wait_for_settlement(endpoint: str, timeout_seconds: float = 60.0) -> None:
     wait_for_tcp(host, int(port_text), "settlement service", timeout_seconds)
 
 
-def wait_for_rabbitmq(url: str, timeout_seconds: float = 60.0) -> None:
-    parsed = urlparse(url)
-    if not parsed.hostname:
-        raise RuntimeError(f"invalid RabbitMQ URL {url!r}")
-    wait_for_tcp(parsed.hostname, parsed.port or 5672, "RabbitMQ", timeout_seconds)
+def wait_for_pubsub(endpoint: str, timeout_seconds: float = 60.0) -> None:
+    host, separator, port_text = endpoint.rpartition(":")
+    if not separator or not host:
+        raise RuntimeError(f"invalid NSQ endpoint {endpoint!r}")
+    wait_for_tcp(host, int(port_text), "NSQ", timeout_seconds)
+
+
+def pubsub_pending_messages(stats: dict[str, Any]) -> int:
+    topics = stats.get("topics")
+    if not isinstance(topics, list):
+        raise ValueError("NSQ stats response must contain a topics list")
+    topics_by_name = {
+        str(topic.get("topic_name")): topic
+        for topic in topics
+        if isinstance(topic, dict) and topic.get("topic_name")
+    }
+    pending = 0
+    for topic_name, channel_name in _E2E_PUBSUB_CHANNELS:
+        topic = topics_by_name.get(topic_name)
+        if topic is None:
+            continue
+        channels = topic.get("channels")
+        if not isinstance(channels, list):
+            raise ValueError(f"NSQ topic {topic_name!r} must contain a channels list")
+        channel = next(
+            (
+                candidate
+                for candidate in channels
+                if isinstance(candidate, dict) and candidate.get("channel_name") == channel_name
+            ),
+            None,
+        )
+        if channel is None:
+            pending += _nsq_count(topic, "depth") + _nsq_count(topic, "backend_depth")
+            continue
+        pending += sum(
+            _nsq_count(channel, field)
+            for field in ("depth", "backend_depth", "in_flight_count", "deferred_count")
+        )
+    return pending
+
+
+def wait_for_pubsub_idle(nsq_http_url: str, timeout_seconds: float = 30.0) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    last_error: Exception | None = None
+    url = nsq_http_url.rstrip("/") + "/stats"
+    while time.monotonic() < deadline:
+        try:
+            response = httpx.get(url, params={"format": "json"}, timeout=2.0)
+            response.raise_for_status()
+            pending = pubsub_pending_messages(response.json())
+            if pending == 0:
+                return
+            last_error = RuntimeError(f"{pending} settlement messages remain pending")
+        except Exception as exc:  # noqa: BLE001 - preserve the final NSQ diagnostic.
+            last_error = exc
+        time.sleep(0.1)
+    raise RuntimeError(f"NSQ settlement channels did not become idle: {last_error}")
+
+
+def _nsq_count(row: dict[str, Any], field: str) -> int:
+    value = row.get(field, 0)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"NSQ stats field {field!r} must be a non-negative integer")
+    return value
 
 
 def wait_for_tcp(host: str, port: int, service: str, timeout_seconds: float) -> None:
@@ -1005,15 +1201,21 @@ def expect_rpc_error(
 
 
 def response_signing_bytes(schema_version: str, key_id: str, payload: Any) -> bytes:
+    return envelope_signing_bytes(schema_version, HMAC_SHA256_ALGORITHM, key_id, payload)
+
+
+def envelope_signing_bytes(schema_version: str, algorithm: str, key_id: str, payload: Any) -> bytes:
     return json.dumps(
         {
-            "algorithm": "hmac-sha256",
+            "algorithm": algorithm,
+            "domain": ENVELOPE_SIGNING_DOMAIN,
             "key_id": key_id,
             "payload": payload,
             "schema_version": schema_version,
         },
         separators=(",", ":"),
         sort_keys=True,
+        ensure_ascii=False,
     ).encode("utf-8")
 
 

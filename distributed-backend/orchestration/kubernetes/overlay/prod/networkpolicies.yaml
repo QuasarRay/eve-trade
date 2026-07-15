@@ -11,264 +11,96 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-dns-egress
-spec:
-  podSelector: {}
-  policyTypes:
-    - Egress
-  egress:
-    - ports:
-        - protocol: UDP
-          port: 53
-        - protocol: TCP
-          port: 53
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: application-telemetry-egress
-spec:
-  podSelector:
-    matchExpressions:
-      - key: app.kubernetes.io/name
-        operator: In
-        values:
-          - api-gateway
-          - market
-          - settlement-worker
-          - trade-settlement
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              name: eve-trade-observability
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/name: otel-collector
-      ports:
-        - protocol: TCP
-          port: 4317
-        - protocol: TCP
-          port: 4318
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: application-istiod-egress
-spec:
-  podSelector:
-    matchExpressions:
-      - key: app.kubernetes.io/name
-        operator: In
-        values:
-          - api-gateway
-          - market
-          - settlement-worker
-          - trade-settlement
-          - rabbitmq
-          - quilkin
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: istio-system
-          podSelector:
-            matchLabels:
-              app: istiod
-      ports:
-        - protocol: TCP
-          port: 15012
-        - protocol: TCP
-          port: 15017
-        - protocol: TCP
-          port: 443
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: quilkin-ingress
+  name: encore-backend-ingress
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: quilkin
+      app.kubernetes.io/name: encore-backend
   policyTypes:
     - Ingress
   ingress:
-    - ports:
-        - protocol: UDP
-          port: 26001
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: quilkin-egress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: quilkin
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: api-gateway
-      ports:
-        - protocol: UDP
-          port: 26000
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: api-gateway-ingress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: api-gateway
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              network.eve-trade.io/gateway-ingress: allowed
-      ports:
-        - protocol: TCP
-          port: 8080
     - from:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: quilkin
       ports:
-        - protocol: UDP
-          port: 26000
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: api-gateway-egress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: api-gateway
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: market
-      ports:
-        - protocol: TCP
-          port: 8081
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: market-ingress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: market
-  policyTypes:
-    - Ingress
-  ingress:
+        - port: 26000
+          protocol: UDP
     - from:
-        - podSelector:
+        - namespaceSelector:
             matchLabels:
-              app.kubernetes.io/name: api-gateway
+              kubernetes.io/metadata.name: istio-system
       ports:
-        - protocol: TCP
-          port: 8081
+        - port: 4000
+          protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: market-egress
+  name: encore-backend-egress
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: market
+      app.kubernetes.io/name: encore-backend
   policyTypes:
     - Egress
   egress:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: rabbitmq
+              app.kubernetes.io/name: nsqd
       ports:
-        - protocol: TCP
-          port: 5672
-    - ports:
-        - protocol: TCP
-          port: 5432
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: rabbitmq-ingress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: rabbitmq
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: market
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: settlement-worker
-      ports:
-        - protocol: TCP
-          port: 5672
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: settlement-db-migrate-database-egress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: settlement-db-migrate
-  policyTypes:
-    - Egress
-  egress:
-    - ports:
-        - protocol: TCP
-          port: 5432
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: settlement-worker-egress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: settlement-worker
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: rabbitmq
-      ports:
-        - protocol: TCP
-          port: 5672
+        - port: 4150
+          protocol: TCP
     - to:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: trade-settlement
       ports:
-        - protocol: TCP
-          port: 9092
+        - port: 9092
+          protocol: TCP
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+      ports:
+        - port: 5432
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: eve-trade-observability
+      ports:
+        - port: 4318
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nsqd-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: nsqd
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: encore-backend
+      ports:
+        - port: 4150
+          protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -284,22 +116,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: settlement-worker
+              app.kubernetes.io/name: encore-backend
       ports:
-        - protocol: TCP
-          port: 9092
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: trade-settlement-database-egress
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: trade-settlement
-  policyTypes:
-    - Egress
-  egress:
-    - ports:
-        - protocol: TCP
-          port: 5432
+        - port: 9092
+          protocol: TCP

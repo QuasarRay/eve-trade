@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package eve.trade.v1;
+
+import "buf/validate/validate.proto";
+import "eve/validation/v1/validation_rules.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/proto/gen/eve/trade/v1;tradev1";
+
+message ItemStackSnapshot {
+  string item_stack_id = 1 [(buf.validate.field).string.(eve.validation.v1.uuid_string) = true];
+  int64 owner_id = 2 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  int64 item_type_id = 3 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  int64 station_id = 4 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  int64 quantity = 5 [(buf.validate.field).int64.gte = 0];
+}
+
+message IssueTradeInstanceInput {
+  option (buf.validate.message).cel = {
+    id: "issue_trade.item_owner_matches_actor"
+    message: "item stack owner must match issued_by_capsuleer_id"
+    expression: "this.item_stack.owner_id == this.issued_by_capsuleer_id"
+  };
+  option (buf.validate.message).cel = {
+    id: "issue_trade.quantity_available"
+    message: "item stack quantity is lower than requested issue quantity"
+    expression: "this.item_stack.quantity >= this.quantity"
+  };
+
+  string idempotency_key = 1 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+  string external_request_id = 2;
+  int64 issued_by_capsuleer_id = 3 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  ItemStackSnapshot item_stack = 4 [(buf.validate.field).required = true];
+  int64 quantity = 5 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  int64 unit_price_isk = 6 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  google.protobuf.Timestamp expires_at = 7 [(buf.validate.field).timestamp.gt_now = true];
+  string trade_instance_id = 8 [(buf.validate.field).string.(eve.validation.v1.optional_uuid_string) = true];
+  string item_stack_escrow_id = 9 [(buf.validate.field).string.(eve.validation.v1.optional_uuid_string) = true];
+}
+
+message AcceptTradeInstanceInput {
+  option (buf.validate.message).cel = {
+    id: "accept_trade.buyer_seller_distinct"
+    message: "buyer and seller must differ"
+    expression: "this.buyer_capsuleer_id != this.seller_capsuleer_id"
+  };
+
+  string idempotency_key = 1 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+  string external_request_id = 2;
+  string trade_instance_id = 3 [(buf.validate.field).string.(eve.validation.v1.uuid_string) = true];
+  int64 buyer_capsuleer_id = 4 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  int64 seller_capsuleer_id = 5 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  int64 item_type_id = 6 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  int64 station_id = 7 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  int64 quantity_requested = 8 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  int64 isk_amount_paid = 9 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  string buyer_wallet_id = 10 [(buf.validate.field).string.(eve.validation.v1.uuid_string) = true];
+  string seller_wallet_id = 11 [(buf.validate.field).string.(eve.validation.v1.uuid_string) = true];
+  string item_stack_escrow_id = 12 [(buf.validate.field).string.(eve.validation.v1.uuid_string) = true];
+  string buyer_destination_item_stack_id = 13 [(buf.validate.field).string.(eve.validation.v1.optional_uuid_string) = true];
+  bool create_buyer_destination_item_stack = 14;
+  string wallet_escrow_id = 15 [(buf.validate.field).string.(eve.validation.v1.optional_uuid_string) = true];
+  bool complete_trade = 16;
+}
+
+message CancelTradeInstanceInput {
+  option (buf.validate.message).cel = {
+    id: "cancel_trade.item_return_atomic"
+    message: "item return fields must be provided together"
+    expression: "(this.item_stack_escrow_id == '' && this.return_item_stack_id == '' && this.return_quantity == 0) || (this.item_stack_escrow_id != '' && this.return_item_stack_id != '' && this.return_quantity > 0)"
+  };
+  option (buf.validate.message).cel = {
+    id: "cancel_trade.wallet_return_atomic"
+    message: "wallet return fields must be provided together"
+    expression: "(this.wallet_escrow_id == '' && this.return_wallet_id == '' && this.return_isk_amount == 0) || (this.wallet_escrow_id != '' && this.return_wallet_id != '' && this.return_isk_amount > 0)"
+  };
+
+  string idempotency_key = 1 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+  string external_request_id = 2;
+  string trade_instance_id = 3 [(buf.validate.field).string.(eve.validation.v1.uuid_string) = true];
+  int64 cancelled_by_capsuleer_id = 4 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
+  string item_stack_escrow_id = 5 [(buf.validate.field).string.(eve.validation.v1.optional_uuid_string) = true];
+  string return_item_stack_id = 6 [(buf.validate.field).string.(eve.validation.v1.optional_uuid_string) = true];
+  int64 return_quantity = 7 [(buf.validate.field).int64.gte = 0];
+  string wallet_escrow_id = 8 [(buf.validate.field).string.(eve.validation.v1.optional_uuid_string) = true];
+  string return_wallet_id = 9 [(buf.validate.field).string.(eve.validation.v1.optional_uuid_string) = true];
+  int64 return_isk_amount = 10 [(buf.validate.field).int64.gte = 0];
+}

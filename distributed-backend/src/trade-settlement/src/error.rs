@@ -10,6 +10,8 @@ pub enum SettlementError {
     Conflict(String),
     #[error("failed precondition: {0}")]
     FailedPrecondition(String),
+    #[error("permission denied: {0}")]
+    PermissionDenied(String),
     #[error("insufficient funds: {0}")]
     InsufficientFunds(String),
     #[error("insufficient quantity: {0}")]
@@ -18,6 +20,8 @@ pub enum SettlementError {
     Database(#[from] sqlx::Error),
     #[error("serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
+    #[error("validation error: {0}")]
+    Validation(#[from] prost_protovalidate::Error),
 }
 
 pub type Result<T> = std::result::Result<T, SettlementError>;
@@ -29,10 +33,15 @@ impl SettlementError {
             SettlementError::NotFound(_) => "NOT_FOUND",
             SettlementError::Conflict(_) => "CONFLICT",
             SettlementError::FailedPrecondition(_) => "FAILED_PRECONDITION",
+            SettlementError::PermissionDenied(_) => "PERMISSION_DENIED",
             SettlementError::InsufficientFunds(_) => "INSUFFICIENT_FUNDS",
             SettlementError::InsufficientQuantity(_) => "INSUFFICIENT_QUANTITY",
             SettlementError::Database(_) => "DATABASE_ERROR",
             SettlementError::Serialization(_) => "SERIALIZATION_ERROR",
+            SettlementError::Validation(prost_protovalidate::Error::Validation(_)) => {
+                "INVALID_ARGUMENT"
+            }
+            SettlementError::Validation(_) => "VALIDATION_ERROR",
         }
     }
 
@@ -42,10 +51,15 @@ impl SettlementError {
             SettlementError::NotFound(message) => Status::not_found(message),
             SettlementError::Conflict(message) => Status::aborted(message),
             SettlementError::FailedPrecondition(message) => Status::failed_precondition(message),
+            SettlementError::PermissionDenied(message) => Status::permission_denied(message),
             SettlementError::InsufficientFunds(message) => Status::failed_precondition(message),
             SettlementError::InsufficientQuantity(message) => Status::failed_precondition(message),
             SettlementError::Database(error) => Status::internal(error.to_string()),
             SettlementError::Serialization(error) => Status::internal(error.to_string()),
+            SettlementError::Validation(prost_protovalidate::Error::Validation(error)) => {
+                Status::invalid_argument(error.to_string())
+            }
+            SettlementError::Validation(error) => Status::internal(error.to_string()),
         }
     }
 }

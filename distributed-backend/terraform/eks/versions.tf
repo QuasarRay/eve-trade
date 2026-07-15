@@ -1,5 +1,6 @@
 terraform {
-  required_version = ">= 1.0.0"
+  # Provider mocking in tests requires Terraform 1.7 or newer.
+  required_version = ">= 1.7.0"
 
   required_providers {
     aws = {
@@ -12,7 +13,7 @@ terraform {
     }
     helm = {
       source  = "hashicorp/helm"
-      version = "= 2.17.0"
+      version = "= 3.2.0"
     }
     kubectl = {
       source  = "gavinbunney/kubectl"
@@ -59,7 +60,7 @@ provider "kubectl" {
 }
 
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     host                   = module._app_eks.cluster_endpoint
     cluster_ca_certificate = base64decode(module._app_eks.cluster_certificate_authority_data)
     token                  = data.aws_eks_cluster_auth.this.token

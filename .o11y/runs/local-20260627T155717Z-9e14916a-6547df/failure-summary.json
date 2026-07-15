@@ -1,0 +1,169 @@
+{
+  "artifacts": [
+    {
+      "href": "commands/test/observability-unit-tests/command.json",
+      "path": "commands/test/observability-unit-tests/command.json"
+    },
+    {
+      "href": "commands/test/observability-unit-tests/command.log",
+      "path": "commands/test/observability-unit-tests/command.log"
+    },
+    {
+      "href": "env-redacted.json",
+      "path": "env-redacted.json"
+    },
+    {
+      "href": "git.json",
+      "path": "git.json"
+    },
+    {
+      "href": "hashes.json",
+      "path": "hashes.json"
+    },
+    {
+      "href": "pytest/pytest-output.txt",
+      "path": "pytest/pytest-output.txt"
+    },
+    {
+      "href": "pytest/pytest-summary.json",
+      "path": "pytest/pytest-summary.json"
+    },
+    {
+      "href": "run-context.json",
+      "path": "run-context.json"
+    },
+    {
+      "href": "run-summary.json",
+      "path": "run-summary.json"
+    },
+    {
+      "href": "telemetry/local-spans.jsonl",
+      "path": "telemetry/local-spans.jsonl"
+    },
+    {
+      "href": "tool-versions.json",
+      "path": "tool-versions.json"
+    }
+  ],
+  "classification": {
+    "confidence": 0.2,
+    "evidence": [
+      "No transparent classification rule matched the available evidence."
+    ],
+    "failure_family": "unclassified",
+    "likely_next_commands": [
+      "Open failure-report.html and inspect the first failing command and service logs."
+    ],
+    "likely_solution_files": [],
+    "suspected_services": [],
+    "test.failure_family": "unclassified"
+  },
+  "database": {},
+  "docker": {},
+  "executive_summary": "Command observability-unit-tests failed with exit code 1; likely failure family: unclassified (20% rule confidence).",
+  "failed_command": {
+    "argv": [
+      "C:\\Program Files\\Python314\\python.exe",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "observability/does-not-exist",
+      "-v"
+    ],
+    "artifact.path": "commands/test/observability-unit-tests/command.log",
+    "command.argv": [
+      "C:\\Program Files\\Python314\\python.exe",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "observability/does-not-exist",
+      "-v"
+    ],
+    "command.duration_ms": 284.34,
+    "command.exit_code": 1,
+    "duration_ms": 284.34,
+    "ended_at": "2026-06-27T15:57:21.775056+00:00",
+    "exit_code": 1,
+    "log_path": "commands/test/observability-unit-tests/command.log",
+    "metadata_path": "commands/test/observability-unit-tests/command.json",
+    "name": "observability-unit-tests",
+    "pipeline.command": "observability-unit-tests",
+    "pipeline.stage": "test",
+    "stage": "test",
+    "started_at": "2026-06-27T15:57:21.489936+00:00",
+    "timed_out": false,
+    "trace_id": ""
+  },
+  "github_actions_url": "",
+  "honeycomb": {
+    "bubbleup_steps": [
+      "Open or build a Honeycomb query filtered by observability.run_id = local-20260627T155717Z-9e14916a-6547df.",
+      "Visualize duration with a heatmap or filter spans where error=true / command.exit_code != 0.",
+      "Select the failed subset and choose BubbleUp / Compare to Baseline.",
+      "Compare against a passing local run or passing CI run using the high-cardinality fields above."
+    ],
+    "filters": {
+      "observability.run_id": "local-20260627T155717Z-9e14916a-6547df",
+      "test.failure_family": "unclassified"
+    },
+    "query_url": "",
+    "suggested_fields": [
+      "python.version",
+      "os.name",
+      "docker.image_digest",
+      "db.schema_hash",
+      "db.migration_hash",
+      "protobuf.generated_hash",
+      "service.name",
+      "test.nodeid",
+      "command.exit_code",
+      "test.failure_family",
+      "github.run_id",
+      "git.dirty"
+    ],
+    "trace_id": "",
+    "trace_url": ""
+  },
+  "kubernetes": {},
+  "missing_evidence": [],
+  "parity_hints": [],
+  "pytest": {
+    "assertion_text": "",
+    "collected_count": 0,
+    "collected_tests": [],
+    "duration_seconds": 0.0,
+    "error_count": 0,
+    "failed_count": 0,
+    "failure_message": "",
+    "first_failing_test_nodeid": "",
+    "passed_count": 0,
+    "skipped_count": 0,
+    "source_file": "",
+    "source_line": null,
+    "source_url": "",
+    "test.file": "",
+    "test.line": null,
+    "test.nodeid": ""
+  },
+  "run": {
+    "environment": "local",
+    "github_job": "",
+    "github_ref": "",
+    "github_run_attempt": "",
+    "github_run_id": "",
+    "github_sha": "9e14916a304c97d0a7b1954a9615b61265fe3f50",
+    "github_workflow": "",
+    "observability.run_id": "local-20260627T155717Z-9e14916a-6547df",
+    "repo_root": "C:\\Users\\Astral\\Desktop\\eve-trade",
+    "run_dir": "C:\\Users\\Astral\\Desktop\\eve-trade\\.o11y\\runs\\local-20260627T155717Z-9e14916a-6547df",
+    "run_id": "local-20260627T155717Z-9e14916a-6547df",
+    "started_at": "2026-06-27T15:57:17.621989+00:00"
+  },
+  "sentry": {
+    "event_id": "",
+    "event_url": ""
+  },
+  "source_links": []
+}

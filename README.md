@@ -1,86 +1,50 @@
 # eve-trade
 
-`eve-trade` is a distributed backend/platform slice for an EVE-like trade flow. The current production boundary is a game GUI packet path, not a public command RPC path:
+`eve-trade` is a backend/platform slice for an EVE-like trade flow.
 
-`game frontend -> Quilkin UDP -> API gateway UDP edge -> Market GUI interaction -> settlement operations -> trade-settlement`
+Canonical path:
 
-The checked-in Django simulator is a local game-frontend simulator. Its UDP payload conforms to the versioned repository protocol schema and cross-language golden packet, and does not identify itself as Django, browser, test, simulator, or framework traffic. This establishes protocol conformance, not identity with an external unreleased game client.
+`game frontend -> Quilkin UDP -> Encore gateway -> Market -> Encore Pub/Sub settlement work -> settlement worker -> Rust trade-settlement`
+
+The Go backend is one Encore application rooted at this repository root. Encore owns Go service APIs and Go-to-Go calls. The UDP edge remains a thin custom adapter because the game-facing Quilkin protocol is UDP, not HTTP. The Rust `trade-settlement` service remains a separate gRPC/protobuf service and owns settlement database transactions.
 
 ## Run Locally
 
-Prerequisite: install Docker Desktop and make sure it is allowed to run Linux containers.
+Prerequisites:
 
-One command from the repository root:
+* Encore CLI
+* Go 1.26
+* PostgreSQL with the settlement schema applied
+* Rust `trade-settlement` running on `127.0.0.1:9092` when settlement execution is required
 
-```bash
-docker compose up --build
+Start the Go backend:
+
+```powershell
+./scripts/run-local.ps1
 ```
 
-The local stack starts:
+This runs `encore run`, starts Encore HTTP on `http://localhost:4000`, and starts the retained UDP gateway adapter on `localhost:26000`.
 
-* Django game-frontend simulator: `http://localhost:8000`
-* Quilkin UDP: `localhost:26001`
-* API Gateway: `http://localhost:8080`
-* RabbitMQ AMQP: `localhost:5672`
-* RabbitMQ management UI: `http://localhost:15672` (`eve_trade` / `eve_trade`)
-* PostgreSQL: `localhost:5432`
+Local Encore Pub/Sub is used by `encore run`. Self-hosted Kubernetes builds use `infra/encore/self-host.nsq.json` and an NSQ workload.
 
-The startup migration applies the single canonical settlement schema file and
-seeds a small local world. The main sample actors are seller capsuleer `1001`,
-buyer capsuleer `2002`, seller Tritanium stack
-`11111111-1111-4111-8111-111111111111`, buyer wallet
-`00000000-0000-4000-8000-000000002002`, item type `34`, and station
-`60003760`. To reset everything, run `docker compose down -v` before starting
-the stack again.
+## Runtime Responsibilities
 
-## Goal
+The gateway package owns UDP-only concerns: packet size limits, empty-packet rejection, bounded queue/workers, HMAC integrity, replay protection, principal-bound rate limiting, downstream timeouts, compact UDP responses, and telemetry.
 
-The goal of `eve-trade` is to incrementally grow into a production-ready MMORPG trade system inspired by EVE Online-style market and trade mechanics.
+Market owns game-trade interpretation. It maps GUI issue, accept, and cancel actions into explicit settlement work and publishes typed work to Encore Pub/Sub. Market does not write settlement database state directly.
 
-The project focuses on the backend and platform engineering problems behind player trading: service boundaries, settlement reliability, database-backed ownership transfer, message-driven workflows, observability, chaos testing, CI/CD automation, Kubernetes orchestration, and cloud deployment infrastructure.
+The settlement worker owns asynchronous settlement execution. Its Encore subscription consumes at-least-once settlement work, converts the typed work to the Rust protobuf request, calls `trade-settlement` over standard gRPC, and publishes typed settlement results.
 
-## Current Status
+`trade-settlement` owns correctness-critical persistence: atomic settlement transactions, idempotency records, item ownership transfer, wallet transfer, escrow release, and settlement state.
 
-`eve-trade` is currently capable of performing a trade lifecycle starting from a game GUI interaction packet sent over UDP through Quilkin.
+## Platform
 
-The API Gateway is a UDP edge and UDP-to-gRPC forwarder only. It enforces transport-level safety such as packet size, empty-packet rejection, bounded worker/queue limits, authenticated-principal rate limits, principal-bound HMAC integrity, replay protection, signed responses, downstream timeouts, compact UDP responses, and structured telemetry. It forwards the exact raw game GUI payload to Market using `MarketService.SubmitTradeGuiInteraction` and does not send gateway-only source metadata as part of the Market business request.
+Kubernetes deploys:
 
-The Market service owns game trade interpretation. It maps GUI actions and player-provided trade inputs into internal issue, accept, or cancel decisions, then publishes low-level settlement operation batches through RabbitMQ. `settlement-worker` consumes those commands and calls `trade-settlement`.
+* `encore-backend` for all Go Encore services plus the UDP adapter
+* `nsqd` for self-hosted Encore Pub/Sub
+* `trade-settlement` for the Rust settlement service
+* `quilkin` for the external UDP proxy
+* PostgreSQL through the selected platform path
 
-`trade-settlement` is a separate microservice decoupled from market trade logic. Its responsibility is to protect correctness-critical persistence: reliable database transactions, item ownership transfer, ISK wallet transfer, escrow handling, and settlement state management.
-
-## Platform Capabilities
-
-The project uses Kubernetes to orchestrate containers and Kustomize to organize manifests across application deployment, networking, observability, chaos engineering, and production overlays.
-
-The platform side currently includes:
-
-* Kubernetes manifests for service orchestration
-* Kustomize-based manifest organization
-* game frontend/simulator -> Quilkin UDP -> API Gateway UDP edge -> Market GUI interaction -> RabbitMQ -> settlement-worker -> trade-settlement service flow
-* OpenTelemetry-based observability with Honeycomb, Sentry, and Prometheus
-* Litmus for chaos engineering experiments
-* Dagger-based CI/CD pipeline logic written in Python
-* GitLab CI/CD integration for pipeline execution
-* Terraform manifests for provisioning AWS, GCP, or Talos/Omni deployment
-  foundations
-* EKS, GKE, and Omni-managed Talos deployment foundations for running the
-  system on the operator's chosen Kubernetes platform
-
-## Cloud Infrastructure
-
-The project includes Terraform manifests for three production-like deployment
-paths:
-
-* `distributed-backend/terraform/eks` provisions AWS infrastructure including
-  VPC, EKS, ECR repositories, and optional RDS PostgreSQL.
-* `distributed-backend/terraform/gke` provisions GCP infrastructure including
-  VPC networking, GKE, Artifact Registry, and optional Cloud SQL PostgreSQL.
-* `distributed-backend/terraform/talos-omni` prepares an Omni-managed Talos
-  Kubernetes cluster with Eve Trade runtime prerequisites, provider-neutral
-  image references, and either an external PostgreSQL secret or an optional
-  non-production in-cluster PostgreSQL StatefulSet.
-
-All three paths deploy the same Kubernetes application manifests. The person running
-`eve-trade` chooses the platform by selecting the Terraform root and by setting
-the CI/CD `EVE_TRADE_CLOUD_PROVIDER` value to `aws`, `gcp`, or `talos-omni`.
+Terraform supports EKS, GKE, and Talos/Omni. CI installs a pinned Encore CLI, validates the Encore app, runs Go and Rust checks, builds the Encore image with `encore build docker`, renders Kubernetes, validates Terraform roots, and runs the remaining Python and observed integration checks.

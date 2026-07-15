@@ -2,7 +2,7 @@ locals {
   app_namespace = "eve-trade"
   database_port = 5432
 
-  database_url = var.database_enabled ? "postgres://${var.database_username}:${random_password.database[0].result}@${google_sql_database_instance.trade_settlement[0].private_ip_address}:${local.database_port}/${var.database_name}" : var.external_database_url
+  database_url = var.database_enabled ? "postgres://${var.database_username}:${random_password.database[0].result}@${google_sql_database_instance.trade_settlement[0].private_ip_address}:${local.database_port}/${var.database_name}?sslmode=require" : var.external_database_url
 }
 
 resource "random_password" "database" {
@@ -37,6 +37,7 @@ resource "google_sql_database_instance" "trade_settlement" {
     ip_configuration {
       ipv4_enabled    = false
       private_network = module.network.network_id
+      ssl_mode        = "ENCRYPTED_ONLY"
     }
   }
 
@@ -102,4 +103,25 @@ resource "kubernetes_secret_v1" "trade_settlement_database" {
     google_sql_database.trade_settlement,
     google_sql_user.trade_settlement,
   ]
+}
+
+resource "kubernetes_secret_v1" "market_database" {
+  count = nonsensitive(var.market_database_url) != "" ? 1 : 0
+
+  metadata {
+    name      = "market-database"
+    namespace = kubernetes_namespace_v1.app.metadata[0].name
+
+    labels = {
+      "app.kubernetes.io/name"       = "market"
+      "app.kubernetes.io/component"  = "database-readonly"
+      "app.kubernetes.io/managed-by" = "terraform"
+    }
+  }
+
+  data = {
+    MARKET_DATABASE_URL = var.market_database_url
+  }
+
+  type = "Opaque"
 }

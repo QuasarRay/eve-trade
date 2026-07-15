@@ -1,0 +1,27 @@
+trade-settlement-1  | 2026-06-28T03:35:58.982041940Z [2m2026-06-28T03:35:58.981850Z[0m [32m INFO[0m [2msummer::config::toml[0m[2m:[0m The profile of the Prod environment is active
+trade-settlement-1  | 2026-06-28T03:35:58.985983894Z [2m2026-06-28T03:35:58.985806Z[0m [32m INFO[0m [2mopentelemetry[0m[2m:[0m  [3mname[0m[2m=[0m"MeterProvider.GlobalSet" Global meter provider is set. Meters can now be created using global::meter() or global::meter_with_scope().
+trade-settlement-1  | 2026-06-28T03:35:58.986804185Z 
+trade-settlement-1  | 2026-06-28T03:35:58.986813547Z             ⌡
+trade-settlement-1  | 2026-06-28T03:35:58.986815404Z          __@▓▄                             ___
+trade-settlement-1  | 2026-06-28T03:35:58.986816711Z    ___,p@▒▒░▓▓L                            ▀▀▀ª    ▄▄▄▄▄
+trade-settlement-1  | 2026-06-28T03:35:58.986818213Z   ⌡▒▒▒▓▒▒░▒▓▓▓▓  ▄█████  ████████_  ██████ ███ª █████████,  ▄████████
+trade-settlement-1  | 2026-06-28T03:35:58.986814517Z [2m2026-06-28T03:35:58.986615Z[0m [32m INFO[0m [2mopentelemetry[0m[2m:[0m  [3mname[0m[2m=[0m"TracerProvider.GlobalSet" Global tracer provider is set. Traces can now be created using global::tracer() or global::tracer_with_scope().
+trade-settlement-1  | 2026-06-28T03:35:58.986819936Z _▄▒▓▒▒▓▒▒░▓▓▓▓▓  ▓██▄_   ███~ ~███, ███▀ª~ ███─ ███▓~~▓██N ███▀~~▓██▀
+trade-settlement-1  | 2026-06-28T03:35:58.986826562Z [2m2026-06-28T03:35:58.986639Z[0m [32m INFO[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"LoggerNameEmpty" Logger name is empty; consider providing a meaningful name. Logger will function normally and the provided name will be used as-is.
+trade-settlement-1  | 2026-06-28T03:35:58.986827877Z ▄▓▒▓▒▒▓▒▓▓▓▓▓▓█   ~▀███  ███_ _███'▐███    ███  ███ª  ▓██N ███▄ _███G
+trade-settlement-1  | 2026-06-28T03:35:58.986830660Z ▓▓▒▓▒▒▓▓▓▓▓▓▓▀  ▀█████▀  ███▀████ª ▐███    ███  ███   ▓██N ~▀███▀███ª
+trade-settlement-1  | 2026-06-28T03:35:58.986833358Z ▓▓▓▓▓▓▓▓▓▓▀ª`            ███                                ▄▄▄▄▄███
+trade-settlement-1  | 2026-06-28T03:35:58.986835865Z  ▓▀▀▀ⁿª^                 ▀▀▀                                ▀▀▀▀▀▀▀~
+trade-settlement-1  | 2026-06-28T03:35:58.986838218Z 
+trade-settlement-1  | 2026-06-28T03:35:58.986840088Z      summer: [32m0.7.1[0m
+trade-settlement-1  | 2026-06-28T03:35:58.986842428Z environment: [32mProd[0m
+trade-settlement-1  | 2026-06-28T03:35:58.986844580Z compilation: [32mRelease[0m
+trade-settlement-1  | 2026-06-28T03:35:58.986849842Z      logger: [32mINFO [0m
+trade-settlement-1  | 2026-06-28T03:35:58.986851948Z 
+trade-settlement-1  | 2026-06-28T03:35:58.989976280Z [2m2026-06-28T03:35:58[0m [32m INFO[0m [2msummer::app[0m[2m:[0m summer_grpc::GrpcPlugin plugin registered
+trade-settlement-1  | 2026-06-28T03:35:58.997496353Z [2m2026-06-28T03:35:58[0m [32m INFO[0m [2msummer_sqlx[0m[2m:[0m sqlx connection success
+trade-settlement-1  | 2026-06-28T03:35:58.997539600Z [2m2026-06-28T03:35:58[0m [32m INFO[0m [2msummer::app[0m[2m:[0m summer_sqlx::SqlxPlugin plugin registered
+trade-settlement-1  | 2026-06-28T03:35:58.997765183Z [2m2026-06-28T03:35:58[0m [32m INFO[0m [2msummer_grpc[0m[2m:[0m tonic grpc service bind tcp listener: 0.0.0.0:9092
+trade-settlement-1  | 2026-06-28T03:36:03.988562968Z [2m2026-06-28T03:36:03[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchLogProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/logs\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: No address associated with hostname\" })) }"
+trade-settlement-1  | 2026-06-28T03:36:12.938198997Z [2m2026-06-28T03:36:12[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: Name or service not known\" })) }"
+trade-settlement-1  | 2026-06-28T03:36:47.985404154Z [2m2026-06-28T03:36:47[0m [31mERROR[0m [2mopentelemetry_sdk[0m[2m:[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://otel-collector:4318/v1/traces\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"dns error\", Custom { kind: Uncategorized, error: \"failed to lookup address information: No address associated with hostname\" })) }"

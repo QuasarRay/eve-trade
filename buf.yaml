@@ -1,13 +1,18 @@
 version: v2
 
 modules:
-  - path: distributed-backend/proto
+  - path: proto
+
+deps:
+  - buf.build/bufbuild/protovalidate
 
 lint:
   use:
     - STANDARD
   except:
     - RPC_REQUEST_RESPONSE_UNIQUE
+  ignore:
+    - proto/buf/validate/validate.proto
 
 breaking:
   use:

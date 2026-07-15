@@ -17,11 +17,11 @@ spec:
 apiVersion: telemetry.istio.io/v1
 kind: Telemetry
 metadata:
-  name: settlement-worker-high-value
+  name: encore-backend-high-value
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: settlement-worker
+      app.kubernetes.io/name: encore-backend
   accessLogging:
     - providers:
         - name: envoy

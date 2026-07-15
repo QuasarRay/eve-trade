@@ -1,0 +1,19 @@
+{
+  "name": "e2e_never_ran",
+  "requested_command": "integration",
+  "command": {
+    "name": "setup-services",
+    "stage": "setup",
+    "argv": ["setup-services"],
+    "exit_code": 1,
+    "metadata_path": "commands/setup/setup-services/command.json",
+    "log_path": "commands/setup/setup-services/command.log"
+  },
+  "stderr": "setup failed before pytest-e2e was scheduled",
+  "expected": {
+    "test_category": "E2E_TEST",
+    "test_status": "BLOCKED",
+    "product_status": "UNRESOLVED",
+    "forbidden_test_statuses": ["FAILED", "PASSED"]
+  }
+}

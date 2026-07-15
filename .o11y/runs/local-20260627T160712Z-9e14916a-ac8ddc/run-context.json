@@ -1,0 +1,14 @@
+{
+  "environment": "local",
+  "github_job": "",
+  "github_ref": "",
+  "github_run_attempt": "",
+  "github_run_id": "",
+  "github_sha": "9e14916a304c97d0a7b1954a9615b61265fe3f50",
+  "github_workflow": "",
+  "observability.run_id": "local-20260627T160712Z-9e14916a-ac8ddc",
+  "repo_root": "C:\\Users\\Astral\\Desktop\\eve-trade",
+  "run_dir": "C:\\Users\\Astral\\Desktop\\eve-trade\\.o11y\\runs\\local-20260627T160712Z-9e14916a-ac8ddc",
+  "run_id": "local-20260627T160712Z-9e14916a-ac8ddc",
+  "started_at": "2026-06-27T16:07:12.707044+00:00"
+}

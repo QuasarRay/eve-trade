@@ -1,0 +1,26 @@
+{
+  "name": "application_assertion",
+  "requested_command": "e2e",
+  "command": {
+    "name": "pytest-e2e-host",
+    "stage": "e2e",
+    "argv": ["python", "-m", "pytest", "distributed-backend/tests/e2e"],
+    "exit_code": 1,
+    "metadata_path": "commands/e2e/pytest-e2e-host/command.json",
+    "log_path": "commands/e2e/pytest-e2e-host/command.log"
+  },
+  "stdout": "FAILED distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_rejects_zero_quantity - AssertionError: expected rejection got acceptance",
+  "pytest": {
+    "first_failing_test_nodeid": "distributed-backend/tests/e2e/test_trade_lifecycle.py::test_accepting_trade_rejects_zero_quantity",
+    "failure_message": "AssertionError: expected rejection got acceptance",
+    "assertion_text": "E assert 'accepted' == 'rejected'",
+    "failed_count": 1,
+    "collected_count": 1
+  },
+  "expected": {
+    "stage": "E2E_TEST",
+    "mechanism": "APPLICATION_TEST_FAILURE",
+    "product_status": "FAILED",
+    "forbidden": ["infrastructure failure"]
+  }
+}

@@ -1,0 +1,25 @@
+command: git diff --check
+cwd: C:\Users\Astral\Desktop\eve-trade
+exit_code: 0
+duration_ms: 59.585
+
+--- stdout ---
+
+--- stderr ---
+warning: in the working copy of '.dockerignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.github/workflows/verify.yaml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ci-cd/pipeline.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'compose.yaml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'distributed-backend/orchestration/kubernetes/base/configmaps.yaml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'distributed-backend/orchestration/kubernetes/base/observability/otel-collector.yaml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'distributed-backend/src/api-gateway/distributed-backend/quilkin_udp.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'distributed-backend/src/market/distributed-backend/handler.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'distributed-backend/src/observability/observability.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'distributed-backend/src/observability/slog.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'distributed-backend/src/trade-settlement/src/executor.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'distributed-backend/src/trade-settlement/src/observability.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'distributed-backend/src/trade-settlement/src/service.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docker-compose.integration.yml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'simulator/trade_gui/templates/trade_gui/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'simulator/trade_gui/tests.py', LF will be replaced by CRLF the next time Git touches it

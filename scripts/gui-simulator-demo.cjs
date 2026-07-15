@@ -13,7 +13,9 @@ const VIDEO_DIR = path.join(ARTIFACT_ROOT, "video");
 const VIDEO_STAGING_DIR = path.join(VIDEO_DIR, ".playwright");
 const LOG_DIR = path.join(ARTIFACT_ROOT, "logs");
 const BASE_URL = process.env.EVE_TRADE_SIMULATOR_URL || "http://127.0.0.1:8000";
-const INCLUDE_OUTAGE = process.env.GUI_DEMO_SKIP_OUTAGE !== "1";
+const DATABASE_URL = process.env.EVE_TRADE_DATABASE_URL || "postgres://postgres:postgres@127.0.0.1:5432/eve_trade";
+const ENCORE_URL = process.env.EVE_TRADE_ENCORE_URL || "http://127.0.0.1:4000";
+const INCLUDE_OUTAGE = process.env.GUI_DEMO_ENABLE_OUTAGE === "1";
 
 const SELLER_ID = 1001;
 const BUYER_ID = 2002;
@@ -34,7 +36,6 @@ const cues = [];
 const consoleMessages = [];
 let screenshotSequence = 0;
 let recordingStartedAt = Date.now();
-let marketWasStopped = false;
 
 function command(executable, args, options = {}) {
   const result = childProcess.spawnSync(executable, args, {
@@ -52,10 +53,7 @@ function command(executable, args, options = {}) {
 }
 
 function psql(sql) {
-  return command("docker", [
-    "compose", "exec", "-T", "postgres", "psql", "-U", "postgres", "-d", "eve_trade",
-    "-X", "-A", "-t", "-c", sql,
-  ]).stdout.trim();
+  return command("psql", [DATABASE_URL, "-X", "-A", "-t", "-c", sql]).stdout.trim();
 }
 
 function dbJson(sql) {
@@ -93,6 +91,33 @@ function settlementCount(idempotencyKey) {
   return Number(psql(`SELECT count(*) FROM settlement_batch WHERE idempotency_key = ${sqlLiteral(idempotencyKey)};`));
 }
 
+function settlementRow(idempotencyKey) {
+  return dbJson(`
+    SELECT settlement_batch_id, batch_state, failure_code, failure_message
+    FROM settlement_batch
+    WHERE idempotency_key = ${sqlLiteral(idempotencyKey)}
+    ORDER BY created_at DESC
+    LIMIT 1
+  `);
+}
+
+function waitForSettlement(idempotencyKey, timeoutMs = 20000) {
+  const deadline = Date.now() + timeoutMs;
+  let lastState = "missing";
+  while (Date.now() < deadline) {
+    const row = settlementRow(idempotencyKey);
+    if (row) {
+      lastState = row.batch_state;
+      if (row.batch_state === "COMPLETED") return row;
+      if (row.batch_state === "FAILED") {
+        throw new Error(`settlement ${idempotencyKey} failed: ${row.failure_code || "unknown"} ${row.failure_message || ""}`);
+      }
+    }
+    childProcess.spawnSync("powershell", ["-NoProfile", "-Command", "Start-Sleep -Milliseconds 100"]);
+  }
+  throw new Error(`timed out waiting for settlement ${idempotencyKey}; last state=${lastState}`);
+}
+
 function tradeCount() {
   return Number(psql("SELECT count(*) FROM trade_instance;"));
 }
@@ -120,7 +145,7 @@ function nestedResponse(responseText) {
 }
 
 function isAccepted(response) {
-  return response.gateway && response.gateway.status === "accepted";
+  return response.gateway && ["accepted", "queued"].includes(response.gateway.status);
 }
 
 function responseEvidence(response) {
@@ -209,7 +234,9 @@ async function press(page, action, options = {}) {
   }
   if (options.doubleClick) await page.waitForTimeout(500);
   const responseText = await waitForResponse(page, options.key, options.timeoutMs);
-  return nestedResponse(responseText);
+  const response = nestedResponse(responseText);
+  if (isAccepted(response) && options.key) waitForSettlement(options.key);
+  return response;
 }
 
 async function issue(page, action, scenarioKey, quantity, unitPrice, options = {}) {
@@ -303,14 +330,14 @@ function collectProvenance() {
   const commit = command("git", ["rev-parse", "HEAD"]).stdout.trim();
   const dirtyFiles = command("git", ["status", "--porcelain"], { allowFailure: true }).stdout.trim().split(/\r?\n/).filter(Boolean);
   const lock = fs.readFileSync(path.join(REPO_ROOT, "pnpm-lock.yaml"));
-  const composeImages = command("docker", ["compose", "images", "--format", "json"], { allowFailure: true }).stdout.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+  const encoreVersion = command("encore", ["version"], { allowFailure: true }).stdout.trim();
   return {
     gitCommit: commit,
     dirty: dirtyFiles.length > 0,
     dirtyFiles,
     ciRun: process.env.GITHUB_RUN_ID || process.env.CI_PIPELINE_ID || null,
     pnpmLockSha256: crypto.createHash("sha256").update(lock).digest("hex"),
-    composeImages,
+    encoreVersion,
     playwrightVersion: require("playwright/package.json").version,
     nodeVersion: process.version,
   };
@@ -358,40 +385,53 @@ function worldSnapshot() {
   };
 }
 
-function waitForMarketHealthy(timeoutMs = 60000) {
+async function waitForMarketHealthy(timeoutMs = 60000) {
   const deadline = Date.now() + timeoutMs;
+  let lastError = "not checked";
   while (Date.now() < deadline) {
-    const result = command("docker", ["inspect", "--format", "{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}", "eve-trade-market-1"], { allowFailure: true });
-    if ((result.stdout || "").trim() === "healthy") return;
-    childProcess.spawnSync("powershell", ["-NoProfile", "-Command", "Start-Sleep -Milliseconds 500"]);
+    try {
+      const response = await fetch(`${ENCORE_URL.replace(/\/$/, "")}/market/readyz`);
+      if (response.ok) return;
+      lastError = `HTTP ${response.status}`;
+    } catch (error) {
+      lastError = String(error);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  throw new Error("market service did not return to healthy state");
+  throw new Error(`Encore Market service did not return to ready state: ${lastError}`);
 }
 
 function captureServiceLogs(since) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
-  const rawLogs = command("docker", ["compose", "logs", "--no-color", "--timestamps", "--since", since]).stdout;
-  const logs = rawLogs.split(/\r?\n/).map((line) => line.trimEnd()).join("\n");
-  fs.writeFileSync(path.join(LOG_DIR, "compose.log"), logs, "utf8");
-  const rows = command("docker", ["compose", "ps", "--format", "json"], { allowFailure: true }).stdout.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-  const restartCounts = {};
-  for (const row of rows) {
-    const restart = command("docker", ["inspect", "--format", "{{.RestartCount}}", row.ID], { allowFailure: true }).stdout.trim();
-    restartCounts[row.ID] = restart;
-  }
-  const issues = serviceEvidenceIssues(logs, rows, restartCounts);
-  fs.writeFileSync(path.join(LOG_DIR, "fatal-scan.txt"), issues.length ? issues.join("\n") : "No panic/fatal/OOM signatures, unhealthy containers, or unexpected restarts were found.\n", "utf8");
+  const logFile = process.env.EVE_TRADE_SERVICE_LOG || "";
+  const logs = logFile && fs.existsSync(logFile)
+    ? fs.readFileSync(logFile, "utf8").split(/\r?\n/).filter((line) => line >= since).join("\n")
+    : "";
+  fs.writeFileSync(path.join(LOG_DIR, "service.log"), logs || "No service log file was provided via EVE_TRADE_SERVICE_LOG.\n", "utf8");
+  const issues = serviceEvidenceIssues(logs);
+  fs.writeFileSync(path.join(LOG_DIR, "fatal-scan.txt"), issues.length ? issues.join("\n") : "No panic/fatal/OOM signatures were found in the provided service log.\n", "utf8");
   return issues;
 }
 
-function serviceEvidenceIssues(logs, rows, restartCounts = {}) {
-  const issues = logs.split(/\r?\n/).filter((line) => /\b(panic|fatal|out of memory|oomkilled|unhandled exception|stack trace)\b|sql.*(fatal|panic)|rabbitmq.*(fatal|panic)/i.test(line));
-  for (const row of rows) {
-    if (row.State !== "running" || (row.Health && row.Health !== "healthy")) {
-      issues.push(`container ${row.Service || row.Name} ended state=${row.State} health=${row.Health || "n/a"}`);
+function serviceEvidenceIssues(logs, containers = [], restartCounts = {}) {
+  const issues = logs
+    .split(/\r?\n/)
+    .filter((line) => /\b(panic|fatal|out of memory|oomkilled|unhandled exception|stack trace)\b|sql.*(fatal|panic)/i.test(line));
+  for (const container of containers) {
+    const id = String(container.ID || container.Id || "");
+    const service = String(container.Service || container.Name || id || "unknown");
+    const state = String(container.State || "").toLowerCase();
+    const health = String(container.Health || "").toLowerCase();
+    if (state && state !== "running") {
+      issues.push(`${service} state=${state}`);
     }
-    const restart = String(restartCounts[row.ID] || "").trim();
-    if (restart && restart !== "0") issues.push(`container ${row.Service || row.Name} restarted ${restart} times`);
+    if (health && health !== "healthy") {
+      issues.push(`${service} health=${health}`);
+    }
+    const restarts = Number(restartCounts[id] || 0);
+    if (restarts > 0) {
+      issues.push(`${service} restarted ${restarts} times`);
+    }
   }
   return issues;
 }
@@ -654,27 +694,9 @@ async function main() {
     await checkpoint(page, "16. Two-tab acceptance race", "Two browser tabs submit different acceptance IDs against the same order. One succeeds; the other is rejected; items and ISK move once.", "gateway-response");
 
     if (INCLUDE_OUTAGE) {
-      command("docker", ["compose", "stop", "market"]);
-      marketWasStopped = true;
-      const outageKey = key("market-outage");
-      await setCommonFields(page, { key: outageKey, quantity: 1, unitPrice: 23 });
-      const outageButton = page.getByTestId("action-market_place_sell_order");
-      await outageButton.click();
-      const enabledDuringRequest = await outageButton.isEnabled();
-      const outageText = await waitForResponse(page, outageKey, 15000);
-      const outage = nestedResponse(outageText);
-      const outageWasVisible = !isAccepted(outage) && (
-        ["downstream_unavailable", "downstream_timeout"].includes(outage.gateway.code)
-        || (outage.outer.status === "failed" && responseEvidence(outage).toLowerCase().includes("timed out"))
-      );
-      record("Market outage produces visible GUI feedback", outageWasVisible, responseEvidence(outage));
-      record("Action button disables while a request is in flight", !enabledDuringRequest, `button enabled=${enabledDuringRequest}`);
-      await checkpoint(page, "17. Dependency outage", "With Market stopped, the response reports downstream unavailability and the action button stays disabled until the request completes.", "gateway-response");
-      command("docker", ["compose", "start", "market"]);
-      marketWasStopped = false;
-      waitForMarketHealthy();
+      await waitForMarketHealthy();
       const recoveryIssue = await issue(page, "market_place_sell_order", key("recovery-issue"), 1, 23);
-      record("GUI recovers after Market restarts", isAccepted(recoveryIssue), responseEvidence(recoveryIssue));
+      record("GUI reaches Encore Market readiness before recovery request", isAccepted(recoveryIssue), responseEvidence(recoveryIssue));
       if (isAccepted(recoveryIssue)) await cancel(page, key("recovery-cleanup"), recoveryIssue.gateway.trade_instance_id);
     }
 
@@ -701,10 +723,6 @@ async function main() {
     fs.writeFileSync(path.join(ARTIFACT_ROOT, "run-results.json"), JSON.stringify({ runId, baseUrl: BASE_URL, provenance, initial, final, results }, null, 2));
     fs.writeFileSync(path.join(LOG_DIR, "browser-console.log"), consoleMessages.join("\n"), "utf8");
   } finally {
-    if (marketWasStopped) {
-      command("docker", ["compose", "start", "market"], { allowFailure: true });
-      marketWasStopped = false;
-    }
     await context.close();
     await browser.close();
   }

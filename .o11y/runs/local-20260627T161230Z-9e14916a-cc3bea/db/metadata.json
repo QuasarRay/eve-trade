@@ -1,0 +1,25 @@
+{
+  "available": true,
+  "database": "eve_trade",
+  "db.schema_hash": "0acd0bf6dc347097510a2de730d5ab93f60d16556ca80c4eb903dc1e328ff17d",
+  "errors": [],
+  "service": "postgres",
+  "tables": [
+    "capsuleer",
+    "idempotency_record",
+    "item_stack",
+    "item_stack_escrow",
+    "item_stack_ledger",
+    "item_type",
+    "region",
+    "request_attempt",
+    "settlement_batch",
+    "settlement_step",
+    "station",
+    "trade_instance",
+    "trade_state_change",
+    "wallet",
+    "wallet_escrow",
+    "wallet_ledger"
+  ]
+}

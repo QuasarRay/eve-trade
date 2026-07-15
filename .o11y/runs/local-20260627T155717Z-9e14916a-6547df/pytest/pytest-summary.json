@@ -1,0 +1,17 @@
+{
+  "assertion_text": "",
+  "collected_count": 0,
+  "duration_seconds": 0.0,
+  "error_count": 0,
+  "failed_count": 0,
+  "failure_message": "",
+  "first_failing_test_nodeid": "",
+  "passed_count": 0,
+  "skipped_count": 0,
+  "source_file": "",
+  "source_line": null,
+  "source_url": "",
+  "test.file": "",
+  "test.line": null,
+  "test.nodeid": ""
+}

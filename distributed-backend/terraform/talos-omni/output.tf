@@ -18,6 +18,11 @@ output "database_secret_name" {
   value       = local.create_database_secret ? "trade-settlement-database" : null
 }
 
+output "market_database_secret_name" {
+  description = "Kubernetes Secret containing MARKET_DATABASE_URL for Market read-only access when Terraform creates it."
+  value       = nonsensitive(var.market_database_url) != "" ? "market-database" : null
+}
+
 output "database_mode" {
   description = "Database preparation mode selected for the Talos/Omni deployment."
   value       = var.database_mode

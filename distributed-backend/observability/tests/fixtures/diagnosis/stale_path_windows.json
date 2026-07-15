@@ -1,0 +1,20 @@
+{
+  "name": "stale_path_windows",
+  "requested_command": "integration",
+  "command": {
+    "name": "observed-run",
+    "stage": "setup",
+    "argv": ["python", "observability\\ci\\observed_run.py", "integration"],
+    "exit_code": 2,
+    "metadata_path": "commands/setup/observed-run/command.json",
+    "log_path": "commands/setup/observed-run/command.log"
+  },
+  "stderr": "python: can't open file 'C:\\repo\\observability\\ci\\observed_run.py': [Errno 2] No such file or directory; current path is distributed-backend\\observability\\ci\\observed_run.py",
+  "expected": {
+    "stage": "CI_HARNESS",
+    "mechanism": "STALE_PATH",
+    "product_status": "NOT_TESTED",
+    "harness_status": "BROKEN",
+    "forbidden": ["Python application bug", "E2E product regression", "Docker networking"]
+  }
+}

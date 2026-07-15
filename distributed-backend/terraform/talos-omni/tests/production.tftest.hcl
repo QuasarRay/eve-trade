@@ -5,6 +5,7 @@ run "production_plan" {
     environment_name      = "eve-trade-ci"
     database_mode         = "external"
     external_database_url = "postgres://runtime:placeholder@database.invalid:5432/eve_trade"
+    market_database_url   = "postgres://market_readonly:placeholder@database.invalid:5432/eve_trade"
   }
 
   assert {
@@ -24,5 +25,14 @@ run "production_plan" {
       strcontains(kubectl_manifest.trade_settlement_database[0].yaml_body, nonsensitive(var.external_database_url))
     )
     error_message = "the Talos/Omni plan must deliver the explicit external runtime database URL through the expected secret"
+  }
+
+  assert {
+    condition = (
+      length(kubectl_manifest.market_database) == 1 &&
+      strcontains(kubectl_manifest.market_database[0].yaml_body, "market-database") &&
+      strcontains(kubectl_manifest.market_database[0].yaml_body, nonsensitive(var.market_database_url))
+    )
+    error_message = "the Talos/Omni plan must deliver a distinct Market read-only database URL through the expected secret"
   }
 }

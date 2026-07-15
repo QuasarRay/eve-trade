@@ -91,7 +91,6 @@ mock_provider "aws" {
 mock_provider "kubernetes" {}
 mock_provider "kubernetes" { alias = "cluster" }
 mock_provider "helm" {}
-mock_provider "kubectl" {}
 mock_provider "null" {}
 mock_provider "random" {}
 mock_provider "time" {}
@@ -104,6 +103,8 @@ run "production_plan" {
     database_multi_az                = true
     database_backup_retention_period = 7
     database_deletion_protection     = true
+    node_egress_ipv4_cidrs           = ["10.0.0.10/32"]
+    market_database_url              = "postgres://market_readonly:placeholder@database.invalid:5432/eve_trade"
   }
 
   assert {
@@ -137,5 +138,18 @@ run "production_plan" {
   assert {
     condition     = kubernetes_secret_v1.trade_settlement_database[0].metadata[0].name == "trade-settlement-database"
     error_message = "the EKS plan must wire the runtime database secret expected by application workloads"
+  }
+
+  assert {
+    condition     = alltrue([for cidr in var.node_egress_ipv4_cidrs : cidr != "0.0.0.0/0"])
+    error_message = "EKS nodes must use explicit approved HTTPS egress endpoints"
+  }
+
+  assert {
+    condition = (
+      kubernetes_secret_v1.market_database[0].metadata[0].name == "market-database" &&
+      kubernetes_secret_v1.market_database[0].data.MARKET_DATABASE_URL == var.market_database_url
+    )
+    error_message = "the EKS plan must wire a distinct Market read-only database secret"
   }
 }

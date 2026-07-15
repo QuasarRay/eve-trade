@@ -1,5 +1,7 @@
 terraform {
-  required_version = ">= 1.6.0"
+  # Terraform test was introduced in 1.6; use the same minimum as the mocked
+  # cloud roots to keep one supported verification baseline.
+  required_version = ">= 1.7.0"
 
   required_providers {
     kubectl = {

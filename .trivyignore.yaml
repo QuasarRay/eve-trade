@@ -1,0 +1,11 @@
+misconfigurations:
+  - id: GCP-0015
+    paths:
+      - distributed-backend/terraform/gke/runtime.tf
+    expired_at: 2027-01-01
+    statement: Cloud SQL enforces ssl_mode ENCRYPTED_ONLY and generated clients require sslmode=require; this check only recognizes deprecated require_ssl.
+  - id: AVD-DS-0002
+    paths:
+      - vendor/go.opentelemetry.io/otel/dependencies.Dockerfile
+    expired_at: 2027-01-01
+    statement: This vendored OpenTelemetry Renovate metadata lists source images only and is never built or deployed.

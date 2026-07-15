@@ -1,0 +1,89 @@
+syntax = "proto2";
+
+package eve.validation.v1;
+
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/QuasarRay/eve-trade/proto/gen/eve/validation/v1;validationv1";
+
+extend buf.validate.StringRules {
+  optional bool non_blank_string = 50000 [(buf.validate.predefined).cel = {
+    id: "eve.string.non_blank"
+    message: "value must not be blank"
+    expression: "this.matches('.*\\\\S.*')"
+  }];
+
+  optional bool uuid_string = 50001 [(buf.validate.predefined).cel = {
+    id: "eve.string.uuid"
+    message: "value must be a valid UUID"
+    expression: "this.matches('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')"
+  }];
+
+  optional bool optional_uuid_string = 50002 [(buf.validate.predefined).cel = {
+    id: "eve.string.optional_uuid"
+    message: "value must be empty or a valid UUID"
+    expression: "this == '' || this.matches('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')"
+  }];
+
+  optional bool trade_kind_sell = 50003 [(buf.validate.predefined).cel = {
+    id: "eve.string.trade_kind_sell"
+    message: "trade_kind must be SELL"
+    expression: "this == 'SELL'"
+  }];
+
+  optional bool trade_state_open = 50004 [(buf.validate.predefined).cel = {
+    id: "eve.string.trade_state_open"
+    message: "trade_state must be OPEN"
+    expression: "this == 'OPEN'"
+  }];
+
+  optional bool trade_state = 50005 [(buf.validate.predefined).cel = {
+    id: "eve.string.trade_state"
+    message: "trade_state must be OPEN, CANCELLED, or COMPLETED"
+    expression: "this in ['OPEN', 'CANCELLED', 'COMPLETED']"
+  }];
+
+  optional bool trade_state_change_kind = 50006 [(buf.validate.predefined).cel = {
+    id: "eve.string.trade_state_change_kind"
+    message: "trade_state_change_kind must be CANCELLED_BY_ISSUER or ACCEPTED_BY_BUYER"
+    expression: "this in ['CANCELLED_BY_ISSUER', 'ACCEPTED_BY_BUYER']"
+  }];
+
+  optional bool trade_gui_schema_version = 50007 [(buf.validate.predefined).cel = {
+    id: "eve.string.trade_gui_schema_version"
+    message: "schema_version must be eve-trade-gui.v1"
+    expression: "this == 'eve-trade-gui.v1'"
+  }];
+
+  optional bool trade_gui_action = 50008 [(buf.validate.predefined).cel = {
+    id: "eve.string.trade_gui_action"
+    message: "unsupported trade GUI action"
+    expression: "this in ['market_place_sell_order', 'contract_create_item_exchange', 'direct_trade_offer', 'market_buy_from_sell_order', 'contract_accept_item_exchange', 'direct_trade_accept', 'market_cancel_order', 'contract_cancel_item_exchange', 'direct_trade_cancel']"
+  }];
+
+  optional bool edge_schema_version = 50009 [(buf.validate.predefined).cel = {
+    id: "eve.string.edge_schema_version"
+    message: "schema_version must be eve-trade-edge.v2"
+    expression: "this == 'eve-trade-edge.v2'"
+  }];
+
+  optional bool edge_response_schema_version = 50010 [(buf.validate.predefined).cel = {
+    id: "eve.string.edge_response_schema_version"
+    message: "schema_version must be eve-trade-edge-response.v2"
+    expression: "this == 'eve-trade-edge-response.v2'"
+  }];
+
+  optional bool hmac_sha256_algorithm = 50011 [(buf.validate.predefined).cel = {
+    id: "eve.string.hmac_sha256_algorithm"
+    message: "algorithm must be hmac-sha256"
+    expression: "this == 'hmac-sha256'"
+  }];
+}
+
+extend buf.validate.Int64Rules {
+  optional bool positive_int64 = 50000 [(buf.validate.predefined).cel = {
+    id: "eve.int64.positive"
+    message: "value must be greater than zero"
+    expression: "this > 0"
+  }];
+}

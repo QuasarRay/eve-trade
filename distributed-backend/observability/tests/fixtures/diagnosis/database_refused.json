@@ -1,0 +1,19 @@
+{
+  "name": "database_refused",
+  "requested_command": "integration",
+  "command": {
+    "name": "db-readiness",
+    "stage": "readiness",
+    "argv": ["db-readiness"],
+    "exit_code": 1,
+    "metadata_path": "commands/readiness/db-readiness/command.json",
+    "log_path": "commands/readiness/db-readiness/command.log"
+  },
+  "stderr": "dial tcp postgres:5432: connect: connection refused while using EVE_TRADE_DATABASE_URL",
+  "expected": {
+    "stage": "DATABASE",
+    "mechanism": "NETWORK_TRANSPORT",
+    "external_system": "postgres:5432",
+    "forbidden": ["docker-networking"]
+  }
+}

@@ -1,0 +1,2 @@
+wallet_escrow_id,trade_instance_id,owner_id,source_wallet_id,isk_amount,is_released,created_settlement_step_id,released_settlement_step_id,created_at,updated_at,released_at
+19e819dc-53ba-41f6-83de-32670a791fe1,ce5254ac-9c25-46ca-bc06-b10e19829299,2002,5d15d780-f1a5-4b8e-8214-864d888bc39e,0,t,c560d7e3-4836-4c3e-a8a0-2793cd9c28fc,524a1c1d-1390-455b-baba-27ff4fe3c063,2026-06-27 16:16:58.489871+00,2026-06-27 16:16:58.489871+00,2026-06-27 16:16:58.489871+00

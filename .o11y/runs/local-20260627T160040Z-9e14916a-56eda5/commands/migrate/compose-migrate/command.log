@@ -1,0 +1,105 @@
+command: docker compose -f C:\Users\Astral\Desktop\eve-trade\docker-compose.integration.yml --profile test up --exit-code-from migrate migrate
+cwd: C:\Users\Astral\Desktop\eve-trade
+exit_code: 0
+duration_ms: 5582.855
+
+--- stdout ---
+Attaching to migrate-1
+migrate-1  |  ?column? 
+migrate-1  | ----------
+migrate-1  |         1
+migrate-1  | (1 row)
+migrate-1  | 
+migrate-1  | DROP SCHEMA
+migrate-1  | CREATE SCHEMA
+migrate-1  | CREATE EXTENSION
+migrate-1  | CREATE FUNCTION
+migrate-1  | CREATE FUNCTION
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | ALTER TABLE
+migrate-1  | ALTER TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | ALTER TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE FUNCTION
+migrate-1  | ALTER TABLE
+migrate-1  | ALTER TABLE
+migrate-1  | ALTER TABLE
+migrate-1  | ALTER TABLE
+migrate-1  | ALTER TABLE
+migrate-1  | ALTER TABLE
+migrate-1  | CREATE FUNCTION
+migrate-1  | CREATE FUNCTION
+migrate-1  | CREATE FUNCTION
+migrate-1  | DROP TRIGGER
+migrate-1  | CREATE TRIGGER
+migrate-1  | DROP TRIGGER
+migrate-1  | CREATE TRIGGER
+migrate-1  | DROP TRIGGER
+migrate-1  | CREATE TRIGGER
+migrate-1  | CREATE TABLE
+migrate-1  | CREATE INDEX
+migrate-1  | CREATE INDEX
+migrate-1  | CREATE INDEX
+migrate-1  | CREATE INDEX
+migrate-1  | CREATE INDEX
+migrate-1  | CREATE INDEX
+migrate-1  | CREATE INDEX
+migrate-1  | CREATE INDEX
+migrate-1  | CREATE INDEX
+migrate-1  | CREATE INDEX
+migrate-1  | CREATE INDEX
+migrate-1  | CREATE INDEX
+migrate-1  | CREATE FUNCTION
+migrate-1  | CREATE FUNCTION
+migrate-1  | DROP TRIGGER
+migrate-1  | CREATE TRIGGER
+migrate-1  | DROP TRIGGER
+migrate-1  | CREATE TRIGGER
+migrate-1  | DROP TRIGGER
+migrate-1  | CREATE TRIGGER
+migrate-1  | DROP TRIGGER
+migrate-1  | CREATE TRIGGER
+migrate-1  | CREATE FUNCTION
+migrate-1  | CREATE FUNCTION
+migrate-1  | DROP TRIGGER
+migrate-1  | CREATE TRIGGER
+migrate-1  | DROP TRIGGER
+migrate-1  | CREATE TRIGGER
+
+[Kmigrate-1 exited with code 0
+
+--- stderr ---
+ Container eve-trade-integration-postgres-1 Running 
+ Container eve-trade-integration-migrate-1 Creating 
+ Container eve-trade-integration-migrate-1 Created 
+ Container eve-trade-integration-postgres-1 Waiting 
+ Container eve-trade-integration-postgres-1 Healthy 
+ Container eve-trade-integration-migrate-1 Starting 
+ Container eve-trade-integration-migrate-1 Started 
+migrate-1  | psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:149: NOTICE:  constraint "idempotency_record_result_batch_fk" of relation "idempotency_record" does not exist, skipping
+migrate-1  | psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:173: NOTICE:  column "step_output" of relation "settlement_step" already exists, skipping
+migrate-1  | psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:498: NOTICE:  trigger "wallet_ledger_append_only_trigger" for relation "wallet_ledger" does not exist, skipping
+migrate-1  | psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:504: NOTICE:  trigger "item_stack_ledger_append_only_trigger" for relation "item_stack_ledger" does not exist, skipping
+migrate-1  | psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:510: NOTICE:  trigger "item_stack_ledger_insert_integrity_trigger" for relation "item_stack_ledger" does not exist, skipping
+migrate-1  | psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:607: NOTICE:  trigger "trade_instance_remaining_quantity_invariant_trigger" for relation "trade_instance" does not exist, skipping
+migrate-1  | psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:614: NOTICE:  trigger "item_stack_escrow_remaining_quantity_invariant_trigger" for relation "item_stack_escrow" does not exist, skipping
+migrate-1  | psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:621: NOTICE:  trigger "item_stack_projection_ledger_invariant_trigger" for relation "item_stack" does not exist, skipping
+migrate-1  | psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:628: NOTICE:  trigger "item_stack_ledger_projection_invariant_trigger" for relation "item_stack_ledger" does not exist, skipping
+migrate-1  | psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:687: NOTICE:  trigger "trade_instance_wallet_escrow_closed_state_trigger" for relation "trade_instance" does not exist, skipping
+migrate-1  | psql:distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql:694: NOTICE:  trigger "wallet_escrow_closed_trade_invariant_trigger" for relation "wallet_escrow" does not exist, skipping
+ Compose Stopping Aborting on container exit...
+ Container eve-trade-integration-migrate-1 Stopping 
+ Container eve-trade-integration-migrate-1 Stopped 

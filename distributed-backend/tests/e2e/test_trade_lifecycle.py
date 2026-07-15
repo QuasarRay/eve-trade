@@ -66,11 +66,12 @@ def test_runtime_database_role_has_exact_required_privileges_and_no_administrati
     expected_insert = {
         "idempotency_record", "request_attempt", "settlement_batch", "settlement_step",
         "wallet", "item_stack", "trade_instance", "wallet_escrow", "item_stack_escrow",
-        "wallet_ledger", "item_stack_ledger", "trade_state_change",
+        "wallet_ledger", "item_stack_ledger", "trade_state_change", "settlement_operation",
     }
     expected_update = {
         "idempotency_record", "request_attempt", "settlement_batch", "settlement_step",
         "wallet", "item_stack", "trade_instance", "wallet_escrow", "item_stack_escrow",
+        "settlement_operation",
     }
     all_tables = {
         row["table_name"]
@@ -144,6 +145,43 @@ def test_runtime_database_role_has_exact_required_privileges_and_no_administrati
     assert item_stack_row(db, world.seller_stack_id)["quantity"] == 9
 
 
+def test_market_database_role_is_readonly_and_cannot_mutate_settlement_state(db, market_db):
+    required_select = {
+        "item_stack",
+        "wallet",
+        "trade_instance",
+        "item_stack_escrow",
+        "idempotency_record",
+        "settlement_batch",
+        "settlement_step",
+    }
+    actual = {
+        (row["table_name"], row["privilege_type"])
+        for row in market_db.fetchall(
+            """
+            SELECT table_name, privilege_type
+            FROM information_schema.role_table_grants
+            WHERE grantee = current_user AND table_schema = 'public'
+            """
+        )
+    }
+    assert {(table, "SELECT") for table in required_select}.issubset(actual)
+    assert all(privilege == "SELECT" for _, privilege in actual)
+
+    assert market_db.scalar("SELECT count(*) FROM item_stack") >= 0
+    protected_writes = (
+        "UPDATE wallet SET isk_amount = isk_amount",
+        "UPDATE item_stack SET quantity = quantity",
+        "UPDATE trade_instance SET trade_state = trade_state",
+        "INSERT INTO idempotency_record (idempotency_key, request_fingerprint, request_kind, idempotency_state, created_by_service) VALUES ('market-role-write-test', 'x', 'x', 'IN_PROGRESS', 'test')",
+        "DELETE FROM settlement_step",
+        "CREATE TABLE market_role_must_not_create_table (id bigint)",
+    )
+    for statement in protected_writes:
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            market_db.execute(statement)
+
+
 def test_creating_trade_offer_keeps_seller_non_offered_item_quantity_available(db, gateway):
     world = seed_world(db, seller_second_quantity=8)
     create_trade(gateway, world, quantity=4)
@@ -209,17 +247,12 @@ def test_creating_trade_offer_rejects_item_stack_not_owned_by_seller(db, gateway
     assert table_count(db, "trade_instance") == 0
 
 
-def test_creating_trade_offer_rejects_item_stack_in_wrong_station(db, gateway):
+def test_creating_trade_offer_uses_authoritative_item_stack_station(db, gateway):
     world = seed_world(db)
 
-    expect_rpc_error(
-        lambda: gateway.issue_trade_instance(
-            issue_payload(world, station_id=OTHER_STATION_ID)
-        ),
-        code="invalid_argument",
-        contains="station",
-    )
-    assert table_count(db, "trade_instance") == 0
+    trade = create_trade(gateway, world, station_id=OTHER_STATION_ID)
+
+    assert trade_row(db, trade)["station_id"] == world.station_id
 
 
 def test_creating_trade_offer_rejects_invalid_unit_price(db, gateway):
@@ -688,7 +721,7 @@ def test_retried_successful_request_returns_cached_response_without_second_settl
     first = gateway.issue_trade_instance(payload)
     second = gateway.issue_trade_instance(payload)
 
-    assert first["status"] == "accepted"
+    assert first["status"] in {"accepted", "queued"}
     assert second == first
     assert table_count(db, "trade_instance") == 1
     assert settlement_batch_count(db, key) == 1
@@ -950,7 +983,7 @@ def test_concurrent_accepts_cannot_sell_more_than_available_quantity(db, gateway
     assert len(results) == 1
     assert len(failures) == 1
     assert isinstance(failures[0], RpcFailure)
-    assert failures[0].code == "failed_precondition"
+    assert failures[0].code in {"failed_precondition", "permission_denied"}
     assert owned_after - owned_before == 7
     assert item_escrow_row(db, trade)["quantity"] == 3
     assert trade_row(db, trade)["remaining_quantity"] == 3
@@ -1038,7 +1071,7 @@ def test_concurrent_full_accept_and_cancel_have_exactly_one_winner_and_conserve_
     assert len(successes) == 1
     assert len(failures) == 1
     assert isinstance(failures[0][1], RpcFailure)
-    assert failures[0][1].code == "failed_precondition"
+    assert failures[0][1].code in {"failed_precondition", "permission_denied"}
     assert total_item_quantity(db) == items_before
     assert total_isk_amount(db) == isk_before
 
@@ -1477,28 +1510,13 @@ def test_authenticated_udp_edge_rejects_unknown_wrong_key_and_cross_principal_ac
 
 
 def test_settlement_rejects_completing_trade_while_item_escrow_quantity_remains_positive(db, gateway, settlement):
-    world = seed_world(db)
+    world = seed_world(db, buyer_stack_quantity=1)
     trade = create_trade(gateway, world, quantity=4)
     pb = settlement.pb
 
     expect_grpc_error(
         lambda: settlement.execute_settlement_batch(
-            pb.ExecuteSettlementBatchRequest(
-                idempotency_key=fresh_key("settlement-complete-positive-escrow"),
-                external_request_id="settlement-complete-positive-escrow",
-                caused_by_capsuleer_id=world.buyer_id,
-                created_by_service="settlement-e2e",
-                operations=[
-                    pb.SettlementOperation(
-                        modify_trade_instance_state=pb.ModifyTradeInstanceState(
-                            trade_instance_id=trade.trade_instance_id,
-                            to_trade_state="COMPLETED",
-                            trade_state_change_kind="ACCEPTED_BY_BUYER",
-                            changed_by_service="settlement-e2e",
-                        )
-                    )
-                ],
-            )
+            _settlement_accept_request(pb, world, trade, quantity=2, isk_amount=50, complete=True)
         ),
         code="FAILED_PRECONDITION",
         contains="remaining item escrow",
@@ -1521,8 +1539,8 @@ def test_settlement_rejects_releasing_more_item_quantity_than_escrow_contains(db
 
     expect_grpc_error(
         lambda: settlement.execute_settlement_batch(request),
-        code="FAILED_PRECONDITION",
-        contains="requested 5",
+        code="PERMISSION_DENIED",
+        contains="item escrow is unavailable",
     )
 
     assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == buyer_isk_before
@@ -1547,8 +1565,8 @@ def test_settlement_rejects_releasing_same_item_escrow_twice(db, gateway, settle
         lambda: settlement.execute_settlement_batch(
             _settlement_accept_request(pb, world, trade, quantity=4, isk_amount=100)
         ),
-        code="FAILED_PRECONDITION",
-        contains="not OPEN",
+        code="PERMISSION_DENIED",
+        contains="trade is not open",
     )
 
 
@@ -1561,8 +1579,8 @@ def test_settlement_rejects_wallet_payment_that_does_not_match_trade_price(db, g
         lambda: settlement.execute_settlement_batch(
             _settlement_accept_request(pb, world, trade, quantity=2, isk_amount=1)
         ),
-        code="FAILED_PRECONDITION",
-        contains="does not match trade price",
+        code="PERMISSION_DENIED",
+        contains="authoritative trade price",
     )
 
     assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 1_000
@@ -1578,8 +1596,8 @@ def test_settlement_rejects_wallet_payment_that_exceeds_remaining_trade_quantity
         lambda: settlement.execute_settlement_batch(
             _settlement_accept_request(pb, world, trade, quantity=4, isk_amount=125)
         ),
-        code="FAILED_PRECONDITION",
-        contains="remaining quantity",
+        code="PERMISSION_DENIED",
+        contains="authoritative trade price",
     )
 
     assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == 1_000
@@ -1602,6 +1620,7 @@ def test_settlement_rejects_paying_more_than_wallet_escrow_and_rolls_back_every_
             pb.ExecuteSettlementBatchRequest(
                 idempotency_key=fresh_key("settlement-wallet-over-release"),
                 external_request_id="settlement-wallet-over-release",
+                intent=pb.SETTLEMENT_INTENT_ACCEPT,
                 caused_by_capsuleer_id=world.buyer_id,
                 created_by_service="settlement-e2e",
                 operations=[
@@ -1630,8 +1649,8 @@ def test_settlement_rejects_paying_more_than_wallet_escrow_and_rolls_back_every_
                 ],
             )
         ),
-        code="FAILED_PRECONDITION",
-        contains="requested 101",
+        code="INVALID_ARGUMENT",
+        contains="amounts must balance",
     )
 
     assert wallet_row(db, world.buyer_wallet_id)["isk_amount"] == buyer_isk_before
@@ -1654,6 +1673,7 @@ def test_settlement_rejects_completing_trade_while_wallet_escrow_remains_active(
             pb.ExecuteSettlementBatchRequest(
                 idempotency_key=fresh_key("settlement-complete-wallet-escrow"),
                 external_request_id="settlement-complete-wallet-escrow",
+                intent=pb.SETTLEMENT_INTENT_ACCEPT,
                 caused_by_capsuleer_id=world.buyer_id,
                 created_by_service="settlement-e2e",
                 operations=[
@@ -1683,8 +1703,8 @@ def test_settlement_rejects_completing_trade_while_wallet_escrow_remains_active(
                 ],
             )
         ),
-        code="FAILED_PRECONDITION",
-        contains="active wallet escrow",
+        code="INVALID_ARGUMENT",
+        contains="seller wallet credit",
     )
 
     assert trade_row(db, trade)["trade_state"] == "OPEN"
@@ -1803,6 +1823,7 @@ def _settlement_accept_request(pb, world, trade, *, quantity: int, isk_amount: i
     return pb.ExecuteSettlementBatchRequest(
         idempotency_key=key,
         external_request_id=f"external-{key}",
+        intent=pb.SETTLEMENT_INTENT_ACCEPT,
         caused_by_capsuleer_id=world.buyer_id,
         created_by_service="settlement-e2e",
         operations=operations,

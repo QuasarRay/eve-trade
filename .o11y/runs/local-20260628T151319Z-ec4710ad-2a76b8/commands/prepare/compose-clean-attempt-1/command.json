@@ -1,0 +1,39 @@
+{
+  "argv": [
+    "docker",
+    "compose",
+    "-f",
+    "C:\\Users\\Astral\\Desktop\\eve-trade\\docker-compose.integration.yml",
+    "--profile",
+    "test",
+    "down",
+    "-v",
+    "--remove-orphans"
+  ],
+  "artifact.path": "commands/prepare/compose-clean-attempt-1/command.log",
+  "command.argv": [
+    "docker",
+    "compose",
+    "-f",
+    "C:\\Users\\Astral\\Desktop\\eve-trade\\docker-compose.integration.yml",
+    "--profile",
+    "test",
+    "down",
+    "-v",
+    "--remove-orphans"
+  ],
+  "command.duration_ms": 195.004,
+  "command.exit_code": 0,
+  "duration_ms": 195.004,
+  "ended_at": "2026-06-28T15:13:26.227752+00:00",
+  "exit_code": 0,
+  "log_path": "commands/prepare/compose-clean-attempt-1/command.log",
+  "metadata_path": "commands/prepare/compose-clean-attempt-1/command.json",
+  "name": "compose-clean-attempt-1",
+  "pipeline.command": "compose-clean-attempt-1",
+  "pipeline.stage": "prepare",
+  "stage": "prepare",
+  "started_at": "2026-06-28T15:13:26.031627+00:00",
+  "timed_out": false,
+  "trace_id": ""
+}

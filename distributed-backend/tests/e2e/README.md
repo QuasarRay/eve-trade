@@ -1,7 +1,7 @@
 # Live end-to-end tests
 
 This package exercises the canonical simulator -> Quilkin UDP -> API Gateway
--> Market -> RabbitMQ worker -> trade-settlement -> PostgreSQL path. The test
+-> Market -> Encore Pub/Sub worker -> trade-settlement -> PostgreSQL path. The test
 names are intentionally not copied into this file because a hand-maintained
 list previously drifted and exaggerated the active suite.
 

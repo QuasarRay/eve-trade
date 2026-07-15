@@ -83,7 +83,7 @@ variable "cluster_deletion_protection" {
 variable "enable_private_endpoint" {
   description = "Whether the GKE control plane endpoint is private-only."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "master_ipv4_cidr_block" {
@@ -145,7 +145,7 @@ variable "artifact_registry_repository_id" {
 }
 
 variable "container_image_overrides" {
-  description = "Optional per-service image overrides keyed by api-gateway, market, settlement-worker, or trade-settlement. Each value may include repository and tag."
+  description = "Optional per-service image overrides keyed by encore-backend, trade-settlement, or quilkin. Each value may include repository and tag."
   type        = map(any)
   default     = {}
 }
@@ -158,6 +158,13 @@ variable "database_enabled" {
 
 variable "external_database_url" {
   description = "Existing PostgreSQL URL to place into the Kubernetes database secret when database_enabled is false."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "market_database_url" {
+  description = "Read-only PostgreSQL URL for the Market service. Terraform stores it in the market-database Secret as MARKET_DATABASE_URL when set."
   type        = string
   default     = ""
   sensitive   = true

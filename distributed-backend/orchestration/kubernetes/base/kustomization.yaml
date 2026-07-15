@@ -14,10 +14,8 @@ resources:
   - serviceaccounts.yaml
   - configmaps.yaml
   - migrate.yaml
-  - rabbitmq.yaml
-  - api-gateway.yaml
-  - market.yaml
-  - settlement-worker.yaml
+  - nsq.yaml
+  - encore-backend.yaml
   - trade-settlement.yaml
 
 configMapGenerator:
@@ -29,11 +27,7 @@ generatorOptions:
   disableNameSuffixHash: true
 
 images:
-  - name: eve-trade/api-gateway
-    newTag: dev
-  - name: eve-trade/market
-    newTag: dev
-  - name: eve-trade/settlement-worker
+  - name: eve-trade/encore-backend
     newTag: dev
   - name: eve-trade/trade-settlement
     newTag: dev

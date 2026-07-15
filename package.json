@@ -1,10 +1,10 @@
 {
   "name": "eve-trade-gui-demo",
   "private": true,
+  "packageManager": "pnpm@11.7.0",
   "scripts": {
     "gui:demo": "node scripts/gui-simulator-demo.cjs",
-    "gui:test": "node scripts/gui-simulator-demo.cjs",
-    "gui:test-contract": "node scripts/gui-simulator-demo.test.cjs",
+    "gui:test": "node scripts/gui-simulator-demo.test.cjs",
     "gui:demo:install": "playwright install chromium"
   },
   "devDependencies": {

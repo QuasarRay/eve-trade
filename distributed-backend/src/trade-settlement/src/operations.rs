@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
@@ -53,6 +53,26 @@ impl OperationOutput {
 #[derive(Debug, Clone, sqlx::FromRow)]
 struct TradeInstanceStateRow {
     trade_state: String,
+    expires_at: Option<DateTime<Utc>>,
+    is_expired: bool,
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+struct TradeInstanceOwnershipRow {
+    trade_instance_id: Uuid,
+    trade_state: String,
+    issuer_id: i64,
+    expires_at: Option<DateTime<Utc>>,
+    is_expired: bool,
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+struct TradePaymentRow {
+    trade_state: String,
+    remaining_quantity: i64,
+    unit_price_isk: i64,
+    expires_at: Option<DateTime<Utc>>,
+    is_expired: bool,
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -99,6 +119,41 @@ struct WalletEscrowRow {
     source_wallet_id: Uuid,
     isk_amount: i64,
     is_released: bool,
+}
+
+trait TradeExpiryStatus {
+    fn expires_at(&self) -> Option<&DateTime<Utc>>;
+    fn is_expired(&self) -> bool;
+}
+
+impl TradeExpiryStatus for TradeInstanceStateRow {
+    fn expires_at(&self) -> Option<&DateTime<Utc>> {
+        self.expires_at.as_ref()
+    }
+
+    fn is_expired(&self) -> bool {
+        self.is_expired
+    }
+}
+
+impl TradeExpiryStatus for TradeInstanceOwnershipRow {
+    fn expires_at(&self) -> Option<&DateTime<Utc>> {
+        self.expires_at.as_ref()
+    }
+
+    fn is_expired(&self) -> bool {
+        self.is_expired
+    }
+}
+
+impl TradeExpiryStatus for TradePaymentRow {
+    fn expires_at(&self) -> Option<&DateTime<Utc>> {
+        self.expires_at.as_ref()
+    }
+
+    fn is_expired(&self) -> bool {
+        self.is_expired
+    }
 }
 
 pub async fn execute_settlement_command(
@@ -228,7 +283,9 @@ pub async fn modify_trade_instance_state(
 
     let current = sqlx::query_as::<_, TradeInstanceStateRow>(
         r#"
-        SELECT trade_state
+        SELECT trade_state,
+               expires_at,
+               COALESCE(expires_at <= clock_timestamp(), false) AS is_expired
         FROM trade_instance
         WHERE trade_instance_id = $1
         FOR UPDATE
@@ -246,6 +303,7 @@ pub async fn modify_trade_instance_state(
     ensure_trade_transition(&current.trade_state, &payload.to_trade_state)?;
 
     if payload.to_trade_state == "COMPLETED" {
+        ensure_trade_not_expired(payload.trade_instance_id, &current)?;
         ensure_no_remaining_item_escrow(tx, payload.trade_instance_id).await?;
         ensure_no_active_wallet_escrow(tx, payload.trade_instance_id).await?;
     }
@@ -349,8 +407,18 @@ pub async fn transfer_quantity_from_item_stack_to_item_stack_escrow(
 ) -> Result<OperationOutput> {
     ensure_positive(payload.quantity, "quantity")?;
 
+    let trade = lock_trade_instance_for_ownership(tx, payload.trade_instance_id).await?;
+    ensure_trade_open(trade.trade_instance_id, &trade.trade_state)?;
+    ensure_trade_not_expired(trade.trade_instance_id, &trade)?;
+
     let source = lock_item_stack(tx, payload.source_item_stack_id).await?;
     ensure_item_stack_active(&source)?;
+    if source.owner_id != trade.issuer_id {
+        return Err(SettlementError::FailedPrecondition(format!(
+            "source item_stack {} owner {} does not match trade_instance {} issuer {}",
+            source.item_stack_id, source.owner_id, trade.trade_instance_id, trade.issuer_id
+        )));
+    }
     if source.quantity < payload.quantity {
         return Err(SettlementError::InsufficientQuantity(format!(
             "item_stack {} has {}, requested {}",
@@ -360,6 +428,23 @@ pub async fn transfer_quantity_from_item_stack_to_item_stack_escrow(
 
     let item_stack_escrow_id = payload.item_stack_escrow_id.unwrap_or_else(Uuid::new_v4);
     let existing_escrow = lock_item_stack_escrow_optional(tx, item_stack_escrow_id).await?;
+    if let Some(escrow) = &existing_escrow {
+        ensure_escrow_not_released(
+            "item_stack_escrow",
+            escrow.is_released,
+            escrow.item_stack_escrow_id,
+        )?;
+        if escrow.trade_instance_id != payload.trade_instance_id
+            || escrow.owner_id != source.owner_id
+            || escrow.source_item_stack_id != source.item_stack_id
+            || escrow.item_type_id != source.item_type_id
+            || escrow.station_id != source.station_id
+        {
+            return Err(SettlementError::FailedPrecondition(format!(
+                "item_stack_escrow {item_stack_escrow_id} is not compatible with source item stack"
+            )));
+        }
+    }
 
     let new_source_quantity =
         checked_sub(source.quantity, payload.quantity, "item_stack quantity")?;
@@ -379,22 +464,6 @@ pub async fn transfer_quantity_from_item_stack_to_item_stack_escrow(
     .await?;
 
     if let Some(escrow) = existing_escrow {
-        ensure_escrow_not_released(
-            "item_stack_escrow",
-            escrow.is_released,
-            escrow.item_stack_escrow_id,
-        )?;
-        if escrow.trade_instance_id != payload.trade_instance_id
-            || escrow.owner_id != source.owner_id
-            || escrow.source_item_stack_id != source.item_stack_id
-            || escrow.item_type_id != source.item_type_id
-            || escrow.station_id != source.station_id
-        {
-            return Err(SettlementError::FailedPrecondition(format!(
-                "item_stack_escrow {item_stack_escrow_id} is not compatible with source item stack"
-            )));
-        }
-
         let escrow_quantity_after = checked_add(
             escrow.quantity,
             payload.quantity,
@@ -880,16 +949,13 @@ async fn ensure_wallet_payment_matches_trade_price(
     trade_instance_id: Uuid,
     isk_amount: i64,
 ) -> Result<()> {
-    #[derive(sqlx::FromRow)]
-    struct TradePaymentRow {
-        trade_state: String,
-        remaining_quantity: i64,
-        unit_price_isk: i64,
-    }
-
     let trade = sqlx::query_as::<_, TradePaymentRow>(
         r#"
-        SELECT trade_state, remaining_quantity, unit_price_isk
+        SELECT trade_state,
+               remaining_quantity,
+               unit_price_isk,
+               expires_at,
+               COALESCE(expires_at <= clock_timestamp(), false) AS is_expired
         FROM trade_instance
         WHERE trade_instance_id = $1
         FOR UPDATE
@@ -902,11 +968,8 @@ async fn ensure_wallet_payment_matches_trade_price(
         SettlementError::NotFound(format!("trade_instance {trade_instance_id} does not exist"))
     })?;
 
-    if trade.trade_state != TRADE_STATE_OPEN {
-        return Err(SettlementError::FailedPrecondition(format!(
-            "trade_instance {trade_instance_id} is not OPEN"
-        )));
-    }
+    ensure_trade_open(trade_instance_id, &trade.trade_state)?;
+    ensure_trade_not_expired(trade_instance_id, &trade)?;
 
     if trade.unit_price_isk <= 0 || isk_amount % trade.unit_price_isk != 0 {
         return Err(SettlementError::FailedPrecondition(format!(
@@ -956,10 +1019,14 @@ async fn ensure_active_wallet_escrow_matches_item_release(
     trade_instance_id: Uuid,
     quantity: i64,
 ) -> Result<()> {
-    let unit_price_isk = sqlx::query_scalar::<_, i64>(
+    let trade = sqlx::query_as::<_, TradePaymentRow>(
         r#"
-        SELECT unit_price_isk
-        FROM trade_instance t
+        SELECT trade_state,
+               remaining_quantity,
+               unit_price_isk,
+               expires_at,
+               COALESCE(expires_at <= clock_timestamp(), false) AS is_expired
+        FROM trade_instance
         WHERE trade_instance_id = $1
         FOR UPDATE
         "#,
@@ -970,6 +1037,8 @@ async fn ensure_active_wallet_escrow_matches_item_release(
     .ok_or_else(|| {
         SettlementError::NotFound(format!("trade_instance {trade_instance_id} does not exist"))
     })?;
+    ensure_trade_open(trade_instance_id, &trade.trade_state)?;
+    ensure_trade_not_expired(trade_instance_id, &trade)?;
     let active_wallet_escrow_isk = sqlx::query_scalar::<_, i64>(
         r#"
         SELECT COALESCE(SUM(isk_amount), 0)::BIGINT
@@ -982,17 +1051,42 @@ async fn ensure_active_wallet_escrow_matches_item_release(
     .fetch_one(&mut **tx)
     .await?;
 
-    let expected_payment = unit_price_isk
+    let expected_payment = trade
+        .unit_price_isk
         .checked_mul(quantity)
         .ok_or_else(|| SettlementError::FailedPrecondition("trade price overflow".to_string()))?;
     if active_wallet_escrow_isk != expected_payment {
         return Err(SettlementError::FailedPrecondition(format!(
             "active wallet escrow payment {} does not match trade price {} for quantity {}",
-            active_wallet_escrow_isk, unit_price_isk, quantity
+            active_wallet_escrow_isk, trade.unit_price_isk, quantity
         )));
     }
 
     Ok(())
+}
+
+async fn ensure_trade_live_for_new_owner_release(
+    tx: &mut Transaction<'_, Postgres>,
+    trade_instance_id: Uuid,
+) -> Result<()> {
+    let trade = sqlx::query_as::<_, TradeInstanceStateRow>(
+        r#"
+        SELECT trade_state,
+               expires_at,
+               COALESCE(expires_at <= clock_timestamp(), false) AS is_expired
+        FROM trade_instance
+        WHERE trade_instance_id = $1
+        FOR UPDATE
+        "#,
+    )
+    .bind(trade_instance_id)
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or_else(|| {
+        SettlementError::NotFound(format!("trade_instance {trade_instance_id} does not exist"))
+    })?;
+    ensure_trade_open(trade_instance_id, &trade.trade_state)?;
+    ensure_trade_not_expired(trade_instance_id, &trade)
 }
 
 async fn transfer_isk_amount_from_wallet_escrow_to_wallet(
@@ -1022,6 +1116,9 @@ async fn transfer_isk_amount_from_wallet_escrow_to_wallet(
         destination.capsuleer_id,
         "destination wallet",
     )?;
+    if matches!(owner_rule, EscrowOwnerRule::NewOwner) {
+        ensure_trade_live_for_new_owner_release(tx, escrow.trade_instance_id).await?;
+    }
 
     let destination_amount_after = checked_add(
         destination.isk_amount,
@@ -1066,6 +1163,30 @@ async fn transfer_isk_amount_from_wallet_escrow_to_wallet(
             entity_id: wallet_escrow_id,
         },
     ]))
+}
+
+async fn lock_trade_instance_for_ownership(
+    tx: &mut Transaction<'_, Postgres>,
+    trade_instance_id: Uuid,
+) -> Result<TradeInstanceOwnershipRow> {
+    sqlx::query_as::<_, TradeInstanceOwnershipRow>(
+        r#"
+        SELECT trade_instance_id,
+               trade_state,
+               issuer_id,
+               expires_at,
+               COALESCE(expires_at <= clock_timestamp(), false) AS is_expired
+        FROM trade_instance
+        WHERE trade_instance_id = $1
+        FOR UPDATE
+        "#,
+    )
+    .bind(trade_instance_id)
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or_else(|| {
+        SettlementError::NotFound(format!("trade_instance {trade_instance_id} does not exist"))
+    })
 }
 
 async fn lock_item_stack(
@@ -1573,6 +1694,33 @@ fn ensure_item_stack_active(stack: &ItemStackRow) -> Result<()> {
             "item_stack {} is not ACTIVE",
             stack.item_stack_id
         )))
+    }
+}
+
+fn ensure_trade_open(trade_instance_id: Uuid, trade_state: &str) -> Result<()> {
+    if trade_state == TRADE_STATE_OPEN {
+        Ok(())
+    } else {
+        Err(SettlementError::FailedPrecondition(format!(
+            "trade_instance {trade_instance_id} is not OPEN"
+        )))
+    }
+}
+
+fn ensure_trade_not_expired<T: TradeExpiryStatus>(
+    trade_instance_id: Uuid,
+    trade: &T,
+) -> Result<()> {
+    if trade.is_expired() {
+        let expires_at = trade
+            .expires_at()
+            .map(DateTime::<Utc>::to_rfc3339)
+            .unwrap_or_else(|| "unknown".to_string());
+        Err(SettlementError::FailedPrecondition(format!(
+            "trade_instance {trade_instance_id} expired at {expires_at}"
+        )))
+    } else {
+        Ok(())
     }
 }
 

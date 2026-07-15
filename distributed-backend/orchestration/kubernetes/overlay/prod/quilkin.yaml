@@ -45,15 +45,27 @@ spec:
             - -ec
           args:
             - |
+              upstream="${QUILKIN_BACKEND_ENDPOINT:?QUILKIN_BACKEND_ENDPOINT is required}"
+              case "${upstream}" in
+                *.*.svc.cluster.local:[0-9]*) ;;
+                *) echo "QUILKIN_BACKEND_ENDPOINT must be a Kubernetes service FQDN with a port" >&2; exit 64 ;;
+              esac
+              host="${upstream%:*}"
+              port="${upstream##*:}"
+              address="$(getent ahostsv4 "${host}" | awk 'NR == 1 { print $1 }')"
+              [ -n "${address}" ] || { echo "unable to resolve Quilkin backend ${host}" >&2; exit 69; }
               # Serialize Quilkin 0.10.0 session creation so one upstream
               # socket cannot be concurrently assigned to two clients.
               exec /usr/local/bin/quilkin \
                 --service.udp \
                 --service.udp.port 26001 \
                 --service.udp.workers 1 \
-                --provider.static.endpoints "${API_GATEWAY_SERVICE_HOST}:26000" \
+                --provider.static.endpoints "${address}:${port}" \
                 --admin.enabled=false \
                 --log-format json
+          env:
+            - name: QUILKIN_BACKEND_ENDPOINT
+              value: encore-backend.eve-trade.svc.cluster.local:26000
           ports:
             - name: udp
               containerPort: 26001

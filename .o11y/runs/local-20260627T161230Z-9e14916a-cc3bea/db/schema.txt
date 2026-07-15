@@ -1,0 +1,169 @@
+capsuleer|capsuleer_id|bigint|NO
+capsuleer|capsuleer_name|text|NO
+capsuleer|projection_state|text|NO
+capsuleer|last_synced_at|timestamp with time zone|YES
+capsuleer|created_at|timestamp with time zone|NO
+capsuleer|updated_at|timestamp with time zone|NO
+idempotency_record|idempotency_key|text|NO
+idempotency_record|request_fingerprint|text|NO
+idempotency_record|request_kind|text|NO
+idempotency_record|idempotency_state|text|NO
+idempotency_record|created_by_service|text|NO
+idempotency_record|created_at|timestamp with time zone|NO
+idempotency_record|completed_at|timestamp with time zone|YES
+idempotency_record|result_settlement_batch_id|uuid|YES
+idempotency_record|failure_code|text|YES
+idempotency_record|failure_message|text|YES
+item_stack|item_stack_id|uuid|NO
+item_stack|owner_id|bigint|NO
+item_stack|item_type_id|bigint|NO
+item_stack|station_id|bigint|NO
+item_stack|quantity|bigint|NO
+item_stack|stack_state|text|NO
+item_stack|stack_version|bigint|NO
+item_stack|stack_checksum|text|NO
+item_stack|checksum_algorithm|text|NO
+item_stack|created_at|timestamp with time zone|NO
+item_stack|updated_at|timestamp with time zone|NO
+item_stack_escrow|item_stack_escrow_id|uuid|NO
+item_stack_escrow|trade_instance_id|uuid|NO
+item_stack_escrow|owner_id|bigint|NO
+item_stack_escrow|source_item_stack_id|uuid|NO
+item_stack_escrow|item_type_id|bigint|NO
+item_stack_escrow|station_id|bigint|NO
+item_stack_escrow|quantity|bigint|NO
+item_stack_escrow|is_released|boolean|NO
+item_stack_escrow|created_settlement_step_id|uuid|NO
+item_stack_escrow|released_settlement_step_id|uuid|YES
+item_stack_escrow|created_at|timestamp with time zone|NO
+item_stack_escrow|updated_at|timestamp with time zone|NO
+item_stack_escrow|released_at|timestamp with time zone|YES
+item_stack_ledger|item_stack_ledger_id|uuid|NO
+item_stack_ledger|settlement_step_id|uuid|NO
+item_stack_ledger|item_stack_id|uuid|NO
+item_stack_ledger|ledger_sequence|bigint|NO
+item_stack_ledger|previous_item_stack_ledger_hash|text|NO
+item_stack_ledger|ledger_payload_hash|text|NO
+item_stack_ledger|item_stack_ledger_hash|text|NO
+item_stack_ledger|item_type_id|bigint|NO
+item_stack_ledger|owner_id|bigint|NO
+item_stack_ledger|station_id|bigint|NO
+item_stack_ledger|entry_kind|text|NO
+item_stack_ledger|quantity_delta|bigint|NO
+item_stack_ledger|quantity_before|bigint|NO
+item_stack_ledger|quantity_after|bigint|NO
+item_stack_ledger|stack_state_before|text|NO
+item_stack_ledger|stack_state_after|text|NO
+item_stack_ledger|stack_version_before|bigint|NO
+item_stack_ledger|stack_version_after|bigint|NO
+item_stack_ledger|stack_checksum_before|text|NO
+item_stack_ledger|stack_checksum_after|text|NO
+item_stack_ledger|created_at|timestamp with time zone|NO
+item_type|item_type_id|bigint|NO
+item_type|item_type_name|text|NO
+item_type|category_name|text|NO
+item_type|group_name|text|NO
+item_type|projection_state|text|NO
+item_type|last_synced_at|timestamp with time zone|YES
+item_type|created_at|timestamp with time zone|NO
+item_type|updated_at|timestamp with time zone|NO
+region|region_id|bigint|NO
+region|region_name|text|NO
+region|projection_state|text|NO
+region|last_synced_at|timestamp with time zone|YES
+region|created_at|timestamp with time zone|NO
+region|updated_at|timestamp with time zone|NO
+request_attempt|request_id|uuid|NO
+request_attempt|idempotency_key|text|NO
+request_attempt|attempt_number|integer|NO
+request_attempt|received_by_service|text|NO
+request_attempt|attempt_state|text|NO
+request_attempt|failure_code|text|YES
+request_attempt|failure_message|text|YES
+request_attempt|received_at|timestamp with time zone|NO
+request_attempt|completed_at|timestamp with time zone|YES
+settlement_batch|settlement_batch_id|uuid|NO
+settlement_batch|request_id|uuid|NO
+settlement_batch|idempotency_key|text|NO
+settlement_batch|external_request_id|text|YES
+settlement_batch|caused_by_capsuleer_id|bigint|YES
+settlement_batch|batch_state|text|NO
+settlement_batch|created_by_service|text|NO
+settlement_batch|started_at|timestamp with time zone|NO
+settlement_batch|completed_at|timestamp with time zone|YES
+settlement_batch|failure_code|text|YES
+settlement_batch|failure_message|text|YES
+settlement_step|settlement_step_id|uuid|NO
+settlement_step|settlement_batch_id|uuid|NO
+settlement_step|step_index|integer|NO
+settlement_step|step_kind|text|NO
+settlement_step|step_payload|jsonb|NO
+settlement_step|step_payload_hash|text|NO
+settlement_step|step_output|jsonb|NO
+settlement_step|step_state|text|NO
+settlement_step|started_at|timestamp with time zone|YES
+settlement_step|completed_at|timestamp with time zone|YES
+settlement_step|failure_code|text|YES
+settlement_step|failure_message|text|YES
+station|station_id|bigint|NO
+station|region_id|bigint|NO
+station|station_name|text|NO
+station|projection_state|text|NO
+station|last_synced_at|timestamp with time zone|YES
+station|created_at|timestamp with time zone|NO
+station|updated_at|timestamp with time zone|NO
+trade_instance|trade_instance_id|uuid|NO
+trade_instance|created_settlement_step_id|uuid|NO
+trade_instance|trade_kind|text|NO
+trade_instance|trade_state|text|NO
+trade_instance|issuer_id|bigint|NO
+trade_instance|item_type_id|bigint|NO
+trade_instance|station_id|bigint|NO
+trade_instance|total_quantity|bigint|NO
+trade_instance|remaining_quantity|bigint|NO
+trade_instance|unit_price_isk|bigint|NO
+trade_instance|expires_at|timestamp with time zone|YES
+trade_instance|created_at|timestamp with time zone|NO
+trade_instance|updated_at|timestamp with time zone|NO
+trade_state_change|trade_state_change_id|uuid|NO
+trade_state_change|settlement_step_id|uuid|NO
+trade_state_change|trade_instance_id|uuid|NO
+trade_state_change|from_trade_state|text|NO
+trade_state_change|to_trade_state|text|NO
+trade_state_change|trade_state_change_kind|text|NO
+trade_state_change|changed_by_service|text|NO
+trade_state_change|changed_at|timestamp with time zone|NO
+wallet|wallet_id|uuid|NO
+wallet|capsuleer_id|bigint|NO
+wallet|wallet_kind|text|NO
+wallet|isk_amount|bigint|NO
+wallet|wallet_state|text|NO
+wallet|wallet_version|bigint|NO
+wallet|wallet_checksum|text|NO
+wallet|checksum_algorithm|text|NO
+wallet|created_at|timestamp with time zone|NO
+wallet|updated_at|timestamp with time zone|NO
+wallet_escrow|wallet_escrow_id|uuid|NO
+wallet_escrow|trade_instance_id|uuid|NO
+wallet_escrow|owner_id|bigint|NO
+wallet_escrow|source_wallet_id|uuid|NO
+wallet_escrow|isk_amount|bigint|NO
+wallet_escrow|is_released|boolean|NO
+wallet_escrow|created_settlement_step_id|uuid|NO
+wallet_escrow|released_settlement_step_id|uuid|YES
+wallet_escrow|created_at|timestamp with time zone|NO
+wallet_escrow|updated_at|timestamp with time zone|NO
+wallet_escrow|released_at|timestamp with time zone|YES
+wallet_ledger|wallet_ledger_id|uuid|NO
+wallet_ledger|settlement_step_id|uuid|NO
+wallet_ledger|wallet_id|uuid|NO
+wallet_ledger|capsuleer_id|bigint|NO
+wallet_ledger|entry_kind|text|NO
+wallet_ledger|isk_amount_delta|bigint|NO
+wallet_ledger|isk_amount_before|bigint|NO
+wallet_ledger|isk_amount_after|bigint|NO
+wallet_ledger|wallet_version_before|bigint|NO
+wallet_ledger|wallet_version_after|bigint|NO
+wallet_ledger|wallet_checksum_before|text|NO
+wallet_ledger|wallet_checksum_after|text|NO
+wallet_ledger|created_at|timestamp with time zone|NO

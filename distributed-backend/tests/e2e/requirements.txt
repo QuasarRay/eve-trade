@@ -1,4 +1,4 @@
-pytest==8.4.2
+pytest==9.0.3
 pytest-repeat==0.9.4
 coverage==7.10.7
 PyYAML==6.0.3

@@ -13,13 +13,8 @@ terraform {
     }
     helm = {
       source                = "hashicorp/helm"
-      version               = "~> 2.17"
+      version               = "~> 3.0"
       configuration_aliases = [helm.addons]
-    }
-    kubectl = {
-      source                = "gavinbunney/kubectl"
-      version               = "~> 1.19.0"
-      configuration_aliases = [kubectl.addons]
     }
     null = {
       source  = "hashicorp/null"
@@ -27,7 +22,7 @@ terraform {
     }
     time = {
       source  = "hashicorp/time"
-      version = "~> 0.12"
+      version = "~> 0.13"
     }
   }
 }

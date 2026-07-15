@@ -71,9 +71,9 @@ class GameGuiButtonViewSet(viewsets.ModelViewSet):
                 status=udp_error_http_status(error_code),
             )
 
-        if response_payload.get("status") != "accepted":
+        if response_payload.get("status") not in {"accepted", "queued"}:
             interaction.status = GameGuiInteraction.Status.FAILED
-            interaction.error_message = "gateway did not return an accepted interaction"
+            interaction.error_message = "gateway did not return an accepted or queued interaction"
             interaction.save(update_fields=["response_payload", "status", "error_message"])
             return Response(
                 {

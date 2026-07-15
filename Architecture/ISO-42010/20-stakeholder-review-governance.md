@@ -120,7 +120,7 @@ unvalidated until actual reviewers accept or reject the content.
 | Production placeholder rejection | CI, release script, admission policy, or kustomize policy check | Not implemented |
 | Security review | Required review for identity, trust boundary, mesh, secret, and settlement API changes | Policy only |
 | Data integrity review | Required review for migration, ledger, idempotency, and settlement operation changes | Policy only |
-| Runtime validation | Compose, e2e, Kubernetes render, Terraform validation, and relevant unit tests | Commands defined; not run in this doc update |
+| Runtime validation | local Encore/Kubernetes, e2e, Kubernetes render, Terraform validation, and relevant unit tests | Commands defined; not run in this doc update |
 | Risk acceptance | Accepted-by, due date, residual severity, and closure criteria for open risk | Added in risk register; requires future execution |
 
 ## Change Log Lifecycle Rule

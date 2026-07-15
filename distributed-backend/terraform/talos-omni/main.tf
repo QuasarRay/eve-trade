@@ -11,10 +11,9 @@ locals {
   })
 
   service_image_names = toset([
-    "api-gateway",
-    "market",
-    "settlement-worker",
+    "encore-backend",
     "trade-settlement",
+    "quilkin",
   ])
 
   image_registry = trimsuffix(var.image_registry, "/")
@@ -118,6 +117,31 @@ resource "kubectl_manifest" "trade_settlement_database" {
   depends_on = [
     kubectl_manifest.app_namespace,
     kubectl_manifest.postgres_statefulset,
+  ]
+}
+
+resource "kubectl_manifest" "market_database" {
+  count = nonsensitive(var.market_database_url) != "" ? 1 : 0
+
+  yaml_body = yamlencode({
+    apiVersion = "v1"
+    kind       = "Secret"
+    metadata = {
+      name      = "market-database"
+      namespace = local.app_namespace
+      labels = merge(local.labels, {
+        "app.kubernetes.io/name"      = "market"
+        "app.kubernetes.io/component" = "database-readonly"
+      })
+    }
+    stringData = {
+      MARKET_DATABASE_URL = var.market_database_url
+    }
+    type = "Opaque"
+  })
+
+  depends_on = [
+    kubectl_manifest.app_namespace,
   ]
 }
 

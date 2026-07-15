@@ -3,14 +3,12 @@
 /distributed-backend/src/trade-settlement/target
 
 # Local Go/Windows build artifacts
-/market
 /market.exe
 *.exe
 
 # CI/CD local artifacts
 /.ci-venv
-/ci-cd/out
-/.o11y/
+/distributed-backend/ci-cd/out
 
 # Python caches
 __pycache__/
@@ -25,6 +23,17 @@ __pycache__/
 /simulator/.venv/
 /.idea/
 .terraform
+.vscode
 
-
-
+# Local observability runtime state. Immutable historical evidence may be
+# committed intentionally, but latest/index files and new local runs are not
+# current-health source files.
+/.o11y/index.json
+/.o11y/runs/latest-local
+/.o11y/runs/latest-local.txt
+/.o11y/runs/local-*
+/.o11y/runs/gha-*
+encore.gen.go
+encore.gen.cue
+/.encore
+/encore.gen

@@ -1,0 +1,134 @@
+{
+  "ci": ".o11y\\runs\\local-20260627T155717Z-9e14916a-6547df",
+  "differences": [
+    {
+      "ci": "9e14916a304c97d0a7b1954a9615b61265fe3f50",
+      "different": false,
+      "field": "git.sha",
+      "hint": "",
+      "local": "9e14916a304c97d0a7b1954a9615b61265fe3f50"
+    },
+    {
+      "ci": true,
+      "different": false,
+      "field": "git.dirty",
+      "hint": "",
+      "local": true
+    },
+    {
+      "ci": "main",
+      "different": false,
+      "field": "git.branch",
+      "hint": "",
+      "local": "main"
+    },
+    {
+      "ci": "Python 3.14.5",
+      "different": false,
+      "field": "python.version",
+      "hint": "",
+      "local": "Python 3.14.5"
+    },
+    {
+      "ci": "go version go1.26.4 windows/amd64",
+      "different": false,
+      "field": "go.version",
+      "hint": "",
+      "local": "go version go1.26.4 windows/amd64"
+    },
+    {
+      "ci": "rustc 1.95.0 (59807616e 2026-04-14)",
+      "different": false,
+      "field": "rust.version",
+      "hint": "",
+      "local": "rustc 1.95.0 (59807616e 2026-04-14)"
+    },
+    {
+      "ci": "29.5.2",
+      "different": false,
+      "field": "docker.version",
+      "hint": "",
+      "local": "29.5.2"
+    },
+    {
+      "ci": "5.1.4",
+      "different": false,
+      "field": "docker.compose.version",
+      "hint": "",
+      "local": "5.1.4"
+    },
+    {
+      "ci": "Windows-11-10.0.26200-SP0",
+      "different": false,
+      "field": "os.name",
+      "hint": "",
+      "local": "Windows-11-10.0.26200-SP0"
+    },
+    {
+      "ci": "9d3daad5bfcc58fd5496fb05578d6be97b21292561c66f61f28c6876fa79bdd9",
+      "different": true,
+      "field": "docker.compose_config_hash",
+      "hint": "Docker configuration, version, or image digest differs.",
+      "local": "bde3529dae3483c57f7eda65794f54ca8ef46d11a5199a766652bf5d764f7264"
+    },
+    {
+      "ci": null,
+      "different": false,
+      "field": "db.schema_hash",
+      "hint": "",
+      "local": null
+    },
+    {
+      "ci": "09cfd1bf4902af70243507c9c30fada151f24ae9c6032dc9c3da7a305afaf4a6",
+      "different": false,
+      "field": "db.migration_hash",
+      "hint": "",
+      "local": "09cfd1bf4902af70243507c9c30fada151f24ae9c6032dc9c3da7a305afaf4a6"
+    },
+    {
+      "ci": "822c3e1eb4ac4f71971c05529dd08e5b86614bb81c8db90732ffa2cc317b224f",
+      "different": false,
+      "field": "protobuf.generated_hash",
+      "hint": "",
+      "local": "822c3e1eb4ac4f71971c05529dd08e5b86614bb81c8db90732ffa2cc317b224f"
+    },
+    {
+      "ci": 0,
+      "different": true,
+      "field": "pytest.collected",
+      "hint": "Pytest collection or first failure differs.",
+      "local": null
+    },
+    {
+      "ci": "",
+      "different": true,
+      "field": "pytest.first_failure",
+      "hint": "Pytest collection or first failure differs.",
+      "local": null
+    },
+    {
+      "ci": true,
+      "different": true,
+      "field": "env.OBSERVABILITY_RUN_ID.present",
+      "hint": "Environment variable presence differs; values remain redacted.",
+      "local": false
+    },
+    {
+      "ci": [
+        "observability-unit-tests"
+      ],
+      "different": true,
+      "field": "pipeline.command_sequence",
+      "hint": "Observed command sequence differs between local and CI.",
+      "local": []
+    }
+  ],
+  "likely_causes": [
+    "Docker configuration, version, or image digest differs.",
+    "Pytest collection or first failure differs.",
+    "Pytest collection or first failure differs.",
+    "Environment variable presence differs; values remain redacted.",
+    "Observed command sequence differs between local and CI."
+  ],
+  "local": ".o11y\\runs\\local-20260627T154557Z-9e14916a-24a14f"
+}

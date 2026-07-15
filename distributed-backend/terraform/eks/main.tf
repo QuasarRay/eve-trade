@@ -29,7 +29,6 @@ module "_app_eks" {
     kubernetes.cluster = kubernetes.cluster
     kubernetes.addons  = kubernetes
     helm.addons        = helm
-    kubectl.addons     = kubectl
   }
 
   environment_name               = var.environment_name
@@ -38,6 +37,7 @@ module "_app_eks" {
   vpc_id                         = module.vpc.inner.vpc_id
   vpc_cidr                       = module.vpc.inner.vpc_cidr_block
   subnet_ids                     = module.vpc.inner.private_subnets
+  node_egress_ipv4_cidrs         = var.node_egress_ipv4_cidrs
   opentelemetry_enabled          = var.opentelemetry_enabled
   tags                           = module.tags.result
 

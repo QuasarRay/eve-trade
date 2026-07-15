@@ -60,6 +60,13 @@ variable "external_database_url" {
   sensitive   = true
 }
 
+variable "market_database_url" {
+  description = "Read-only PostgreSQL URL for the Market service. Terraform stores it in the market-database Secret as MARKET_DATABASE_URL when set."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "database_name" {
   description = "PostgreSQL database name used by in_cluster mode."
   type        = string
@@ -111,7 +118,7 @@ variable "default_image_tag" {
 }
 
 variable "container_image_overrides" {
-  description = "Optional per-service image overrides keyed by api-gateway, market, settlement-worker, or trade-settlement. Each value may include repository and tag."
+  description = "Optional per-service image overrides keyed by encore-backend, trade-settlement, or quilkin. Each value may include repository and tag."
   type        = map(any)
   default     = {}
 }

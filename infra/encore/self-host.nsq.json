@@ -1,0 +1,26 @@
+{
+  "pubsub": [
+    {
+      "type": "nsq",
+      "hosts": "nsqd.eve-trade.svc.cluster.local:4150",
+      "topics": {
+        "settlement-work": {
+          "name": "settlement-work",
+          "subscriptions": {
+            "trade-settlement-executor": {
+              "name": "trade-settlement-executor"
+            }
+          }
+        },
+        "settlement-results": {
+          "name": "settlement-results",
+          "subscriptions": {
+            "market-settlement-result-projection": {
+              "name": "market-settlement-result-projection"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -10,7 +10,8 @@ from helpers import (
     wait_for_database,
     wait_for_gateway,
     wait_for_market,
-    wait_for_rabbitmq,
+    wait_for_pubsub,
+    wait_for_pubsub_idle,
     wait_for_settlement,
     wait_for_simulator,
 )
@@ -49,18 +50,18 @@ def pytest_sessionfinish(session, exitstatus):
 
 @pytest.fixture(scope="session")
 def service_urls():
-    api_gateway_url = os.environ.get("EVE_TRADE_API_GATEWAY_URL")
+    encore_url = os.environ.get("EVE_TRADE_ENCORE_URL")
     simulator_url = os.environ.get("EVE_TRADE_SIMULATOR_URL")
     database_url = os.environ.get("EVE_TRADE_DATABASE_URL")
-    require_or_skip(
-        api_gateway_url and simulator_url and database_url,
-        "set EVE_TRADE_API_GATEWAY_URL, EVE_TRADE_SIMULATOR_URL, and EVE_TRADE_DATABASE_URL to run e2e tests",
-    )
     if production_gate_enabled():
         required = {
-            "EVE_TRADE_MARKET_URL": os.environ.get("EVE_TRADE_MARKET_URL"),
+            "EVE_TRADE_ENCORE_URL": encore_url,
+            "EVE_TRADE_SIMULATOR_URL": simulator_url,
+            "EVE_TRADE_DATABASE_URL": database_url,
+            "EVE_TRADE_MARKET_DATABASE_URL": os.environ.get("EVE_TRADE_MARKET_DATABASE_URL"),
             "EVE_TRADE_SETTLEMENT_GRPC": os.environ.get("EVE_TRADE_SETTLEMENT_GRPC"),
-            "EVE_TRADE_RABBITMQ_URL": os.environ.get("EVE_TRADE_RABBITMQ_URL"),
+            "EVE_TRADE_NSQ_TCP": os.environ.get("EVE_TRADE_NSQ_TCP"),
+            "EVE_TRADE_NSQ_HTTP": os.environ.get("EVE_TRADE_NSQ_HTTP"),
             "EVE_TRADE_RUNTIME_DATABASE_URL": os.environ.get("EVE_TRADE_RUNTIME_DATABASE_URL"),
             "EVE_TRADE_QUILKIN_UDP_HOST": os.environ.get("EVE_TRADE_QUILKIN_UDP_HOST"),
             "EVE_TRADE_EDGE_RESPONSE_SECRET": os.environ.get("EVE_TRADE_EDGE_RESPONSE_SECRET"),
@@ -75,25 +76,32 @@ def service_urls():
         missing = sorted(name for name, value in required.items() if not value)
         if missing:
             pytest.fail("production-gate E2E settings are missing: " + ", ".join(missing), pytrace=False)
-    return api_gateway_url, simulator_url, database_url
+    require_or_skip(
+        encore_url and simulator_url and database_url,
+        "set EVE_TRADE_ENCORE_URL, EVE_TRADE_SIMULATOR_URL, and EVE_TRADE_DATABASE_URL to run e2e tests",
+    )
+    return encore_url, simulator_url, database_url
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def services_ready(service_urls):
-    api_gateway_url, simulator_url, database_url = service_urls
+    encore_url, simulator_url, database_url = service_urls
     wait_for_database(database_url)
-    wait_for_gateway(api_gateway_url)
+    wait_for_gateway(encore_url)
+    wait_for_market(encore_url)
     wait_for_simulator(simulator_url)
     if production_gate_enabled():
-        wait_for_market(os.environ["EVE_TRADE_MARKET_URL"])
         wait_for_settlement(os.environ["EVE_TRADE_SETTLEMENT_GRPC"])
-        wait_for_rabbitmq(os.environ["EVE_TRADE_RABBITMQ_URL"])
+        wait_for_pubsub(os.environ["EVE_TRADE_NSQ_TCP"])
 
 
 @pytest.fixture
 def db(service_urls, services_ready):
     _, _, database_url = service_urls
     database = Database(database_url)
+    nsq_http_url = os.environ.get("EVE_TRADE_NSQ_HTTP")
+    if nsq_http_url:
+        wait_for_pubsub_idle(nsq_http_url)
     database.reset()
     try:
         yield database
@@ -106,6 +114,17 @@ def runtime_db(db, services_ready):
     runtime_url = os.environ.get("EVE_TRADE_RUNTIME_DATABASE_URL")
     require_or_skip(runtime_url, "set EVE_TRADE_RUNTIME_DATABASE_URL to run runtime-role tests")
     database = Database(runtime_url)
+    try:
+        yield database
+    finally:
+        database.close()
+
+
+@pytest.fixture
+def market_db(db, services_ready):
+    market_url = os.environ.get("EVE_TRADE_MARKET_DATABASE_URL")
+    require_or_skip(market_url, "set EVE_TRADE_MARKET_DATABASE_URL to run market-role tests")
+    database = Database(market_url)
     try:
         yield database
     finally:
@@ -140,9 +159,13 @@ def authenticated_edge(services_ready):
         "response_secret": os.environ.get("EVE_TRADE_EDGE_RESPONSE_SECRET"),
     }
     require_or_skip(all(required.values()), "set authenticated edge test credentials to run principal-binding tests")
-    return AuthenticatedEdgeClient(
+    client = AuthenticatedEdgeClient(
         required["host"],
         int(os.environ.get("EVE_TRADE_QUILKIN_UDP_PORT", "26001")),
         required["response_secret"],
         os.environ.get("EVE_TRADE_EDGE_RESPONSE_KEY_ID", "primary"),
     )
+    try:
+        yield client
+    finally:
+        client.close()

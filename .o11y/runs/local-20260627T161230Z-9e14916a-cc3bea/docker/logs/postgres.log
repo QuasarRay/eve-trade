@@ -1,0 +1,103 @@
+postgres-1  | 2026-06-27T16:04:00.869868971Z The files belonging to this database system will be owned by user "postgres".
+postgres-1  | 2026-06-27T16:04:00.869917823Z This user must also own the server process.
+postgres-1  | 2026-06-27T16:04:00.869921273Z 
+postgres-1  | 2026-06-27T16:04:00.871658348Z The database cluster will be initialized with locale "en_US.utf8".
+postgres-1  | 2026-06-27T16:04:00.871677265Z The default database encoding has accordingly been set to "UTF8".
+postgres-1  | 2026-06-27T16:04:00.871680250Z The default text search configuration will be set to "english".
+postgres-1  | 2026-06-27T16:04:00.871682610Z 
+postgres-1  | 2026-06-27T16:04:00.871684652Z Data page checksums are disabled.
+postgres-1  | 2026-06-27T16:04:00.871686600Z 
+postgres-1  | 2026-06-27T16:04:00.871688472Z fixing permissions on existing directory /var/lib/postgresql/data ... ok
+postgres-1  | 2026-06-27T16:04:00.877741559Z creating subdirectories ... ok
+postgres-1  | 2026-06-27T16:04:00.877802632Z selecting dynamic shared memory implementation ... posix
+postgres-1  | 2026-06-27T16:04:00.942081650Z selecting default max_connections ... 100
+postgres-1  | 2026-06-27T16:04:00.968989107Z selecting default shared_buffers ... 128MB
+postgres-1  | 2026-06-27T16:04:00.996307486Z selecting default time zone ... Etc/UTC
+postgres-1  | 2026-06-27T16:04:01.001474580Z creating configuration files ... ok
+postgres-1  | 2026-06-27T16:04:01.362704489Z running bootstrap script ... ok
+postgres-1  | 2026-06-27T16:04:02.224441887Z performing post-bootstrap initialization ... ok
+postgres-1  | 2026-06-27T16:04:02.557414249Z syncing data to disk ... ok
+postgres-1  | 2026-06-27T16:04:02.557678555Z initdb: warning: enabling "trust" authentication for local connections
+postgres-1  | 2026-06-27T16:04:02.557693346Z initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+postgres-1  | 2026-06-27T16:04:02.557704631Z 
+postgres-1  | 2026-06-27T16:04:02.557718749Z 
+postgres-1  | 2026-06-27T16:04:02.557721944Z Success. You can now start the database server using:
+postgres-1  | 2026-06-27T16:04:02.557724900Z 
+postgres-1  | 2026-06-27T16:04:02.557730816Z     pg_ctl -D /var/lib/postgresql/data -l logfile start
+postgres-1  | 2026-06-27T16:04:02.557734404Z 
+postgres-1  | 2026-06-27T16:04:02.630742619Z waiting for server to start....2026-06-27 16:04:02.630 UTC [54] LOG:  starting PostgreSQL 16.14 (Debian 16.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+postgres-1  | 2026-06-27T16:04:02.635728599Z 2026-06-27 16:04:02.635 UTC [54] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres-1  | 2026-06-27T16:04:02.649934591Z 2026-06-27 16:04:02.649 UTC [57] LOG:  database system was shut down at 2026-06-27 16:04:02 UTC
+postgres-1  | 2026-06-27T16:04:02.656827422Z 2026-06-27 16:04:02.656 UTC [54] LOG:  database system is ready to accept connections
+postgres-1  | 2026-06-27T16:04:02.700964099Z  done
+postgres-1  | 2026-06-27T16:04:02.701008713Z server started
+postgres-1  | 2026-06-27T16:04:02.864703710Z CREATE DATABASE
+postgres-1  | 2026-06-27T16:04:02.866188027Z 
+postgres-1  | 2026-06-27T16:04:02.866216647Z 
+postgres-1  | 2026-06-27T16:04:02.866235526Z /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+postgres-1  | 2026-06-27T16:04:02.866240005Z 
+postgres-1  | 2026-06-27T16:04:02.867437776Z waiting for server to shut down....2026-06-27 16:04:02.867 UTC [54] LOG:  received fast shutdown request
+postgres-1  | 2026-06-27T16:04:02.870374734Z 2026-06-27 16:04:02.869 UTC [54] LOG:  aborting any active transactions
+postgres-1  | 2026-06-27T16:04:02.872535611Z 2026-06-27 16:04:02.872 UTC [54] LOG:  background worker "logical replication launcher" (PID 61) exited with exit code 1
+postgres-1  | 2026-06-27T16:04:02.873270097Z 2026-06-27 16:04:02.872 UTC [55] LOG:  shutting down
+postgres-1  | 2026-06-27T16:04:02.875126829Z 2026-06-27 16:04:02.874 UTC [55] LOG:  checkpoint starting: shutdown immediate
+postgres-1  | 2026-06-27T16:04:02.990654305Z 2026-06-27 16:04:02.990 UTC [55] LOG:  checkpoint complete: wrote 926 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.022 s, sync=0.087 s, total=0.118 s; sync files=301, longest=0.003 s, average=0.001 s; distance=4273 kB, estimate=4273 kB; lsn=0/191F0F0, redo lsn=0/191F0F0
+postgres-1  | 2026-06-27T16:04:02.999519747Z 2026-06-27 16:04:02.999 UTC [54] LOG:  database system is shut down
+postgres-1  | 2026-06-27T16:04:03.066666226Z  done
+postgres-1  | 2026-06-27T16:04:03.066692025Z server stopped
+postgres-1  | 2026-06-27T16:04:03.070526324Z 
+postgres-1  | 2026-06-27T16:04:03.070551600Z PostgreSQL init process complete; ready for start up.
+postgres-1  | 2026-06-27T16:04:03.070554823Z 
+postgres-1  | 2026-06-27T16:04:03.095728732Z 2026-06-27 16:04:03.095 UTC [1] LOG:  starting PostgreSQL 16.14 (Debian 16.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+postgres-1  | 2026-06-27T16:04:03.098440711Z 2026-06-27 16:04:03.098 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+postgres-1  | 2026-06-27T16:04:03.098531072Z 2026-06-27 16:04:03.098 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+postgres-1  | 2026-06-27T16:04:03.103281857Z 2026-06-27 16:04:03.103 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres-1  | 2026-06-27T16:04:03.110778766Z 2026-06-27 16:04:03.110 UTC [71] LOG:  database system was shut down at 2026-06-27 16:04:02 UTC
+postgres-1  | 2026-06-27T16:04:03.118177927Z 2026-06-27 16:04:03.118 UTC [1] LOG:  database system is ready to accept connections
+postgres-1  | 2026-06-27T16:05:33.275878355Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "idempotency_record" --- lock not available
+postgres-1  | 2026-06-27T16:05:33.275908948Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "settlement_step" --- lock not available
+postgres-1  | 2026-06-27T16:05:33.275912324Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "settlement_batch" --- lock not available
+postgres-1  | 2026-06-27T16:05:33.275914980Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "item_stack_ledger" --- lock not available
+postgres-1  | 2026-06-27T16:05:33.275917578Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "request_attempt" --- lock not available
+postgres-1  | 2026-06-27T16:05:33.275920077Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "wallet" --- lock not available
+postgres-1  | 2026-06-27T16:05:33.275922595Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "item_stack" --- lock not available
+postgres-1  | 2026-06-27T16:05:33.275932355Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "item_stack_escrow" --- lock not available
+postgres-1  | 2026-06-27T16:05:33.275934416Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "trade_instance" --- lock not available
+postgres-1  | 2026-06-27T16:05:33.275936339Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "item_type" --- lock not available
+postgres-1  | 2026-06-27T16:05:33.275938249Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "capsuleer" --- lock not available
+postgres-1  | 2026-06-27T16:05:33.275976427Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "station" --- lock not available
+postgres-1  | 2026-06-27T16:05:33.275990693Z 2026-06-27 16:05:33.275 UTC [501] LOG:  skipping analyze of "region" --- lock not available
+postgres-1  | 2026-06-27T16:06:14.563373808Z 2026-06-27 16:06:14.563 UTC [696] ERROR:  trade_instance 8787d230-ccf0-4462-b04d-5a640a1c704b remaining_quantity 3 does not match active item escrow quantity 4
+postgres-1  | 2026-06-27T16:06:14.563401336Z 2026-06-27 16:06:14.563 UTC [696] CONTEXT:  PL/pgSQL function check_trade_remaining_quantity_invariant(uuid) line 25 at RAISE
+postgres-1  | 2026-06-27T16:06:14.563405474Z 	SQL statement "SELECT check_trade_remaining_quantity_invariant(NEW.trade_instance_id)"
+postgres-1  | 2026-06-27T16:06:14.563409374Z 	PL/pgSQL function enforce_trade_remaining_quantity_invariant() line 12 at PERFORM
+postgres-1  | 2026-06-27T16:06:14.821051118Z 2026-06-27 16:06:14.820 UTC [705] ERROR:  ledger tables are append-only; write a new ledger row instead
+postgres-1  | 2026-06-27T16:06:14.821082641Z 2026-06-27 16:06:14.820 UTC [705] CONTEXT:  PL/pgSQL function reject_ledger_mutation() line 3 at RAISE
+postgres-1  | 2026-06-27T16:06:14.821086688Z 2026-06-27 16:06:14.820 UTC [705] STATEMENT:  UPDATE item_stack_ledger SET quantity_after = quantity_after WHERE item_stack_ledger_id = $1
+postgres-1  | 2026-06-27T16:06:15.105260370Z 2026-06-27 16:06:15.105 UTC [706] ERROR:  ledger tables are append-only; write a new ledger row instead
+postgres-1  | 2026-06-27T16:06:15.105288301Z 2026-06-27 16:06:15.105 UTC [706] CONTEXT:  PL/pgSQL function reject_ledger_mutation() line 3 at RAISE
+postgres-1  | 2026-06-27T16:06:15.105291355Z 2026-06-27 16:06:15.105 UTC [706] STATEMENT:  DELETE FROM wallet_ledger WHERE wallet_ledger_id = $1
+postgres-1  | 2026-06-27T16:09:03.440760691Z 2026-06-27 16:09:03.440 UTC [69] LOG:  checkpoint starting: time
+postgres-1  | 2026-06-27T16:10:08.754075272Z 2026-06-27 16:10:08.753 UTC [69] LOG:  checkpoint complete: wrote 444 buffers (2.7%); 0 WAL file(s) added, 0 removed, 1 recycled; write=46.330 s, sync=18.640 s, total=65.316 s; sync files=8300, longest=0.080 s, average=0.003 s; distance=10660 kB, estimate=10660 kB; lsn=0/2388190, redo lsn=0/2388158
+postgres-1  | 2026-06-27T16:11:29.164869041Z 2026-06-27 16:11:29.164 UTC [1990] ERROR:  trade_instance 75826711-bd8a-42fd-9650-140610cd879b remaining_quantity 3 does not match active item escrow quantity 4
+postgres-1  | 2026-06-27T16:11:29.164901162Z 2026-06-27 16:11:29.164 UTC [1990] CONTEXT:  PL/pgSQL function check_trade_remaining_quantity_invariant(uuid) line 25 at RAISE
+postgres-1  | 2026-06-27T16:11:29.164905151Z 	SQL statement "SELECT check_trade_remaining_quantity_invariant(NEW.trade_instance_id)"
+postgres-1  | 2026-06-27T16:11:29.164908360Z 	PL/pgSQL function enforce_trade_remaining_quantity_invariant() line 12 at PERFORM
+postgres-1  | 2026-06-27T16:11:29.335701261Z 2026-06-27 16:11:29.335 UTC [1991] ERROR:  ledger tables are append-only; write a new ledger row instead
+postgres-1  | 2026-06-27T16:11:29.335712158Z 2026-06-27 16:11:29.335 UTC [1991] CONTEXT:  PL/pgSQL function reject_ledger_mutation() line 3 at RAISE
+postgres-1  | 2026-06-27T16:11:29.335714443Z 2026-06-27 16:11:29.335 UTC [1991] STATEMENT:  UPDATE item_stack_ledger SET quantity_after = quantity_after WHERE item_stack_ledger_id = $1
+postgres-1  | 2026-06-27T16:11:29.535470829Z 2026-06-27 16:11:29.535 UTC [1992] ERROR:  ledger tables are append-only; write a new ledger row instead
+postgres-1  | 2026-06-27T16:11:29.535493094Z 2026-06-27 16:11:29.535 UTC [1992] CONTEXT:  PL/pgSQL function reject_ledger_mutation() line 3 at RAISE
+postgres-1  | 2026-06-27T16:11:29.535495661Z 2026-06-27 16:11:29.535 UTC [1992] STATEMENT:  DELETE FROM wallet_ledger WHERE wallet_ledger_id = $1
+postgres-1  | 2026-06-27T16:14:03.953910280Z 2026-06-27 16:14:03.953 UTC [69] LOG:  checkpoint starting: time
+postgres-1  | 2026-06-27T16:14:54.396724674Z 2026-06-27 16:14:54.396 UTC [69] LOG:  checkpoint complete: wrote 446 buffers (2.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=44.779 s, sync=5.482 s, total=50.443 s; sync files=8297, longest=0.037 s, average=0.001 s; distance=10929 kB, estimate=10929 kB; lsn=0/2E34798, redo lsn=0/2E34760
+postgres-1  | 2026-06-27T16:16:58.095099713Z 2026-06-27 16:16:58.094 UTC [3351] ERROR:  trade_instance 4a6495df-23a2-4a31-9d21-1149559a23b9 remaining_quantity 3 does not match active item escrow quantity 4
+postgres-1  | 2026-06-27T16:16:58.095119536Z 2026-06-27 16:16:58.094 UTC [3351] CONTEXT:  PL/pgSQL function check_trade_remaining_quantity_invariant(uuid) line 25 at RAISE
+postgres-1  | 2026-06-27T16:16:58.095121872Z 	SQL statement "SELECT check_trade_remaining_quantity_invariant(NEW.trade_instance_id)"
+postgres-1  | 2026-06-27T16:16:58.095124034Z 	PL/pgSQL function enforce_trade_remaining_quantity_invariant() line 12 at PERFORM
+postgres-1  | 2026-06-27T16:16:58.267929370Z 2026-06-27 16:16:58.267 UTC [3352] ERROR:  ledger tables are append-only; write a new ledger row instead
+postgres-1  | 2026-06-27T16:16:58.267952773Z 2026-06-27 16:16:58.267 UTC [3352] CONTEXT:  PL/pgSQL function reject_ledger_mutation() line 3 at RAISE
+postgres-1  | 2026-06-27T16:16:58.267955314Z 2026-06-27 16:16:58.267 UTC [3352] STATEMENT:  UPDATE item_stack_ledger SET quantity_after = quantity_after WHERE item_stack_ledger_id = $1
+postgres-1  | 2026-06-27T16:16:58.532733340Z 2026-06-27 16:16:58.532 UTC [3353] ERROR:  ledger tables are append-only; write a new ledger row instead
+postgres-1  | 2026-06-27T16:16:58.532756889Z 2026-06-27 16:16:58.532 UTC [3353] CONTEXT:  PL/pgSQL function reject_ledger_mutation() line 3 at RAISE
+postgres-1  | 2026-06-27T16:16:58.532760367Z 2026-06-27 16:16:58.532 UTC [3353] STATEMENT:  DELETE FROM wallet_ledger WHERE wallet_ledger_id = $1

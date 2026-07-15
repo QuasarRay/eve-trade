@@ -1,41 +1,15 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: api-gateway
+  name: encore-backend
   labels:
-    app.kubernetes.io/name: api-gateway
-    app.kubernetes.io/component: gateway
+    app.kubernetes.io/name: encore-backend
+    app.kubernetes.io/component: backend
 spec:
   minAvailable: 2
   selector:
     matchLabels:
-      app.kubernetes.io/name: api-gateway
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: market
-  labels:
-    app.kubernetes.io/name: market
-    app.kubernetes.io/component: market
-spec:
-  minAvailable: 2
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: market
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: settlement-worker
-  labels:
-    app.kubernetes.io/name: settlement-worker
-    app.kubernetes.io/component: settlement-worker
-spec:
-  minAvailable: 2
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: settlement-worker
+      app.kubernetes.io/name: encore-backend
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -53,12 +27,25 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: rabbitmq
+  name: nsqd
   labels:
-    app.kubernetes.io/name: rabbitmq
-    app.kubernetes.io/component: messaging
+    app.kubernetes.io/name: nsqd
+    app.kubernetes.io/component: pubsub
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: rabbitmq
+      app.kubernetes.io/name: nsqd
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: quilkin
+  labels:
+    app.kubernetes.io/name: quilkin
+    app.kubernetes.io/component: udp-proxy
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: quilkin

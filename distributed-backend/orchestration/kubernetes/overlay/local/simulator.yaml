@@ -56,14 +56,14 @@ spec:
             - name: GAME_PACKET_HMAC_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: api-gateway-edge-auth
+                  name: gateway-edge-auth
                   key: GAME_PACKET_HMAC_SECRET
             - name: GAME_PACKET_HMAC_KEY_ID
               value: primary
             - name: GAME_PACKET_PRINCIPAL_KEYS_JSON
               valueFrom:
                 secretKeyRef:
-                  name: api-gateway-edge-auth
+                  name: gateway-edge-auth
                   key: GAME_PACKET_SIMULATOR_PRINCIPAL_KEYS_JSON
             - name: SIMULATOR_ALLOWED_HOSTS
               value: "*"

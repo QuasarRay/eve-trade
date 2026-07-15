@@ -1,0 +1,24 @@
+# Project-scoped Codex subagent wiring.
+# The repository's .agents/ directory remains the source of truth.
+# Codex must trust this project before project-local .codex config is loaded.
+
+[agents]
+max_threads = 1
+max_depth = 1
+interrupt_message = true
+
+[agents.evidence_investigator]
+description = "One bounded, fresh-context investigator for a specific uncertainty, subsystem, or failure. Use before implementation when evidence is incomplete."
+config_file = "../.agents/evidence-investigator.toml"
+
+[agents.adversarial_verifier]
+description = "Fresh independent verifier that tries to disprove one important finding, root cause, completion claim, or fix."
+config_file = "../.agents/adversarial-verifier.toml"
+
+[agents.implementation_worker]
+description = "Single bounded implementation agent used only after the root has an evidence-backed design and explicit write scope."
+config_file = "../.agents/implementation-worker.toml"
+
+[agents.final_auditor]
+description = "Fresh final reviewer for the completed exact tree, focused on omissions, false greens, stale evidence, regressions, and unproven claims."
+config_file = "../.agents/final-auditor.toml"

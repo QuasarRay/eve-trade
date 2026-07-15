@@ -1,0 +1,971 @@
+command: docker compose -f C:\Users\Astral\Desktop\eve-trade\docker-compose.integration.yml --profile test build
+cwd: C:\Users\Astral\Desktop\eve-trade
+exit_code: 0
+duration_ms: 188480.344
+
+--- stdout ---
+#1 [internal] load local bake definitions
+#1 reading from stdin 3.23kB done
+#1 DONE 0.0s
+
+#2 [simulator internal] load build definition from Dockerfile
+#2 transferring dockerfile: 354B 0.0s done
+#2 DONE 0.0s
+
+#3 [settlement-worker internal] load build definition from settlement-worker.Dockerfile
+#3 transferring dockerfile: 1.68kB done
+#3 DONE 0.2s
+
+#4 [quilkin internal] load build definition from quilkin.Dockerfile
+#4 transferring dockerfile: 417B 0.0s done
+#4 DONE 0.2s
+
+#5 [trade-settlement internal] load build definition from trade-settlement.Dockerfile
+#5 transferring dockerfile: 2.40kB 0.0s done
+#5 DONE 0.2s
+
+#6 [market internal] load build definition from market.Dockerfile
+#6 transferring dockerfile: 1.72kB 0.0s done
+#6 DONE 0.2s
+
+#7 [simulator internal] load metadata for docker.io/library/python:3.13-slim
+#7 DONE 0.1s
+
+#8 [api-gateway internal] load build definition from api-gateway.Dockerfile
+#8 transferring dockerfile: 1.42kB done
+#8 DONE 0.2s
+
+#9 [quilkin internal] load .dockerignore
+#9 transferring context: 646B 0.0s done
+#9 DONE 0.0s
+
+#10 [settlement-worker internal] load metadata for docker.io/library/golang:1.26-bookworm
+#10 DONE 0.1s
+
+#11 [trade-settlement internal] load metadata for docker.io/library/rust:1-bookworm
+#11 DONE 0.1s
+
+#12 [trade-settlement internal] load metadata for docker.io/library/debian:bookworm-slim
+#12 DONE 0.1s
+
+#13 [api-gateway internal] load build context
+#13 DONE 0.0s
+
+#14 [api-gateway runtime 1/4] WORKDIR /app
+#14 DONE 0.0s
+
+#15 [market internal] load build context
+#15 DONE 0.0s
+
+#16 [market build  1/12] FROM docker.io/library/golang:1.26-bookworm@sha256:5f68ec6805843bd3981a951ffada82a26a0bd2631045c8f7dba483fa868f5ec5
+#16 resolve docker.io/library/golang:1.26-bookworm@sha256:5f68ec6805843bd3981a951ffada82a26a0bd2631045c8f7dba483fa868f5ec5 0.1s done
+#16 DONE 0.1s
+
+#14 [settlement-worker runtime 1/4] WORKDIR /app
+#14 DONE 0.0s
+
+#17 [settlement-worker internal] load build context
+#17 DONE 0.0s
+
+#18 [trade-settlement internal] load build context
+#18 DONE 0.0s
+
+#19 [simulator 1/5] FROM docker.io/library/python:3.13-slim@sha256:c33f0bc4364a6881bed1ec0cc2665e6c53c87a43e774aaeab88e6f17af105e4f
+#19 resolve docker.io/library/python:3.13-slim@sha256:c33f0bc4364a6881bed1ec0cc2665e6c53c87a43e774aaeab88e6f17af105e4f 0.1s done
+#19 DONE 0.1s
+
+#20 [trade-settlement build 1/2] FROM docker.io/library/rust:1-bookworm@sha256:19817ead3289c8c631c73df281e18b59b172f6a31f4f563290f69cddd06c30e9
+#20 resolve docker.io/library/rust:1-bookworm@sha256:19817ead3289c8c631c73df281e18b59b172f6a31f4f563290f69cddd06c30e9 0.1s done
+#20 DONE 0.1s
+
+#21 [trade-settlement runtime 1/2] FROM docker.io/library/debian:bookworm-slim@sha256:96e378d7e6531ac9a15ad505478fcc2e69f371b10f5cdf87857c4b8188404716
+#21 resolve docker.io/library/debian:bookworm-slim@sha256:96e378d7e6531ac9a15ad505478fcc2e69f371b10f5cdf87857c4b8188404716 0.1s done
+#21 DONE 0.1s
+
+#22 [simulator internal] load build context
+#22 ...
+
+#23 [quilkin build 2/2] RUN cargo install quilkin --version "0.10.0" --locked --root /opt/quilkin
+#23 CACHED
+
+#24 [quilkin runtime 2/2] COPY --from=build /opt/quilkin/bin/quilkin /usr/local/bin/quilkin
+#24 CACHED
+
+#13 [api-gateway internal] load build context
+#13 transferring context: 3.83kB 0.0s done
+#13 DONE 0.1s
+
+#15 [market internal] load build context
+#15 transferring context: 112.05kB 0.1s done
+#15 DONE 0.1s
+
+#25 [quilkin] exporting to image
+#25 exporting layers done
+#25 exporting manifest sha256:1d198e6d71782e7418d55e579ba101b6e56562f7807dfb2302fe6c15987750bd done
+#25 exporting config sha256:cfcee9f0ae68d26b09da42b4efa23b1f5fe0493269d0345cc581bee0d49da886 done
+#25 exporting attestation manifest sha256:a5dc807054c8e20c44f895a987ad8f62c6d31816db97e86a0d3656457cea9748
+#25 exporting attestation manifest sha256:a5dc807054c8e20c44f895a987ad8f62c6d31816db97e86a0d3656457cea9748 0.1s done
+#25 exporting manifest list sha256:d7ff407cf35e5f52fabd5e60003b54d5c3303791292e02b8ecc023e941a7dbce 0.0s done
+#25 naming to docker.io/eve-trade/quilkin:dev done
+#25 unpacking to docker.io/eve-trade/quilkin:dev
+#25 unpacking to docker.io/eve-trade/quilkin:dev 0.0s done
+#25 DONE 0.3s
+
+#18 [trade-settlement internal] load build context
+#18 ...
+
+#26 [api-gateway runtime 2/4] COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+#26 CACHED
+
+#27 [api-gateway build  9/12] COPY distributed-backend/proto ./distributed-backend/proto
+#27 CACHED
+
+#28 [api-gateway build 11/12] RUN cd distributed-backend/src/api-gateway     && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api-gateway ./cmd/api-gateway
+#28 CACHED
+
+#29 [api-gateway build  7/12] RUN cd distributed-backend/src/api-gateway && go mod download
+#29 CACHED
+
+#30 [api-gateway build 12/12] RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/http-healthcheck ./distributed-backend/docker/http-healthcheck.go
+#30 CACHED
+
+#31 [api-gateway build  4/12] COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
+#31 CACHED
+
+#32 [api-gateway build  5/12] COPY distributed-backend/proto/go.mod distributed-backend/proto/go.sum ./distributed-backend/proto/
+#32 CACHED
+
+#33 [api-gateway build  3/12] COPY distributed-backend/docker/http-healthcheck.go ./distributed-backend/docker/
+#33 CACHED
+
+#34 [api-gateway build  6/12] COPY distributed-backend/src/api-gateway/go.mod distributed-backend/src/api-gateway/go.sum ./distributed-backend/src/api-gateway/
+#34 CACHED
+
+#35 [api-gateway build 10/12] COPY distributed-backend/src/api-gateway ./distributed-backend/src/api-gateway
+#35 CACHED
+
+#36 [api-gateway build  8/12] COPY distributed-backend/src/observability ./distributed-backend/src/observability
+#36 CACHED
+
+#37 [api-gateway runtime 3/4] COPY --from=build /out/api-gateway /app/api-gateway
+#37 CACHED
+
+#38 [api-gateway runtime 4/4] COPY --from=build /out/http-healthcheck /app/http-healthcheck
+#38 CACHED
+
+#39 [market build  8/14] RUN cd distributed-backend/src/market && go mod download
+#39 CACHED
+
+#40 [market build  5/14] COPY distributed-backend/proto/go.mod distributed-backend/proto/go.sum ./distributed-backend/proto/
+#40 CACHED
+
+#41 [market build 13/14] RUN cd distributed-backend/src/market     && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/market ./cmd/market
+#41 CACHED
+
+#42 [market build  3/14] COPY distributed-backend/docker/http-healthcheck.go ./distributed-backend/docker/
+#42 CACHED
+
+#43 [market build 11/14] COPY distributed-backend/src/messaging ./distributed-backend/src/messaging
+#43 CACHED
+
+#44 [market build  7/14] COPY distributed-backend/src/market/go.mod distributed-backend/src/market/go.sum ./distributed-backend/src/market/
+#44 CACHED
+
+#45 [market runtime 3/4] COPY --from=build /out/market /app/market
+#45 CACHED
+
+#46 [market build  4/14] COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
+#46 CACHED
+
+#47 [market build  2/12] WORKDIR /workspace
+#47 CACHED
+
+#48 [market build  9/14] COPY distributed-backend/src/observability ./distributed-backend/src/observability
+#48 CACHED
+
+#49 [market build 12/14] COPY distributed-backend/src/market ./distributed-backend/src/market
+#49 CACHED
+
+#50 [market build 14/14] RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/http-healthcheck ./distributed-backend/docker/http-healthcheck.go
+#50 CACHED
+
+#51 [market runtime 2/4] COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+#51 CACHED
+
+#52 [market build  6/14] COPY distributed-backend/src/messaging/go.mod distributed-backend/src/messaging/go.sum ./distributed-backend/src/messaging/
+#52 CACHED
+
+#53 [market build 10/14] COPY distributed-backend/proto ./distributed-backend/proto
+#53 CACHED
+
+#54 [market runtime 4/4] COPY --from=build /out/http-healthcheck /app/http-healthcheck
+#54 CACHED
+
+#18 [trade-settlement internal] load build context
+#18 ...
+
+#55 [api-gateway] exporting to image
+#55 exporting layers done
+#55 exporting manifest sha256:4e551b0948b33a3d819c88147a20c40202f7ae9ffc7a74150409185bfdd5099d done
+#55 exporting config sha256:df1e1bbef2b9469ecfe74d1fc394d49b64a629f41b7eb575565b6b86d0969233 0.0s done
+#55 exporting attestation manifest sha256:aff155973cfb79da6b61d9e94c960e5d41b68b27ee819cb16bed6756df8407b8 0.1s done
+#55 exporting manifest list sha256:8586b6b481b29a7f262f9069108bce618327d24834b065c6a280017d1d059b66 0.0s done
+#55 naming to docker.io/library/eve-trade-integration-api-gateway:latest done
+#55 unpacking to docker.io/library/eve-trade-integration-api-gateway:latest 0.0s done
+#55 DONE 0.3s
+
+#18 [trade-settlement internal] load build context
+#18 ...
+
+#56 [market] exporting to image
+#56 exporting layers done
+#56 exporting manifest sha256:5f81bf7d49d20e54b9eef1af5d05dc0929d92c994dfa90de1e2827470a721a24 done
+#56 exporting config sha256:a292997fa814538f0f18e190d531307f93840860e28d062fd5b4fc58ea42bcbc 0.0s done
+#56 exporting attestation manifest sha256:3e892a300a0ecd50bdd29ed8a1c52bf977ab8a8548b27572ffcbac1a065254a4 0.1s done
+#56 exporting manifest list sha256:69567f7a3dc563ce6b89a85219184027092dcdcafb789e995178b3b3bd6fbe0a 0.0s done
+#56 naming to docker.io/library/eve-trade-integration-market:latest done
+#56 unpacking to docker.io/library/eve-trade-integration-market:latest 0.0s done
+#56 DONE 0.4s
+
+#57 [quilkin] resolving provenance for metadata file
+#57 DONE 0.2s
+
+#18 [trade-settlement internal] load build context
+#18 ...
+
+#17 [settlement-worker internal] load build context
+#17 transferring context: 4.26kB 1.6s done
+#17 DONE 1.6s
+
+#18 [trade-settlement internal] load build context
+#18 ...
+
+#58 [api-gateway] resolving provenance for metadata file
+#58 DONE 0.2s
+
+#22 [simulator internal] load build context
+#22 transferring context: 934.06kB 2.0s done
+#22 DONE 2.1s
+
+#18 [trade-settlement internal] load build context
+#18 ...
+
+#59 [settlement-worker build  3/14] COPY distributed-backend/docker/http-healthcheck.go ./distributed-backend/docker/
+#59 CACHED
+
+#60 [settlement-worker build  6/14] COPY distributed-backend/src/messaging/go.mod distributed-backend/src/messaging/go.sum ./distributed-backend/src/messaging/
+#60 CACHED
+
+#61 [settlement-worker build  7/14] COPY distributed-backend/src/settlement-worker/go.mod distributed-backend/src/settlement-worker/go.sum ./distributed-backend/src/settlement-worker/
+#61 CACHED
+
+#62 [settlement-worker build 14/14] RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/http-healthcheck ./distributed-backend/docker/http-healthcheck.go
+#62 CACHED
+
+#63 [settlement-worker build  5/14] COPY distributed-backend/proto/go.mod distributed-backend/proto/go.sum ./distributed-backend/proto/
+#63 CACHED
+
+#64 [settlement-worker runtime 2/4] COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+#64 CACHED
+
+#47 [settlement-worker build  2/12] WORKDIR /workspace
+#47 CACHED
+
+#65 [settlement-worker build  4/14] COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
+#65 CACHED
+
+#66 [settlement-worker build 12/14] COPY distributed-backend/src/settlement-worker ./distributed-backend/src/settlement-worker
+#66 CACHED
+
+#67 [settlement-worker runtime 3/4] COPY --from=build /out/settlement-worker /app/settlement-worker
+#67 CACHED
+
+#68 [settlement-worker build 11/14] COPY distributed-backend/src/messaging ./distributed-backend/src/messaging
+#68 CACHED
+
+#69 [settlement-worker build 10/14] COPY distributed-backend/proto ./distributed-backend/proto
+#69 CACHED
+
+#70 [settlement-worker build  8/14] RUN cd distributed-backend/src/settlement-worker && go mod download
+#70 CACHED
+
+#71 [settlement-worker build  9/14] COPY distributed-backend/src/observability ./distributed-backend/src/observability
+#71 CACHED
+
+#72 [settlement-worker build 13/14] RUN cd distributed-backend/src/settlement-worker     && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/settlement-worker ./cmd/settlement-worker
+#72 CACHED
+
+#73 [settlement-worker runtime 4/4] COPY --from=build /out/http-healthcheck /app/http-healthcheck
+#73 CACHED
+
+#74 [simulator 3/5] COPY simulator/requirements.txt /app/requirements.txt
+#74 CACHED
+
+#75 [simulator 4/5] RUN python -m pip install --no-cache-dir -r /app/requirements.txt
+#75 CACHED
+
+#76 [simulator 2/5] WORKDIR /app
+#76 CACHED
+
+#77 [simulator 5/5] COPY simulator /app
+#77 CACHED
+
+#18 [trade-settlement internal] load build context
+#18 ...
+
+#78 [market] resolving provenance for metadata file
+#78 DONE 0.3s
+
+#18 [trade-settlement internal] load build context
+#18 ...
+
+#79 [settlement-worker] exporting to image
+#79 exporting layers done
+#79 exporting manifest sha256:d57beedea8e02fb679da03d4007e4d904e9bc84ecdb70067e49843a27b7fc372 done
+#79 exporting config sha256:5381b2763e9908b1ba32a0a3f2c85a57ddb639fa14b7affb8394c7ce480c4774 done
+#79 exporting attestation manifest sha256:cd3b87d02dcbfa13bf26274c55626f29f83d0ece789e514e2be88ee1ee7d5f7b 0.1s done
+#79 exporting manifest list sha256:43447d335f833a7004de25f432c88af114229ac33f721ee50591a1ed12cc3c5d 0.0s done
+#79 naming to docker.io/library/eve-trade-integration-settlement-worker:latest 0.0s done
+#79 unpacking to docker.io/library/eve-trade-integration-settlement-worker:latest 0.0s done
+#79 DONE 0.3s
+
+#80 [simulator] exporting to image
+#80 exporting layers 0.0s done
+#80 exporting manifest sha256:f951c40138a3e83fc9dc04ca303b0edfb24879bd59c1941d77173e4bfcca3b25 0.0s done
+#80 exporting config sha256:b4c47212e43a960d7ecb69e922f1e63ed80e669cebd048d095f247faeb13f0c1 done
+#80 exporting attestation manifest sha256:5102f94b275860b805ec83d20138e36c2d8412875c0b5ed7f5d00f6ee16ebe5a 0.1s done
+#80 exporting manifest list sha256:89393d43779b8bd89810b7e092b531a8ff944cb2a7b38ab37fae34c4d9e75de8 0.1s done
+#80 naming to docker.io/library/eve-trade-integration-simulator:latest 0.0s done
+#80 unpacking to docker.io/library/eve-trade-integration-simulator:latest 0.0s done
+#80 DONE 0.3s
+
+#18 [trade-settlement internal] load build context
+#18 ...
+
+#81 [simulator] resolving provenance for metadata file
+#81 DONE 0.2s
+
+#82 [settlement-worker] resolving provenance for metadata file
+#82 DONE 0.1s
+
+#18 [trade-settlement internal] load build context
+#18 transferring context: 91.43MB 6.7s
+#18 transferring context: 184.48MB 11.8s
+#18 transferring context: 263.39MB 16.9s
+#18 transferring context: 276.32MB 17.7s done
+#18 DONE 17.9s
+
+#83 [trade-settlement build 2/4] WORKDIR /workspace
+#83 CACHED
+
+#84 [trade-settlement build 3/4] COPY . .
+#84 DONE 4.5s
+
+#85 [trade-settlement build 4/4] RUN cd distributed-backend/src/trade-settlement     && cargo build --locked --release
+#85 0.898     Updating crates.io index
+#85 37.56  Downloading crates ...
+#85 39.31   Downloaded atoi v2.0.0
+#85 39.33   Downloaded atomic-waker v1.1.2
+#85 39.33   Downloaded adler2 v2.0.1
+#85 39.39   Downloaded alloc-stdlib v0.2.4
+#85 39.40   Downloaded alloc-no-stdlib v2.0.4
+#85 39.40   Downloaded autocfg v1.5.1
+#85 39.41   Downloaded async-trait v0.1.89
+#85 39.44   Downloaded anyhow v1.0.102
+#85 39.53   Downloaded allocator-api2 v0.2.21
+#85 39.61   Downloaded async-compression v0.4.42
+#85 39.65   Downloaded cfg-if v1.0.4
+#85 39.70   Downloaded block-buffer v0.10.4
+#85 39.72   Downloaded crc v3.4.0
+#85 39.73   Downloaded compression-core v0.4.32
+#85 39.73   Downloaded cpufeatures v0.2.17
+#85 39.73   Downloaded aho-corasick v1.1.4
+#85 39.74   Downloaded byteorder v1.5.0
+#85 39.75   Downloaded crypto-common v0.1.7
+#85 39.75   Downloaded base64ct v1.8.3
+#85 39.75   Downloaded axum-core v0.5.6
+#85 39.76   Downloaded equivalent v1.0.2
+#85 39.76   Downloaded dyn-clone v1.0.20
+#85 39.87   Downloaded errno v0.3.14
+#85 39.88   Downloaded crossbeam-queue v0.3.12
+#85 39.88   Downloaded crc-catalog v2.5.0
+#85 39.88   Downloaded concurrent-queue v2.5.0
+#85 39.88   Downloaded compression-codecs v0.4.38
+#85 39.89   Downloaded digest v0.10.7
+#85 39.90   Downloaded displaydoc v0.2.6
+#85 39.91   Downloaded either v1.16.0
+#85 39.91   Downloaded deranged v0.5.8
+#85 39.91   Downloaded dotenvy v0.15.7
+#85 39.92   Downloaded dashmap v6.2.1
+#85 39.92   Downloaded const-oid v0.9.6
+#85 39.93   Downloaded crossbeam-utils v0.8.21
+#85 39.93   Downloaded crc32fast v1.5.0
+#85 39.93   Downloaded fastrand v2.4.1
+#85 39.94   Downloaded bitflags v2.13.0
+#85 39.94   Downloaded event-listener v5.4.1
+#85 39.95   Downloaded find-msvc-tools v0.1.9
+#85 39.97   Downloaded bytes v1.12.0
+#85 39.99   Downloaded crossbeam-channel v0.5.15
+#85 40.00   Downloaded der v0.7.10
+#85 40.01   Downloaded cc v1.2.65
+#85 40.01   Downloaded base64 v0.22.1
+#85 40.08   Downloaded axum v0.8.9
+#85 40.09   Downloaded brotli-decompressor v5.0.3
+#85 40.11   Downloaded chrono v0.4.45
+#85 40.19   Downloaded brotli v8.0.4
+#85 40.21   Downloaded futures-macro v0.3.32
+#85 40.21   Downloaded futures-executor v0.3.32
+#85 40.22   Downloaded foldhash v0.1.5
+#85 40.22   Downloaded fnv v1.0.7
+#85 40.22   Downloaded futures-io v0.3.32
+#85 40.22   Downloaded flume v0.11.1
+#85 40.23   Downloaded fixedbitset v0.5.7
+#85 40.23   Downloaded futures-core v0.3.32
+#85 40.23   Downloaded futures-channel v0.3.32
+#85 40.24   Downloaded form_urlencoded v1.2.2
+#85 40.25   Downloaded futures-intrusive v0.5.0
+#85 40.26   Downloaded flate2 v1.1.9
+#85 40.27   Downloaded hashlink v0.10.0
+#85 40.27   Downloaded getrandom v0.2.17
+#85 40.32   Downloaded getrandom v0.3.4
+#85 40.33   Downloaded hashbrown v0.17.1
+#85 40.34   Downloaded futures-sink v0.3.32
+#85 40.38   Downloaded hdrhistogram v7.5.4
+#85 40.39   Downloaded getrandom v0.4.3
+#85 40.41   Downloaded home v0.5.12
+#85 40.41   Downloaded http-range-header v0.4.2
+#85 40.42   Downloaded hashbrown v0.14.5
+#85 40.43   Downloaded futures-util v0.3.32
+#85 40.45   Downloaded http-body-util v0.1.3
+#85 40.45   Downloaded hmac v0.12.1
+#85 40.45   Downloaded futures-task v0.3.32
+#85 40.46   Downloaded generic-array v0.14.7
+#85 40.47   Downloaded heck v0.5.0
+#85 40.50   Downloaded hex v0.4.3
+#85 40.50   Downloaded httpdate v1.0.3
+#85 40.52   Downloaded http-body v1.0.1
+#85 40.52   Downloaded hyper-timeout v0.5.2
+#85 40.53   Downloaded h2 v0.4.15
+#85 40.54   Downloaded httparse v1.10.1
+#85 40.58   Downloaded hkdf v0.12.4
+#85 40.60   Downloaded http v1.4.2
+#85 40.61   Downloaded hashbrown v0.15.5
+#85 40.62   Downloaded inventory v0.3.24
+#85 40.62   Downloaded icu_provider v2.2.0
+#85 40.62   Downloaded hyper v1.10.1
+#85 40.63   Downloaded icu_properties v2.2.0
+#85 40.64   Downloaded matchers v0.2.0
+#85 40.64   Downloaded lazy_static v1.5.0
+#85 40.65   Downloaded itoa v1.0.18
+#85 40.66   Downloaded idna_adapter v1.2.2
+#85 40.68   Downloaded jobserver v0.1.34
+#85 40.72   Downloaded iana-time-zone v0.1.65
+#85 40.73   Downloaded lock_api v0.4.14
+#85 40.75   Downloaded litemap v0.8.2
+#85 40.77   Downloaded log v0.4.33
+#85 40.78   Downloaded matchit v0.8.4
+#85 40.79   Downloaded icu_normalizer v2.2.0
+#85 40.80   Downloaded icu_locale_core v2.2.0
+#85 40.81   Downloaded icu_normalizer_data v2.2.0
+#85 40.82   Downloaded icu_collections v2.2.0
+#85 40.83   Downloaded indexmap v2.14.0
+#85 40.86   Downloaded hyper-util v0.1.20
+#85 40.92   Downloaded idna v1.1.0
+#85 40.92   Downloaded libm v0.2.16
+#85 40.93   Downloaded itertools v0.14.0
+#85 40.94   Downloaded icu_properties_data v2.2.0
+#85 41.08   Downloaded num-iter v0.1.45
+#85 41.10   Downloaded num-conv v0.2.2
+#85 41.11   Downloaded multimap v0.10.1
+#85 41.12   Downloaded md-5 v0.10.6
+#85 41.13   Downloaded mime v0.3.17
+#85 41.14   Downloaded num-integer v0.1.46
+#85 41.14   Downloaded mime_guess v2.0.5
+#85 41.15   Downloaded nu-ansi-term v0.50.3
+#85 41.18   Downloaded num-traits v0.2.19
+#85 41.20   Downloaded miniz_oxide v0.8.9
+#85 41.23   Downloaded memchr v2.8.2
+#85 41.30   Downloaded mio v1.2.1
+#85 41.32   Downloaded num-bigint-dig v0.8.6
+#85 41.36   Downloaded libc v0.2.186
+#85 41.42   Downloaded powerfmt v0.2.0
+#85 41.42   Downloaded parking v2.2.1
+#85 41.42   Downloaded pin-project-lite v0.2.17
+#85 41.43   Downloaded ppv-lite86 v0.2.21
+#85 41.44   Downloaded percent-encoding v2.3.2
+#85 41.44   Downloaded opentelemetry-resource-detectors v0.10.0
+#85 41.45   Downloaded opentelemetry-appender-tracing v0.31.1
+#85 41.46   Downloaded pkcs8 v0.10.2
+#85 41.46   Downloaded parking_lot_core v0.9.12
+#85 41.47   Downloaded pkg-config v0.3.33
+#85 41.47   Downloaded pin-project-internal v1.1.13
+#85 41.47   Downloaded opentelemetry-http v0.31.0
+#85 41.48   Downloaded pem-rfc7468 v0.7.0
+#85 41.48   Downloaded once_cell v1.21.4
+#85 41.48   Downloaded potential_utf v0.1.5
+#85 41.48   Downloaded parking_lot v0.12.5
+#85 41.49   Downloaded opentelemetry-proto v0.31.0
+#85 41.49   Downloaded pkcs1 v0.7.5
+#85 41.50   Downloaded pin-project v1.1.13
+#85 41.52   Downloaded opentelemetry-otlp v0.31.1
+#85 41.53   Downloaded ref-cast v1.0.25
+#85 41.54   Downloaded ref-cast-impl v1.0.25
+#85 41.55   Downloaded opentelemetry-semantic-conventions v0.31.0
+#85 41.56   Downloaded rand_chacha v0.3.1
+#85 41.59   Downloaded scopeguard v1.2.0
+#85 41.60   Downloaded rand_chacha v0.9.0
+#85 41.60   Downloaded opentelemetry v0.31.0
+#85 41.62   Downloaded serde-toml-merge v0.3.11
+#85 41.62   Downloaded serde_spanned v1.1.1
+#85 41.64   Downloaded quote v1.0.46
+#85 41.65   Downloaded rand_core v0.9.5
+#85 41.66   Downloaded rand_core v0.6.4
+#85 41.69   Downloaded prost-derive v0.14.4
+#85 41.70   Downloaded serde_derive_internals v0.29.1
+#85 41.70   Downloaded serde_path_to_error v0.1.20
+#85 41.70   Downloaded schemars_derive v1.2.1
+#85 41.71   Downloaded pulldown-cmark-to-cmark v22.0.0
+#85 41.71   Downloaded prost v0.14.4
+#85 41.73   Downloaded prost-build v0.14.4
+#85 41.75   Downloaded rustls-pki-types v1.14.1
+#85 41.79   Downloaded prost-types v0.14.4
+#85 41.80   Downloaded ryu v1.0.23
+#85 41.82   Downloaded serde_derive v1.0.228
+#85 41.83   Downloaded serde_core v1.0.228
+#85 41.83   Downloaded prettyplease v0.2.37
+#85 41.83   Downloaded proc-macro2 v1.0.106
+#85 41.89   Downloaded rsa v0.9.10
+#85 41.90   Downloaded rand v0.9.4
+#85 41.91   Downloaded serde v1.0.228
+#85 41.91   Downloaded rand v0.8.6
+#85 41.92   Downloaded rustls-webpki v0.103.13
+#85 41.94   Downloaded schemars v1.2.1
+#85 42.03   Downloaded opentelemetry_sdk v0.31.0
+#85 42.05   Downloaded regex v1.12.4
+#85 42.06   Downloaded serde_json v1.0.150
+#85 42.07   Downloaded reqwest v0.12.28
+#85 42.07   Downloaded pulldown-cmark v0.13.4
+#85 42.24   Downloaded signature v2.2.0
+#85 42.24   Downloaded sha1 v0.10.6
+#85 42.25   Downloaded serde_urlencoded v0.7.1
+#85 42.30   Downloaded spki v0.7.3
+#85 42.31   Downloaded shlex v2.0.1
+#85 42.31   Downloaded simd-adler32 v0.3.9
+#85 42.32   Downloaded slab v0.4.12
+#85 42.33   Downloaded signal-hook-registry v1.4.8
+#85 42.33   Downloaded smallvec v1.15.2
+#85 42.34   Downloaded sha2 v0.10.9
+#85 42.37   Downloaded spin v0.9.8
+#85 42.39   Downloaded socket2 v0.6.4
+#85 42.40   Downloaded sharded-slab v0.1.7
+#85 42.45   Downloaded rustls v0.23.41
+#85 42.48   Downloaded sqlx-core v0.8.6
+#85 42.49   Downloaded regex-syntax v0.8.11
+#85 42.54   Downloaded rustix v1.1.4
+#85 42.61   Downloaded sqlx-macros v0.8.6
+#85 42.62   Downloaded sqlx v0.8.6
+#85 42.72   Downloaded regex-automata v0.4.14
+#85 42.82   Downloaded petgraph v0.8.3
+#85 42.85   Downloaded stable_deref_trait v1.2.1
+#85 42.89   Downloaded sqlx-macros-core v0.8.6
+#85 43.25   Downloaded summer v0.7.1
+#85 43.40   Downloaded ring v0.17.14
+#85 43.71   Downloaded linux-raw-sys v0.12.1
+#85 44.27   Downloaded time-core v0.1.9
+#85 44.28   Downloaded tinyvec_macros v0.1.1
+#85 44.29   Downloaded sync_wrapper v1.0.2
+#85 44.29   Downloaded symlink v0.1.0
+#85 44.43   Downloaded protoc-bin-vendored-linux-x86_64 v3.2.0
+#85 44.54   Downloaded libsqlite3-sys v0.30.1
+#85 45.10   Downloaded ipnet v2.12.0
+#85 45.13   Downloaded subtle v2.6.1
+#85 45.29   Downloaded tokio-macros v2.7.0
+#85 45.37   Downloaded stringprep v0.1.5
+#85 45.37   Downloaded synstructure v0.13.2
+#85 45.38   Downloaded summer-grpc v0.7.1
+#85 45.48   Downloaded summer-opentelemetry v0.7.1
+#85 45.52   Downloaded toml_datetime v0.7.5+spec-1.1.0
+#85 45.53   Downloaded thiserror-impl v2.0.18
+#85 45.55   Downloaded thiserror v2.0.18
+#85 45.57   Downloaded thread_local v1.1.9
+#85 45.57   Downloaded summer-sqlx v0.7.1
+#85 45.59   Downloaded tower-service v0.3.3
+#85 45.59   Downloaded tonic-prost v0.14.6
+#85 45.61   Downloaded tonic-prost-build v0.14.6
+#85 45.62   Downloaded tonic-build v0.14.6
+#85 45.66   Downloaded tower-layer v0.3.3
+#85 45.71   Downloaded toml_writer v1.1.1+spec-1.1.0
+#85 45.71   Downloaded toml_parser v1.1.2+spec-1.1.0
+#85 45.71   Downloaded tokio-stream v0.1.18
+#85 45.73   Downloaded tinystr v0.8.3
+#85 45.75   Downloaded tempfile v3.27.0
+#85 45.75   Downloaded summer-macros v0.7.1
+#85 45.75   Downloaded time-macros v0.2.30
+#85 45.76   Downloaded tracing-appender v0.2.5
+#85 45.77   Downloaded toml v0.9.12+spec-1.1.0
+#85 45.78   Downloaded tinyvec v1.11.0
+#85 45.88   Downloaded sqlx-mysql v0.8.6
+#85 45.89   Downloaded sqlx-sqlite v0.8.6
+#85 45.89   Downloaded tracing-attributes v0.1.31
+#85 45.93   Downloaded tracing-core v0.1.36
+#85 46.00   Downloaded tonic v0.14.6
+#85 46.02   Downloaded tower v0.5.3
+#85 46.04   Downloaded sqlx-postgres v0.8.6
+#85 46.07   Downloaded tokio-util v0.7.18
+#85 46.09   Downloaded tower-http v0.6.11
+#85 46.14   Downloaded time v0.3.51
+#85 46.17   Downloaded syn v2.0.118
+#85 46.28   Downloaded tracing v0.1.44
+#85 46.39   Downloaded tokio v1.52.3
+#85 49.57   Downloaded tracing-error v0.2.1
+#85 49.58   Downloaded tracing-log v0.2.0
+#85 49.60   Downloaded unicode-ident v1.0.24
+#85 49.61   Downloaded untrusted v0.9.0
+#85 49.62   Downloaded try-lock v0.2.5
+#85 49.63   Downloaded unicode-properties v0.1.4
+#85 49.63   Downloaded tracing-serde v0.2.0
+#85 49.66   Downloaded unicase v2.9.0
+#85 49.66   Downloaded unicode-bidi v0.3.18
+#85 49.70   Downloaded unicode-normalization v0.1.25
+#85 49.71   Downloaded typenum v1.20.1
+#85 49.72   Downloaded tracing-opentelemetry v0.32.1
+#85 49.72   Downloaded tracing-subscriber v0.3.23
+#85 50.85   Downloaded version_check v0.9.5
+#85 50.87   Downloaded vcpkg v0.2.15
+#85 50.97   Downloaded yoke v0.8.3
+#85 50.98   Downloaded webpki-roots v1.0.8
+#85 50.99   Downloaded whoami v1.6.1
+#85 50.99   Downloaded winnow v1.0.3
+#85 51.03   Downloaded winnow v0.7.15
+#85 51.06   Downloaded webpki-roots v0.26.11
+#85 51.06   Downloaded want v0.3.1
+#85 51.06   Downloaded uuid v1.23.4
+#85 51.07   Downloaded utf8_iter v1.0.4
+#85 51.07   Downloaded url v2.5.8
+#85 51.07   Downloaded writeable v0.6.3
+#85 51.99   Downloaded zerofrom v0.1.8
+#85 52.01   Downloaded zmij v1.0.21
+#85 52.04   Downloaded zerotrie v0.2.4
+#85 52.12   Downloaded zstd v0.13.3
+#85 52.12   Downloaded zerofrom-derive v0.1.7
+#85 52.14   Downloaded zstd-safe v7.2.4
+#85 52.15   Downloaded zerovec-derive v0.11.3
+#85 52.20   Downloaded yoke-derive v0.8.2
+#85 52.24   Downloaded zstd-sys v2.0.16+zstd.1.5.7
+#85 52.26   Downloaded zerovec v0.11.6
+#85 52.27   Downloaded zerocopy v0.8.52
+#85 52.29   Downloaded zeroize v1.9.0
+#85 52.46    Compiling proc-macro2 v1.0.106
+#85 52.46    Compiling quote v1.0.46
+#85 52.46    Compiling unicode-ident v1.0.24
+#85 52.46    Compiling libc v0.2.186
+#85 52.47    Compiling serde v1.0.228
+#85 52.47    Compiling serde_core v1.0.228
+#85 52.48    Compiling cfg-if v1.0.4
+#85 52.48    Compiling parking_lot_core v0.9.12
+#85 52.48    Compiling pin-project-lite v0.2.17
+#85 52.49    Compiling autocfg v1.5.1
+#85 52.50    Compiling once_cell v1.21.4
+#85 52.50    Compiling find-msvc-tools v0.1.9
+#85 52.51    Compiling shlex v2.0.1
+#85 52.51    Compiling futures-core v0.3.32
+#85 52.52    Compiling itoa v1.0.18
+#85 52.58    Compiling bytes v1.12.0
+#85 52.63    Compiling memchr v2.8.2
+#85 52.79    Compiling log v0.4.33
+#85 53.13    Compiling scopeguard v1.2.0
+#85 53.19    Compiling zmij v1.0.21
+#85 53.20    Compiling futures-sink v0.3.32
+#85 53.22    Compiling version_check v0.9.5
+#85 53.29    Compiling tracing-core v0.1.36
+#85 53.29    Compiling lock_api v0.4.14
+#85 53.30    Compiling icu_normalizer_data v2.2.0
+#85 53.31    Compiling icu_properties_data v2.2.0
+#85 53.45    Compiling thiserror v2.0.18
+#85 53.47    Compiling slab v0.4.12
+#85 53.47    Compiling zerocopy v0.8.52
+#85 53.48    Compiling stable_deref_trait v1.2.1
+#85 53.49    Compiling equivalent v1.0.2
+#85 53.49    Compiling num-traits v0.2.19
+#85 53.64    Compiling futures-task v0.3.32
+#85 53.66    Compiling percent-encoding v2.3.2
+#85 53.67    Compiling generic-array v0.14.7
+#85 53.71    Compiling futures-io v0.3.32
+#85 53.83    Compiling hashbrown v0.17.1
+#85 53.87    Compiling anyhow v1.0.102
+#85 53.89    Compiling serde_json v1.0.150
+#85 53.90    Compiling getrandom v0.4.3
+#85 54.12    Compiling http v1.4.2
+#85 54.29    Compiling futures-channel v0.3.32
+#85 54.33    Compiling writeable v0.6.3
+#85 54.35    Compiling litemap v0.8.2
+#85 54.76    Compiling syn v2.0.118
+#85 54.83    Compiling form_urlencoded v1.2.2
+#85 54.86    Compiling utf8_iter v1.0.4
+#85 54.88    Compiling base64 v0.22.1
+#85 54.97    Compiling unicase v2.9.0
+#85 54.99    Compiling byteorder v1.5.0
+#85 55.05    Compiling crossbeam-utils v0.8.21
+#85 55.32    Compiling indexmap v2.14.0
+#85 55.36    Compiling jobserver v0.1.34
+#85 55.40    Compiling errno v0.3.14
+#85 55.42    Compiling socket2 v0.6.4
+#85 55.43    Compiling mio v1.2.1
+#85 55.49    Compiling pkg-config v0.3.33
+#85 55.50    Compiling httparse v1.10.1
+#85 55.52    Compiling typenum v1.20.1
+#85 55.54    Compiling signal-hook-registry v1.4.8
+#85 55.79    Compiling cc v1.2.65
+#85 55.89    Compiling tower-service v0.3.3
+#85 56.21    Compiling http-body v1.0.1
+#85 56.81    Compiling atomic-waker v1.1.2
+#85 57.06    Compiling iana-time-zone v0.1.65
+#85 57.09    Compiling try-lock v0.2.5
+#85 57.56    Compiling allocator-api2 v0.2.21
+#85 57.61    Compiling bitflags v2.13.0
+#85 57.64    Compiling httpdate v1.0.3
+#85 57.69    Compiling fnv v1.0.7
+#85 57.74    Compiling foldhash v0.1.5
+#85 57.76    Compiling want v0.3.1
+#85 57.82    Compiling getrandom v0.2.17
+#85 58.12    Compiling sync_wrapper v1.0.2
+#85 58.29    Compiling rustls v0.23.41
+#85 58.38    Compiling subtle v2.6.1
+#85 58.46    Compiling mime v0.3.17
+#85 58.52    Compiling tower-layer v0.3.3
+#85 58.58    Compiling hashbrown v0.15.5
+#85 58.64    Compiling http-body-util v0.1.3
+#85 58.65    Compiling hdrhistogram v7.5.4
+#85 59.02    Compiling ipnet v2.12.0
+#85 59.04    Compiling crc32fast v1.5.0
+#85 59.05    Compiling crypto-common v0.1.7
+#85 59.05    Compiling block-buffer v0.10.4
+#85 59.08    Compiling alloc-no-stdlib v2.0.4
+#85 59.17    Compiling zeroize v1.9.0
+#85 59.23    Compiling regex-syntax v0.8.11
+#85 59.26    Compiling zstd-safe v7.2.4
+#85 59.32    Compiling alloc-stdlib v0.2.4
+#85 59.36    Compiling rustls-pki-types v1.14.1
+#85 59.40    Compiling digest v0.10.7
+#85 59.47    Compiling uuid v1.23.4
+#85 59.59    Compiling adler2 v2.0.1
+#85 59.67    Compiling getrandom v0.3.4
+#85 59.68    Compiling ryu v1.0.23
+#85 59.73    Compiling simd-adler32 v0.3.9
+#85 59.76    Compiling lazy_static v1.5.0
+#85 59.79    Compiling ring v0.17.14
+#85 59.82    Compiling zstd-sys v2.0.16+zstd.1.5.7
+#85 59.84    Compiling sharded-slab v0.1.7
+#85 59.98    Compiling miniz_oxide v0.8.9
+#85 60.04    Compiling brotli-decompressor v5.0.3
+#85 60.50    Compiling tracing-log v0.2.0
+#85 60.71    Compiling thread_local v1.1.9
+#85 60.77    Compiling untrusted v0.9.0
+#85 60.91    Compiling nu-ansi-term v0.50.3
+#85 61.16    Compiling flate2 v1.1.9
+#85 62.31    Compiling synstructure v0.13.2
+#85 62.34    Compiling regex-automata v0.4.14
+#85 62.94    Compiling brotli v8.0.4
+#85 63.14    Compiling mime_guess v2.0.5
+#85 63.70    Compiling tinyvec_macros v0.1.1
+#85 63.82    Compiling heck v0.5.0
+#85 64.21    Compiling compression-core v0.4.32
+#85 64.31    Compiling tokio v1.52.3
+#85 64.48    Compiling tinyvec v1.11.0
+#85 64.74    Compiling rand_core v0.9.5
+#85 65.95    Compiling concurrent-queue v2.5.0
+#85 66.45    Compiling webpki-roots v1.0.8
+#85 66.67    Compiling serde_path_to_error v0.1.20
+#85 66.75    Compiling ppv-lite86 v0.2.21
+#85 66.78    Compiling rand_core v0.6.4
+#85 67.38    Compiling rustix v1.1.4
+#85 67.45    Compiling serde_derive v1.0.228
+#85 67.62    Compiling zerofrom-derive v0.1.7
+#85 67.75    Compiling yoke-derive v0.8.2
+#85 67.78    Compiling zerovec-derive v0.11.3
+#85 67.79    Compiling tracing-attributes v0.1.31
+#85 67.89    Compiling displaydoc v0.2.6
+#85 68.03    Compiling tokio-macros v2.7.0
+#85 69.31    Compiling thiserror-impl v2.0.18
+#85 69.31    Compiling futures-macro v0.3.32
+#85 69.45    Compiling async-trait v0.1.89
+#85 69.51    Compiling zerofrom v0.1.8
+#85 69.67    Compiling yoke v0.8.3
+#85 69.82    Compiling tracing v0.1.44
+#85 69.90    Compiling zerovec v0.11.6
+#85 70.61    Compiling futures-util v0.3.32
+#85 70.63    Compiling zerotrie v0.2.4
+#85 70.90    Compiling matchers v0.2.0
+#85 71.20    Compiling tinystr v0.8.3
+#85 71.26    Compiling potential_utf v0.1.5
+#85 71.36    Compiling axum-core v0.5.6
+#85 71.42    Compiling icu_collections v2.2.0
+#85 71.50    Compiling icu_locale_core v2.2.0
+#85 71.81    Compiling opentelemetry v0.31.0
+#85 72.51    Compiling pin-project-internal v1.1.13
+#85 72.54    Compiling parking v2.2.1
+#85 73.38    Compiling crc-catalog v2.5.0
+#85 73.59    Compiling icu_provider v2.2.0
+#85 74.17    Compiling icu_properties v2.2.0
+#85 74.71    Compiling prettyplease v0.2.37
+#85 75.00    Compiling smallvec v1.15.2
+#85 75.05    Compiling chrono v0.4.45
+#85 75.12    Compiling either v1.16.0
+#85 75.60    Compiling icu_normalizer v2.2.0
+#85 75.68    Compiling itertools v0.14.0
+#85 76.12    Compiling parking_lot v0.12.5
+#85 76.22    Compiling serde_urlencoded v0.7.1
+#85 76.78    Compiling tracing-serde v0.2.0
+#85 76.79    Compiling idna_adapter v1.2.2
+#85 77.08    Compiling idna v1.1.0
+#85 77.17    Compiling rustls-webpki v0.103.13
+#85 77.97    Compiling cpufeatures v0.2.17
+#85 77.99    Compiling pulldown-cmark v0.13.4
+#85 78.05    Compiling tracing-subscriber v0.3.23
+#85 78.11    Compiling url v2.5.8
+#85 78.14    Compiling ref-cast v1.0.25
+#85 78.36    Compiling winnow v1.0.3
+#85 78.40    Compiling matchit v0.8.4
+#85 78.78    Compiling prost-derive v0.14.4
+#85 79.09    Compiling toml_parser v1.1.2+spec-1.1.0
+#85 79.23    Compiling sha2 v0.10.9
+#85 79.67    Compiling futures-intrusive v0.5.0
+#85 80.02    Compiling pin-project v1.1.13
+#85 80.21    Compiling tokio-stream v0.1.18
+#85 81.09    Compiling crc v3.4.0
+#85 81.14    Compiling event-listener v5.4.1
+#85 81.57    Compiling rand_chacha v0.3.1
+#85 81.92    Compiling rand_chacha v0.9.0
+#85 82.16    Compiling ref-cast-impl v1.0.25
+#85 82.22    Compiling webpki-roots v0.26.11
+#85 82.36    Compiling unicode-normalization v0.1.25
+#85 82.40    Compiling serde_derive_internals v0.29.1
+#85 82.52    Compiling crossbeam-queue v0.3.12
+#85 82.63    Compiling hashlink v0.10.0
+#85 82.89    Compiling hmac v0.12.1
+#85 83.06    Compiling toml_datetime v0.7.5+spec-1.1.0
+#85 83.13    Compiling serde_spanned v1.1.1
+#85 83.26    Compiling linux-raw-sys v0.12.1
+#85 83.31    Compiling deranged v0.5.8
+#85 83.37    Compiling powerfmt v0.2.0
+#85 83.42    Compiling dotenvy v0.15.7
+#85 83.99    Compiling http-range-header v0.4.2
+#85 84.04    Compiling unicode-bidi v0.3.18
+#85 84.09    Compiling winnow v0.7.15
+#85 84.42    Compiling unicode-properties v0.1.4
+#85 84.58    Compiling time-core v0.1.9
+#85 84.87    Compiling num-conv v0.2.2
+#85 84.91    Compiling toml_writer v1.1.1+spec-1.1.0
+#85 85.08    Compiling stringprep v0.1.5
+#85 85.17    Compiling schemars_derive v1.2.1
+#85 85.36    Compiling hkdf v0.12.4
+#85 85.61    Compiling rand v0.9.4
+#85 85.83    Compiling time v0.3.51
+#85 85.87    Compiling prost v0.14.4
+#85 85.93    Compiling rand v0.8.6
+#85 86.45    Compiling sqlx-core v0.8.6
+#85 91.00    Compiling tokio-util v0.7.18
+#85 91.84    Compiling toml v0.9.12+spec-1.1.0
+#85 92.05    Compiling futures-executor v0.3.32
+#85 92.39    Compiling h2 v0.4.15
+#85 92.77    Compiling tower v0.5.3
+#85 92.97    Compiling atoi v2.0.0
+#85 93.36    Compiling md-5 v0.10.6
+#85 93.66    Compiling crossbeam-channel v0.5.15
+#85 93.84    Compiling whoami v1.6.1
+#85 93.92    Compiling fastrand v2.4.1
+#85 94.03    Compiling hashbrown v0.14.5
+#85 94.19    Compiling home v0.5.12
+#85 94.34    Compiling fixedbitset v0.5.7
+#85 94.39    Compiling hex v0.4.3
+#85 94.67    Compiling dyn-clone v1.0.20
+#85 94.79    Compiling symlink v0.1.0
+#85 94.87    Compiling schemars v1.2.1
+#85 94.88    Compiling petgraph v0.8.3
+#85 94.90    Compiling tracing-appender v0.2.5
+#85 95.64    Compiling dashmap v6.2.1
+#85 96.05    Compiling sqlx-postgres v0.8.6
+#85 96.77    Compiling regex v1.12.4
+#85 97.46    Compiling tempfile v3.27.0
+#85 97.55    Compiling serde-toml-merge v0.3.11
+#85 98.34    Compiling pulldown-cmark-to-cmark v22.0.0
+#85 98.42    Compiling opentelemetry_sdk v0.31.0
+#85 98.45    Compiling prost-types v0.14.4
+#85 98.98    Compiling tracing-error v0.2.1
+#85 99.37    Compiling summer-macros v0.7.1
+#85 99.94    Compiling inventory v0.3.24
+#85 100.1    Compiling multimap v0.10.1
+#85 100.4    Compiling tonic-build v0.14.6
+#85 100.7    Compiling prost-build v0.14.4
+#85 101.9    Compiling opentelemetry-resource-detectors v0.10.0
+#85 102.1    Compiling tonic-prost-build v0.14.6
+#85 102.2    Compiling protoc-bin-vendored-linux-x86_64 v3.2.0
+#85 102.4    Compiling opentelemetry-semantic-conventions v0.31.0
+#85 102.4    Compiling opentelemetry-appender-tracing v0.31.1
+#85 102.6    Compiling hyper v1.10.1
+#85 102.6    Compiling tracing-opentelemetry v0.32.1
+#85 103.5    Compiling trade-settlement v0.1.0 (/workspace/distributed-backend/src/trade-settlement)
+#85 103.5    Compiling summer v0.7.1
+#85 107.8    Compiling sqlx-macros-core v0.8.6
+#85 108.9    Compiling hyper-util v0.1.20
+#85 111.6    Compiling sqlx-macros v0.8.6
+#85 112.7    Compiling axum v0.8.9
+#85 113.2    Compiling hyper-timeout v0.5.2
+#85 121.3    Compiling tonic v0.14.6
+#85 123.5    Compiling zstd v0.13.3
+#85 123.7    Compiling compression-codecs v0.4.38
+#85 124.9    Compiling sqlx v0.8.6
+#85 125.0    Compiling tonic-prost v0.14.6
+#85 125.1    Compiling opentelemetry-proto v0.31.0
+#85 125.2    Compiling summer-sqlx v0.7.1
+#85 125.7    Compiling async-compression v0.4.42
+#85 127.7    Compiling tower-http v0.6.11
+#85 135.2    Compiling reqwest v0.12.28
+#85 135.2    Compiling summer-grpc v0.7.1
+#85 138.0    Compiling opentelemetry-http v0.31.0
+#85 138.9    Compiling opentelemetry-otlp v0.31.1
+#85 140.3    Compiling summer-opentelemetry v0.7.1
+#85 153.8     Finished `release` profile [optimized] target(s) in 2m 32s
+#85 DONE 161.3s
+
+#86 [trade-settlement runtime 2/5] WORKDIR /app
+#86 CACHED
+
+#87 [trade-settlement runtime 3/5] COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+#87 CACHED
+
+#88 [trade-settlement runtime 4/5] COPY --from=build /workspace/distributed-backend/src/trade-settlement/target/release/trade-settlement /app/trade-settlement
+#88 CACHED
+
+#89 [trade-settlement runtime 5/5] COPY --from=build /workspace/distributed-backend/src/trade-settlement/config /app/config
+#89 CACHED
+
+#90 [trade-settlement] exporting to image
+#90 exporting layers done
+#90 exporting manifest sha256:f2297165874f87f83c723b9d3d639d2ac5a5f2cd16ca57cfa97b693a72ae538d 0.0s done
+#90 exporting config sha256:c72587febcebcb52f9b8eef0bfa8a35ca3fdc71b81d3bae2a5fff29231e916c4 0.0s done
+#90 exporting attestation manifest sha256:2d3ef9d1b854e1856686562ae36bf32e9daf09d0d82383326998a09abd22d40e
+#90 exporting attestation manifest sha256:2d3ef9d1b854e1856686562ae36bf32e9daf09d0d82383326998a09abd22d40e 0.3s done
+#90 exporting manifest list sha256:dcd38f3d7079c016305cd635c043b1d43e69c15292bc674e527c83d33be19b69
+#90 exporting manifest list sha256:dcd38f3d7079c016305cd635c043b1d43e69c15292bc674e527c83d33be19b69 0.1s done
+#90 naming to docker.io/library/eve-trade-integration-trade-settlement:latest
+#90 naming to docker.io/library/eve-trade-integration-trade-settlement:latest 0.0s done
+#90 unpacking to docker.io/library/eve-trade-integration-trade-settlement:latest 0.0s done
+#90 DONE 0.7s
+
+#91 [trade-settlement] resolving provenance for metadata file
+#91 DONE 0.1s
+
+--- stderr ---
+ Image eve-trade-integration-api-gateway Building 
+ Image eve-trade/quilkin:dev Building 
+ Image eve-trade-integration-settlement-worker Building 
+ Image eve-trade-integration-market Building 
+ Image eve-trade-integration-simulator Building 
+ Image eve-trade-integration-trade-settlement Building 
+ Image eve-trade-integration-market Built 
+ Image eve-trade/quilkin:dev Built 
+ Image eve-trade-integration-settlement-worker Built 
+ Image eve-trade-integration-simulator Built 
+ Image eve-trade-integration-trade-settlement Built 
+ Image eve-trade-integration-api-gateway Built 

@@ -1,92 +1,34 @@
 [CmdletBinding()]
 param(
-    [switch]$Detached,
-    [switch]$NoBuild,
-    [int]$DockerWaitSeconds = 120
+    [string]$DatabaseUrl = "postgres://postgres:postgres@localhost:5432/eve_trade",
+    [string]$TradeSettlementTarget = "127.0.0.1:9092",
+    [string]$UDPSecret = "local-game-edge-secret"
 )
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 
-function Test-Command {
-    param([Parameter(Mandatory = $true)][string]$Name)
-    return [bool](Get-Command $Name -ErrorAction SilentlyContinue)
+if (-not (Get-Command encore -ErrorAction SilentlyContinue)) {
+    throw "Encore CLI was not found. Install it with: iwr https://encore.dev/install.ps1 | iex"
 }
 
-function Test-DockerDaemon {
-    docker info *> $null
-    return $LASTEXITCODE -eq 0
-}
+$env:MARKET_DATABASE_URL = $DatabaseUrl
+$env:TRADE_SETTLEMENT_GRPC_TARGET = $TradeSettlementTarget
+$env:API_GATEWAY_QUILKIN_UDP_ENABLED = "true"
+$env:API_GATEWAY_QUILKIN_UDP_ADDR = ":26000"
+$env:API_GATEWAY_UDP_AUTH_REQUIRED = "true"
+$env:API_GATEWAY_UDP_HMAC_SECRET = $UDPSecret
+$env:API_GATEWAY_UDP_HMAC_KEY_ID = "primary"
+$env:API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON = '{"seller":{"capsuleer_id":1001,"secret":"seller-player-secret"},"buyer":{"capsuleer_id":2002,"secret":"buyer-player-secret"},"other":{"capsuleer_id":3003,"secret":"other-player-secret"}}'
 
-function Start-DockerDesktopIfAvailable {
-    if (-not ($IsWindows -or $env:OS -eq "Windows_NT")) {
-        return $false
-    }
-
-    $candidates = @(
-        "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe",
-        "${env:ProgramFiles(x86)}\Docker\Docker\Docker Desktop.exe",
-        "$env:LocalAppData\Docker\Docker Desktop.exe"
-    ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) }
-
-    if (-not $candidates) {
-        return $false
-    }
-
-    Write-Host "Docker is installed but the daemon is not responding. Starting Docker Desktop..."
-    Start-Process -FilePath $candidates[0] | Out-Null
-    return $true
-}
-
-if (-not (Test-Command "docker")) {
-    throw "Docker CLI was not found. Install Docker Desktop, then run this launcher again."
-}
-
-if (-not (Test-DockerDaemon)) {
-    $started = Start-DockerDesktopIfAvailable
-    if (-not $started) {
-        throw "Docker is installed, but the daemon is not running. Start Docker Desktop, then run this launcher again."
-    }
-
-    $deadline = (Get-Date).AddSeconds($DockerWaitSeconds)
-    do {
-        Start-Sleep -Seconds 2
-        if (Test-DockerDaemon) {
-            break
-        }
-    } while ((Get-Date) -lt $deadline)
-
-    if (-not (Test-DockerDaemon)) {
-        throw "Docker Desktop did not become ready within $DockerWaitSeconds seconds."
-    }
-}
-
-$composeArgs = @("compose", "up")
-if (-not $NoBuild) {
-    $composeArgs += "--build"
-}
-if ($Detached) {
-    $composeArgs += "--detach"
-}
-
-Write-Host "Starting eve-trade..."
-Write-Host "API Gateway:              http://localhost:8080"
-Write-Host "Market service:           http://localhost:8081"
-Write-Host "Settlement worker health: http://localhost:8082"
-Write-Host "Trade settlement gRPC:    localhost:9092"
-Write-Host "RabbitMQ AMQP:            localhost:5672"
-Write-Host "RabbitMQ management:      http://localhost:15672 (eve_trade / eve_trade)"
-Write-Host "PostgreSQL:               localhost:5432"
+Write-Host "Starting Encore Go backend with encore run..."
+Write-Host "Encore HTTP:              http://localhost:4000"
+Write-Host "Quilkin UDP adapter:      udp://localhost:26000"
+Write-Host "PostgreSQL MARKET_DATABASE_URL:  $DatabaseUrl"
+Write-Host "Rust settlement gRPC:     $TradeSettlementTarget"
+Write-Host "Pub/Sub backend:          Encore local runtime"
 Write-Host ""
 
-& docker @composeArgs
-if ($LASTEXITCODE -ne 0) {
-    exit $LASTEXITCODE
-}
-
-if ($Detached) {
-    Write-Host ""
-    Write-Host "eve-trade is running in the background."
-    Write-Host "Stop it with: .\stop-eve-trade.cmd or docker compose down"
-}
+encore run
+exit $LASTEXITCODE

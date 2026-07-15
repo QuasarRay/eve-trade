@@ -23,22 +23,12 @@ generatorOptions:
   disableNameSuffixHash: true
 
 replicas:
-  - name: api-gateway
-    count: 1
-  - name: market
-    count: 1
-  - name: settlement-worker
+  - name: encore-backend
     count: 1
 
 images:
-  - name: eve-trade/api-gateway
-    newName: eve-trade/api-gateway
-    newTag: dev
-  - name: eve-trade/market
-    newName: eve-trade/market
-    newTag: dev
-  - name: eve-trade/settlement-worker
-    newName: eve-trade/settlement-worker
+  - name: eve-trade/encore-backend
+    newName: eve-trade/encore-backend
     newTag: dev
   - name: eve-trade/trade-settlement
     newName: eve-trade/trade-settlement

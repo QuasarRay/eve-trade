@@ -6,13 +6,13 @@
 | --- | --- |
 | Architecture description identifier | `AD-EVE-TRADE-ISO42010` |
 | System of interest | `eve-trade` distributed trade backend |
-| Version | 1.4 |
-| Date | 2026-06-25 |
+| Version | 1.5 |
+| Date | 2026-07-08 |
 | Status | Canonical ISO/IEC/IEEE 42010-informed current-state architecture description |
 | Maintainers | Project maintainers and backend owners |
 | Location | `Architecture/ISO-42010` |
 | Standard basis | ISO/IEC/IEEE 42010 architecture description concepts |
-| Source baseline | v6 refactor baseline from repository HEAD `13baa27824010bd1fc3b4d17409a0dfe086d425c`; final evidence is recorded in `changes/v6/changes.md` |
+| Source baseline | Current experimental branch compared with fetched `origin/main` at `8ec73d600be7bbb5382d96d1f015848d3712c60a`; final evidence is recorded in `changes/v9/changes.md` |
 
 This document set is written as an architecture description for the system of
 interest. It uses the ISO/IEC/IEEE 42010 concepts of stakeholders, concerns,
@@ -123,26 +123,26 @@ how `eve-trade` is structured and why. It is intended to support:
 `eve-trade` is a production-ready distributed backend/platform slice for an
 EVE-like trade flow. The production path is:
 
-`game frontend -> Quilkin UDP -> API gateway UDP edge -> Market GUI interaction -> settlement operations -> trade-settlement`
+`game frontend -> Quilkin UDP -> Encore gateway UDP edge -> Market GUI interaction -> settlement operations -> trade-settlement`
 
 The system receives production-shaped game GUI interaction packets, forwards the
 exact game payload from the UDP edge to Market, lets Market interpret the game
 trade action, and applies low-level settlement operation batches to PostgreSQL
-with transactional integrity. The Compose and Kubernetes configurations route
-settlement commands through RabbitMQ and settlement-worker; the Market binary
+with transactional integrity. The local Encore/Kubernetes and Kubernetes configurations route
+settlement commands through Encore Pub/Sub and settlement worker; the Market binary
 also supports a direct/connect settlement transport when explicitly configured
 outside the checked-in production path.
 
 The system of interest includes:
 
-- protobuf contracts under `distributed-backend/proto`;
-- the Go API Gateway service;
+- Encore API types, protovalidate rules, and the remaining Rust protobuf contract under `proto`;
+- the Go Encore gateway service;
 - the Go Market service;
-- the Go RabbitMQ settlement messaging library;
-- the Go settlement-worker service;
+- the Go Encore Pub/Sub settlement work package;
+- the Go settlement worker service;
 - the Rust trade-settlement service;
 - PostgreSQL schema, migrations, and local seed data;
-- Docker Compose local runtime;
+- Encore local run plus Kubernetes support services local runtime;
 - Kubernetes manifests, Istio/Gateway API manifests, observability manifests,
   and Terraform infrastructure definitions;
 - CI and validation scripts.
@@ -163,10 +163,10 @@ The system of interest excludes:
 
 The system runs in two intended environments:
 
-- Local development: Docker Compose starts PostgreSQL, migration, RabbitMQ,
-  trade-settlement, settlement-worker, Market, API Gateway, Quilkin, and the
+- Local development: Encore local run plus Kubernetes support services starts PostgreSQL, migration, Encore Pub/Sub,
+  trade-settlement, settlement worker, Market, Encore gateway, Quilkin, and the
   Django game-frontend simulator. The local packet entry point is Quilkin UDP on
-  `localhost:26001`. PostgreSQL and RabbitMQ are published to loopback for
+  `localhost:26001`. PostgreSQL and Encore Pub/Sub are published to loopback for
   development.
 - Production-like deployment: Kubernetes deploys the backend services with
   ConfigMaps, Secrets, service accounts, probes, NetworkPolicy, Istio
@@ -179,36 +179,39 @@ The system runs in two intended environments:
 
 ## Architecture Summary
 
-The main Compose and Kubernetes trade path is:
+The main local Encore/Kubernetes and Kubernetes trade path is:
 
 1. A real game frontend, or the local simulator using the same packet shape,
-   sends a signed `eve-trade-edge.v1` UDP envelope containing an
+   sends a domain-separated, metadata-bound `eve-trade-edge.v2` UDP envelope containing an
    `eve-trade-gui.v1` game GUI interaction payload to Quilkin.
-2. Quilkin forwards UDP traffic to the API Gateway UDP listener.
-3. API Gateway performs only edge safety work: packet size checks,
+2. Quilkin forwards UDP traffic to the Encore gateway UDP listener.
+3. Encore gateway performs only edge safety work: packet size checks,
    empty-packet rejection, bounded queue/worker handling, per-remote rate
    limiting, HMAC integrity validation, replay rejection by interaction ID,
    downstream timeout handling, compact UDP responses, and structured
    logs/metrics. It does not parse business meaning and does not decide issue,
    accept, or cancel.
-4. API Gateway calls `MarketService.SubmitTradeGuiInteraction` with
+4. Encore gateway calls `market.SubmitTradeGuiInteraction Encore API` with
    `raw_payload` only. Gateway source metadata remains in gateway logs/traces
    and is not part of Market's business request.
 5. Market interprets the GUI action and player-provided trade input, performs
-   game-trade validation and idempotency/replay handling, reads current
+   protovalidate-backed game-trade validation and idempotency/replay handling, reads current
    snapshots from PostgreSQL, and converts valid decisions into low-level
    settlement operation batches.
-6. Market publishes settlement batches through RabbitMQ.
-7. settlement-worker consumes settlement command messages and calls the Rust
+6. Market publishes settlement batches through Encore Pub/Sub.
+7. settlement worker consumes settlement command messages and calls the Rust
    trade-settlement service.
-8. trade-settlement atomically executes the requested low-level settlement
+8. trade-settlement validates the settlement protobuf request with
+   protovalidate, converts protobuf values into Rust command types, and
+   atomically executes the requested low-level settlement
    operations inside one PostgreSQL transaction and records idempotency and
-   settlement audit metadata. It handles command-envelope and row-level data
-   preconditions; it is not aware of whether the operation came from a market
+   settlement audit metadata. Rust code still handles type conversion and
+   row-level data preconditions that depend on current database state; it is
+   not aware of whether the operation came from a market
    order, direct trade, contract, GUI button, browser, simulator, or other
    gameplay mechanic.
 9. The settlement response returns through the worker and messaging reply path
-   to Market and then to API Gateway as a compact UDP response.
+   to Market and then to Encore gateway as a compact UDP response.
 
 ## Architecture Description Map
 
@@ -240,23 +243,22 @@ The main Compose and Kubernetes trade path is:
 
 | Evidence item | Value |
 | --- | --- |
-| Source branch at review time | `main` |
-| Source commit at review time | `13baa27824010bd1fc3b4d17409a0dfe086d425c` before v6 edits |
+| Source branch at review time | `experimental` |
+| Source commit at review time | Working tree compared with fetched `origin/main` `8ec73d600be7bbb5382d96d1f015848d3712c60a` |
 | Architecture document status | Content-addressed by `18-evidence-manifest.md` until committed. |
 | Review date | 2026-06-22 |
 | Repository validation run by this documentation update | Recorded in `18-evidence-manifest.md`. |
-| Runtime validation run by this documentation update | Not run; runtime validation requires PostgreSQL, RabbitMQ, services, and environment-specific tooling. |
+| Runtime validation run by this documentation update | Not run; runtime validation requires PostgreSQL, Encore Pub/Sub, services, and environment-specific tooling. |
 
 The architecture views are derived from the following repository artifacts:
 
 - `README.md`
-- `compose.yaml`
-- `distributed-backend/proto/eve/market/v1/market.proto`
-- `distributed-backend/proto/eve/trade_settlement/v1/trade_settlement.proto`
-- `distributed-backend/src/api-gateway`
-- `distributed-backend/src/market`
-- `distributed-backend/src/messaging/rabbitmqsettlement`
-- `distributed-backend/src/settlement-worker`
+- `Encore local run scripts`
+- `market/api.go`
+- `proto/eve/trade_settlement/v1/trade_settlement.proto`
+- `proto/eve/trade/v1/trade.proto`
+- `proto/eve/validation/v1/validation_rules.proto`
+- `gateway`, `market`, `settlement`, and `settlementworker`
 - `distributed-backend/src/trade-settlement`
 - `distributed-backend/src/trade-settlement/migrations`
 - `distributed-backend/src/trade-settlement/seeds/local_dev_world.sql`
@@ -285,21 +287,26 @@ remain blockers before untrusted production exposure.
 
 | Historical document | Conflict or limitation | Canonical source |
 | --- | --- | --- |
-| `Architecture/Trade Request Lifecycle/v1.md` | Describes older direct settlement assumptions and lifecycle details that do not fully match the current RabbitMQ plus settlement-worker path. | `04-functional-runtime-view.md` |
+| `Architecture/Trade Request Lifecycle/v1.md` | Describes older direct settlement assumptions and lifecycle details that do not fully match the current Encore Pub/Sub plus settlement worker path. | `04-functional-runtime-view.md` |
 | `Architecture/Trade State Lifecycle/v1.md` | Contains deprecated lifecycle analysis and state assumptions. | `04-functional-runtime-view.md` and `05-information-data-integrity-view.md` |
-| `Architecture/Proto Architecture/v1.md` | Retained for proto design history; current contracts are the `.proto` files under `distributed-backend/proto/eve`. | `03-context-view.md` and `08-development-validation-view.md` |
+| `Architecture/Proto Architecture/v1.md` | Retained for proto design history; current contracts are the `.proto` files under `proto/eve`. | `03-context-view.md` and `08-development-validation-view.md` |
 | `Architecture/Conceptual Database Schema/v1.md` | Conceptual schema may omit current migrations, triggers, and constraints. | `05-information-data-integrity-view.md` |
 | `Architecture/Canonical SQLx Design/v1.md` | Lists settlement operation names that still correspond to current protobuf/Rust variants, but it is not a complete current data model or runtime description. | `05-information-data-integrity-view.md` |
 
 ## Architectural Constraints
 
-- API Gateway is a production UDP edge and UDP-to-gRPC forwarder only.
-  Production API Gateway protobuf service definitions for direct issue, accept,
-  or cancel trade commands are deleted.
-- Market exposes one production trade submission RPC,
-  `SubmitTradeGuiInteraction`, whose request contains only `bytes raw_payload`.
-  Market owns trade rules, GUI action interpretation, validation, and
-  settlement-operation composition that depend on current database snapshots.
+- Encore gateway is a production UDP edge and UDP-to-gRPC forwarder. The API
+  gateway proto again defines internal typed gRPC trade methods, but the runtime
+  UDP edge keeps packet safety, HMAC, replay/rate limiting, and forwarding
+  separate from Market business decisions.
+- Market exposes the current Encore GUI submission API and restored Market
+  proto/gRPC trade contracts. Market owns trade rules, GUI action
+  interpretation, validation, and settlement-operation composition that depend
+  on current database snapshots.
+- Reusable request-shape validation rules are centralized in protobuf through
+  `buf.validate` annotations and local predefined rules under
+  `proto/eve/validation/v1`. Go and Rust boundary code calls protovalidate
+  rather than maintaining duplicate required/positive/UUID/state checks.
 - Gateway transport metadata such as source transport or source address remains
   internal to gateway logs/traces and is not sent to Market as business data.
 - trade-settlement's runtime responsibility is atomic execution of requested
@@ -311,8 +318,8 @@ remain blockers before untrusted production exposure.
   rows are projections that must match the latest ledger row; merge operations
   append new source and destination ledger rows instead of modifying or
   combining existing ledger history.
-- RabbitMQ is the configured asynchronous command/reply boundary between Market
-  and settlement execution in Compose and Kubernetes. Direct/connect settlement
+- Encore Pub/Sub is the configured asynchronous command/reply boundary between Market
+  and settlement execution in local Encore/Kubernetes and Kubernetes. Direct/connect settlement
   transport remains implemented as an alternate Market configuration.
 - Production deployment assumes Kubernetes controls, service-specific
   configuration, probes, network policy, Quilkin UDP ingress, and observability.
@@ -332,9 +339,9 @@ remain blockers before untrusted production exposure.
   operation-provenance or operation-allow policy is implemented in the
   settlement API.
 - Live end-to-end validation requires local runtime dependencies. Some checks can
-  be static, but full trade flow validation needs PostgreSQL, RabbitMQ, and
-  services. CI now includes the simulator -> Quilkin -> API Gateway UDP ->
-  Market -> settlement-worker -> trade-settlement -> PostgreSQL compose path,
+  be static, but full trade flow validation needs PostgreSQL, Encore Pub/Sub, and
+  services. CI now includes the simulator -> Quilkin -> Encore gateway UDP ->
+  Market -> settlement worker -> trade-settlement -> PostgreSQL runtime path,
   but local developer runs still depend on Docker availability.
 - The architecture description is repository-grounded. It does not assert
   certification by ISO or any standards body.

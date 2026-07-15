@@ -1,0 +1,21 @@
+{
+  "name": "go_mod_unexpected_eof_downstream_noise",
+  "requested_command": "integration",
+  "command": {
+    "name": "compose-build-attempt-3",
+    "stage": "build",
+    "argv": ["docker", "compose", "build"],
+    "exit_code": 1,
+    "metadata_path": "commands/build/compose-build-attempt-3/command.json",
+    "log_path": "commands/build/compose-build-attempt-3/command.log"
+  },
+  "stdout": "RUN go mod download\nGet \"https://proxy.golang.org/example.com/module/@v/v1.0.0.mod\": unexpected EOF\nE2E skipped\nreport generation skipped\nPostgreSQL and Kubernetes words appear as irrelevant noise.",
+  "stderr": "build failed",
+  "expected": {
+    "stage": "DEPENDENCY_RESOLUTION",
+    "mechanism": "NETWORK_TRANSPORT",
+    "external_system": "proxy.golang.org",
+    "forbidden": ["docker-networking", "database", "Kubernetes"],
+    "root_event_type": "NETWORK_TRANSPORT"
+  }
+}

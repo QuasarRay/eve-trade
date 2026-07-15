@@ -1,0 +1,305 @@
+#1 [internal] load local bake definitions
+#1 reading from stdin 3.23kB done
+#1 DONE 0.0s
+
+#2 [api-gateway internal] load build definition from api-gateway.Dockerfile
+#2 transferring dockerfile: 1.42kB 0.0s done
+#2 DONE 0.1s
+
+#3 [settlement-worker internal] load build definition from settlement-worker.Dockerfile
+#3 transferring dockerfile: 1.68kB 0.0s done
+#3 DONE 0.2s
+
+#4 [trade-settlement internal] load build definition from trade-settlement.Dockerfile
+#4 transferring dockerfile: 2.40kB 0.0s done
+#4 DONE 0.1s
+
+#5 [simulator internal] load build definition from Dockerfile
+#5 transferring dockerfile: 354B done
+#5 DONE 0.2s
+
+#6 [quilkin internal] load build definition from quilkin.Dockerfile
+#6 transferring dockerfile: 417B done
+#6 DONE 0.2s
+
+#7 [market internal] load build definition from market.Dockerfile
+#7 transferring dockerfile: 1.72kB done
+#7 DONE 0.2s
+
+#8 [market internal] load metadata for docker.io/library/golang:1.26-bookworm
+#8 DONE 0.2s
+
+#9 [quilkin internal] load metadata for docker.io/library/debian:bookworm-slim
+#9 DONE 0.2s
+
+#10 [quilkin internal] load metadata for docker.io/library/rust:1-bookworm
+#10 DONE 0.2s
+
+#11 [simulator internal] load metadata for docker.io/library/python:3.13-slim
+#11 DONE 0.2s
+
+#12 [simulator internal] load .dockerignore
+#12 transferring context:
+#12 transferring context: 646B done
+#12 DONE 0.1s
+
+#13 [settlement-worker runtime 1/4] WORKDIR /app
+#13 DONE 0.0s
+
+#14 [api-gateway internal] load build context
+#14 DONE 0.0s
+
+#15 [trade-settlement internal] load build context
+#15 DONE 0.0s
+
+#16 [market internal] load build context
+#16 DONE 0.0s
+
+#17 [settlement-worker internal] load build context
+#17 DONE 0.0s
+
+#18 [quilkin runtime 1/2] FROM docker.io/library/debian:bookworm-slim@sha256:96e378d7e6531ac9a15ad505478fcc2e69f371b10f5cdf87857c4b8188404716
+#18 resolve docker.io/library/debian:bookworm-slim@sha256:96e378d7e6531ac9a15ad505478fcc2e69f371b10f5cdf87857c4b8188404716 0.1s done
+#18 DONE 0.1s
+
+#19 [simulator 1/5] FROM docker.io/library/python:3.13-slim@sha256:c33f0bc4364a6881bed1ec0cc2665e6c53c87a43e774aaeab88e6f17af105e4f
+#19 resolve docker.io/library/python:3.13-slim@sha256:c33f0bc4364a6881bed1ec0cc2665e6c53c87a43e774aaeab88e6f17af105e4f 0.1s done
+#19 DONE 0.1s
+
+#20 [trade-settlement build 1/2] FROM docker.io/library/rust:1-bookworm@sha256:19817ead3289c8c631c73df281e18b59b172f6a31f4f563290f69cddd06c30e9
+#20 resolve docker.io/library/rust:1-bookworm@sha256:19817ead3289c8c631c73df281e18b59b172f6a31f4f563290f69cddd06c30e9 0.1s done
+#20 DONE 0.1s
+
+#21 [api-gateway build  1/14] FROM docker.io/library/golang:1.26-bookworm@sha256:5f68ec6805843bd3981a951ffada82a26a0bd2631045c8f7dba483fa868f5ec5
+#21 resolve docker.io/library/golang:1.26-bookworm@sha256:5f68ec6805843bd3981a951ffada82a26a0bd2631045c8f7dba483fa868f5ec5 0.1s done
+#21 DONE 0.1s
+
+#22 [simulator internal] load build context
+#22 ...
+
+#23 [quilkin build 2/2] RUN cargo install quilkin --version "0.10.0" --locked --root /opt/quilkin
+#23 CACHED
+
+#24 [quilkin runtime 2/2] COPY --from=build /opt/quilkin/bin/quilkin /usr/local/bin/quilkin
+#24 CACHED
+
+#17 [settlement-worker internal] load build context
+#17 transferring context: 58.05kB 0.1s done
+#17 DONE 0.1s
+
+#16 [market internal] load build context
+#16 transferring context: 114.20kB 0.1s done
+#16 DONE 0.1s
+
+#22 [simulator internal] load build context
+#22 ...
+
+#25 [market build  2/14] WORKDIR /workspace
+#25 CACHED
+
+#26 [market build  3/14] COPY distributed-backend/docker/http-healthcheck.go ./distributed-backend/docker/
+#26 CACHED
+
+#22 [simulator internal] load build context
+#22 ...
+
+#27 [quilkin] exporting to image
+#27 exporting layers done
+#27 exporting manifest sha256:1d198e6d71782e7418d55e579ba101b6e56562f7807dfb2302fe6c15987750bd done
+#27 exporting config sha256:cfcee9f0ae68d26b09da42b4efa23b1f5fe0493269d0345cc581bee0d49da886 done
+#27 exporting attestation manifest sha256:51bd10e45e793b9d22901463b0d51cded3e96e91591f6c274a67c5a4e7330048 0.1s done
+#27 exporting manifest list sha256:7658a5cf6a368beeb8c276bc47b8c03e0819aac7f2e30c440d6884eda4254354 0.0s done
+#27 naming to docker.io/eve-trade/quilkin:dev done
+#27 unpacking to docker.io/eve-trade/quilkin:dev 0.0s done
+#27 DONE 0.2s
+
+#28 [settlement-worker build  4/14] COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
+#28 DONE 0.1s
+
+#22 [simulator internal] load build context
+#22 ...
+
+#29 [settlement-worker build  5/14] COPY distributed-backend/proto/go.mod distributed-backend/proto/go.sum ./distributed-backend/proto/
+#29 DONE 0.1s
+
+#22 [simulator internal] load build context
+#22 ...
+
+#30 [settlement-worker build  6/14] COPY distributed-backend/src/messaging/go.mod distributed-backend/src/messaging/go.sum ./distributed-backend/src/messaging/
+#30 DONE 0.2s
+
+#31 [market build  5/14] COPY distributed-backend/proto/go.mod distributed-backend/proto/go.sum ./distributed-backend/proto/
+#31 CACHED
+
+#32 [market build  6/14] COPY distributed-backend/src/messaging/go.mod distributed-backend/src/messaging/go.sum ./distributed-backend/src/messaging/
+#32 CACHED
+
+#33 [market build  3/14] COPY distributed-backend/docker/http-healthcheck.go ./distributed-backend/docker/
+#33 CACHED
+
+#34 [market build  4/14] COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
+#34 CACHED
+
+#35 [quilkin] resolving provenance for metadata file
+#35 DONE 0.1s
+
+#22 [simulator internal] load build context
+#22 ...
+
+#36 [market build  7/14] COPY distributed-backend/src/market/go.mod distributed-backend/src/market/go.sum ./distributed-backend/src/market/
+#36 DONE 0.1s
+
+#37 [settlement-worker build  7/14] COPY distributed-backend/src/settlement-worker/go.mod distributed-backend/src/settlement-worker/go.sum ./distributed-backend/src/settlement-worker/
+#37 DONE 0.1s
+
+#22 [simulator internal] load build context
+#22 transferring context: 972.63kB 1.2s done
+#22 DONE 1.3s
+
+#38 [simulator 2/5] WORKDIR /app
+#38 CACHED
+
+#39 [simulator 3/5] COPY simulator/requirements.txt /app/requirements.txt
+#39 CACHED
+
+#40 [simulator 4/5] RUN python -m pip install --no-cache-dir -r /app/requirements.txt
+#40 CACHED
+
+#41 [simulator 5/5] COPY simulator /app
+#41 ...
+
+#25 [api-gateway build  2/14] WORKDIR /workspace
+#25 CACHED
+
+#26 [api-gateway build  3/14] COPY distributed-backend/docker/http-healthcheck.go ./distributed-backend/docker/
+#26 CACHED
+
+#28 [api-gateway build  4/14] COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
+#28 DONE 0.1s
+
+#29 [api-gateway build  5/14] COPY distributed-backend/proto/go.mod distributed-backend/proto/go.sum ./distributed-backend/proto/
+#29 DONE 0.1s
+
+#14 [api-gateway internal] load build context
+#14 transferring context: 38.41kB 2.1s done
+#14 DONE 2.2s
+
+#42 [api-gateway build  4/12] COPY distributed-backend/src/observability/go.mod distributed-backend/src/observability/go.sum ./distributed-backend/src/observability/
+#42 CACHED
+
+#43 [api-gateway build  5/12] COPY distributed-backend/proto/go.mod distributed-backend/proto/go.sum ./distributed-backend/proto/
+#43 CACHED
+
+#44 [api-gateway build  3/12] COPY distributed-backend/docker/http-healthcheck.go ./distributed-backend/docker/
+#44 CACHED
+
+#45 [api-gateway build  6/12] COPY distributed-backend/src/api-gateway/go.mod distributed-backend/src/api-gateway/go.sum ./distributed-backend/src/api-gateway/
+#45 DONE 0.1s
+
+#46 [api-gateway build  7/12] RUN cd distributed-backend/src/api-gateway && go mod download
+#46 ...
+
+#41 [simulator 5/5] COPY simulator /app
+#41 DONE 4.9s
+
+#15 [trade-settlement internal] load build context
+#15 transferring context: 100.75MB 7.2s
+#15 ...
+
+#47 [market build  8/14] RUN cd distributed-backend/src/market && go mod download
+#47 ...
+
+#48 [settlement-worker build  8/14] RUN cd distributed-backend/src/settlement-worker && go mod download
+#48 ...
+
+#15 [trade-settlement internal] load build context
+#15 transferring context: 181.29MB 12.3s
+#15 ...
+
+#49 [simulator] exporting to image
+#49 exporting layers 3.1s done
+#49 exporting manifest sha256:1b3ddaec446e20e454594ab221e3de50bd0ccd25edd086f49af6b55fea92438a 0.0s done
+#49 exporting config sha256:438660b3a235ac297c0b9e953b6686184ef12a283304d73f8ee076ea79af4d2f 0.0s done
+#49 exporting attestation manifest sha256:6b3142546db209cf94f963d57439ceaadc90f021fe7e8ddb80aa66f8a75b7f7b 0.0s done
+#49 exporting manifest list sha256:3c3428376b312960227e0e7bbf3939c2082ed97b63f7fe55b226fbc0426bc391 0.0s done
+#49 naming to docker.io/library/eve-trade-integration-simulator:latest done
+#49 unpacking to docker.io/library/eve-trade-integration-simulator:latest 3.1s done
+#49 DONE 6.4s
+
+#15 [trade-settlement internal] load build context
+#15 ...
+
+#50 [simulator] resolving provenance for metadata file
+#50 DONE 0.1s
+
+#15 [trade-settlement internal] load build context
+#15 transferring context: 250.72MB 17.3s
+#15 transferring context: 276.38MB 19.1s done
+#15 DONE 19.2s
+
+#51 [trade-settlement build 2/4] WORKDIR /workspace
+#51 CACHED
+
+#52 [trade-settlement build 3/4] COPY . .
+#52 DONE 2.7s
+
+#46 [api-gateway build  7/12] RUN cd distributed-backend/src/api-gateway && go mod download
+#46 ...
+
+#53 [trade-settlement build 4/4] RUN cd distributed-backend/src/trade-settlement     && cargo build --locked --release
+#53 1.414     Updating crates.io index
+#53 ...
+
+#47 [market build  8/14] RUN cd distributed-backend/src/market && go mod download
+#47 32.11 go: connectrpc.com/connect@v1.20.0: Get "https://proxy.golang.org/connectrpc.com/connect/@v/v1.20.0.mod": net/http: TLS handshake timeout
+#47 ERROR: process "/bin/sh -c cd distributed-backend/src/market && go mod download" did not complete successfully: exit code: 1
+
+#48 [settlement-worker build  8/14] RUN cd distributed-backend/src/settlement-worker && go mod download
+#48 32.10 go: connectrpc.com/connect@v1.20.0: Get "https://proxy.golang.org/connectrpc.com/connect/@v/v1.20.0.mod": net/http: TLS handshake timeout
+#48 ERROR: process "/bin/sh -c cd distributed-backend/src/settlement-worker && go mod download" did not complete successfully: exit code: 1
+
+#53 [trade-settlement build 4/4] RUN cd distributed-backend/src/trade-settlement     && cargo build --locked --release
+#53 ...
+
+#46 [api-gateway build  7/12] RUN cd distributed-backend/src/api-gateway && go mod download
+#46 CANCELED
+
+#53 [trade-settlement build 4/4] RUN cd distributed-backend/src/trade-settlement     && cargo build --locked --release
+#53 CANCELED
+------
+ > [market build  8/14] RUN cd distributed-backend/src/market && go mod download:
+32.11 go: connectrpc.com/connect@v1.20.0: Get "https://proxy.golang.org/connectrpc.com/connect/@v/v1.20.0.mod": net/http: TLS handshake timeout
+------
+------
+ > [settlement-worker build  8/14] RUN cd distributed-backend/src/settlement-worker && go mod download:
+32.10 go: connectrpc.com/connect@v1.20.0: Get "https://proxy.golang.org/connectrpc.com/connect/@v/v1.20.0.mod": net/http: TLS handshake timeout
+------
+
+ Image eve-trade-integration-trade-settlement Building 
+ Image eve-trade/quilkin:dev Building 
+ Image eve-trade-integration-settlement-worker Building 
+ Image eve-trade-integration-market Building 
+ Image eve-trade-integration-simulator Building 
+ Image eve-trade-integration-api-gateway Building 
+settlement-worker.Dockerfile:10
+
+--------------------
+
+   8 |     COPY distributed-backend/src/messaging/go.mod distributed-backend/src/messaging/go.sum ./distributed-backend/src/messaging/
+
+   9 |     COPY distributed-backend/src/settlement-worker/go.mod distributed-backend/src/settlement-worker/go.sum ./distributed-backend/src/settlement-worker/
+
+  10 | >>> RUN cd distributed-backend/src/settlement-worker && go mod download
+
+  11 |     
+
+  12 |     COPY distributed-backend/src/observability ./distributed-backend/src/observability
+
+--------------------
+
+target settlement-worker: failed to solve: process "/bin/sh -c cd distributed-backend/src/settlement-worker && go mod download" did not complete successfully: exit code: 1
+
+
+
+View build details: docker-desktop://dashboard/build/default/default/flntn09izplvb2c6mapjsav5e
+

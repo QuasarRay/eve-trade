@@ -1,0 +1,24 @@
+{
+  "name": "zero_tests_collected",
+  "requested_command": "e2e",
+  "command": {
+    "name": "pytest-e2e-host",
+    "stage": "e2e",
+    "argv": ["python", "-m", "pytest", "distributed-backend/tests/e2e"],
+    "exit_code": 0,
+    "metadata_path": "commands/e2e/pytest-e2e-host/command.json",
+    "log_path": "commands/e2e/pytest-e2e-host/command.log"
+  },
+  "stdout": "collected 0 items\n============================ no tests ran in 0.01s ============================",
+  "pytest": {
+    "collected_count": 0,
+    "passed_count": 0,
+    "failed_count": 0,
+    "skipped_count": 0
+  },
+  "expected": {
+    "validation_result": "passed_with_false_green_risk",
+    "false_green_risk": "ZERO_TESTS_COLLECTED",
+    "product_status": "UNRESOLVED"
+  }
+}

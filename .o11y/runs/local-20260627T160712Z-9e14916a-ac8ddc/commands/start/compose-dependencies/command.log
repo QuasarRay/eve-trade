@@ -1,0 +1,10 @@
+command: docker compose -f C:\Users\Astral\Desktop\eve-trade\docker-compose.integration.yml --profile test up -d rabbitmq postgres
+cwd: C:\Users\Astral\Desktop\eve-trade
+exit_code: 0
+duration_ms: 457.544
+
+--- stdout ---
+
+--- stderr ---
+ Container eve-trade-integration-postgres-1 Running 
+ Container eve-trade-integration-rabbitmq-1 Running 

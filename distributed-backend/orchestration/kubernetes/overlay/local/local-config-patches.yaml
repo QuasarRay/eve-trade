@@ -1,24 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: api-gateway-config
+  name: encore-backend-config
 data:
   API_GATEWAY_QUILKIN_UDP_ADDR: ":26000"
   API_GATEWAY_QUILKIN_UDP_ENABLED: "true"
-  OTEL_SDK_DISABLED: "true"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: market-config
-data:
-  OTEL_SDK_DISABLED: "true"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: settlement-worker-config
-data:
   OTEL_SDK_DISABLED: "true"
 ---
 apiVersion: v1
@@ -35,6 +21,12 @@ metadata:
 spec:
   template:
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: migrate
           args:
@@ -49,7 +41,26 @@ spec:
             - name: runtime-role
               mountPath: /runtime-role
               readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
       volumes:
         - name: runtime-role
           configMap:
             name: local-runtime-database-role
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quilkin
+spec:
+  type: NodePort
+  ports:
+    - name: udp
+      port: 26001
+      targetPort: udp
+      protocol: UDP
+      nodePort: 32601

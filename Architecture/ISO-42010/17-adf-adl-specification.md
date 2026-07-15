@@ -109,7 +109,7 @@ approval. Existing documents should prefer the statuses above.
 | --- | --- |
 | `Enforced by test` | A named test or validation command proves the rule at the recorded baseline. |
 | `Enforced by code` | Implementation structure currently enforces the rule; no automated architecture guard is recorded. |
-| `Enforced by manifest` | Compose, Kubernetes, Terraform, or policy manifests encode the rule. |
+| `Enforced by manifest` | local Encore/Kubernetes, Kubernetes, Terraform, or policy manifests encode the rule. |
 | `Enforced by policy` | A governance or release policy requires the rule, but mechanical enforcement is not shown. |
 | `Enforced by review` | Human review is the current enforcement mechanism. |
 | `Partially enforced` | Some controls exist, but a material gap remains. |

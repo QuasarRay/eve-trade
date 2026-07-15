@@ -6,9 +6,10 @@ module "eks_cluster" {
     kubernetes = kubernetes.cluster
   }
 
-  cluster_name                   = var.environment_name
-  cluster_version                = var.cluster_version
-  cluster_endpoint_public_access = var.cluster_endpoint_public_access
+  cluster_name                                 = var.environment_name
+  cluster_version                              = var.cluster_version
+  cluster_endpoint_public_access               = var.cluster_endpoint_public_access
+  node_security_group_enable_recommended_rules = false
 
   cluster_addons = {
     vpc-cni = {
@@ -73,14 +74,22 @@ module "eks_cluster" {
       self        = true
     }
 
-    egress_all = {
-      description      = "Node all egress"
-      protocol         = "-1"
-      from_port        = 0
-      to_port          = 0
-      type             = "egress"
-      cidr_blocks      = ["0.0.0.0/0"]
-      ipv6_cidr_blocks = ["::/0"]
+    egress_vpc = {
+      description = "Node egress within the VPC"
+      protocol    = "-1"
+      from_port   = 0
+      to_port     = 0
+      type        = "egress"
+      cidr_blocks = [var.vpc_cidr]
+    }
+
+    egress_approved_https = {
+      description = "Node HTTPS egress through approved endpoints"
+      protocol    = "tcp"
+      from_port   = 443
+      to_port     = 443
+      type        = "egress"
+      cidr_blocks = var.node_egress_ipv4_cidrs
     }
 
     ingress_cluster_to_node_all_traffic = {
@@ -117,7 +126,7 @@ resource "aws_security_group_rule" "dns_tcp" {
 
 module "eks_blueprints_addons" {
   source  = "aws-ia/eks-blueprints-addons/aws"
-  version = "~> 1.0"
+  version = "1.24.3"
 
   providers = {
     helm       = helm.addons
