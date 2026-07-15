@@ -15,6 +15,12 @@ for path in "$encore_go" "$encore_runtime/go.mod"; do
   fi
 done
 
+python_cmd="$(command -v python3 || command -v python || true)"
+if [[ -z "$python_cmd" ]]; then
+  echo "Encore hardening requires Python for deterministic source and module metadata updates" >&2
+  exit 1
+fi
+
 host_version="$(go version)"
 if [[ "$host_version" != *"go1.26.5"* ]]; then
   echo "Encore hardening requires host Go 1.26.5, found: $host_version" >&2
@@ -22,6 +28,7 @@ if [[ "$host_version" != *"go1.26.5"* ]]; then
 fi
 
 encore_version="$($encore_go version)"
+rebuild_toolchain=false
 case "$encore_version" in
   "go version go1.26.4-encore "*)
     patch_file="$(mktemp)"
@@ -40,13 +47,12 @@ case "$encore_version" in
     printf '%s  %s\n' "$patch_sha256" "$patch_file" | sha256sum --check --status
     git -C "$encore_goroot" apply --check --exclude=VERSION "$patch_file"
     git -C "$encore_goroot" apply --exclude=VERSION "$patch_file"
-    printf 'go1.26.5\n' >"$encore_goroot/VERSION"
-    (
-      cd "$encore_goroot/src"
-      GOROOT_BOOTSTRAP="$(go env GOROOT)" ./make.bash
-    )
+    rebuild_toolchain=true
     ;;
   "go version go1.26.5-encore "*)
+    rebuild_toolchain=true
+    ;;
+  "go version go1.26.5 "*)
     ;;
   *)
     echo "unsupported Encore Go toolchain: $encore_version" >&2
@@ -54,17 +60,34 @@ case "$encore_version" in
     ;;
 esac
 
+if [[ "$rebuild_toolchain" == true ]]; then
+  # Encore's non-semver release suffix makes patched versions compare older
+  # than their upstream security baseline; the evidence message retains fork provenance.
+  "$python_cmd" - "$encore_goroot/src/cmd/dist/build.go" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8")
+old = 'return strings.TrimSuffix(b, "-encore") + "-encore"'
+new = 'return strings.TrimSuffix(b, "-encore")'
+if source.count(old) != 1:
+    raise SystemExit(f"expected exactly one Encore release suffix expression in {path}")
+path.write_text(source.replace(old, new), encoding="utf-8")
+PY
+  printf 'go1.26.5\n' >"$encore_goroot/VERSION"
+  (
+    cd "$encore_goroot/src"
+    GOROOT_BOOTSTRAP="$(go env GOROOT)" ./make.bash
+  )
+fi
+
 encore_version="$($encore_go version)"
-if [[ "$encore_version" != "go version go1.26.5-encore "* ]]; then
+if [[ "$encore_version" != "go version go1.26.5 "* ]]; then
   echo "Encore Go hardening produced an unexpected toolchain: $encore_version" >&2
   exit 1
 fi
 
-python_cmd="$(command -v python3 || command -v python || true)"
-if [[ -z "$python_cmd" ]]; then
-  echo "Encore hardening requires Python to parse go mod edit JSON" >&2
-  exit 1
-fi
 mapfile -t runtime_versions < <(
   cd "$encore_runtime"
   "$encore_go" mod edit -json | "$python_cmd" -c '
@@ -106,4 +129,4 @@ fi
   done
 )
 
-printf 'hardened Encore runtime: %s, jwt/v4 v4.5.2, x/crypto v0.52.0\n' "$encore_version"
+printf 'hardened Encore fork: %s, jwt/v4 v4.5.2, x/crypto v0.52.0\n' "$encore_version"
