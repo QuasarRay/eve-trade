@@ -34,8 +34,10 @@ FORBIDDEN_PACKET_TERMS = {
 
 class CapturingSocket:
     sent: list[tuple[bytes, tuple[str, int]]] = []
+    instances = 0
 
     def __init__(self, *args: Any, **kwargs: Any):
+        type(self).instances += 1
         self.timeout = None
 
     def __enter__(self) -> "CapturingSocket":
@@ -183,10 +185,15 @@ def signed_response(payload: dict[str, Any]) -> bytes:
 class GameGuiPacketBoundaryTests(TestCase):
     def setUp(self) -> None:
         CapturingSocket.sent = []
+        CapturingSocket.instances = 0
         TimeoutThenSuccessSocket.sent = []
+        TimeoutThenSuccessSocket.instances = 0
         TimeoutThenSuccessSocket.recv_calls = 0
         RetryableResponseThenSuccessSocket.sent = []
+        RetryableResponseThenSuccessSocket.instances = 0
         RetryableResponseThenSuccessSocket.recv_calls = 0
+        AlwaysTimeoutSocket.sent = []
+        AlwaysTimeoutSocket.instances = 0
         self.button = GameGuiButton.objects.create(
             window=GameGuiButton.Window.REGIONAL_MARKET,
             label="Sell This Item",
@@ -285,6 +292,7 @@ class GameGuiPacketBoundaryTests(TestCase):
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.json()["response_payload"]["status"], "accepted")
         self.assertEqual(len(TimeoutThenSuccessSocket.sent), 2)
+        self.assertEqual(TimeoutThenSuccessSocket.instances, 2)
         first_packet, _ = TimeoutThenSuccessSocket.sent[0]
         second_packet, _ = TimeoutThenSuccessSocket.sent[1]
         self.assertEqual(first_packet, second_packet)
@@ -310,6 +318,7 @@ class GameGuiPacketBoundaryTests(TestCase):
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.json()["response_payload"]["status"], "accepted")
         self.assertEqual(len(RetryableResponseThenSuccessSocket.sent), 2)
+        self.assertEqual(RetryableResponseThenSuccessSocket.instances, 2)
         first_packet, _ = RetryableResponseThenSuccessSocket.sent[0]
         second_packet, _ = RetryableResponseThenSuccessSocket.sent[1]
         self.assertEqual(first_packet, second_packet)
@@ -328,6 +337,7 @@ class GameGuiPacketBoundaryTests(TestCase):
 
         self.assertEqual(response.status_code, 502)
         self.assertEqual(len(AlwaysTimeoutSocket.sent), 2)
+        self.assertEqual(AlwaysTimeoutSocket.instances, 2)
         self.assertEqual(response.json()["status"], "failed")
 
     def test_button_press_rejects_response_with_invalid_signature(self) -> None:

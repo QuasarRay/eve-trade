@@ -86,9 +86,12 @@ def send_gui_packet(packet: dict[str, Any]) -> dict[str, Any]:
     retry_backoff = max(0.0, settings.QUILKIN_UDP_RETRY_BACKOFF_SECONDS)
     last_error: OSError | None = None
 
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.settimeout(settings.QUILKIN_UDP_TIMEOUT_SECONDS)
-        for attempt in range(1, max_attempts + 1):
+    for attempt in range(1, max_attempts + 1):
+        # A Quilkin session is keyed by the client UDP socket. Rotate the socket
+        # after retryable failures so one stale proxy session cannot consume the
+        # whole retry budget while preserving the exact signed request packet.
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(settings.QUILKIN_UDP_TIMEOUT_SECONDS)
             try:
                 sock.sendto(payload, address)
                 response, response_address = sock.recvfrom(65535)
@@ -106,10 +109,10 @@ def send_gui_packet(packet: dict[str, Any]) -> dict[str, Any]:
                 raise ValueError("UDP response interaction_id does not match request")
             if decoded.get("code") not in RETRYABLE_RESPONSE_CODES or attempt >= max_attempts:
                 return decoded
-            retry_delay = retry_backoff * attempt
-            if decoded.get("code") == "request_in_progress":
-                retry_delay = max(retry_delay, settings.QUILKIN_UDP_TIMEOUT_SECONDS)
-            time.sleep(retry_delay)
+        retry_delay = retry_backoff * attempt
+        if decoded.get("code") == "request_in_progress":
+            retry_delay = max(retry_delay, settings.QUILKIN_UDP_TIMEOUT_SECONDS)
+        time.sleep(retry_delay)
 
     if last_error is not None:
         raise last_error
