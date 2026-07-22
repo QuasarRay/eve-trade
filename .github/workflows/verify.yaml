@@ -200,13 +200,7 @@ jobs:
           job-name: go / encore
           artifact-key: go
           step-name: Run Go race detector
-          command: |
-            # Encore v1.57.9's custom race runtime crashes in reqtrack before
-            # application tests start. Run the standard Go race detector over
-            # every concurrency-sensitive package and settlement lifecycle.
-            ENCORERUNTIME_NOPANIC=1 go test -race ./distributed-backend/src/gateway ./distributed-backend/src/settlementworker ./distributed-backend/internal/... ./gametrade
-            ENCORERUNTIME_NOPANIC=1 go test -race ./distributed-backend/src/market -run '^TestSettlement' -skip 'APIErrors'
-            ENCORERUNTIME_NOPANIC=1 go test -race ./distributed-backend/src/market -run '^TestDuplicateSettlementResultProjectionIsHarmless$'
+          command: ENCORERUNTIME_NOPANIC=1 go test -race -p=1 -timeout=5m ./...
       - name: Run Go vet
         uses: ./.github/actions/ci-evidence
         with:
@@ -285,6 +279,22 @@ jobs:
     name: rust / trade-settlement
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: eve
+          POSTGRES_PASSWORD: eve-test
+          POSTGRES_DB: eve_trade_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U eve -d eve_trade_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      EVE_TRADE_TEST_DATABASE_URL: postgresql://eve:eve-test@127.0.0.1:5432/eve_trade_test?sslmode=disable
     defaults:
       run:
         working-directory: distributed-backend/src/trade-settlement
@@ -372,7 +382,7 @@ jobs:
             lockfile_args: -lockfile=readonly
           - provider: gke
             root: distributed-backend/terraform/gke
-            lockfile_args: ""
+            lockfile_args: -lockfile=readonly
           - provider: talos-omni
             root: distributed-backend/terraform/talos-omni
             lockfile_args: -lockfile=readonly
@@ -414,18 +424,17 @@ jobs:
           artifact-key: terraform-${{ matrix.provider }}
           step-name: Terraform init
           command: terraform -chdir=${{ matrix.root }} init -backend=false ${{ matrix.lockfile_args }} -no-color
-      - name: Verify EKS dependency lock
-        if: matrix.provider == 'eks'
+      - name: Verify dependency lock
         uses: ./.github/actions/ci-evidence
         with:
           mode: run
           job-id: terraform
           job-name: terraform / ${{ matrix.provider }}
           artifact-key: terraform-${{ matrix.provider }}
-          step-name: Verify EKS dependency lock
+          step-name: Verify dependency lock
           command: |
-            terraform -chdir=distributed-backend/terraform/eks providers lock -platform=linux_amd64 -platform=windows_amd64
-            git diff --exit-code -- distributed-backend/terraform/eks/.terraform.lock.hcl
+            terraform -chdir=${{ matrix.root }} providers lock -platform=linux_amd64 -platform=windows_amd64
+            git diff --exit-code -- ${{ matrix.root }}/.terraform.lock.hcl
       - name: Terraform providers
         uses: ./.github/actions/ci-evidence
         with:
@@ -462,12 +471,12 @@ jobs:
           artifact-key: terraform-${{ matrix.provider }}
           status: ${{ job.status }}
           command-identity: verify/terraform/${{ matrix.provider }}
-      - name: Upload EKS dependency lock
-        if: ${{ always() && matrix.provider == 'eks' }}
+      - name: Upload dependency lock
+        if: ${{ always() }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
-          name: terraform-lock-eks-${{ github.run_id }}-${{ github.run_attempt }}
-          path: distributed-backend/terraform/eks/.terraform.lock.hcl
+          name: terraform-lock-${{ matrix.provider }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ matrix.root }}/.terraform.lock.hcl
           if-no-files-found: error
           include-hidden-files: true
 
@@ -509,7 +518,7 @@ jobs:
           job-name: kubernetes / render
           artifact-key: kubernetes
           step-name: Verify rendered Kubernetes
-          command: python scripts/verify_rendered_kubernetes.py --expect-unresolved-image-template /tmp/eve-trade-prod.yaml
+          command: python scripts/verify_rendered_kubernetes.py --allow-application-image-templates /tmp/eve-trade-prod.yaml
       - name: Run Kubernetes policy tests
         uses: ./.github/actions/ci-evidence
         with:
@@ -577,7 +586,7 @@ jobs:
           command: |
             python -m pip install -r distributed-backend/observability/requirements-test.txt
             PYTHONPATH=distributed-backend python -m coverage run --rcfile=distributed-backend/observability/.coveragerc -m unittest discover -s distributed-backend/observability/tests -v
-            python -m coverage report --rcfile=distributed-backend/observability/.coveragerc --fail-under=35
+            python -m coverage report --rcfile=distributed-backend/observability/.coveragerc --fail-under=80
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:
@@ -788,11 +797,91 @@ jobs:
           status: ${{ job.status }}
           command-identity: verify/security
 
+  canonical-regression:
+    name: regression / canonical 200
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: eve
+          POSTGRES_PASSWORD: eve-test
+          POSTGRES_DB: eve_trade_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U eve -d eve_trade_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/ci-evidence
+        with:
+          mode: start
+          job-id: canonical-regression
+          job-name: regression / canonical 200
+          artifact-key: canonical-regression
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.26.5"
+          cache: true
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: "1.95.0"
+      - name: Install canonical regression dependencies
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: run
+          job-id: canonical-regression
+          job-name: regression / canonical 200
+          artifact-key: canonical-regression
+          step-name: Install canonical regression dependencies
+          command: |
+            python -m pip install \
+              -r simulator/requirements-test.txt \
+              -r distributed-backend/observability/requirements-test.txt \
+              -r distributed-backend/tests/e2e/requirements.txt
+      - name: Run all canonical regression tests
+        uses: ./.github/actions/ci-evidence
+        env:
+          EVE_TRADE_TEST_DATABASE_URL: postgresql://eve:eve-test@127.0.0.1:5432/eve_trade_test?sslmode=disable
+          ENCORERUNTIME_NOPANIC: "1"
+        with:
+          mode: run
+          job-id: canonical-regression
+          job-name: regression / canonical 200
+          artifact-key: canonical-regression
+          step-name: Run all canonical regression tests
+          command: python scripts/run_canonical_regressions.py --output-dir artifacts/canonical-regressions
+      - name: Upload canonical regression reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: canonical-regression-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/canonical-regressions
+          if-no-files-found: error
+      - if: ${{ always() }}
+        uses: ./.github/actions/ci-evidence
+        with:
+          mode: finish
+          job-id: canonical-regression
+          job-name: regression / canonical 200
+          artifact-key: canonical-regression
+          status: ${{ job.status }}
+          command-identity: verify/canonical-regression
+
   e2e:
     name: e2e / observed
     runs-on: ubuntu-24.04
     timeout-minutes: 60
-    needs: [go, rust-trade-settlement, terraform, kubernetes, python, architecture, gui-contract, security]
+    needs: [go, rust-trade-settlement, terraform, kubernetes, python, architecture, gui-contract, security, canonical-regression]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: ./.github/actions/ci-evidence
@@ -856,14 +945,16 @@ jobs:
           artifact-key: e2e
           status: ${{ job.status }}
           command-identity: verify/e2e-observed
-          dependencies: go rust-trade-settlement terraform kubernetes python architecture gui-contract security
+          dependencies: go rust-trade-settlement terraform kubernetes python architecture gui-contract security canonical-regression
 
   o11y-aggregate:
     name: o11y / aggregate
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     if: ${{ always() }}
-    needs: [proto, go, rust-trade-settlement, terraform, kubernetes, python, architecture, gui-contract, security, e2e]
+    needs: [proto, go, rust-trade-settlement, terraform, kubernetes, python, architecture, gui-contract, security, canonical-regression, e2e]
+    outputs:
+      verified_sha: ${{ steps.verification.outputs.verified_sha }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -881,11 +972,162 @@ jobs:
         env:
           OBSERVABILITY_ENV: github-actions
           OBS_CI_NEEDS_JSON: ${{ toJson(needs) }}
-        run: python distributed-backend/observability/ci/ci_aggregate.py
+        run: |
+          python distributed-backend/observability/ci/ci_aggregate.py
+          python scripts/verify_repository.py validate-ci \
+            --current-gate o11y \
+            --output .o11y/verification-profile.json
+      - name: Record exact verified workflow SHA
+        id: verification
+        run: echo "verified_sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
       - name: Upload aggregate evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: o11y-aggregate-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .o11y/runs/gha-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: |
+            .o11y/runs/gha-${{ github.run_id }}-${{ github.run_attempt }}-*
+            .o11y/verification-profile.json
+          if-no-files-found: error
+
+  release-verification:
+    name: release / exact verified SHA
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    needs: [e2e, o11y-aggregate]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.e2e.result == 'success' && needs.o11y-aggregate.result == 'success' && needs.o11y-aggregate.outputs.verified_sha == github.sha }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.26.5"
+          cache: true
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+      - uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5
+        with:
+          version: v1.33.0
+      - name: Verify exact merge commit
+        env:
+          VERIFIED_SHA: ${{ needs.o11y-aggregate.outputs.verified_sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$VERIFIED_SHA" = "$GITHUB_SHA"
+      - name: Install release build tools
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir PyYAML==6.0.3
+          ENCORE_INSTALL="$HOME/.encore" bash scripts/install_encore_cli.sh
+          bash scripts/harden_encore_install.sh "$HOME/.encore"
+          echo "$HOME/.encore/bin" >> "$GITHUB_PATH"
+      - name: Authenticate to protected image registry
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+      - name: Build, publish, and lock exact release images
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          encore_ref="ghcr.io/${owner}/eve-trade-encore-backend:${GITHUB_SHA}"
+          settlement_ref="ghcr.io/${owner}/eve-trade-trade-settlement:${GITHUB_SHA}"
+          quilkin_ref="ghcr.io/${owner}/eve-trade-quilkin:${GITHUB_SHA}"
+
+          GOFLAGS=-mod=mod encore build docker --push --config infra/encore/self-host.nsq.json "$encore_ref"
+          docker buildx build --platform linux/amd64 --push \
+            --file distributed-backend/docker/trade-settlement.Dockerfile \
+            --tag "$settlement_ref" .
+          docker buildx build --platform linux/amd64 --push \
+            --file distributed-backend/docker/quilkin.Dockerfile \
+            --tag "$quilkin_ref" .
+
+          encore_digest="$(docker buildx imagetools inspect "$encore_ref" --raw | sha256sum | awk '{print $1}')"
+          settlement_digest="$(docker buildx imagetools inspect "$settlement_ref" --raw | sha256sum | awk '{print $1}')"
+          quilkin_digest="$(docker buildx imagetools inspect "$quilkin_ref" --raw | sha256sum | awk '{print $1}')"
+          export ENCORE_IMAGE="${encore_ref%:*}@sha256:${encore_digest}"
+          export SETTLEMENT_IMAGE="${settlement_ref%:*}@sha256:${settlement_digest}"
+          export QUILKIN_IMAGE="${quilkin_ref%:*}@sha256:${quilkin_digest}"
+
+          python - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          digest_reference = re.compile(r"^ghcr\.io/[^@]+@sha256:[0-9a-f]{64}$")
+          images = {
+              "encore-backend": os.environ["ENCORE_IMAGE"],
+              "trade-settlement": os.environ["SETTLEMENT_IMAGE"],
+              "quilkin": os.environ["QUILKIN_IMAGE"],
+          }
+          if any(not digest_reference.fullmatch(reference) for reference in images.values()):
+              raise SystemExit("registry did not return valid immutable image digests")
+          Path("release-image-lock.json").write_text(
+              json.dumps(
+                  {
+                      "schema_version": "eve-trade.image-lock/v1",
+                      "repository": os.environ["GITHUB_REPOSITORY"],
+                      "sha": os.environ["GITHUB_SHA"],
+                      "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+                      "workflow_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+                      "images": images,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - name: Render and verify exact release manifest
+        run: |
+          kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/prod > /tmp/eve-trade-prod-template.yaml
+          python scripts/render_release_kubernetes.py \
+            --manifest /tmp/eve-trade-prod-template.yaml \
+            --image-lock release-image-lock.json \
+            --output release-kubernetes.yaml \
+            --repository "$GITHUB_REPOSITORY" \
+            --sha "$GITHUB_SHA"
+          python scripts/verify_rendered_kubernetes.py release-kubernetes.yaml
+      - name: Record release provenance
+        env:
+          VERIFIED_SHA: ${{ needs.o11y-aggregate.outputs.verified_sha }}
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          def sha256(path: str) -> str:
+              return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+          Path("release-verification.json").write_text(
+              json.dumps(
+                  {
+                      "repository": os.environ["GITHUB_REPOSITORY"],
+                      "merge_sha": os.environ["GITHUB_SHA"],
+                      "verified_sha": os.environ["VERIFIED_SHA"],
+                      "verification_run_id": os.environ["GITHUB_RUN_ID"],
+                      "verification_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+                      "image_lock_sha256": sha256("release-image-lock.json"),
+                      "manifest_sha256": sha256("release-kubernetes.yaml"),
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - name: Upload release verification
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: release-verification-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            release-verification.json
+            release-image-lock.json
+            release-kubernetes.yaml
           if-no-files-found: error

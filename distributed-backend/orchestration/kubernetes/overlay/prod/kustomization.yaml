@@ -16,6 +16,7 @@ resources:
   - istio-telemetry.yaml
   - istio-traffic.yaml
   - networkpolicies.yaml
+  - nsq-client-proxy.yaml
   - poddisruptionbudgets.yaml
   - quilkin.yaml
   - resource-governance.yaml
@@ -24,14 +25,4 @@ patches:
   - path: patches/namespace.yaml
   - path: patches/configmaps.yaml
   - path: patches/deployments.yaml
-
-images:
-  - name: eve-trade/encore-backend
-    newName: registry.example.com/eve-trade/encore-backend
-    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
-  - name: eve-trade/trade-settlement
-    newName: registry.example.com/eve-trade/trade-settlement
-    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
-  - name: eve-trade/quilkin
-    newName: registry.example.com/eve-trade/quilkin
-    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  - path: patches/nsq.yaml

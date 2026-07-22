@@ -13,8 +13,10 @@ from observability.ci.ci_evidence import (
     finish_evidence,
     load_evidence_directory,
     run_command_evidence,
+    sign_evidence,
     start_evidence,
     structured_diagnostics,
+    workflow_definition_digest,
 )
 
 
@@ -38,6 +40,7 @@ class CiEvidenceTests(unittest.TestCase):
             "workflow": "verify",
             "run_id": "123",
             "run_attempt": "2",
+            "workflow_definition_digest": workflow_definition_digest(),
         }
 
     def _bundle(self, directory: Path) -> Path:
@@ -80,7 +83,7 @@ class CiEvidenceTests(unittest.TestCase):
                 output = self._bundle(Path(temp))
                 bundle = json.loads(output.read_text(encoding="utf-8"))
                 bundle[field] = value
-                bundle["artifact_digest"] = canonical_digest(bundle)
+                sign_evidence(bundle)
                 output.write_text(json.dumps(bundle), encoding="utf-8")
 
                 bundles, errors = load_evidence_directory(output.parent, self.expected)

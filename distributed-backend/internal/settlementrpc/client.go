@@ -14,9 +14,12 @@ import (
 )
 
 const (
-	queueMethod  = "/eve.trade_settlement.v1.TradeSettlementService/QueueSettlementOperation"
-	getMethod    = "/eve.trade_settlement.v1.TradeSettlementService/GetSettlementOperation"
-	updateMethod = "/eve.trade_settlement.v1.TradeSettlementService/UpdateSettlementOperation"
+	queueMethod          = "/eve.trade_settlement.v1.TradeSettlementService/QueueSettlementOperation"
+	getMethod            = "/eve.trade_settlement.v1.TradeSettlementService/GetSettlementOperation"
+	updateMethod         = "/eve.trade_settlement.v1.TradeSettlementService/UpdateSettlementOperation"
+	claimOutboxMethod    = "/eve.trade_settlement.v1.TradeSettlementService/ClaimSettlementOutbox"
+	completeOutboxMethod = "/eve.trade_settlement.v1.TradeSettlementService/CompleteSettlementOutbox"
+	releaseOutboxMethod  = "/eve.trade_settlement.v1.TradeSettlementService/ReleaseSettlementOutbox"
 )
 
 type Client struct {
@@ -136,6 +139,30 @@ func (c *Client) GetSettlementOperation(ctx context.Context, request *tradesettl
 func (c *Client) UpdateSettlementOperation(ctx context.Context, request *tradesettlementv1.UpdateSettlementOperationRequest) (*tradesettlementv1.UpdateSettlementOperationResponse, error) {
 	response := new(tradesettlementv1.UpdateSettlementOperationResponse)
 	if err := c.conn.Invoke(ctx, updateMethod, request, response); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+func (c *Client) ClaimSettlementOutbox(ctx context.Context, request *tradesettlementv1.ClaimSettlementOutboxRequest) (*tradesettlementv1.ClaimSettlementOutboxResponse, error) {
+	response := new(tradesettlementv1.ClaimSettlementOutboxResponse)
+	if err := c.conn.Invoke(ctx, claimOutboxMethod, request, response); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+func (c *Client) CompleteSettlementOutbox(ctx context.Context, request *tradesettlementv1.CompleteSettlementOutboxRequest) (*tradesettlementv1.CompleteSettlementOutboxResponse, error) {
+	response := new(tradesettlementv1.CompleteSettlementOutboxResponse)
+	if err := c.conn.Invoke(ctx, completeOutboxMethod, request, response); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+func (c *Client) ReleaseSettlementOutbox(ctx context.Context, request *tradesettlementv1.ReleaseSettlementOutboxRequest) (*tradesettlementv1.ReleaseSettlementOutboxResponse, error) {
+	response := new(tradesettlementv1.ReleaseSettlementOutboxResponse)
+	if err := c.conn.Invoke(ctx, releaseOutboxMethod, request, response); err != nil {
 		return nil, err
 	}
 	return response, nil

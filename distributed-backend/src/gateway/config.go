@@ -21,6 +21,13 @@ type UDPPrincipalCredential struct {
 	Secret      string `json:"secret"`
 }
 
+const (
+	maxGatewayWorkers        = 256
+	gatewayQueueMemoryBudget = 64 << 20
+	maxReplayEntries         = 65_536
+	maxLimiterIdentities     = 65_536
+)
+
 type Config struct {
 	QuilkinUDPAddr    string
 	QuilkinUDPEnabled bool
@@ -46,7 +53,7 @@ func LoadConfig() (config Config, err error) {
 	defer err2.Handle(&err, "load gateway configuration")
 
 	config = Config{
-		QuilkinUDPAddr:    envOr("API_GATEWAY_QUILKIN_UDP_ADDR", ":26000"),
+		QuilkinUDPAddr:    try.To1(nonBlankEnv("API_GATEWAY_QUILKIN_UDP_ADDR", ":26000")),
 		QuilkinUDPEnabled: try.To1(boolEnv("API_GATEWAY_QUILKIN_UDP_ENABLED", true)),
 		QuilkinMaxPacket:  try.To1(positiveIntEnv("API_GATEWAY_QUILKIN_MAX_PACKET_BYTES", 8192)),
 		QuilkinWorkers:    try.To1(positiveIntEnv("API_GATEWAY_QUILKIN_WORKERS", 8)),
@@ -64,6 +71,22 @@ func LoadConfig() (config Config, err error) {
 		UDPHMACKeyID:      try.To1(nonBlankEnv("API_GATEWAY_UDP_HMAC_KEY_ID", "primary")),
 		UDPPrincipalKeys:  try.To1(parseUDPPrincipalKeys(os.Getenv("API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON"))),
 		DownstreamTimeout: try.To1(positiveDurationEnv("API_GATEWAY_DOWNSTREAM_TIMEOUT", 5*time.Second)),
+	}
+	if config.QuilkinMaxPacket > maxUDPPayloadBytes {
+		return Config{}, fmt.Errorf("API_GATEWAY_QUILKIN_MAX_PACKET_BYTES must not exceed UDP payload maximum %d", maxUDPPayloadBytes)
+	}
+	if config.QuilkinWorkers > maxGatewayWorkers {
+		return Config{}, fmt.Errorf("API_GATEWAY_QUILKIN_WORKERS must not exceed CPU budget limit %d", maxGatewayWorkers)
+	}
+	maxQueueDepth := gatewayQueueMemoryBudget / config.QuilkinMaxPacket
+	if config.QuilkinQueueDepth > maxQueueDepth {
+		return Config{}, fmt.Errorf("API_GATEWAY_QUILKIN_QUEUE_DEPTH must not exceed %d for the %d-byte queue memory budget", maxQueueDepth, gatewayQueueMemoryBudget)
+	}
+	if config.UDPReplayMaxIDs > maxReplayEntries {
+		return Config{}, fmt.Errorf("API_GATEWAY_UDP_REPLAY_MAX_ENTRIES must not exceed memory budget limit %d", maxReplayEntries)
+	}
+	if config.UDPLimiterMaxIDs > maxLimiterIdentities {
+		return Config{}, fmt.Errorf("API_GATEWAY_UDP_LIMITER_MAX_IDENTITIES must not exceed memory budget limit %d", maxLimiterIdentities)
 	}
 	if config.QuilkinUDPEnabled && config.UDPAuthRequired && len(config.UDPPrincipalKeys) == 0 {
 		return Config{}, fmt.Errorf("API_GATEWAY_UDP_PRINCIPAL_KEYS_JSON must define at least one authenticated capsuleer")

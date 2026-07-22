@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nsqd
+spec:
+  template:
+    spec:
+      containers:
+        - name: nsqd
+          args:
+            - --data-path=/data
+            - --broadcast-address=nsqd.eve-trade.svc.cluster.local
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tls
+              $patch: delete
+      volumes:
+        - name: tls
+          $patch: delete

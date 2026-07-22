@@ -926,6 +926,16 @@ func TestQuilkinUDPServerAllowsSafeRetryAfterTransientDownstreamFailure(t *testi
 	}
 }
 
+func TestDurableIdempotencyConflictMapsToReplay(t *testing.T) {
+	if code := stableEncoreCode(errs.Aborted); code != "replay" {
+		t.Fatalf("response code = %q, want replay", code)
+	}
+	message := stableEncoreMessage(errs.Aborted, "idempotency key was already used with a different request fingerprint")
+	if !strings.Contains(message, "replay") {
+		t.Fatalf("response message = %q, want replay diagnostic", message)
+	}
+}
+
 func TestQuilkinUDPServerRateLimitsAuthenticatedPrincipalAcrossProxyAddresses(t *testing.T) {
 	server := testUDPServer(&recordingMarketClient{})
 	server.rateLimiter = newRemoteRateLimiter(1, 1)
@@ -947,10 +957,13 @@ func TestRemoteRateLimiterBoundsIdentityStateAndEvictsIdleEntries(t *testing.T) 
 	now := time.Unix(100, 0)
 	limiter := newBoundedRemoteRateLimiter(1, 1, 2, time.Second)
 	limiter.now = func() time.Time { return now }
-	for _, key := range []string{"one", "two", "three"} {
+	for _, key := range []string{"one", "two"} {
 		if !limiter.allow(key) {
 			t.Fatalf("new identity %q was unexpectedly limited", key)
 		}
+	}
+	if limiter.allow("three") {
+		t.Fatal("capacity-plus-one identity was admitted by evicting active state")
 	}
 	if size := limiter.size(); size != 2 {
 		t.Fatalf("limiter size = %d, want hard limit 2", size)

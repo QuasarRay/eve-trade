@@ -2,35 +2,26 @@ package market
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"reflect"
 	"testing"
 	"time"
 
 	"encore.dev/beta/errs"
-	"encore.dev/pubsub"
 	"github.com/QuasarRay/eve-trade/distributed-backend/internal/settlementrpc"
 	"github.com/QuasarRay/eve-trade/distributed-backend/src/settlement"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 )
 
-type failingSettlementTopic struct {
-	cancel context.CancelFunc
-}
-
-func (topic failingSettlementTopic) Publish(context.Context, *settlement.Work) (string, error) {
-	topic.cancel()
-	return "", errors.New("broker unavailable")
-}
-
-func (failingSettlementTopic) Meta() pubsub.TopicMeta { return pubsub.TopicMeta{} }
-
 type recordingSettlementLifecycle struct {
 	updateContextErr error
 	update           *tradesettlementv1.UpdateSettlementOperationRequest
+	queued           *tradesettlementv1.QueueSettlementOperationRequest
 }
 
-func (lifecycle *recordingSettlementLifecycle) QueueSettlementOperation(context.Context, *tradesettlementv1.QueueSettlementOperationRequest) (*tradesettlementv1.QueueSettlementOperationResponse, error) {
+func (lifecycle *recordingSettlementLifecycle) QueueSettlementOperation(_ context.Context, request *tradesettlementv1.QueueSettlementOperationRequest) (*tradesettlementv1.QueueSettlementOperationResponse, error) {
+	lifecycle.queued = request
 	return &tradesettlementv1.QueueSettlementOperationResponse{
 		Operation: &tradesettlementv1.SettlementOperationStatus{
 			OperationId: "11111111-1111-4111-8111-111111111111",
@@ -49,33 +40,42 @@ func (lifecycle *recordingSettlementLifecycle) UpdateSettlementOperation(ctx con
 	return &tradesettlementv1.UpdateSettlementOperationResponse{}, nil
 }
 
-func TestSettlementPublicationFailureBecomesDurableTerminalFailure(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+func TestSettlementPublicationIsDurablyQueuedBeforeBrokerDelivery(t *testing.T) {
 	lifecycle := new(recordingSettlementLifecycle)
 	publisher := PubSubSettlementPublisher{
-		topic:     failingSettlementTopic{cancel: cancel},
 		lifecycle: lifecycle,
 		timeout:   time.Second,
 	}
 
-	_, err := publisher.PublishSettlementWork(ctx, &settlement.Work{
+	publication, err := publisher.PublishSettlementWork(context.Background(), &settlement.Work{
 		IdempotencyKey:      "issue-publish-failure",
 		RequestFingerprint:  "market-request-fingerprint.v1:test",
 		Intent:              settlement.IntentIssue,
 		CausedByCapsuleerID: 1001,
+		CreatedByService:    settlement.CreatedByMarket,
+		Operations: []settlement.Operation{
+			{Kind: settlement.OperationCreateNewTradeInstanceRow},
+		},
 	})
 
-	if err == nil || err.Error() != "publish settlement work: broker unavailable" {
-		t.Fatalf("unexpected publication error: %v", err)
+	if err != nil {
+		t.Fatalf("durable queue failed: %v", err)
 	}
-	if lifecycle.updateContextErr != nil {
-		t.Fatalf("terminal update inherited cancelled publication context: %v", lifecycle.updateContextErr)
+	if publication.MessageID != "outbox:"+publication.OperationID {
+		t.Fatalf("publication does not identify durable outbox record: %+v", publication)
 	}
-	if lifecycle.update == nil || lifecycle.update.GetState() != tradesettlementv1.SettlementOperationState_SETTLEMENT_OPERATION_STATE_FAILED {
-		t.Fatalf("publication failure did not mark operation failed: %+v", lifecycle.update)
+	if lifecycle.update != nil {
+		t.Fatalf("durably queued operation was marked terminal before delivery: %+v", lifecycle.update)
 	}
-	if lifecycle.update.GetFailureCode() != "WORK_PUBLICATION_FAILED" {
-		t.Fatalf("failure code = %q", lifecycle.update.GetFailureCode())
+	if lifecycle.queued == nil || len(lifecycle.queued.GetWorkPayloadJson()) == 0 {
+		t.Fatal("queue request omitted durable work payload")
+	}
+	var payload settlement.Work
+	if err := json.Unmarshal(lifecycle.queued.GetWorkPayloadJson(), &payload); err != nil {
+		t.Fatalf("queue payload is invalid JSON: %v", err)
+	}
+	if payload.IdempotencyKey != "issue-publish-failure" || payload.OperationID != "" {
+		t.Fatalf("unexpected pre-queue payload: %+v", payload)
 	}
 }
 
@@ -117,7 +117,7 @@ func TestSettlementOperationAPIErrorsPreserveClientMeaning(t *testing.T) {
 	for _, test := range tests {
 		t.Run(settlementrpc.ErrorClassName(test.errorClass), func(t *testing.T) {
 			err := settlementOperationAPIError(settlementrpc.NewError(test.errorClass, "failure"))
-			if got := errs.Code(err); got != test.want {
+			if got := apiErrorCode(err); got != test.want {
 				t.Fatalf("error code = %v, want %v: %v", got, test.want, err)
 			}
 		})

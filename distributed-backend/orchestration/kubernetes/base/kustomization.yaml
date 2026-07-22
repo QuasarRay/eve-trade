@@ -22,6 +22,8 @@ configMapGenerator:
   - name: settlement-db-migrations
     files:
       - 0001_settlement_schema.sql=migrations/0001_settlement_schema.sql
+      - 0002_merge_item_stack_constraints.sql=migrations/0002_merge_item_stack_constraints.sql
+      - 0003_settlement_hardening_and_outbox.sql=migrations/0003_settlement_hardening_and_outbox.sql
 
 generatorOptions:
   disableNameSuffixHash: true

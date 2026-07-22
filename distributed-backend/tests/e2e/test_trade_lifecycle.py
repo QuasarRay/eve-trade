@@ -67,11 +67,12 @@ def test_runtime_database_role_has_exact_required_privileges_and_no_administrati
         "idempotency_record", "request_attempt", "settlement_batch", "settlement_step",
         "wallet", "item_stack", "trade_instance", "wallet_escrow", "item_stack_escrow",
         "wallet_ledger", "item_stack_ledger", "trade_state_change", "settlement_operation",
+        "settlement_outbox",
     }
     expected_update = {
         "idempotency_record", "request_attempt", "settlement_batch", "settlement_step",
         "wallet", "item_stack", "trade_instance", "wallet_escrow", "item_stack_escrow",
-        "settlement_operation",
+        "settlement_operation", "settlement_outbox",
     }
     all_tables = {
         row["table_name"]

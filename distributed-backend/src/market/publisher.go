@@ -2,11 +2,10 @@ package market
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"time"
 
-	"encore.dev/pubsub"
 	"github.com/QuasarRay/eve-trade/distributed-backend/internal/settlementrpc"
 	"github.com/QuasarRay/eve-trade/distributed-backend/src/settlement"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
@@ -33,7 +32,6 @@ type settlementLifecycle interface {
 }
 
 type PubSubSettlementPublisher struct {
-	topic     pubsub.Publisher[*settlement.Work]
 	lifecycle settlementLifecycle
 	timeout   time.Duration
 }
@@ -44,7 +42,6 @@ func NewSettlementPublisher(target string, timeout time.Duration) (PubSubSettlem
 		return PubSubSettlementPublisher{}, fmt.Errorf("create settlement lifecycle client: %w", err)
 	}
 	return PubSubSettlementPublisher{
-		topic:     pubsub.TopicRef[pubsub.Publisher[*settlement.Work]](settlement.WorkTopic),
 		lifecycle: client,
 		timeout:   timeout,
 	}, nil
@@ -54,6 +51,10 @@ func (p PubSubSettlementPublisher) PublishSettlementWork(ctx context.Context, wo
 	if work == nil {
 		return nil, fmt.Errorf("settlement work is required")
 	}
+	payload, err := json.Marshal(work)
+	if err != nil {
+		return nil, fmt.Errorf("encode settlement work for durable outbox: %w", err)
+	}
 	callCtx, cancel := p.callContext(ctx)
 	defer cancel()
 	queued, err := p.lifecycle.QueueSettlementOperation(callCtx, &tradesettlementv1.QueueSettlementOperationRequest{
@@ -62,6 +63,7 @@ func (p PubSubSettlementPublisher) PublishSettlementWork(ctx context.Context, wo
 		Intent:              settlementIntent(work.Intent),
 		CausedByCapsuleerId: work.CausedByCapsuleerID,
 		ExternalRequestId:   work.ExternalRequestID,
+		WorkPayloadJson:     payload,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("queue durable settlement operation: %w", err)
@@ -73,24 +75,8 @@ func (p PubSubSettlementPublisher) PublishSettlementWork(ctx context.Context, wo
 	work.OperationID = operation.GetOperationId()
 	work.QueuedAt = settlementrpc.Time(operation.GetQueuedAt())
 	work.RequestID = work.OperationID
-	messageID, err := p.topic.Publish(ctx, work)
-	if err != nil {
-		publishErr := fmt.Errorf("publish settlement work: %w", err)
-		updateCtx, updateCancel := p.callContext(context.WithoutCancel(ctx))
-		defer updateCancel()
-		_, updateErr := p.lifecycle.UpdateSettlementOperation(updateCtx, &tradesettlementv1.UpdateSettlementOperationRequest{
-			OperationId:        work.OperationID,
-			State:              tradesettlementv1.SettlementOperationState_SETTLEMENT_OPERATION_STATE_FAILED,
-			FailureCode:        "WORK_PUBLICATION_FAILED",
-			FailureDescription: "settlement work could not be published",
-		})
-		if updateErr != nil {
-			return nil, errors.Join(publishErr, fmt.Errorf("mark settlement publication failed: %w", updateErr))
-		}
-		return nil, publishErr
-	}
 	return &SettlementPublication{
-		MessageID:   messageID,
+		MessageID:   "outbox:" + work.OperationID,
 		OperationID: work.OperationID,
 		QueuedAt:    work.QueuedAt,
 	}, nil

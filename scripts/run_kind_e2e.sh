@@ -34,7 +34,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for executable in docker kind kubectl encore python curl; do
+required_executables=(docker kind kubectl python curl)
+if [[ "${EVE_TRADE_E2E_SKIP_BUILD:-0}" != "1" ]]; then
+  required_executables+=(encore)
+fi
+for executable in "${required_executables[@]}"; do
   command -v "$executable" >/dev/null || {
     echo "required executable is missing: $executable" >&2
     exit 127
@@ -47,7 +51,7 @@ if ! kind get clusters | grep -Fxq "$cluster_name"; then
 fi
 
 if [[ "${EVE_TRADE_E2E_SKIP_BUILD:-0}" != "1" ]]; then
-  GOFLAGS=-mod=mod encore build docker --config infra/encore/self-host.nsq.json eve-trade/encore-backend:dev
+  GOFLAGS=-mod=mod encore build docker --config infra/encore/self-host.local.nsq.json eve-trade/encore-backend:dev
   docker build -f distributed-backend/docker/trade-settlement.Dockerfile -t eve-trade/trade-settlement:dev .
   docker build -f distributed-backend/docker/quilkin.Dockerfile -t eve-trade/quilkin:dev .
   docker build -f simulator/Dockerfile -t eve-trade/simulator:dev .
@@ -69,6 +73,39 @@ for deployment in postgres trade-settlement encore-backend quilkin simulator; do
   kubectl -n "$namespace" rollout status "deployment/$deployment" --timeout=300s
 done
 kubectl -n "$namespace" rollout status statefulset/nsqd --timeout=300s
+
+probe_unauthorized_nsq() {
+  local pod="$1"
+  echo "running ${pod} network-policy probe"
+  kubectl -n "$namespace" run "$pod" \
+    --image=eve-trade/simulator:dev \
+    --image-pull-policy=Never \
+    --restart=Never \
+    --labels="app.kubernetes.io/name=${pod}" \
+    --command -- python -c '
+import socket
+import sys
+
+try:
+    connection = socket.create_connection(("nsqd.eve-trade.svc.cluster.local", 4150), timeout=3)
+except OSError as error:
+    print(f"NSQ connection blocked as required: {error}")
+    raise SystemExit(0)
+else:
+    connection.close()
+    print("unauthorized NSQ connection unexpectedly succeeded", file=sys.stderr)
+    raise SystemExit(1)
+'
+  if ! kubectl -n "$namespace" wait --for=jsonpath='{.status.phase}'=Succeeded "pod/$pod" --timeout=60s; then
+    kubectl -n "$namespace" logs "$pod" || true
+    return 1
+  fi
+  kubectl -n "$namespace" logs "$pod"
+  kubectl -n "$namespace" delete pod "$pod" --wait=true
+}
+
+probe_unauthorized_nsq unauthorized-nsq-publisher
+probe_unauthorized_nsq unauthorized-nsq-consumer
 
 kubectl -n "$namespace" port-forward service/encore-backend 14000:4000 >"$log_root/encore-forward.log" 2>&1 &
 forward_pids+=("$!")

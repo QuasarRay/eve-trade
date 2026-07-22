@@ -13,6 +13,9 @@ service TradeSettlementService {
   rpc QueueSettlementOperation(QueueSettlementOperationRequest) returns (QueueSettlementOperationResponse);
   rpc GetSettlementOperation(GetSettlementOperationRequest) returns (GetSettlementOperationResponse);
   rpc UpdateSettlementOperation(UpdateSettlementOperationRequest) returns (UpdateSettlementOperationResponse);
+  rpc ClaimSettlementOutbox(ClaimSettlementOutboxRequest) returns (ClaimSettlementOutboxResponse);
+  rpc CompleteSettlementOutbox(CompleteSettlementOutboxRequest) returns (CompleteSettlementOutboxResponse);
+  rpc ReleaseSettlementOutbox(ReleaseSettlementOutboxRequest) returns (ReleaseSettlementOutboxResponse);
 }
 
 message ExecuteSettlementBatchRequest {
@@ -55,6 +58,7 @@ message QueueSettlementOperationRequest {
   }];
   int64 caused_by_capsuleer_id = 4 [(buf.validate.field).int64.(eve.validation.v1.positive_int64) = true];
   string external_request_id = 5;
+  bytes work_payload_json = 6 [(buf.validate.field).bytes.min_len = 2];
 }
 
 message GetSettlementOperationRequest {
@@ -71,6 +75,9 @@ message UpdateSettlementOperationRequest {
   string failure_code = 4;
   string failure_description = 5;
   bool result_published = 6;
+  string lease_owner = 7;
+  uint64 lease_generation = 8;
+  google.protobuf.Timestamp lease_expires_at = 9;
 }
 
 message SettlementOperationStatus {
@@ -86,6 +93,9 @@ message SettlementOperationStatus {
   string failure_code = 10;
   string failure_description = 11;
   bool result_published = 12;
+  string lease_owner = 13;
+  uint64 lease_generation = 14;
+  google.protobuf.Timestamp lease_expires_at = 15;
 }
 
 message QueueSettlementOperationResponse {
@@ -99,6 +109,41 @@ message GetSettlementOperationResponse {
 message UpdateSettlementOperationResponse {
   SettlementOperationStatus operation = 1;
 }
+
+message ClaimSettlementOutboxRequest {
+  string worker_id = 1 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+  uint32 limit = 2;
+  uint32 lease_seconds = 3;
+}
+
+message SettlementOutboxDelivery {
+  string operation_id = 1;
+  bytes work_payload_json = 2;
+  uint32 attempt_count = 3;
+  uint64 lease_generation = 4;
+}
+
+message ClaimSettlementOutboxResponse {
+  repeated SettlementOutboxDelivery deliveries = 1;
+}
+
+message CompleteSettlementOutboxRequest {
+  string operation_id = 1 [(buf.validate.field).string.(eve.validation.v1.uuid_string) = true];
+  string worker_id = 2 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+  uint64 lease_generation = 3;
+  string message_id = 4 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+}
+
+message CompleteSettlementOutboxResponse {}
+
+message ReleaseSettlementOutboxRequest {
+  string operation_id = 1 [(buf.validate.field).string.(eve.validation.v1.uuid_string) = true];
+  string worker_id = 2 [(buf.validate.field).string.(eve.validation.v1.non_blank_string) = true];
+  uint64 lease_generation = 3;
+  string error_description = 4;
+}
+
+message ReleaseSettlementOutboxResponse {}
 
 message ExecuteSettlementBatchResponse {
   string settlement_batch_id = 1;

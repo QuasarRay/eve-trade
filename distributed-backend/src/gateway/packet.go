@@ -67,7 +67,7 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 	}
 
 	fingerprint := sha256.Sum256(rawPayload)
-	if s.handleReplay(parent, conn, remote, packet, interactionID, fingerprint, receiveSpan) {
+	if s.handleReplay(parent, conn, remote, packet, principalID, interactionID, fingerprint, receiveSpan) {
 		return
 	}
 
@@ -82,15 +82,15 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 		slog.Warn("udp downstream call failed", "remote", remoteKey(remote), "interaction_id", interactionID, "code", code, "duration_ms", elapsed.Milliseconds())
 		recordUDPPacket(parent, code, len(packet))
 		if isRetryableDownstreamCode(code) {
-			s.replay().release(interactionID, fingerprint)
+			s.replay().releaseForPrincipal(principalID, interactionID, fingerprint)
 			s.writeError(conn, remote, interactionID, code, stableDownstreamMessage(callErr))
 		} else {
-			s.writeCachedError(conn, remote, interactionID, fingerprint, code, stableDownstreamMessage(callErr))
+			s.writeCachedError(conn, remote, principalID, interactionID, fingerprint, code, stableDownstreamMessage(callErr))
 		}
 		return
 	}
 
-	s.replay().complete(interactionID, fingerprint, body)
+	s.replay().completeForPrincipal(principalID, interactionID, fingerprint, body)
 	if writeErr := s.writeResponse(conn, remote, interactionID, body); writeErr != nil {
 		recordUDPPacket(parent, "write_failed", len(packet))
 		return
@@ -100,9 +100,9 @@ func (s *QuilkinUDPServer) handlePacket(parent context.Context, conn net.PacketC
 	recordUDPPacket(parent, "success", len(packet))
 }
 
-func (s *QuilkinUDPServer) handleReplay(parent context.Context, conn net.PacketConn, remote net.Addr, packet []byte, interactionID string, fingerprint [sha256.Size]byte, span replaySpan) bool {
+func (s *QuilkinUDPServer) handleReplay(parent context.Context, conn net.PacketConn, remote net.Addr, packet []byte, principalID int64, interactionID string, fingerprint [sha256.Size]byte, span replaySpan) bool {
 	defer recordUDPState(parent, s)
-	replayState, cachedResponse := s.replay().begin(interactionID, fingerprint)
+	replayState, cachedResponse := s.replay().beginForPrincipal(principalID, interactionID, fingerprint)
 	switch replayState {
 	case replayOverflow:
 		span.SetAttributes(attribute.String("interaction_id", interactionID), attribute.String("validation.result", "retry_later"), attribute.String("rejection.reason", "replay_capacity"))

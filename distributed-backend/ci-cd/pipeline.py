@@ -11,11 +11,12 @@ import dagger
 
 
 GO_IMAGE = "golang:1.26.5-bookworm@sha256:1ecb7edf62a0408027bd5729dfd6b1b8766e578e8df93995b225dfd0944eb651"
-RUST_IMAGE = "rust:1-bookworm@sha256:19817ead3289c8c631c73df281e18b59b172f6a31f4f563290f69cddd06c30e9"
+RUST_IMAGE = "rust:1.95.0-bookworm@sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1"
 PYTHON_IMAGE = "python:3.13-slim@sha256:c33f0bc4364a6881bed1ec0cc2665e6c53c87a43e774aaeab88e6f17af105e4f"
 NODE_IMAGE = "node:24.7.0-alpine@sha256:be4d5e92ac68483ec71440bf5934865b4b7fcb93588f17a24d411d15f0204e4f"
 KUSTOMIZE_IMAGE = "alpine/k8s:1.33.1"
 TERRAFORM_IMAGE = "hashicorp/terraform:1.15.8@sha256:7ae513256f7ce67879e218ae8593d6fbe216ec9e123abe6c94e4e10704857963"
+TRIVY_IMAGE = "aquasec/trivy:0.69.3@sha256:bcc376de8d77cfe086a917230e818dc9f8528e3c852f7b1aff648949b6258d1c"
 
 ENCORE_CLI_VERSION = "1.57.9"
 ENCORE_CLI_SHA256 = "dfd43dcd456f91414a823315480da921333e6d1e3535ab48c47c09225d022af5"
@@ -31,7 +32,7 @@ TERRAFORM_ROOTS = {
 }
 TERRAFORM_LOCKFILE_ARGS = {
     "aws": "-lockfile=readonly",
-    "gcp": "",
+    "gcp": "-lockfile=readonly",
     "talos-omni": "-lockfile=readonly",
 }
 SOURCE_EXCLUDES = [
@@ -97,7 +98,7 @@ ln -sf /root/.encore/bin/encore /usr/local/bin/encore
             .with_mounted_cache("/root/.cache/go-build", self.client.cache_volume("go-build"))
             .with_directory("/workspace", self.source)
             .with_workdir("/workspace")
-            .with_exec(["bash", "-lc", install])
+            .with_exec(["bash", "-c", install])
         )
 
     def rust_base(self) -> dagger.Container:
@@ -112,7 +113,7 @@ ln -sf /root/.encore/bin/encore /usr/local/bin/encore
 
     async def proto_checks(self) -> None:
         script = "buf build && buf lint && buf format --diff --exit-code && buf generate && git diff --exit-code -- proto/gen"
-        await self.run_container("protobuf contract checks", self.go_base().with_exec(["bash", "-lc", script]))
+        await self.run_container("protobuf contract checks", self.go_base().with_exec(["bash", "-c", script]))
 
     async def go_checks(self) -> None:
         script = r"""
@@ -123,9 +124,7 @@ go mod tidy
 git diff --exit-code -- go.mod go.sum
 test -z "$(gofmt -l distributed-backend/src/gateway distributed-backend/src/market distributed-backend/src/settlement distributed-backend/src/settlementworker distributed-backend/internal gametrade proto/gen go_modules_test.go)"
 GOFLAGS=-mod=mod encore test ./...
-ENCORERUNTIME_NOPANIC=1 go test -race ./distributed-backend/src/gateway ./distributed-backend/src/settlementworker ./distributed-backend/internal/... ./gametrade
-ENCORERUNTIME_NOPANIC=1 go test -race ./distributed-backend/src/market -run '^TestSettlement' -skip 'APIErrors'
-ENCORERUNTIME_NOPANIC=1 go test -race ./distributed-backend/src/market -run '^TestDuplicateSettlementResultProjectionIsHarmless$'
+ENCORERUNTIME_NOPANIC=1 go test -race -p=1 -timeout=5m ./...
 go vet ./...
 GOBIN=/usr/local/bin go install honnef.co/go/tools/cmd/staticcheck@v0.7.0
 staticcheck ./...
@@ -133,11 +132,29 @@ GOBIN=/usr/local/bin go install golang.org/x/vuln/cmd/govulncheck@v1.5.0
 govulncheck ./...
 ENCORERUNTIME_NOPANIC=1 go test -run '^$' -fuzz '^FuzzAuthenticatedPayload' -fuzztime 10s ./distributed-backend/src/gateway
 """
-        await self.run_container("Encore Go checks", self.go_base().with_exec(["bash", "-lc", script]))
+        await self.run_container("Encore Go checks", self.go_base().with_exec(["bash", "-c", script]))
 
     async def rust_checks(self) -> None:
         script = "cargo fmt --all -- --check && cargo check --locked --all-targets --all-features && cargo test --locked --all-features && cargo clippy --locked --all-targets --all-features -- -D warnings"
-        await self.run_container("Rust settlement checks", self.rust_base().with_exec(["bash", "-lc", script]))
+        postgres = (
+            self.client.container()
+            .from_("postgres:16")
+            .with_env_variable("POSTGRES_USER", "eve")
+            .with_env_variable("POSTGRES_PASSWORD", "eve-test")
+            .with_env_variable("POSTGRES_DB", "eve_trade_test")
+            .with_exposed_port(5432)
+            .as_service()
+        )
+        container = (
+            self.rust_base()
+            .with_service_binding("postgres", postgres)
+            .with_env_variable(
+                "EVE_TRADE_TEST_DATABASE_URL",
+                "postgresql://eve:eve-test@postgres:5432/eve_trade_test?sslmode=disable",
+            )
+            .with_exec(["bash", "-c", script])
+        )
+        await self.run_container("Rust settlement checks", container)
 
     async def python_checks(self) -> None:
         script = r"""
@@ -153,7 +170,7 @@ python -m pip_audit --requirement distributed-backend/observability/requirements
 (cd simulator && python -m coverage run --rcfile=.coveragerc manage.py test trade_gui && python -m coverage report --rcfile=.coveragerc --fail-under=80)
 python -m coverage erase
 PYTHONPATH=distributed-backend python -m coverage run --rcfile=distributed-backend/observability/.coveragerc -m unittest discover -s distributed-backend/observability/tests -v
-python -m coverage report --rcfile=distributed-backend/observability/.coveragerc --fail-under=35
+python -m coverage report --rcfile=distributed-backend/observability/.coveragerc --fail-under=80
 python scripts/verify_architecture_boundaries.py
 python scripts/verify_schema_ownership.py
 python -m unittest discover -s scripts/tests -v
@@ -176,7 +193,7 @@ set -euo pipefail
 kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/local >/tmp/eve-trade-local.yaml
 kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/prod >/tmp/eve-trade-prod.yaml
 kubectl kustomize distributed-backend/orchestration/kubernetes/chaos/litmus/overlays/prod >/tmp/eve-trade-chaos.yaml
-python scripts/verify_rendered_kubernetes.py --expect-unresolved-image-template /tmp/eve-trade-prod.yaml
+python scripts/verify_rendered_kubernetes.py --allow-application-image-templates /tmp/eve-trade-prod.yaml
 python -m unittest discover -s scripts/tests -v
 """
         await self.run_container("Kubernetes render checks", self.client.container().from_(KUSTOMIZE_IMAGE).with_directory("/workspace", self.source).with_workdir("/workspace").with_exec(["sh", "-c", script]))
@@ -185,15 +202,74 @@ python -m unittest discover -s scripts/tests -v
         for provider in providers:
             root = TERRAFORM_ROOTS[provider]
             lockfile_args = TERRAFORM_LOCKFILE_ARGS[provider]
-            lock_check = ""
-            if provider == "eks":
-                lock_check = f" && terraform -chdir={root} providers lock -platform=linux_amd64 -platform=windows_amd64 && git diff --exit-code -- {root}/.terraform.lock.hcl"
+            lock_check = f" && terraform -chdir={root} providers lock -platform=linux_amd64 -platform=windows_amd64 && git diff --exit-code -- {root}/.terraform.lock.hcl"
             script = f"terraform fmt -check -recursive distributed-backend/terraform && terraform -chdir={root} init -backend=false {lockfile_args}{lock_check} && terraform -chdir={root} providers && terraform -chdir={root} validate && terraform -chdir={root} test"
             await self.run_container(f"Terraform {provider}", self.client.container().from_(TERRAFORM_IMAGE).with_directory("/workspace", self.source).with_workdir("/workspace").with_exec(["sh", "-c", script]))
 
+    async def security_checks(self) -> None:
+        go_script = "GOBIN=/usr/local/bin go install golang.org/x/vuln/cmd/govulncheck@v1.5.0 && go version && govulncheck -version && govulncheck ./..."
+        go_container = (
+            self.client.container()
+            .from_(GO_IMAGE)
+            .with_mounted_cache("/go/pkg/mod", self.client.cache_volume("go-mod"))
+            .with_directory("/workspace", self.source)
+            .with_workdir("/workspace")
+            .with_exec(["bash", "-lc", go_script])
+        )
+        await self.run_container("Go vulnerability audit", go_container)
+
+        rust_script = "cargo install cargo-audit --locked --version 0.22.2 && cargo audit --deny warnings --ignore RUSTSEC-2023-0071"
+        await self.run_container("Rust advisory audit", self.rust_base().with_exec(["bash", "-lc", rust_script]))
+
+        python_script = r"""
+set -euo pipefail
+python -m pip install pip-audit==2.10.1
+pip-audit --requirement simulator/requirements.txt
+pip-audit --requirement simulator/requirements-test.txt
+pip-audit --requirement distributed-backend/tests/e2e/requirements.txt
+pip-audit --requirement distributed-backend/observability/requirements.txt
+pip-audit --requirement distributed-backend/observability/requirements-test.txt
+"""
+        python_container = (
+            self.client.container()
+            .from_(PYTHON_IMAGE)
+            .with_directory("/workspace", self.source)
+            .with_workdir("/workspace")
+            .with_exec(["bash", "-lc", python_script])
+        )
+        await self.run_container("Python dependency audits", python_container)
+
+        trivy_container = (
+            self.client.container()
+            .from_(TRIVY_IMAGE)
+            .with_entrypoint([])
+            .with_mounted_cache("/root/.cache/trivy", self.client.cache_volume("trivy-cache"))
+            .with_directory("/workspace", self.source)
+            .with_workdir("/workspace")
+            .with_exec(
+                [
+                    "trivy",
+                    "fs",
+                    "--scanners",
+                    "vuln,secret,misconfig",
+                    "--severity",
+                    "HIGH,CRITICAL",
+                    "--ignore-unfixed",
+                    "--ignorefile",
+                    ".trivyignore.yaml",
+                    "--show-suppressed",
+                    "--exit-code",
+                    "1",
+                    "--no-progress",
+                    ".",
+                ]
+            )
+        )
+        await self.run_container("Secret and infrastructure scan", trivy_container)
+
     async def build_images(self, registry: str, tag: str) -> None:
         script = f"GOFLAGS=-mod=mod encore build docker --config infra/encore/self-host.nsq.json {registry}/encore-backend:{tag}"
-        await self.run_container("Build Encore backend image", self.go_base().with_exec(["bash", "-lc", script]))
+        await self.run_container("Build Encore backend image", self.go_base().with_exec(["bash", "-c", script]))
         Path("distributed-backend/ci-cd/out").mkdir(parents=True, exist_ok=True)
         Path("distributed-backend/ci-cd/out/image-digests.json").write_text(json.dumps({name: f"{registry}/{name}:{tag}" for name in SERVICE_IMAGE_NAMES}, indent=2), encoding="utf-8")
 
@@ -265,7 +341,7 @@ async def run(args: argparse.Namespace) -> None:
         elif args.command == "test":
             await pipeline.test()
         elif args.command == "security":
-            await pipeline.kubernetes_checks()
+            await pipeline.security_checks()
         elif args.command == "build":
             await pipeline.build_images(registry, tag)
         elif args.command == "publish":

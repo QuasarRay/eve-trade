@@ -1,0 +1,8 @@
+{
+  "330a01c490aca151604b8cf639adc76d48f6c5d4": {
+    "action": "actions/upload-artifact",
+    "runtime": "node20",
+    "supported_on_ubuntu_24_04": true,
+    "reviewed_source": "https://github.com/actions/upload-artifact/blob/330a01c490aca151604b8cf639adc76d48f6c5d4/action.yml"
+  }
+}

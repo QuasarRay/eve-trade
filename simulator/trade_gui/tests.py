@@ -337,8 +337,8 @@ class GameGuiPacketBoundaryTests(TestCase):
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.json()["response_payload"]["status"], "accepted")
         self.assertEqual(len(RetryableResponseThenSuccessSocket.sent), 2)
-        self.assertEqual(RetryableResponseThenSuccessSocket.instances, 1)
-        self.assertEqual(RetryableResponseThenSuccessSocket.closed, 0)
+        self.assertEqual(RetryableResponseThenSuccessSocket.instances, 2)
+        self.assertEqual(RetryableResponseThenSuccessSocket.closed, 1)
         first_packet, _ = RetryableResponseThenSuccessSocket.sent[0]
         second_packet, _ = RetryableResponseThenSuccessSocket.sent[1]
         self.assertEqual(first_packet, second_packet)

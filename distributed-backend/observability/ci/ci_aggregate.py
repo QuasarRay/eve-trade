@@ -30,6 +30,7 @@ DEPENDENCY_GRAPH = {
     "go": {"proto"},
     "e2e": {"go", "rust-trade-settlement", "terraform", "kubernetes", "python", "architecture", "gui-contract", "security"},
 }
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 
 
 def load_needs(value: str) -> dict[str, Any]:
@@ -85,6 +86,14 @@ def assess_evidence(
             }
             for step in sorted(required - observed):
                 missing.append(f"successful go job lacks passing command evidence for {step}")
+        for bundle in bundles:
+            for command in bundle.get("commands", []):
+                for diagnostic in command.get("diagnostics", []):
+                    if diagnostic.get("type") == "readiness" and not diagnostic.get("measurements"):
+                        missing.append(f"readiness evidence has no measurements for job {job['job']}")
+                    source_path = str(diagnostic.get("source_path", "")).strip()
+                    if source_path and not (REPOSITORY_ROOT / source_path).is_file():
+                        missing.append(f"diagnostic source path does not exist: {source_path}")
         assessed.append({**job, "evidence": bundles})
     return assessed, missing
 
@@ -115,6 +124,10 @@ def diagnose_ci_needs(
         for command in bundle.get("commands", [])
     ]
     e2e_summary = _e2e_summary(commands)
+    diagnostic_sufficiency = _diagnostic_sufficiency(jobs, observed_failures)
+    artifact_completeness = "COMPLETE" if evidence_complete else "INCOMPLETE"
+    execution_completeness = "COMPLETE" if all_success and e2e_status == "PASSED" else "INCOMPLETE"
+    release_confidence = "HIGH" if product_status == "PASSED" and diagnostic_sufficiency == "SUFFICIENT" else "INSUFFICIENT"
     return {
         "schema_version": DIAGNOSIS_SCHEMA_VERSION,
         "classifier_version": CLASSIFIER_VERSION,
@@ -126,6 +139,10 @@ def diagnose_ci_needs(
         "product_status": product_status,
         "harness_status": "OK" if all_success else "INSUFFICIENT_EVIDENCE" if missing else "CI_WORKFLOW_FAILED",
         "analysis_status": "OK" if evidence_complete else "INSUFFICIENT_EVIDENCE",
+        "artifact_completeness": artifact_completeness,
+        "execution_completeness": execution_completeness,
+        "diagnostic_sufficiency": diagnostic_sufficiency,
+        "release_confidence": release_confidence,
         "commands": commands,
         "ci_jobs": [{key: value for key, value in job.items() if key != "evidence"} for job in jobs],
         "test_execution": {
@@ -204,6 +221,27 @@ def _successful_e2e_command(bundles: list[dict[str, Any]]) -> bool:
         and int(summary.get("error_count", 0)) == 0
         and float(summary.get("duration_seconds", 0.0)) > 0
     )
+
+
+def _diagnostic_sufficiency(
+    jobs: list[dict[str, Any]], observed_failures: list[dict[str, Any]]
+) -> str:
+    if not observed_failures:
+        return "SUFFICIENT"
+    failed_jobs = {event["component"] for event in observed_failures}
+    for job in jobs:
+        if job["job"] not in failed_jobs:
+            continue
+        diagnostics = [
+            diagnostic
+            for bundle in job["evidence"]
+            for command in bundle.get("commands", [])
+            for diagnostic in command.get("diagnostics", [])
+            if diagnostic
+        ]
+        if not diagnostics:
+            return "INSUFFICIENT"
+    return "SUFFICIENT"
 
 
 def main(argv: list[str] | None = None) -> None:

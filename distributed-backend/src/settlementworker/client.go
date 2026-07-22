@@ -21,6 +21,12 @@ type SettlementExecutor interface {
 	Ping(ctx context.Context) error
 }
 
+type SettlementOutboxStore interface {
+	ClaimSettlementOutbox(context.Context, *tradesettlementv1.ClaimSettlementOutboxRequest) (*tradesettlementv1.ClaimSettlementOutboxResponse, error)
+	CompleteSettlementOutbox(context.Context, *tradesettlementv1.CompleteSettlementOutboxRequest) (*tradesettlementv1.CompleteSettlementOutboxResponse, error)
+	ReleaseSettlementOutbox(context.Context, *tradesettlementv1.ReleaseSettlementOutboxRequest) (*tradesettlementv1.ReleaseSettlementOutboxResponse, error)
+}
+
 type healthChecker interface {
 	Check(ctx context.Context, request *healthv1.HealthCheckRequest, options ...grpc.CallOption) (*healthv1.HealthCheckResponse, error)
 }
@@ -93,6 +99,24 @@ func (e *GRPCSettlementExecutor) Ping(ctx context.Context) error {
 		return fmt.Errorf("trade settlement readiness status is %s", response.GetStatus())
 	}
 	return nil
+}
+
+func (e *GRPCSettlementExecutor) ClaimSettlementOutbox(ctx context.Context, request *tradesettlementv1.ClaimSettlementOutboxRequest) (*tradesettlementv1.ClaimSettlementOutboxResponse, error) {
+	ctx, cancel := e.callContext(ctx)
+	defer cancel()
+	return e.lifecycle.ClaimSettlementOutbox(ctx, request)
+}
+
+func (e *GRPCSettlementExecutor) CompleteSettlementOutbox(ctx context.Context, request *tradesettlementv1.CompleteSettlementOutboxRequest) (*tradesettlementv1.CompleteSettlementOutboxResponse, error) {
+	ctx, cancel := e.callContext(ctx)
+	defer cancel()
+	return e.lifecycle.CompleteSettlementOutbox(ctx, request)
+}
+
+func (e *GRPCSettlementExecutor) ReleaseSettlementOutbox(ctx context.Context, request *tradesettlementv1.ReleaseSettlementOutboxRequest) (*tradesettlementv1.ReleaseSettlementOutboxResponse, error) {
+	ctx, cancel := e.callContext(ctx)
+	defer cancel()
+	return e.lifecycle.ReleaseSettlementOutbox(ctx, request)
 }
 
 func (e *GRPCSettlementExecutor) callContext(parent context.Context) (context.Context, context.CancelFunc) {

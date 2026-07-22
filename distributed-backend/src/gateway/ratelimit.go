@@ -15,14 +15,21 @@ const (
 )
 
 type remoteRateLimiter struct {
-	mu            sync.Mutex
-	rate          float64
-	burst         float64
-	maxIdentities int
-	idleTTL       time.Duration
-	buckets       map[string]*tokenBucket
-	order         *list.List
-	now           func() time.Time
+	mu                 sync.Mutex
+	rate               float64
+	burst              float64
+	maxIdentities      int
+	idleTTL            time.Duration
+	buckets            map[string]*tokenBucket
+	order              *list.List
+	now                func() time.Time
+	capacityRejections uint64
+	identityEvictions  uint64
+}
+
+type limiterMetricsSnapshot struct {
+	CapacityRejections uint64
+	IdentityEvictions  uint64
 }
 
 type tokenBucket struct {
@@ -65,7 +72,8 @@ func (l *remoteRateLimiter) allow(key string) bool {
 	bucket := l.buckets[key]
 	if bucket == nil {
 		if len(l.buckets) >= l.maxIdentities {
-			l.removeOldest()
+			l.capacityRejections++
+			return false
 		}
 		bucket = &tokenBucket{tokens: l.burst - 1, updated: now}
 		bucket.element = l.order.PushBack(key)
@@ -94,6 +102,7 @@ func (l *remoteRateLimiter) removeIdle(now time.Time, limit int) {
 			return
 		}
 		l.removeOldest()
+		l.identityEvictions++
 	}
 }
 
@@ -110,6 +119,15 @@ func (l *remoteRateLimiter) size() int {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return len(l.buckets)
+}
+
+func (l *remoteRateLimiter) metricsSnapshot() limiterMetricsSnapshot {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return limiterMetricsSnapshot{
+		CapacityRejections: l.capacityRejections,
+		IdentityEvictions:  l.identityEvictions,
+	}
 }
 
 func (s *QuilkinUDPServer) allowSource(remote net.Addr) bool {

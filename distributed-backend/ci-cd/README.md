@@ -4,6 +4,8 @@ The pipeline keeps GitHub Actions, GitLab CI, and the Python Dagger entrypoint, 
 
 Key commands:
 
+* `python scripts/verify_repository.py run-local --output artifacts/verification-profile.json` runs the complete strict local profile. It reports `COMPLETE_VERIFICATION_PASSED`, `PARTIAL_VERIFICATION_PASSED` (exit 2), or `FAILED_VERIFICATION` (exit 1); E2E and observability are never silently omitted.
+
 * `encore test ./...`
 * `encore build docker --config infra/encore/self-host.nsq.json <image>`
 * `cargo test --locked --all-features` in `distributed-backend/src/trade-settlement`

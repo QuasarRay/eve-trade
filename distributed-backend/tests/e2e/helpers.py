@@ -11,6 +11,7 @@ import re
 import socket
 import sys
 import tempfile
+import threading
 import time
 import uuid
 from dataclasses import dataclass
@@ -252,26 +253,132 @@ def settlement_failure_rpc_code(value: Any) -> str:
     }.get(code, code.lower())
 
 
+class _EdgeSocketPool:
+    def __init__(self, capacity: int, factory: Callable[[], socket.socket]):
+        self.capacity = capacity
+        self._factory = factory
+        self._condition = threading.Condition()
+        self._idle: list[socket.socket] = []
+        self._members: set[socket.socket] = set()
+        self._leased: set[socket.socket] = set()
+        self._closed = False
+
+    @property
+    def queue(self) -> list[socket.socket]:
+        with self._condition:
+            return list(self._idle)
+
+    def empty(self) -> bool:
+        with self._condition:
+            return not self._idle
+
+    def get_nowait(self) -> socket.socket:
+        return self.get(timeout=0)
+
+    def get(
+        self,
+        block: bool = True,
+        timeout: float | None = None,
+        cancelled: threading.Event | None = None,
+    ) -> socket.socket:
+        deadline = None if timeout is None else time.monotonic() + max(0.0, timeout)
+        with self._condition:
+            while True:
+                if self._closed:
+                    raise RuntimeError("E2E UDP socket pool is closed")
+                if cancelled is not None and cancelled.is_set():
+                    raise RuntimeError("E2E UDP socket checkout cancelled")
+                if self._idle:
+                    result = self._idle.pop()
+                    self._leased.add(result)
+                    return result
+                if len(self._members) < self.capacity:
+                    result = self._factory()
+                    self._members.add(result)
+                    self._leased.add(result)
+                    return result
+                if not block or timeout == 0:
+                    raise queue.Empty
+                if deadline is None:
+                    self._condition.wait()
+                    continue
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError("E2E UDP socket checkout timed out")
+                self._condition.wait(remaining)
+
+    def put_nowait(self, udp: socket.socket) -> None:
+        with self._condition:
+            self._leased.discard(udp)
+            if self._closed or getattr(udp, "is_closed", False):
+                self._members.discard(udp)
+                close = True
+            else:
+                self._members.add(udp)
+                if udp not in self._idle:
+                    self._idle.append(udp)
+                close = False
+            self._condition.notify_all()
+        if close:
+            udp.close()
+
+    def discard(self, udp: socket.socket) -> None:
+        with self._condition:
+            self._leased.discard(udp)
+            self._members.discard(udp)
+            if udp in self._idle:
+                self._idle.remove(udp)
+            self._condition.notify_all()
+        udp.close()
+
+    def close(self) -> None:
+        with self._condition:
+            if self._closed:
+                return
+            self._closed = True
+            sockets = list(self._members)
+            self._idle.clear()
+            self._leased.clear()
+            self._members.clear()
+            self._condition.notify_all()
+        for udp in sockets:
+            udp.close()
+
+
 class AuthenticatedEdgeClient:
-    def __init__(self, host: str, port: int, response_secret: str, response_key_id: str):
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        response_secret: str,
+        response_key_id: str,
+        checkout_timeout: float = 10,
+    ):
         self.endpoint = (host, port)
         self.response_secret = response_secret.encode("utf-8")
         self.response_key_id = response_key_id
-        self.sockets: queue.LifoQueue[socket.socket] = queue.LifoQueue(maxsize=10)
-        for _ in range(10):
-            self.sockets.put_nowait(self._new_socket())
+        self.checkout_timeout = checkout_timeout
+        self._socket_constructor = socket.socket
+        self.sockets = _EdgeSocketPool(10, lambda: self._new_socket())
 
-    @staticmethod
-    def _new_socket() -> socket.socket:
-        udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    def _new_socket(self) -> socket.socket:
+        udp = self._socket_constructor(socket.AF_INET, socket.SOCK_DGRAM)
         udp.settimeout(10)
         return udp
 
     def close(self) -> None:
-        while not self.sockets.empty():
-            self.sockets.get_nowait().close()
+        self.sockets.close()
 
-    def submit(self, packet: dict[str, Any], key_id: str, principal_secret: str) -> dict[str, Any]:
+    def reset(self) -> None:
+        self.sockets.close()
+
+    def submit(
+        self,
+        packet: dict[str, Any],
+        key_id: str,
+        principal_secret: str,
+        cancelled: threading.Event | None = None,
+    ) -> dict[str, Any]:
         signing_bytes = envelope_signing_bytes(
             EDGE_REQUEST_SCHEMA,
             HMAC_SHA256_ALGORITHM,
@@ -290,16 +397,29 @@ class AuthenticatedEdgeClient:
             separators=(",", ":"),
             sort_keys=True,
         ).encode("utf-8")
-        udp = self.sockets.get()
+        udp = self.sockets.get(timeout=self.checkout_timeout, cancelled=cancelled)
+        return_socket = True
         try:
             udp.sendto(envelope, self.endpoint)
-            response, source = udp.recvfrom(65535)
-        except OSError:
-            udp.close()
-            udp = self._new_socket()
-            raise
+            while True:
+                response, source = udp.recvfrom(65535)
+                payload = self._validated_payload(response, source)
+                if payload.get("interaction_id") == packet.get("interaction_id"):
+                    return payload
+        except OSError as original:
+            return_socket = False
+            self.sockets.discard(udp)
+            try:
+                replacement = self._new_socket()
+            except OSError:
+                raise original
+            self.sockets.put_nowait(replacement)
+            raise original
         finally:
-            self.sockets.put_nowait(udp)
+            if return_socket:
+                self.sockets.put_nowait(udp)
+
+    def _validated_payload(self, response: bytes, source: tuple[str, int]) -> dict[str, Any]:
         expected_ips = {
             row[4][0]
             for row in socket.getaddrinfo(self.endpoint[0], self.endpoint[1], socket.AF_INET, socket.SOCK_DGRAM)
@@ -323,13 +443,8 @@ class AuthenticatedEdgeClient:
         ).rstrip(b"=").decode("ascii")
         if not hmac.compare_digest(str(auth.get("signature") or ""), expected):
             raise AssertionError("edge response signature is invalid")
-        expected_interaction_id = packet.get("interaction_id")
-        actual_interaction_id = payload.get("interaction_id") if isinstance(payload, dict) else None
-        if actual_interaction_id != expected_interaction_id:
-            raise AssertionError(
-                "edge response interaction_id does not match request: "
-                f"got {actual_interaction_id!r}, expected {expected_interaction_id!r}, payload={payload!r}"
-            )
+        if not isinstance(payload, dict):
+            raise AssertionError(f"edge response payload is not an object: {payload!r}")
         return payload
 
 

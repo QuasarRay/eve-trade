@@ -38,6 +38,14 @@ func TestKubernetesMigrationCopiesMatchSource(t *testing.T) {
 			"distributed-backend/src/trade-settlement/migrations/0001_settlement_schema.sql",
 			"distributed-backend/orchestration/kubernetes/base/migrations/0001_settlement_schema.sql",
 		},
+		{
+			"distributed-backend/src/trade-settlement/migrations/0002_merge_item_stack_constraints.sql",
+			"distributed-backend/orchestration/kubernetes/base/migrations/0002_merge_item_stack_constraints.sql",
+		},
+		{
+			"distributed-backend/src/trade-settlement/migrations/0003_settlement_hardening_and_outbox.sql",
+			"distributed-backend/orchestration/kubernetes/base/migrations/0003_settlement_hardening_and_outbox.sql",
+		},
 	}
 
 	for _, pair := range pairs {
@@ -60,24 +68,28 @@ func TestProductionOverlayTemplatesDigestsAndDeployRequiresPublishedDigests(t *t
 	if err != nil {
 		t.Fatal(err)
 	}
-	digestPattern := regexp.MustCompile(`(?m)^\s+digest:\s+sha256:[0-9a-f]{64}\s*$`)
-	if count := len(digestPattern.FindAll(manifest, -1)); count != 3 {
-		t.Fatalf("production overlay digest templates = %d, want 3", count)
+	if regexp.MustCompile(`(?m)^\s+(?:digest|newTag):`).Match(manifest) {
+		t.Fatal("production overlay must not check in fake digest or mutable tag substitutions")
 	}
-	if regexp.MustCompile(`(?m)^\s+newTag:`).Match(manifest) {
-		t.Fatal("production overlay contains a mutable newTag entry")
+	if bytes.Contains(manifest, []byte("registry.example.com")) || bytes.Contains(manifest, []byte("sha256:0000")) {
+		t.Fatal("production overlay contains a fake release image identity")
 	}
-	pipeline, err := os.ReadFile(filepath.FromSlash("distributed-backend/ci-cd/pipeline.py"))
+	workflow, err := os.ReadFile(filepath.FromSlash(".github/workflows/verify.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, contract := range []*regexp.Regexp{
-		regexp.MustCompile(`encore build docker`),
-		regexp.MustCompile(`encore-backend`),
-		regexp.MustCompile(`sha256:[0-9a-f]{64}`),
+		regexp.MustCompile(`packages:\s+write`),
+		regexp.MustCompile(`encore build docker --push --config`),
+		regexp.MustCompile(`eve-trade-encore-backend`),
+		regexp.MustCompile(`eve-trade-trade-settlement`),
+		regexp.MustCompile(`eve-trade-quilkin`),
+		regexp.MustCompile(`release-image-lock\.json`),
+		regexp.MustCompile(`render_release_kubernetes\.py`),
+		regexp.MustCompile(`verify_rendered_kubernetes\.py release-kubernetes\.yaml`),
 	} {
-		if !contract.Match(pipeline) {
-			t.Fatalf("deployment pipeline is missing immutable-image contract %s", contract)
+		if !contract.Match(workflow) {
+			t.Fatalf("release workflow is missing immutable-image contract %s", contract)
 		}
 	}
 }

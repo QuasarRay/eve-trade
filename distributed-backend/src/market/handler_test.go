@@ -318,8 +318,8 @@ func TestMarketHandlerReportsTradeSettlementUnavailable(t *testing.T) {
 		Quantity:            4,
 		UnitPriceISK:        25,
 	})
-	if errs.Code(err) != errs.Unavailable {
-		t.Fatalf("error code = %v, want unavailable: %v", errs.Code(err), err)
+	if apiErrorCode(err) != errs.Unavailable {
+		t.Fatalf("error code = %v, want unavailable: %v", apiErrorCode(err), err)
 	}
 }
 
@@ -334,8 +334,8 @@ func TestMarketHandlerRejectsAcceptingExpiredTrade(t *testing.T) {
 		QuantityRequested: 1,
 		BuyerWalletID:     "33333333-3333-4333-8333-333333333333",
 	})
-	if errs.Code(err) != errs.FailedPrecondition {
-		t.Fatalf("error code = %v, want failed_precondition: %v", errs.Code(err), err)
+	if apiErrorCode(err) != errs.FailedPrecondition {
+		t.Fatalf("error code = %v, want failed_precondition: %v", apiErrorCode(err), err)
 	}
 	if !strings.Contains(err.Error(), "expired") {
 		t.Fatalf("error = %v, want expired", err)
@@ -387,8 +387,8 @@ func TestMarketHandlerRejectsReplayWithDifferentExternalRequestID(t *testing.T) 
 		Quantity:            4,
 		UnitPriceISK:        25,
 	})
-	if errs.Code(err) != errs.Aborted {
-		t.Fatalf("error code = %v, want aborted: %v", errs.Code(err), err)
+	if apiErrorCode(err) != errs.Aborted {
+		t.Fatalf("error code = %v, want aborted: %v", apiErrorCode(err), err)
 	}
 	if !strings.Contains(err.Error(), "different request fingerprint") {
 		t.Fatalf("error = %v, want fingerprint conflict", err)
@@ -444,8 +444,8 @@ func TestMarketHandlerRejectsReplayWithDifferentExpiresAt(t *testing.T) {
 		UnitPriceISK:        25,
 		ExpiresAt:           settlementrpc.Timestamp(originalExpiresAt.Add(time.Hour)),
 	})
-	if errs.Code(err) != errs.Aborted {
-		t.Fatalf("error code = %v, want aborted: %v", errs.Code(err), err)
+	if apiErrorCode(err) != errs.Aborted {
+		t.Fatalf("error code = %v, want aborted: %v", apiErrorCode(err), err)
 	}
 }
 
@@ -505,8 +505,8 @@ func TestMarketHandlerRejectsReplayWithDifferentRequestFingerprint(t *testing.T)
 		Quantity:     4,
 		UnitPriceISK: 25,
 	})
-	if errs.Code(err) != errs.Aborted {
-		t.Fatalf("error code = %v, want aborted: %v", errs.Code(err), err)
+	if apiErrorCode(err) != errs.Aborted {
+		t.Fatalf("error code = %v, want aborted: %v", apiErrorCode(err), err)
 	}
 }
 
@@ -598,8 +598,8 @@ func TestMarketHandlerRejectsReplayWhenDestinationModeChanged(t *testing.T) {
 		QuantityRequested: 1,
 		BuyerWalletID:     "33333333-3333-4333-8333-333333333333",
 	})
-	if errs.Code(err) != errs.Aborted {
-		t.Fatalf("error code = %v, want aborted: %v", errs.Code(err), err)
+	if apiErrorCode(err) != errs.Aborted {
+		t.Fatalf("error code = %v, want aborted: %v", apiErrorCode(err), err)
 	}
 }
 
@@ -613,8 +613,8 @@ func TestMarketHandlerReportsReplayLoadErrorUnavailable(t *testing.T) {
 		Quantity:            4,
 		UnitPriceISK:        25,
 	})
-	if errs.Code(err) != errs.Unavailable {
-		t.Fatalf("error code = %v, want unavailable: %v", errs.Code(err), err)
+	if apiErrorCode(err) != errs.Unavailable {
+		t.Fatalf("error code = %v, want unavailable: %v", apiErrorCode(err), err)
 	}
 }
 
@@ -628,8 +628,8 @@ func TestMarketHandlerRejectsInactiveIssueItemStack(t *testing.T) {
 		Quantity:            4,
 		UnitPriceISK:        25,
 	})
-	if errs.Code(err) != errs.FailedPrecondition {
-		t.Fatalf("error code = %v, want failed_precondition: %v", errs.Code(err), err)
+	if apiErrorCode(err) != errs.FailedPrecondition {
+		t.Fatalf("error code = %v, want failed_precondition: %v", apiErrorCode(err), err)
 	}
 }
 
@@ -645,7 +645,7 @@ func TestMarketHandlerRejectsInactiveDestinationItemStack(t *testing.T) {
 		BuyerWalletID:               "33333333-3333-4333-8333-333333333333",
 		BuyerDestinationItemStackID: "66666666-6666-4666-8666-666666666666",
 	})
-	if errs.Code(err) != errs.FailedPrecondition {
-		t.Fatalf("error code = %v, want failed_precondition: %v", errs.Code(err), err)
+	if apiErrorCode(err) != errs.FailedPrecondition {
+		t.Fatalf("error code = %v, want failed_precondition: %v", apiErrorCode(err), err)
 	}
 }

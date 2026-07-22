@@ -21,8 +21,11 @@ from observability.ci.redaction import redact_text  # noqa: E402
 
 EVIDENCE_SCHEMA_VERSION = "o11y.ci-evidence.v2"
 COMMAND_EVIDENCE_SCHEMA_VERSION = "o11y.ci-command-evidence.v1"
+EVIDENCE_SIGNATURE_VERSION = "sha256-workflow-bound-v1"
 MAX_EXCERPT_CHARS = 8192
 MAX_COMMAND_RECORDS = 64
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+WORKFLOW_DEFINITION = REPOSITORY_ROOT / ".github" / "workflows" / "verify.yaml"
 REQUIRED_CONTEXT_FIELDS = (
     "repository",
     "branch_ref",
@@ -30,6 +33,7 @@ REQUIRED_CONTEXT_FIELDS = (
     "workflow",
     "run_id",
     "run_attempt",
+    "workflow_definition_digest",
 )
 
 
@@ -38,9 +42,30 @@ def utc_now() -> str:
 
 
 def canonical_digest(value: Mapping[str, Any]) -> str:
-    unsigned = {key: item for key, item in value.items() if key != "artifact_digest"}
+    unsigned = {key: item for key, item in value.items() if key not in {"artifact_digest", "signature"}}
     encoded = json.dumps(unsigned, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
     return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
+
+
+def workflow_definition_digest(path: Path = WORKFLOW_DEFINITION) -> str:
+    return f"sha256:{hashlib.sha256(path.read_bytes()).hexdigest()}"
+
+
+def evidence_signature(value: Mapping[str, Any]) -> dict[str, str]:
+    workflow_digest = str(value.get("workflow_definition_digest", ""))
+    artifact_digest = str(value.get("artifact_digest", ""))
+    payload = f"{EVIDENCE_SIGNATURE_VERSION}\n{workflow_digest}\n{artifact_digest}".encode("utf-8")
+    return {
+        "algorithm": EVIDENCE_SIGNATURE_VERSION,
+        "key_id": workflow_digest,
+        "value": f"sha256:{hashlib.sha256(payload).hexdigest()}",
+    }
+
+
+def sign_evidence(value: dict[str, Any]) -> dict[str, Any]:
+    value["artifact_digest"] = canonical_digest(value)
+    value["signature"] = evidence_signature(value)
+    return value
 
 
 def github_context(environment: Mapping[str, str] | None = None) -> dict[str, str]:
@@ -52,6 +77,7 @@ def github_context(environment: Mapping[str, str] | None = None) -> dict[str, st
         "workflow": env.get("GITHUB_WORKFLOW", ""),
         "run_id": env.get("GITHUB_RUN_ID", ""),
         "run_attempt": env.get("GITHUB_RUN_ATTEMPT", ""),
+        "workflow_definition_digest": workflow_definition_digest(),
     }
 
 
@@ -120,7 +146,7 @@ def finish_evidence(
             "runner_os": (environment or os.environ).get("RUNNER_OS", ""),
         },
     }
-    bundle["artifact_digest"] = canonical_digest(bundle)
+    sign_evidence(bundle)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     _write_json(output_path, bundle)
     return bundle
@@ -327,8 +353,16 @@ def verify_evidence_context(bundle: Mapping[str, Any], expected: Mapping[str, st
             errors.append(f"{field} mismatch: expected {wanted!r}, got {actual!r}")
     if bundle.get("collector_status") != "COMPLETE" and "artifact_digest" in bundle:
         errors.append("collector did not complete")
+    if bool((bundle.get("provenance") or {}).get("historical")):
+        errors.append("historical producer evidence is non-current")
     if "artifact_digest" in bundle and bundle.get("artifact_digest") != canonical_digest(bundle):
         errors.append("artifact digest mismatch")
+    if "artifact_digest" in bundle:
+        signature = bundle.get("signature")
+        if not isinstance(signature, dict):
+            errors.append("signature is missing")
+        elif signature != evidence_signature(bundle):
+            errors.append("signature is unverifiable")
     return errors
 
 

@@ -29,7 +29,24 @@ class TrivyExceptionTests(unittest.TestCase):
                         "paths": ["vendor/go.opentelemetry.io/otel/dependencies.Dockerfile"],
                         "expired_at": datetime.date(2027, 1, 1),
                         "statement": "This vendored OpenTelemetry Renovate metadata lists source images only and is never built or deployed.",
-                    }
+                    },
+                    {
+                        "id": "KSV-0014",
+                        "paths": [
+                            "distributed-backend/orchestration/kubernetes/overlay/local/nsq-local.yaml"
+                        ],
+                        "expired_at": datetime.date(2027, 1, 1),
+                        "statement": "This strategic-merge patch inherits the NSQ container readOnlyRootFilesystem setting from base/nsq.yaml; the fully rendered local manifest is verified separately.",
+                    },
+                    {
+                        "id": "KSV-0118",
+                        "paths": [
+                            "distributed-backend/orchestration/kubernetes/overlay/local/nsq-local.yaml",
+                            "distributed-backend/orchestration/kubernetes/overlay/prod/patches/nsq.yaml",
+                        ],
+                        "expired_at": datetime.date(2027, 1, 1),
+                        "statement": "These strategic-merge patches inherit NSQ pod and container security contexts from base/nsq.yaml; fully rendered local and production manifests are verified separately.",
+                    },
                 ]
             },
         )

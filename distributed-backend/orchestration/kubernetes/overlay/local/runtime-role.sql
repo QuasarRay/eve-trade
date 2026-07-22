@@ -17,13 +17,13 @@ REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM eve_trade_runtime;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO eve_trade_runtime;
 GRANT INSERT ON
   idempotency_record, request_attempt, settlement_batch, settlement_step,
-  settlement_operation,
+  settlement_operation, settlement_outbox,
   wallet, item_stack, trade_instance, wallet_escrow, item_stack_escrow,
   wallet_ledger, item_stack_ledger, trade_state_change
 TO eve_trade_runtime;
 GRANT UPDATE ON
   idempotency_record, request_attempt, settlement_batch, settlement_step,
-  settlement_operation,
+  settlement_operation, settlement_outbox,
   wallet, item_stack, trade_instance, wallet_escrow, item_stack_escrow
 TO eve_trade_runtime;
 REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM eve_trade_runtime;

@@ -7,9 +7,13 @@ target/
 distributed-backend/src/trade-settlement/target/
 .gocache/
 .gomodcache/
+.codex-task-state/
+**/.terraform/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.coverage
+**/.coverage
 node_modules/
 .downloads/
 artifacts/

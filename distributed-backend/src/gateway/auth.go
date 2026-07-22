@@ -59,6 +59,9 @@ func (s *QuilkinUDPServer) authenticatedPayload(packet []byte) ([]byte, string, 
 	}
 
 	var envelope edgeEnvelope
+	if _, err := decodeStrictJSON(packet); err != nil {
+		return nil, "", 0, reject("malformed_packet", "malformed packet")
+	}
 	decoder := json.NewDecoder(bytes.NewReader(packet))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&envelope); err != nil {
@@ -104,6 +107,9 @@ func (s *QuilkinUDPServer) authenticatedPayload(packet []byte) ([]byte, string, 
 }
 
 func extractInteractionID(rawPayload []byte) (string, error) {
+	if _, err := decodeStrictJSON(rawPayload); err != nil {
+		return "", err
+	}
 	var header guiPacketHeader
 	decoder := json.NewDecoder(bytes.NewReader(rawPayload))
 	if err := decoder.Decode(&header); err != nil {

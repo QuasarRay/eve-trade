@@ -36,7 +36,9 @@ spec:
             - -ec
           args:
             - |
-              psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /migrations/0001_settlement_schema.sql;
+              for migration in /migrations/*.sql; do
+                psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration";
+              done
           volumeMounts:
             - name: migrations
               mountPath: /migrations

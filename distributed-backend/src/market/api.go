@@ -128,13 +128,13 @@ func settlementOperationResponse(operation *tradesettlementv1.SettlementOperatio
 func settlementOperationAPIError(err error) error {
 	switch settlementrpc.ClassifyError(err) {
 	case settlementrpc.ErrorInvalidArgument:
-		return errs.WrapCode(err, errs.InvalidArgument, "invalid settlement operation query")
+		return apiError(errs.InvalidArgument, fmt.Errorf("invalid settlement operation query: %w", err))
 	case settlementrpc.ErrorNotFound:
-		return errs.WrapCode(err, errs.NotFound, "settlement operation not found")
+		return apiError(errs.NotFound, fmt.Errorf("settlement operation not found: %w", err))
 	case settlementrpc.ErrorDeadlineExceeded, settlementrpc.ErrorUnavailable:
-		return errs.WrapCode(err, errs.Unavailable, "settlement lifecycle unavailable")
+		return apiError(errs.Unavailable, fmt.Errorf("settlement lifecycle unavailable: %w", err))
 	default:
-		return errs.WrapCode(err, errs.Internal, "load settlement operation")
+		return apiError(errs.Internal, fmt.Errorf("load settlement operation: %w", err))
 	}
 }
 

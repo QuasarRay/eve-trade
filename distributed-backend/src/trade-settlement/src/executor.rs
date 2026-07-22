@@ -957,7 +957,11 @@ mod tests {
     const SELLER_WALLET_ID: &str = "00000000-0000-4000-8000-000000001001";
     const BUYER_WALLET_ID: &str = "00000000-0000-4000-8000-000000002002";
     const TEST_DATABASE_URL_ENV: &str = "EVE_TRADE_TEST_DATABASE_URL";
-    const TEST_MIGRATION: &str = include_str!("../migrations/0001_settlement_schema.sql");
+    const TEST_MIGRATIONS: [&str; 3] = [
+        include_str!("../migrations/0001_settlement_schema.sql"),
+        include_str!("../migrations/0002_merge_item_stack_constraints.sql"),
+        include_str!("../migrations/0003_settlement_hardening_and_outbox.sql"),
+    ];
     const TEST_SEED: &str = include_str!("../seeds/local_dev_world.sql");
     static TEST_DATABASE_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
@@ -1240,36 +1244,20 @@ mod tests {
             .connect(&database_url)
             .await
             .expect("connect to settlement test database");
-        sqlx::raw_sql(TEST_MIGRATION)
-            .execute(&pool)
-            .await
-            .expect("apply settlement migration");
-        sqlx::query(
-            r#"
-            TRUNCATE TABLE
-                trade_state_change,
-                wallet_ledger,
-                item_stack_ledger,
-                wallet_escrow,
-                item_stack_escrow,
-                trade_instance,
-                wallet,
-                item_stack,
-                settlement_step,
-                settlement_batch,
-                request_attempt,
-                idempotency_record,
-                settlement_operation,
-                item_type,
-                station,
-                region,
-                capsuleer
-            RESTART IDENTITY CASCADE
-            "#,
+        sqlx::raw_sql(
+            "DROP SCHEMA IF EXISTS eve_trade_executor_test CASCADE; \
+             CREATE SCHEMA eve_trade_executor_test; \
+             SET search_path TO eve_trade_executor_test, public;",
         )
         .execute(&pool)
         .await
-        .expect("reset settlement test database");
+        .expect("reset isolated settlement test schema");
+        for migration in TEST_MIGRATIONS {
+            sqlx::raw_sql(migration)
+                .execute(&pool)
+                .await
+                .expect("apply settlement migration");
+        }
         sqlx::raw_sql(TEST_SEED)
             .execute(&pool)
             .await

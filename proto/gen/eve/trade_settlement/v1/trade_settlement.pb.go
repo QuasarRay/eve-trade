@@ -320,6 +320,7 @@ type QueueSettlementOperationRequest struct {
 	Intent              SettlementIntent       `protobuf:"varint,3,opt,name=intent,proto3,enum=eve.trade_settlement.v1.SettlementIntent" json:"intent,omitempty"`
 	CausedByCapsuleerId int64                  `protobuf:"varint,4,opt,name=caused_by_capsuleer_id,json=causedByCapsuleerId,proto3" json:"caused_by_capsuleer_id,omitempty"`
 	ExternalRequestId   string                 `protobuf:"bytes,5,opt,name=external_request_id,json=externalRequestId,proto3" json:"external_request_id,omitempty"`
+	WorkPayloadJson     []byte                 `protobuf:"bytes,6,opt,name=work_payload_json,json=workPayloadJson,proto3" json:"work_payload_json,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -389,6 +390,13 @@ func (x *QueueSettlementOperationRequest) GetExternalRequestId() string {
 	return ""
 }
 
+func (x *QueueSettlementOperationRequest) GetWorkPayloadJson() []byte {
+	if x != nil {
+		return x.WorkPayloadJson
+	}
+	return nil
+}
+
 type GetSettlementOperationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	OperationId   string                 `protobuf:"bytes,1,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
@@ -441,6 +449,9 @@ type UpdateSettlementOperationRequest struct {
 	FailureCode        string                   `protobuf:"bytes,4,opt,name=failure_code,json=failureCode,proto3" json:"failure_code,omitempty"`
 	FailureDescription string                   `protobuf:"bytes,5,opt,name=failure_description,json=failureDescription,proto3" json:"failure_description,omitempty"`
 	ResultPublished    bool                     `protobuf:"varint,6,opt,name=result_published,json=resultPublished,proto3" json:"result_published,omitempty"`
+	LeaseOwner         string                   `protobuf:"bytes,7,opt,name=lease_owner,json=leaseOwner,proto3" json:"lease_owner,omitempty"`
+	LeaseGeneration    uint64                   `protobuf:"varint,8,opt,name=lease_generation,json=leaseGeneration,proto3" json:"lease_generation,omitempty"`
+	LeaseExpiresAt     *timestamppb.Timestamp   `protobuf:"bytes,9,opt,name=lease_expires_at,json=leaseExpiresAt,proto3" json:"lease_expires_at,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -517,6 +528,27 @@ func (x *UpdateSettlementOperationRequest) GetResultPublished() bool {
 	return false
 }
 
+func (x *UpdateSettlementOperationRequest) GetLeaseOwner() string {
+	if x != nil {
+		return x.LeaseOwner
+	}
+	return ""
+}
+
+func (x *UpdateSettlementOperationRequest) GetLeaseGeneration() uint64 {
+	if x != nil {
+		return x.LeaseGeneration
+	}
+	return 0
+}
+
+func (x *UpdateSettlementOperationRequest) GetLeaseExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LeaseExpiresAt
+	}
+	return nil
+}
+
 type SettlementOperationStatus struct {
 	state               protoimpl.MessageState   `protogen:"open.v1"`
 	OperationId         string                   `protobuf:"bytes,1,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
@@ -531,6 +563,9 @@ type SettlementOperationStatus struct {
 	FailureCode         string                   `protobuf:"bytes,10,opt,name=failure_code,json=failureCode,proto3" json:"failure_code,omitempty"`
 	FailureDescription  string                   `protobuf:"bytes,11,opt,name=failure_description,json=failureDescription,proto3" json:"failure_description,omitempty"`
 	ResultPublished     bool                     `protobuf:"varint,12,opt,name=result_published,json=resultPublished,proto3" json:"result_published,omitempty"`
+	LeaseOwner          string                   `protobuf:"bytes,13,opt,name=lease_owner,json=leaseOwner,proto3" json:"lease_owner,omitempty"`
+	LeaseGeneration     uint64                   `protobuf:"varint,14,opt,name=lease_generation,json=leaseGeneration,proto3" json:"lease_generation,omitempty"`
+	LeaseExpiresAt      *timestamppb.Timestamp   `protobuf:"bytes,15,opt,name=lease_expires_at,json=leaseExpiresAt,proto3" json:"lease_expires_at,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -647,6 +682,27 @@ func (x *SettlementOperationStatus) GetResultPublished() bool {
 		return x.ResultPublished
 	}
 	return false
+}
+
+func (x *SettlementOperationStatus) GetLeaseOwner() string {
+	if x != nil {
+		return x.LeaseOwner
+	}
+	return ""
+}
+
+func (x *SettlementOperationStatus) GetLeaseGeneration() uint64 {
+	if x != nil {
+		return x.LeaseGeneration
+	}
+	return 0
+}
+
+func (x *SettlementOperationStatus) GetLeaseExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LeaseExpiresAt
+	}
+	return nil
 }
 
 type QueueSettlementOperationResponse struct {
@@ -781,6 +837,386 @@ func (x *UpdateSettlementOperationResponse) GetOperation() *SettlementOperationS
 	return nil
 }
 
+type ClaimSettlementOutboxRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorkerId      string                 `protobuf:"bytes,1,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	Limit         uint32                 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	LeaseSeconds  uint32                 `protobuf:"varint,3,opt,name=lease_seconds,json=leaseSeconds,proto3" json:"lease_seconds,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClaimSettlementOutboxRequest) Reset() {
+	*x = ClaimSettlementOutboxRequest{}
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClaimSettlementOutboxRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClaimSettlementOutboxRequest) ProtoMessage() {}
+
+func (x *ClaimSettlementOutboxRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClaimSettlementOutboxRequest.ProtoReflect.Descriptor instead.
+func (*ClaimSettlementOutboxRequest) Descriptor() ([]byte, []int) {
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ClaimSettlementOutboxRequest) GetWorkerId() string {
+	if x != nil {
+		return x.WorkerId
+	}
+	return ""
+}
+
+func (x *ClaimSettlementOutboxRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ClaimSettlementOutboxRequest) GetLeaseSeconds() uint32 {
+	if x != nil {
+		return x.LeaseSeconds
+	}
+	return 0
+}
+
+type SettlementOutboxDelivery struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	OperationId     string                 `protobuf:"bytes,1,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
+	WorkPayloadJson []byte                 `protobuf:"bytes,2,opt,name=work_payload_json,json=workPayloadJson,proto3" json:"work_payload_json,omitempty"`
+	AttemptCount    uint32                 `protobuf:"varint,3,opt,name=attempt_count,json=attemptCount,proto3" json:"attempt_count,omitempty"`
+	LeaseGeneration uint64                 `protobuf:"varint,4,opt,name=lease_generation,json=leaseGeneration,proto3" json:"lease_generation,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SettlementOutboxDelivery) Reset() {
+	*x = SettlementOutboxDelivery{}
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SettlementOutboxDelivery) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SettlementOutboxDelivery) ProtoMessage() {}
+
+func (x *SettlementOutboxDelivery) ProtoReflect() protoreflect.Message {
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SettlementOutboxDelivery.ProtoReflect.Descriptor instead.
+func (*SettlementOutboxDelivery) Descriptor() ([]byte, []int) {
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SettlementOutboxDelivery) GetOperationId() string {
+	if x != nil {
+		return x.OperationId
+	}
+	return ""
+}
+
+func (x *SettlementOutboxDelivery) GetWorkPayloadJson() []byte {
+	if x != nil {
+		return x.WorkPayloadJson
+	}
+	return nil
+}
+
+func (x *SettlementOutboxDelivery) GetAttemptCount() uint32 {
+	if x != nil {
+		return x.AttemptCount
+	}
+	return 0
+}
+
+func (x *SettlementOutboxDelivery) GetLeaseGeneration() uint64 {
+	if x != nil {
+		return x.LeaseGeneration
+	}
+	return 0
+}
+
+type ClaimSettlementOutboxResponse struct {
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Deliveries    []*SettlementOutboxDelivery `protobuf:"bytes,1,rep,name=deliveries,proto3" json:"deliveries,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClaimSettlementOutboxResponse) Reset() {
+	*x = ClaimSettlementOutboxResponse{}
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClaimSettlementOutboxResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClaimSettlementOutboxResponse) ProtoMessage() {}
+
+func (x *ClaimSettlementOutboxResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClaimSettlementOutboxResponse.ProtoReflect.Descriptor instead.
+func (*ClaimSettlementOutboxResponse) Descriptor() ([]byte, []int) {
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ClaimSettlementOutboxResponse) GetDeliveries() []*SettlementOutboxDelivery {
+	if x != nil {
+		return x.Deliveries
+	}
+	return nil
+}
+
+type CompleteSettlementOutboxRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	OperationId     string                 `protobuf:"bytes,1,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
+	WorkerId        string                 `protobuf:"bytes,2,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	LeaseGeneration uint64                 `protobuf:"varint,3,opt,name=lease_generation,json=leaseGeneration,proto3" json:"lease_generation,omitempty"`
+	MessageId       string                 `protobuf:"bytes,4,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CompleteSettlementOutboxRequest) Reset() {
+	*x = CompleteSettlementOutboxRequest{}
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteSettlementOutboxRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteSettlementOutboxRequest) ProtoMessage() {}
+
+func (x *CompleteSettlementOutboxRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteSettlementOutboxRequest.ProtoReflect.Descriptor instead.
+func (*CompleteSettlementOutboxRequest) Descriptor() ([]byte, []int) {
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *CompleteSettlementOutboxRequest) GetOperationId() string {
+	if x != nil {
+		return x.OperationId
+	}
+	return ""
+}
+
+func (x *CompleteSettlementOutboxRequest) GetWorkerId() string {
+	if x != nil {
+		return x.WorkerId
+	}
+	return ""
+}
+
+func (x *CompleteSettlementOutboxRequest) GetLeaseGeneration() uint64 {
+	if x != nil {
+		return x.LeaseGeneration
+	}
+	return 0
+}
+
+func (x *CompleteSettlementOutboxRequest) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+type CompleteSettlementOutboxResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteSettlementOutboxResponse) Reset() {
+	*x = CompleteSettlementOutboxResponse{}
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteSettlementOutboxResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteSettlementOutboxResponse) ProtoMessage() {}
+
+func (x *CompleteSettlementOutboxResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteSettlementOutboxResponse.ProtoReflect.Descriptor instead.
+func (*CompleteSettlementOutboxResponse) Descriptor() ([]byte, []int) {
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{12}
+}
+
+type ReleaseSettlementOutboxRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	OperationId      string                 `protobuf:"bytes,1,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
+	WorkerId         string                 `protobuf:"bytes,2,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	LeaseGeneration  uint64                 `protobuf:"varint,3,opt,name=lease_generation,json=leaseGeneration,proto3" json:"lease_generation,omitempty"`
+	ErrorDescription string                 `protobuf:"bytes,4,opt,name=error_description,json=errorDescription,proto3" json:"error_description,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ReleaseSettlementOutboxRequest) Reset() {
+	*x = ReleaseSettlementOutboxRequest{}
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReleaseSettlementOutboxRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReleaseSettlementOutboxRequest) ProtoMessage() {}
+
+func (x *ReleaseSettlementOutboxRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReleaseSettlementOutboxRequest.ProtoReflect.Descriptor instead.
+func (*ReleaseSettlementOutboxRequest) Descriptor() ([]byte, []int) {
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ReleaseSettlementOutboxRequest) GetOperationId() string {
+	if x != nil {
+		return x.OperationId
+	}
+	return ""
+}
+
+func (x *ReleaseSettlementOutboxRequest) GetWorkerId() string {
+	if x != nil {
+		return x.WorkerId
+	}
+	return ""
+}
+
+func (x *ReleaseSettlementOutboxRequest) GetLeaseGeneration() uint64 {
+	if x != nil {
+		return x.LeaseGeneration
+	}
+	return 0
+}
+
+func (x *ReleaseSettlementOutboxRequest) GetErrorDescription() string {
+	if x != nil {
+		return x.ErrorDescription
+	}
+	return ""
+}
+
+type ReleaseSettlementOutboxResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReleaseSettlementOutboxResponse) Reset() {
+	*x = ReleaseSettlementOutboxResponse{}
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReleaseSettlementOutboxResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReleaseSettlementOutboxResponse) ProtoMessage() {}
+
+func (x *ReleaseSettlementOutboxResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReleaseSettlementOutboxResponse.ProtoReflect.Descriptor instead.
+func (*ReleaseSettlementOutboxResponse) Descriptor() ([]byte, []int) {
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{14}
+}
+
 type ExecuteSettlementBatchResponse struct {
 	state             protoimpl.MessageState  `protogen:"open.v1"`
 	SettlementBatchId string                  `protobuf:"bytes,1,opt,name=settlement_batch_id,json=settlementBatchId,proto3" json:"settlement_batch_id,omitempty"`
@@ -794,7 +1230,7 @@ type ExecuteSettlementBatchResponse struct {
 
 func (x *ExecuteSettlementBatchResponse) Reset() {
 	*x = ExecuteSettlementBatchResponse{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[8]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -806,7 +1242,7 @@ func (x *ExecuteSettlementBatchResponse) String() string {
 func (*ExecuteSettlementBatchResponse) ProtoMessage() {}
 
 func (x *ExecuteSettlementBatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[8]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -819,7 +1255,7 @@ func (x *ExecuteSettlementBatchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecuteSettlementBatchResponse.ProtoReflect.Descriptor instead.
 func (*ExecuteSettlementBatchResponse) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{8}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ExecuteSettlementBatchResponse) GetSettlementBatchId() string {
@@ -869,7 +1305,7 @@ type SettlementStepResult struct {
 
 func (x *SettlementStepResult) Reset() {
 	*x = SettlementStepResult{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[9]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -881,7 +1317,7 @@ func (x *SettlementStepResult) String() string {
 func (*SettlementStepResult) ProtoMessage() {}
 
 func (x *SettlementStepResult) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[9]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -894,7 +1330,7 @@ func (x *SettlementStepResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SettlementStepResult.ProtoReflect.Descriptor instead.
 func (*SettlementStepResult) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{9}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SettlementStepResult) GetStepIndex() uint32 {
@@ -935,7 +1371,7 @@ type EntityReference struct {
 
 func (x *EntityReference) Reset() {
 	*x = EntityReference{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[10]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -947,7 +1383,7 @@ func (x *EntityReference) String() string {
 func (*EntityReference) ProtoMessage() {}
 
 func (x *EntityReference) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[10]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -960,7 +1396,7 @@ func (x *EntityReference) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EntityReference.ProtoReflect.Descriptor instead.
 func (*EntityReference) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{10}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *EntityReference) GetEntityKind() string {
@@ -999,7 +1435,7 @@ type SettlementOperation struct {
 
 func (x *SettlementOperation) Reset() {
 	*x = SettlementOperation{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[11]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1011,7 +1447,7 @@ func (x *SettlementOperation) String() string {
 func (*SettlementOperation) ProtoMessage() {}
 
 func (x *SettlementOperation) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[11]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1024,7 +1460,7 @@ func (x *SettlementOperation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SettlementOperation.ProtoReflect.Descriptor instead.
 func (*SettlementOperation) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{11}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SettlementOperation) GetOperation() isSettlementOperation_Operation {
@@ -1227,7 +1663,7 @@ type CreateNewTradeInstanceRow struct {
 
 func (x *CreateNewTradeInstanceRow) Reset() {
 	*x = CreateNewTradeInstanceRow{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[12]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1239,7 +1675,7 @@ func (x *CreateNewTradeInstanceRow) String() string {
 func (*CreateNewTradeInstanceRow) ProtoMessage() {}
 
 func (x *CreateNewTradeInstanceRow) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[12]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1252,7 +1688,7 @@ func (x *CreateNewTradeInstanceRow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateNewTradeInstanceRow.ProtoReflect.Descriptor instead.
 func (*CreateNewTradeInstanceRow) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{12}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *CreateNewTradeInstanceRow) GetTradeInstanceId() string {
@@ -1330,7 +1766,7 @@ type ModifyTradeInstanceState struct {
 
 func (x *ModifyTradeInstanceState) Reset() {
 	*x = ModifyTradeInstanceState{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[13]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1342,7 +1778,7 @@ func (x *ModifyTradeInstanceState) String() string {
 func (*ModifyTradeInstanceState) ProtoMessage() {}
 
 func (x *ModifyTradeInstanceState) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[13]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1355,7 +1791,7 @@ func (x *ModifyTradeInstanceState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ModifyTradeInstanceState.ProtoReflect.Descriptor instead.
 func (*ModifyTradeInstanceState) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{13}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ModifyTradeInstanceState) GetTradeInstanceId() string {
@@ -1398,7 +1834,7 @@ type CreateNewEmptyItemStack struct {
 
 func (x *CreateNewEmptyItemStack) Reset() {
 	*x = CreateNewEmptyItemStack{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[14]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1410,7 +1846,7 @@ func (x *CreateNewEmptyItemStack) String() string {
 func (*CreateNewEmptyItemStack) ProtoMessage() {}
 
 func (x *CreateNewEmptyItemStack) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[14]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1423,7 +1859,7 @@ func (x *CreateNewEmptyItemStack) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateNewEmptyItemStack.ProtoReflect.Descriptor instead.
 func (*CreateNewEmptyItemStack) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{14}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *CreateNewEmptyItemStack) GetItemStackId() string {
@@ -1466,7 +1902,7 @@ type TransferQuantityFromItemStackToItemStackEscrow struct {
 
 func (x *TransferQuantityFromItemStackToItemStackEscrow) Reset() {
 	*x = TransferQuantityFromItemStackToItemStackEscrow{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[15]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1478,7 +1914,7 @@ func (x *TransferQuantityFromItemStackToItemStackEscrow) String() string {
 func (*TransferQuantityFromItemStackToItemStackEscrow) ProtoMessage() {}
 
 func (x *TransferQuantityFromItemStackToItemStackEscrow) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[15]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1491,7 +1927,7 @@ func (x *TransferQuantityFromItemStackToItemStackEscrow) ProtoReflect() protoref
 
 // Deprecated: Use TransferQuantityFromItemStackToItemStackEscrow.ProtoReflect.Descriptor instead.
 func (*TransferQuantityFromItemStackToItemStackEscrow) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{15}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *TransferQuantityFromItemStackToItemStackEscrow) GetSourceItemStackId() string {
@@ -1533,7 +1969,7 @@ type TransferQuantityFromItemStackEscrowToItemStackWithNewOwner struct {
 
 func (x *TransferQuantityFromItemStackEscrowToItemStackWithNewOwner) Reset() {
 	*x = TransferQuantityFromItemStackEscrowToItemStackWithNewOwner{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[16]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1545,7 +1981,7 @@ func (x *TransferQuantityFromItemStackEscrowToItemStackWithNewOwner) String() st
 func (*TransferQuantityFromItemStackEscrowToItemStackWithNewOwner) ProtoMessage() {}
 
 func (x *TransferQuantityFromItemStackEscrowToItemStackWithNewOwner) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[16]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1558,7 +1994,7 @@ func (x *TransferQuantityFromItemStackEscrowToItemStackWithNewOwner) ProtoReflec
 
 // Deprecated: Use TransferQuantityFromItemStackEscrowToItemStackWithNewOwner.ProtoReflect.Descriptor instead.
 func (*TransferQuantityFromItemStackEscrowToItemStackWithNewOwner) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{16}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *TransferQuantityFromItemStackEscrowToItemStackWithNewOwner) GetItemStackEscrowId() string {
@@ -1593,7 +2029,7 @@ type TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner struct {
 
 func (x *TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner) Reset() {
 	*x = TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[17]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1605,7 +2041,7 @@ func (x *TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner) String
 func (*TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner) ProtoMessage() {}
 
 func (x *TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[17]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1618,7 +2054,7 @@ func (x *TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner) ProtoR
 
 // Deprecated: Use TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner.ProtoReflect.Descriptor instead.
 func (*TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{17}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner) GetItemStackEscrowId() string {
@@ -1652,7 +2088,7 @@ type MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner struct {
 
 func (x *MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner) Reset() {
 	*x = MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[18]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1664,7 +2100,7 @@ func (x *MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner) String() string 
 func (*MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner) ProtoMessage() {}
 
 func (x *MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[18]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1677,7 +2113,7 @@ func (x *MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner) ProtoReflect() p
 
 // Deprecated: Use MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner.ProtoReflect.Descriptor instead.
 func (*MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{18}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner) GetSourceItemStackId() string {
@@ -1706,7 +2142,7 @@ type CreateNewEmptyWalletEscrow struct {
 
 func (x *CreateNewEmptyWalletEscrow) Reset() {
 	*x = CreateNewEmptyWalletEscrow{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[19]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1718,7 +2154,7 @@ func (x *CreateNewEmptyWalletEscrow) String() string {
 func (*CreateNewEmptyWalletEscrow) ProtoMessage() {}
 
 func (x *CreateNewEmptyWalletEscrow) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[19]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1731,7 +2167,7 @@ func (x *CreateNewEmptyWalletEscrow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateNewEmptyWalletEscrow.ProtoReflect.Descriptor instead.
 func (*CreateNewEmptyWalletEscrow) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{19}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *CreateNewEmptyWalletEscrow) GetWalletEscrowId() string {
@@ -1774,7 +2210,7 @@ type TransferIskAmountFromWalletToWalletEscrow struct {
 
 func (x *TransferIskAmountFromWalletToWalletEscrow) Reset() {
 	*x = TransferIskAmountFromWalletToWalletEscrow{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[20]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1786,7 +2222,7 @@ func (x *TransferIskAmountFromWalletToWalletEscrow) String() string {
 func (*TransferIskAmountFromWalletToWalletEscrow) ProtoMessage() {}
 
 func (x *TransferIskAmountFromWalletToWalletEscrow) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[20]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1799,7 +2235,7 @@ func (x *TransferIskAmountFromWalletToWalletEscrow) ProtoReflect() protoreflect.
 
 // Deprecated: Use TransferIskAmountFromWalletToWalletEscrow.ProtoReflect.Descriptor instead.
 func (*TransferIskAmountFromWalletToWalletEscrow) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{20}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *TransferIskAmountFromWalletToWalletEscrow) GetSourceWalletId() string {
@@ -1841,7 +2277,7 @@ type TransferIskAmountFromWalletEscrowToWalletWithNewOwner struct {
 
 func (x *TransferIskAmountFromWalletEscrowToWalletWithNewOwner) Reset() {
 	*x = TransferIskAmountFromWalletEscrowToWalletWithNewOwner{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[21]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1853,7 +2289,7 @@ func (x *TransferIskAmountFromWalletEscrowToWalletWithNewOwner) String() string 
 func (*TransferIskAmountFromWalletEscrowToWalletWithNewOwner) ProtoMessage() {}
 
 func (x *TransferIskAmountFromWalletEscrowToWalletWithNewOwner) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[21]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1866,7 +2302,7 @@ func (x *TransferIskAmountFromWalletEscrowToWalletWithNewOwner) ProtoReflect() p
 
 // Deprecated: Use TransferIskAmountFromWalletEscrowToWalletWithNewOwner.ProtoReflect.Descriptor instead.
 func (*TransferIskAmountFromWalletEscrowToWalletWithNewOwner) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{21}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *TransferIskAmountFromWalletEscrowToWalletWithNewOwner) GetWalletEscrowId() string {
@@ -1901,7 +2337,7 @@ type TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner struct {
 
 func (x *TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner) Reset() {
 	*x = TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner{}
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[22]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1913,7 +2349,7 @@ func (x *TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner) String() st
 func (*TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner) ProtoMessage() {}
 
 func (x *TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner) ProtoReflect() protoreflect.Message {
-	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[22]
+	mi := &file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1926,7 +2362,7 @@ func (x *TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner) ProtoReflec
 
 // Deprecated: Use TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner.ProtoReflect.Descriptor instead.
 func (*TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner) Descriptor() ([]byte, []int) {
-	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{22}
+	return file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner) GetWalletEscrowId() string {
@@ -1968,16 +2404,17 @@ const file_eve_trade_settlement_v1_trade_settlement_proto_rawDesc = "" +
 	"request_id\x18\a \x01(\tB\t\xbaH\x06r\x04\x90\xb5\x18\x01R\trequestId\x12M\n" +
 	"\x06intent\x18\b \x01(\x0e2).eve.trade_settlement.v1.SettlementIntentB\n" +
 	"\xbaH\a\x82\x01\x04\x10\x01 \x00R\x06intentB\x19\n" +
-	"\x17_caused_by_capsuleer_id\"\xd0\x02\n" +
+	"\x17_caused_by_capsuleer_id\"\x85\x03\n" +
 	"\x1fQueueSettlementOperationRequest\x122\n" +
 	"\x0fidempotency_key\x18\x01 \x01(\tB\t\xbaH\x06r\x04\x80\xb5\x18\x01R\x0eidempotencyKey\x12:\n" +
 	"\x13request_fingerprint\x18\x02 \x01(\tB\t\xbaH\x06r\x04\x80\xb5\x18\x01R\x12requestFingerprint\x12M\n" +
 	"\x06intent\x18\x03 \x01(\x0e2).eve.trade_settlement.v1.SettlementIntentB\n" +
 	"\xbaH\a\x82\x01\x04\x10\x01 \x00R\x06intent\x12>\n" +
 	"\x16caused_by_capsuleer_id\x18\x04 \x01(\x03B\t\xbaH\x06\"\x04\x80\xb5\x18\x01R\x13causedByCapsuleerId\x12.\n" +
-	"\x13external_request_id\x18\x05 \x01(\tR\x11externalRequestId\"M\n" +
+	"\x13external_request_id\x18\x05 \x01(\tR\x11externalRequestId\x123\n" +
+	"\x11work_payload_json\x18\x06 \x01(\fB\a\xbaH\x04z\x02\x10\x02R\x0fworkPayloadJson\"M\n" +
 	"\x1dGetSettlementOperationRequest\x12,\n" +
-	"\foperation_id\x18\x01 \x01(\tB\t\xbaH\x06r\x04\x88\xb5\x18\x01R\voperationId\"\xdf\x02\n" +
+	"\foperation_id\x18\x01 \x01(\tB\t\xbaH\x06r\x04\x88\xb5\x18\x01R\voperationId\"\xf1\x03\n" +
 	" UpdateSettlementOperationRequest\x12,\n" +
 	"\foperation_id\x18\x01 \x01(\tB\t\xbaH\x06r\x04\x88\xb5\x18\x01R\voperationId\x12S\n" +
 	"\x05state\x18\x02 \x01(\x0e21.eve.trade_settlement.v1.SettlementOperationStateB\n" +
@@ -1985,7 +2422,11 @@ const file_eve_trade_settlement_v1_trade_settlement_proto_rawDesc = "" +
 	"\x13settlement_batch_id\x18\x03 \x01(\tB\t\xbaH\x06r\x04\x90\xb5\x18\x01R\x11settlementBatchId\x12!\n" +
 	"\ffailure_code\x18\x04 \x01(\tR\vfailureCode\x12/\n" +
 	"\x13failure_description\x18\x05 \x01(\tR\x12failureDescription\x12)\n" +
-	"\x10result_published\x18\x06 \x01(\bR\x0fresultPublished\"\xfc\x04\n" +
+	"\x10result_published\x18\x06 \x01(\bR\x0fresultPublished\x12\x1f\n" +
+	"\vlease_owner\x18\a \x01(\tR\n" +
+	"leaseOwner\x12)\n" +
+	"\x10lease_generation\x18\b \x01(\x04R\x0fleaseGeneration\x12D\n" +
+	"\x10lease_expires_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x0eleaseExpiresAt\"\x8e\x06\n" +
 	"\x19SettlementOperationStatus\x12!\n" +
 	"\foperation_id\x18\x01 \x01(\tR\voperationId\x12'\n" +
 	"\x0fidempotency_key\x18\x02 \x01(\tR\x0eidempotencyKey\x12/\n" +
@@ -2000,13 +2441,43 @@ const file_eve_trade_settlement_v1_trade_settlement_proto_rawDesc = "" +
 	"\ffailure_code\x18\n" +
 	" \x01(\tR\vfailureCode\x12/\n" +
 	"\x13failure_description\x18\v \x01(\tR\x12failureDescription\x12)\n" +
-	"\x10result_published\x18\f \x01(\bR\x0fresultPublished\"t\n" +
+	"\x10result_published\x18\f \x01(\bR\x0fresultPublished\x12\x1f\n" +
+	"\vlease_owner\x18\r \x01(\tR\n" +
+	"leaseOwner\x12)\n" +
+	"\x10lease_generation\x18\x0e \x01(\x04R\x0fleaseGeneration\x12D\n" +
+	"\x10lease_expires_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\x0eleaseExpiresAt\"t\n" +
 	" QueueSettlementOperationResponse\x12P\n" +
 	"\toperation\x18\x01 \x01(\v22.eve.trade_settlement.v1.SettlementOperationStatusR\toperation\"r\n" +
 	"\x1eGetSettlementOperationResponse\x12P\n" +
 	"\toperation\x18\x01 \x01(\v22.eve.trade_settlement.v1.SettlementOperationStatusR\toperation\"u\n" +
 	"!UpdateSettlementOperationResponse\x12P\n" +
-	"\toperation\x18\x01 \x01(\v22.eve.trade_settlement.v1.SettlementOperationStatusR\toperation\"\x99\x02\n" +
+	"\toperation\x18\x01 \x01(\v22.eve.trade_settlement.v1.SettlementOperationStatusR\toperation\"\x81\x01\n" +
+	"\x1cClaimSettlementOutboxRequest\x12&\n" +
+	"\tworker_id\x18\x01 \x01(\tB\t\xbaH\x06r\x04\x80\xb5\x18\x01R\bworkerId\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\rR\x05limit\x12#\n" +
+	"\rlease_seconds\x18\x03 \x01(\rR\fleaseSeconds\"\xb9\x01\n" +
+	"\x18SettlementOutboxDelivery\x12!\n" +
+	"\foperation_id\x18\x01 \x01(\tR\voperationId\x12*\n" +
+	"\x11work_payload_json\x18\x02 \x01(\fR\x0fworkPayloadJson\x12#\n" +
+	"\rattempt_count\x18\x03 \x01(\rR\fattemptCount\x12)\n" +
+	"\x10lease_generation\x18\x04 \x01(\x04R\x0fleaseGeneration\"r\n" +
+	"\x1dClaimSettlementOutboxResponse\x12Q\n" +
+	"\n" +
+	"deliveries\x18\x01 \x03(\v21.eve.trade_settlement.v1.SettlementOutboxDeliveryR\n" +
+	"deliveries\"\xcc\x01\n" +
+	"\x1fCompleteSettlementOutboxRequest\x12,\n" +
+	"\foperation_id\x18\x01 \x01(\tB\t\xbaH\x06r\x04\x88\xb5\x18\x01R\voperationId\x12&\n" +
+	"\tworker_id\x18\x02 \x01(\tB\t\xbaH\x06r\x04\x80\xb5\x18\x01R\bworkerId\x12)\n" +
+	"\x10lease_generation\x18\x03 \x01(\x04R\x0fleaseGeneration\x12(\n" +
+	"\n" +
+	"message_id\x18\x04 \x01(\tB\t\xbaH\x06r\x04\x80\xb5\x18\x01R\tmessageId\"\"\n" +
+	" CompleteSettlementOutboxResponse\"\xce\x01\n" +
+	"\x1eReleaseSettlementOutboxRequest\x12,\n" +
+	"\foperation_id\x18\x01 \x01(\tB\t\xbaH\x06r\x04\x88\xb5\x18\x01R\voperationId\x12&\n" +
+	"\tworker_id\x18\x02 \x01(\tB\t\xbaH\x06r\x04\x80\xb5\x18\x01R\bworkerId\x12)\n" +
+	"\x10lease_generation\x18\x03 \x01(\x04R\x0fleaseGeneration\x12+\n" +
+	"\x11error_description\x18\x04 \x01(\tR\x10errorDescription\"!\n" +
+	"\x1fReleaseSettlementOutboxResponse\"\x99\x02\n" +
 	"\x1eExecuteSettlementBatchResponse\x12.\n" +
 	"\x13settlement_batch_id\x18\x01 \x01(\tR\x11settlementBatchId\x12'\n" +
 	"\x0fidempotency_key\x18\x02 \x01(\tR\x0eidempotencyKey\x12\x1f\n" +
@@ -2129,12 +2600,15 @@ const file_eve_trade_settlement_v1_trade_settlement_proto_rawDesc = "" +
 	"JSETTLEMENT_OPERATION_KIND_TRANSFER_ISK_AMOUNT_FROM_WALLET_TO_WALLET_ESCROW\x10\t\x12]\n" +
 	"YSETTLEMENT_OPERATION_KIND_TRANSFER_ISK_AMOUNT_FROM_WALLET_ESCROW_TO_WALLET_WITH_NEW_OWNER\x10\n" +
 	"\x12b\n" +
-	"^SETTLEMENT_OPERATION_KIND_TRANSFER_ISK_AMOUNT_FROM_WALLET_ESCROW_TO_WALLET_WITH_PREVIOUS_OWNER\x10\v2\xd7\x04\n" +
+	"^SETTLEMENT_OPERATION_KIND_TRANSFER_ISK_AMOUNT_FROM_WALLET_ESCROW_TO_WALLET_WITH_PREVIOUS_OWNER\x10\v2\x81\b\n" +
 	"\x16TradeSettlementService\x12\x89\x01\n" +
 	"\x16ExecuteSettlementBatch\x126.eve.trade_settlement.v1.ExecuteSettlementBatchRequest\x1a7.eve.trade_settlement.v1.ExecuteSettlementBatchResponse\x12\x8f\x01\n" +
 	"\x18QueueSettlementOperation\x128.eve.trade_settlement.v1.QueueSettlementOperationRequest\x1a9.eve.trade_settlement.v1.QueueSettlementOperationResponse\x12\x89\x01\n" +
 	"\x16GetSettlementOperation\x126.eve.trade_settlement.v1.GetSettlementOperationRequest\x1a7.eve.trade_settlement.v1.GetSettlementOperationResponse\x12\x92\x01\n" +
-	"\x19UpdateSettlementOperation\x129.eve.trade_settlement.v1.UpdateSettlementOperationRequest\x1a:.eve.trade_settlement.v1.UpdateSettlementOperationResponseB\x82\x02\n" +
+	"\x19UpdateSettlementOperation\x129.eve.trade_settlement.v1.UpdateSettlementOperationRequest\x1a:.eve.trade_settlement.v1.UpdateSettlementOperationResponse\x12\x86\x01\n" +
+	"\x15ClaimSettlementOutbox\x125.eve.trade_settlement.v1.ClaimSettlementOutboxRequest\x1a6.eve.trade_settlement.v1.ClaimSettlementOutboxResponse\x12\x8f\x01\n" +
+	"\x18CompleteSettlementOutbox\x128.eve.trade_settlement.v1.CompleteSettlementOutboxRequest\x1a9.eve.trade_settlement.v1.CompleteSettlementOutboxResponse\x12\x8c\x01\n" +
+	"\x17ReleaseSettlementOutbox\x127.eve.trade_settlement.v1.ReleaseSettlementOutboxRequest\x1a8.eve.trade_settlement.v1.ReleaseSettlementOutboxResponseB\x82\x02\n" +
 	"\x1bcom.eve.trade_settlement.v1B\x14TradeSettlementProtoP\x01ZSgithub.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1;trade_settlementv1\xa2\x02\x03ETX\xaa\x02\x16Eve.TradeSettlement.V1\xca\x02\x16Eve\\TradeSettlement\\V1\xe2\x02\"Eve\\TradeSettlement\\V1\\GPBMetadata\xea\x02\x18Eve::TradeSettlement::V1b\x06proto3"
 
 var (
@@ -2150,7 +2624,7 @@ func file_eve_trade_settlement_v1_trade_settlement_proto_rawDescGZIP() []byte {
 }
 
 var file_eve_trade_settlement_v1_trade_settlement_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_eve_trade_settlement_v1_trade_settlement_proto_goTypes = []any{
 	(SettlementIntent)(0),                                                   // 0: eve.trade_settlement.v1.SettlementIntent
 	(SettlementOperationState)(0),                                           // 1: eve.trade_settlement.v1.SettlementOperationState
@@ -2163,63 +2637,79 @@ var file_eve_trade_settlement_v1_trade_settlement_proto_goTypes = []any{
 	(*QueueSettlementOperationResponse)(nil),                                // 8: eve.trade_settlement.v1.QueueSettlementOperationResponse
 	(*GetSettlementOperationResponse)(nil),                                  // 9: eve.trade_settlement.v1.GetSettlementOperationResponse
 	(*UpdateSettlementOperationResponse)(nil),                               // 10: eve.trade_settlement.v1.UpdateSettlementOperationResponse
-	(*ExecuteSettlementBatchResponse)(nil),                                  // 11: eve.trade_settlement.v1.ExecuteSettlementBatchResponse
-	(*SettlementStepResult)(nil),                                            // 12: eve.trade_settlement.v1.SettlementStepResult
-	(*EntityReference)(nil),                                                 // 13: eve.trade_settlement.v1.EntityReference
-	(*SettlementOperation)(nil),                                             // 14: eve.trade_settlement.v1.SettlementOperation
-	(*CreateNewTradeInstanceRow)(nil),                                       // 15: eve.trade_settlement.v1.CreateNewTradeInstanceRow
-	(*ModifyTradeInstanceState)(nil),                                        // 16: eve.trade_settlement.v1.ModifyTradeInstanceState
-	(*CreateNewEmptyItemStack)(nil),                                         // 17: eve.trade_settlement.v1.CreateNewEmptyItemStack
-	(*TransferQuantityFromItemStackToItemStackEscrow)(nil),                  // 18: eve.trade_settlement.v1.TransferQuantityFromItemStackToItemStackEscrow
-	(*TransferQuantityFromItemStackEscrowToItemStackWithNewOwner)(nil),      // 19: eve.trade_settlement.v1.TransferQuantityFromItemStackEscrowToItemStackWithNewOwner
-	(*TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner)(nil), // 20: eve.trade_settlement.v1.TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner
-	(*MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner)(nil),           // 21: eve.trade_settlement.v1.MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner
-	(*CreateNewEmptyWalletEscrow)(nil),                                      // 22: eve.trade_settlement.v1.CreateNewEmptyWalletEscrow
-	(*TransferIskAmountFromWalletToWalletEscrow)(nil),                       // 23: eve.trade_settlement.v1.TransferIskAmountFromWalletToWalletEscrow
-	(*TransferIskAmountFromWalletEscrowToWalletWithNewOwner)(nil),           // 24: eve.trade_settlement.v1.TransferIskAmountFromWalletEscrowToWalletWithNewOwner
-	(*TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner)(nil),      // 25: eve.trade_settlement.v1.TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner
-	(*timestamppb.Timestamp)(nil),                                           // 26: google.protobuf.Timestamp
+	(*ClaimSettlementOutboxRequest)(nil),                                    // 11: eve.trade_settlement.v1.ClaimSettlementOutboxRequest
+	(*SettlementOutboxDelivery)(nil),                                        // 12: eve.trade_settlement.v1.SettlementOutboxDelivery
+	(*ClaimSettlementOutboxResponse)(nil),                                   // 13: eve.trade_settlement.v1.ClaimSettlementOutboxResponse
+	(*CompleteSettlementOutboxRequest)(nil),                                 // 14: eve.trade_settlement.v1.CompleteSettlementOutboxRequest
+	(*CompleteSettlementOutboxResponse)(nil),                                // 15: eve.trade_settlement.v1.CompleteSettlementOutboxResponse
+	(*ReleaseSettlementOutboxRequest)(nil),                                  // 16: eve.trade_settlement.v1.ReleaseSettlementOutboxRequest
+	(*ReleaseSettlementOutboxResponse)(nil),                                 // 17: eve.trade_settlement.v1.ReleaseSettlementOutboxResponse
+	(*ExecuteSettlementBatchResponse)(nil),                                  // 18: eve.trade_settlement.v1.ExecuteSettlementBatchResponse
+	(*SettlementStepResult)(nil),                                            // 19: eve.trade_settlement.v1.SettlementStepResult
+	(*EntityReference)(nil),                                                 // 20: eve.trade_settlement.v1.EntityReference
+	(*SettlementOperation)(nil),                                             // 21: eve.trade_settlement.v1.SettlementOperation
+	(*CreateNewTradeInstanceRow)(nil),                                       // 22: eve.trade_settlement.v1.CreateNewTradeInstanceRow
+	(*ModifyTradeInstanceState)(nil),                                        // 23: eve.trade_settlement.v1.ModifyTradeInstanceState
+	(*CreateNewEmptyItemStack)(nil),                                         // 24: eve.trade_settlement.v1.CreateNewEmptyItemStack
+	(*TransferQuantityFromItemStackToItemStackEscrow)(nil),                  // 25: eve.trade_settlement.v1.TransferQuantityFromItemStackToItemStackEscrow
+	(*TransferQuantityFromItemStackEscrowToItemStackWithNewOwner)(nil),      // 26: eve.trade_settlement.v1.TransferQuantityFromItemStackEscrowToItemStackWithNewOwner
+	(*TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner)(nil), // 27: eve.trade_settlement.v1.TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner
+	(*MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner)(nil),           // 28: eve.trade_settlement.v1.MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner
+	(*CreateNewEmptyWalletEscrow)(nil),                                      // 29: eve.trade_settlement.v1.CreateNewEmptyWalletEscrow
+	(*TransferIskAmountFromWalletToWalletEscrow)(nil),                       // 30: eve.trade_settlement.v1.TransferIskAmountFromWalletToWalletEscrow
+	(*TransferIskAmountFromWalletEscrowToWalletWithNewOwner)(nil),           // 31: eve.trade_settlement.v1.TransferIskAmountFromWalletEscrowToWalletWithNewOwner
+	(*TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner)(nil),      // 32: eve.trade_settlement.v1.TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner
+	(*timestamppb.Timestamp)(nil),                                           // 33: google.protobuf.Timestamp
 }
 var file_eve_trade_settlement_v1_trade_settlement_proto_depIdxs = []int32{
-	14, // 0: eve.trade_settlement.v1.ExecuteSettlementBatchRequest.operations:type_name -> eve.trade_settlement.v1.SettlementOperation
+	21, // 0: eve.trade_settlement.v1.ExecuteSettlementBatchRequest.operations:type_name -> eve.trade_settlement.v1.SettlementOperation
 	0,  // 1: eve.trade_settlement.v1.ExecuteSettlementBatchRequest.intent:type_name -> eve.trade_settlement.v1.SettlementIntent
 	0,  // 2: eve.trade_settlement.v1.QueueSettlementOperationRequest.intent:type_name -> eve.trade_settlement.v1.SettlementIntent
 	1,  // 3: eve.trade_settlement.v1.UpdateSettlementOperationRequest.state:type_name -> eve.trade_settlement.v1.SettlementOperationState
-	0,  // 4: eve.trade_settlement.v1.SettlementOperationStatus.intent:type_name -> eve.trade_settlement.v1.SettlementIntent
-	1,  // 5: eve.trade_settlement.v1.SettlementOperationStatus.state:type_name -> eve.trade_settlement.v1.SettlementOperationState
-	26, // 6: eve.trade_settlement.v1.SettlementOperationStatus.queued_at:type_name -> google.protobuf.Timestamp
-	26, // 7: eve.trade_settlement.v1.SettlementOperationStatus.updated_at:type_name -> google.protobuf.Timestamp
-	7,  // 8: eve.trade_settlement.v1.QueueSettlementOperationResponse.operation:type_name -> eve.trade_settlement.v1.SettlementOperationStatus
-	7,  // 9: eve.trade_settlement.v1.GetSettlementOperationResponse.operation:type_name -> eve.trade_settlement.v1.SettlementOperationStatus
-	7,  // 10: eve.trade_settlement.v1.UpdateSettlementOperationResponse.operation:type_name -> eve.trade_settlement.v1.SettlementOperationStatus
-	12, // 11: eve.trade_settlement.v1.ExecuteSettlementBatchResponse.step_results:type_name -> eve.trade_settlement.v1.SettlementStepResult
-	2,  // 12: eve.trade_settlement.v1.SettlementStepResult.step_kind:type_name -> eve.trade_settlement.v1.SettlementOperationKind
-	13, // 13: eve.trade_settlement.v1.SettlementStepResult.outputs:type_name -> eve.trade_settlement.v1.EntityReference
-	15, // 14: eve.trade_settlement.v1.SettlementOperation.create_new_trade_instance_row:type_name -> eve.trade_settlement.v1.CreateNewTradeInstanceRow
-	16, // 15: eve.trade_settlement.v1.SettlementOperation.modify_trade_instance_state:type_name -> eve.trade_settlement.v1.ModifyTradeInstanceState
-	17, // 16: eve.trade_settlement.v1.SettlementOperation.create_new_empty_item_stack:type_name -> eve.trade_settlement.v1.CreateNewEmptyItemStack
-	18, // 17: eve.trade_settlement.v1.SettlementOperation.transfer_quantity_from_item_stack_to_item_stack_escrow:type_name -> eve.trade_settlement.v1.TransferQuantityFromItemStackToItemStackEscrow
-	19, // 18: eve.trade_settlement.v1.SettlementOperation.transfer_quantity_from_item_stack_escrow_to_item_stack_with_new_owner:type_name -> eve.trade_settlement.v1.TransferQuantityFromItemStackEscrowToItemStackWithNewOwner
-	20, // 19: eve.trade_settlement.v1.SettlementOperation.transfer_quantity_from_item_stack_escrow_to_item_stack_with_previous_owner:type_name -> eve.trade_settlement.v1.TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner
-	21, // 20: eve.trade_settlement.v1.SettlementOperation.merge_item_stacks_with_identical_item_type_and_identical_owner:type_name -> eve.trade_settlement.v1.MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner
-	22, // 21: eve.trade_settlement.v1.SettlementOperation.create_new_empty_wallet_escrow:type_name -> eve.trade_settlement.v1.CreateNewEmptyWalletEscrow
-	23, // 22: eve.trade_settlement.v1.SettlementOperation.transfer_isk_amount_from_wallet_to_wallet_escrow:type_name -> eve.trade_settlement.v1.TransferIskAmountFromWalletToWalletEscrow
-	24, // 23: eve.trade_settlement.v1.SettlementOperation.transfer_isk_amount_from_wallet_escrow_to_wallet_with_new_owner:type_name -> eve.trade_settlement.v1.TransferIskAmountFromWalletEscrowToWalletWithNewOwner
-	25, // 24: eve.trade_settlement.v1.SettlementOperation.transfer_isk_amount_from_wallet_escrow_to_wallet_with_previous_owner:type_name -> eve.trade_settlement.v1.TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner
-	26, // 25: eve.trade_settlement.v1.CreateNewTradeInstanceRow.expires_at:type_name -> google.protobuf.Timestamp
-	3,  // 26: eve.trade_settlement.v1.TradeSettlementService.ExecuteSettlementBatch:input_type -> eve.trade_settlement.v1.ExecuteSettlementBatchRequest
-	4,  // 27: eve.trade_settlement.v1.TradeSettlementService.QueueSettlementOperation:input_type -> eve.trade_settlement.v1.QueueSettlementOperationRequest
-	5,  // 28: eve.trade_settlement.v1.TradeSettlementService.GetSettlementOperation:input_type -> eve.trade_settlement.v1.GetSettlementOperationRequest
-	6,  // 29: eve.trade_settlement.v1.TradeSettlementService.UpdateSettlementOperation:input_type -> eve.trade_settlement.v1.UpdateSettlementOperationRequest
-	11, // 30: eve.trade_settlement.v1.TradeSettlementService.ExecuteSettlementBatch:output_type -> eve.trade_settlement.v1.ExecuteSettlementBatchResponse
-	8,  // 31: eve.trade_settlement.v1.TradeSettlementService.QueueSettlementOperation:output_type -> eve.trade_settlement.v1.QueueSettlementOperationResponse
-	9,  // 32: eve.trade_settlement.v1.TradeSettlementService.GetSettlementOperation:output_type -> eve.trade_settlement.v1.GetSettlementOperationResponse
-	10, // 33: eve.trade_settlement.v1.TradeSettlementService.UpdateSettlementOperation:output_type -> eve.trade_settlement.v1.UpdateSettlementOperationResponse
-	30, // [30:34] is the sub-list for method output_type
-	26, // [26:30] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	33, // 4: eve.trade_settlement.v1.UpdateSettlementOperationRequest.lease_expires_at:type_name -> google.protobuf.Timestamp
+	0,  // 5: eve.trade_settlement.v1.SettlementOperationStatus.intent:type_name -> eve.trade_settlement.v1.SettlementIntent
+	1,  // 6: eve.trade_settlement.v1.SettlementOperationStatus.state:type_name -> eve.trade_settlement.v1.SettlementOperationState
+	33, // 7: eve.trade_settlement.v1.SettlementOperationStatus.queued_at:type_name -> google.protobuf.Timestamp
+	33, // 8: eve.trade_settlement.v1.SettlementOperationStatus.updated_at:type_name -> google.protobuf.Timestamp
+	33, // 9: eve.trade_settlement.v1.SettlementOperationStatus.lease_expires_at:type_name -> google.protobuf.Timestamp
+	7,  // 10: eve.trade_settlement.v1.QueueSettlementOperationResponse.operation:type_name -> eve.trade_settlement.v1.SettlementOperationStatus
+	7,  // 11: eve.trade_settlement.v1.GetSettlementOperationResponse.operation:type_name -> eve.trade_settlement.v1.SettlementOperationStatus
+	7,  // 12: eve.trade_settlement.v1.UpdateSettlementOperationResponse.operation:type_name -> eve.trade_settlement.v1.SettlementOperationStatus
+	12, // 13: eve.trade_settlement.v1.ClaimSettlementOutboxResponse.deliveries:type_name -> eve.trade_settlement.v1.SettlementOutboxDelivery
+	19, // 14: eve.trade_settlement.v1.ExecuteSettlementBatchResponse.step_results:type_name -> eve.trade_settlement.v1.SettlementStepResult
+	2,  // 15: eve.trade_settlement.v1.SettlementStepResult.step_kind:type_name -> eve.trade_settlement.v1.SettlementOperationKind
+	20, // 16: eve.trade_settlement.v1.SettlementStepResult.outputs:type_name -> eve.trade_settlement.v1.EntityReference
+	22, // 17: eve.trade_settlement.v1.SettlementOperation.create_new_trade_instance_row:type_name -> eve.trade_settlement.v1.CreateNewTradeInstanceRow
+	23, // 18: eve.trade_settlement.v1.SettlementOperation.modify_trade_instance_state:type_name -> eve.trade_settlement.v1.ModifyTradeInstanceState
+	24, // 19: eve.trade_settlement.v1.SettlementOperation.create_new_empty_item_stack:type_name -> eve.trade_settlement.v1.CreateNewEmptyItemStack
+	25, // 20: eve.trade_settlement.v1.SettlementOperation.transfer_quantity_from_item_stack_to_item_stack_escrow:type_name -> eve.trade_settlement.v1.TransferQuantityFromItemStackToItemStackEscrow
+	26, // 21: eve.trade_settlement.v1.SettlementOperation.transfer_quantity_from_item_stack_escrow_to_item_stack_with_new_owner:type_name -> eve.trade_settlement.v1.TransferQuantityFromItemStackEscrowToItemStackWithNewOwner
+	27, // 22: eve.trade_settlement.v1.SettlementOperation.transfer_quantity_from_item_stack_escrow_to_item_stack_with_previous_owner:type_name -> eve.trade_settlement.v1.TransferQuantityFromItemStackEscrowToItemStackWithPreviousOwner
+	28, // 23: eve.trade_settlement.v1.SettlementOperation.merge_item_stacks_with_identical_item_type_and_identical_owner:type_name -> eve.trade_settlement.v1.MergeItemStacksWithIdenticalItemTypeAndIdenticalOwner
+	29, // 24: eve.trade_settlement.v1.SettlementOperation.create_new_empty_wallet_escrow:type_name -> eve.trade_settlement.v1.CreateNewEmptyWalletEscrow
+	30, // 25: eve.trade_settlement.v1.SettlementOperation.transfer_isk_amount_from_wallet_to_wallet_escrow:type_name -> eve.trade_settlement.v1.TransferIskAmountFromWalletToWalletEscrow
+	31, // 26: eve.trade_settlement.v1.SettlementOperation.transfer_isk_amount_from_wallet_escrow_to_wallet_with_new_owner:type_name -> eve.trade_settlement.v1.TransferIskAmountFromWalletEscrowToWalletWithNewOwner
+	32, // 27: eve.trade_settlement.v1.SettlementOperation.transfer_isk_amount_from_wallet_escrow_to_wallet_with_previous_owner:type_name -> eve.trade_settlement.v1.TransferIskAmountFromWalletEscrowToWalletWithPreviousOwner
+	33, // 28: eve.trade_settlement.v1.CreateNewTradeInstanceRow.expires_at:type_name -> google.protobuf.Timestamp
+	3,  // 29: eve.trade_settlement.v1.TradeSettlementService.ExecuteSettlementBatch:input_type -> eve.trade_settlement.v1.ExecuteSettlementBatchRequest
+	4,  // 30: eve.trade_settlement.v1.TradeSettlementService.QueueSettlementOperation:input_type -> eve.trade_settlement.v1.QueueSettlementOperationRequest
+	5,  // 31: eve.trade_settlement.v1.TradeSettlementService.GetSettlementOperation:input_type -> eve.trade_settlement.v1.GetSettlementOperationRequest
+	6,  // 32: eve.trade_settlement.v1.TradeSettlementService.UpdateSettlementOperation:input_type -> eve.trade_settlement.v1.UpdateSettlementOperationRequest
+	11, // 33: eve.trade_settlement.v1.TradeSettlementService.ClaimSettlementOutbox:input_type -> eve.trade_settlement.v1.ClaimSettlementOutboxRequest
+	14, // 34: eve.trade_settlement.v1.TradeSettlementService.CompleteSettlementOutbox:input_type -> eve.trade_settlement.v1.CompleteSettlementOutboxRequest
+	16, // 35: eve.trade_settlement.v1.TradeSettlementService.ReleaseSettlementOutbox:input_type -> eve.trade_settlement.v1.ReleaseSettlementOutboxRequest
+	18, // 36: eve.trade_settlement.v1.TradeSettlementService.ExecuteSettlementBatch:output_type -> eve.trade_settlement.v1.ExecuteSettlementBatchResponse
+	8,  // 37: eve.trade_settlement.v1.TradeSettlementService.QueueSettlementOperation:output_type -> eve.trade_settlement.v1.QueueSettlementOperationResponse
+	9,  // 38: eve.trade_settlement.v1.TradeSettlementService.GetSettlementOperation:output_type -> eve.trade_settlement.v1.GetSettlementOperationResponse
+	10, // 39: eve.trade_settlement.v1.TradeSettlementService.UpdateSettlementOperation:output_type -> eve.trade_settlement.v1.UpdateSettlementOperationResponse
+	13, // 40: eve.trade_settlement.v1.TradeSettlementService.ClaimSettlementOutbox:output_type -> eve.trade_settlement.v1.ClaimSettlementOutboxResponse
+	15, // 41: eve.trade_settlement.v1.TradeSettlementService.CompleteSettlementOutbox:output_type -> eve.trade_settlement.v1.CompleteSettlementOutboxResponse
+	17, // 42: eve.trade_settlement.v1.TradeSettlementService.ReleaseSettlementOutbox:output_type -> eve.trade_settlement.v1.ReleaseSettlementOutboxResponse
+	36, // [36:43] is the sub-list for method output_type
+	29, // [29:36] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_eve_trade_settlement_v1_trade_settlement_proto_init() }
@@ -2228,7 +2718,7 @@ func file_eve_trade_settlement_v1_trade_settlement_proto_init() {
 		return
 	}
 	file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[0].OneofWrappers = []any{}
-	file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[11].OneofWrappers = []any{
+	file_eve_trade_settlement_v1_trade_settlement_proto_msgTypes[18].OneofWrappers = []any{
 		(*SettlementOperation_CreateNewTradeInstanceRow)(nil),
 		(*SettlementOperation_ModifyTradeInstanceState)(nil),
 		(*SettlementOperation_CreateNewEmptyItemStack)(nil),
@@ -2247,7 +2737,7 @@ func file_eve_trade_settlement_v1_trade_settlement_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_eve_trade_settlement_v1_trade_settlement_proto_rawDesc), len(file_eve_trade_settlement_v1_trade_settlement_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   23,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

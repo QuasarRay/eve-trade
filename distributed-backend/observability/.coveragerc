@@ -2,7 +2,7 @@
 branch = True
 source = observability
 omit =
-    observability/tests/*
+    */observability/tests/*
 
 [report]
 show_missing = True

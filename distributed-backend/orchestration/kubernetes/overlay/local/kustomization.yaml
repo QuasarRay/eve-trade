@@ -8,6 +8,7 @@ resources:
   - postgres.yaml
   - secrets.yaml
   - local-dev-world-seed.yaml
+  - nsq-networkpolicy.yaml
   - quilkin.yaml
   - simulator.yaml
 
@@ -42,3 +43,4 @@ images:
 
 patches:
   - path: local-config-patches.yaml
+  - path: nsq-local.yaml

@@ -36,6 +36,11 @@ spec:
           args:
             - --data-path=/data
             - --broadcast-address=nsqd.eve-trade.svc.cluster.local
+            - --tls-cert=/etc/nsq/tls/tls.crt
+            - --tls-key=/etc/nsq/tls/tls.key
+            - --tls-root-ca-file=/etc/nsq/tls/ca.crt
+            - --tls-client-auth-policy=require-verify
+            - --tls-required=true
           ports:
             - name: tcp
               containerPort: 4150
@@ -72,6 +77,13 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: tls
+              mountPath: /etc/nsq/tls
+              readOnly: true
+      volumes:
+        - name: tls
+          secret:
+            secretName: nsq-server-tls
   volumeClaimTemplates:
     - metadata:
         name: data

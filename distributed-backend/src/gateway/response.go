@@ -27,14 +27,14 @@ func (s *QuilkinUDPServer) writeError(conn net.PacketConn, remote net.Addr, inte
 	_ = s.writeResponse(conn, remote, interactionID, body)
 }
 
-func (s *QuilkinUDPServer) writeCachedError(conn net.PacketConn, remote net.Addr, interactionID string, fingerprint [sha256.Size]byte, code string, message string) {
+func (s *QuilkinUDPServer) writeCachedError(conn net.PacketConn, remote net.Addr, principalID int64, interactionID string, fingerprint [sha256.Size]byte, code string, message string) {
 	body, _ := json.Marshal(map[string]string{
 		"interaction_id": interactionID,
 		"status":         errorResponseStatus(code),
 		"code":           code,
 		"message":        message,
 	})
-	s.replay().complete(interactionID, fingerprint, body)
+	s.replay().completeForPrincipal(principalID, interactionID, fingerprint, body)
 	_ = s.writeResponse(conn, remote, interactionID, body)
 }
 
@@ -86,10 +86,8 @@ func responseSigningBytes(schemaVersion string, keyID string, canonicalBody []by
 }
 
 func envelopeSigningBytes(schemaVersion string, algorithm string, keyID string, canonicalBody []byte) ([]byte, error) {
-	var payload any
-	decoder := json.NewDecoder(bytes.NewReader(canonicalBody))
-	decoder.UseNumber()
-	if err := decoder.Decode(&payload); err != nil {
+	payload, err := decodeStrictJSON(canonicalBody)
+	if err != nil {
 		return nil, err
 	}
 	return marshalCanonicalJSON(map[string]any{
@@ -102,10 +100,8 @@ func envelopeSigningBytes(schemaVersion string, algorithm string, keyID string, 
 }
 
 func canonicalJSON(body []byte) ([]byte, error) {
-	var value any
-	decoder := json.NewDecoder(bytes.NewReader(body))
-	decoder.UseNumber()
-	if err := decoder.Decode(&value); err != nil {
+	value, err := decodeStrictJSON(body)
+	if err != nil {
 		return nil, err
 	}
 	return marshalCanonicalJSON(value)
@@ -126,7 +122,11 @@ func stableDownstreamCode(err error) string {
 	if errors.As(err, &failure) {
 		return failure.code
 	}
-	switch errs.Code(err) {
+	return stableEncoreCode(errs.Code(err))
+}
+
+func stableEncoreCode(code errs.ErrCode) string {
+	switch code {
 	case errs.DeadlineExceeded:
 		return "downstream_timeout"
 	case errs.InvalidArgument:
@@ -136,7 +136,7 @@ func stableDownstreamCode(err error) string {
 	case errs.PermissionDenied:
 		return "permission_denied"
 	case errs.Aborted:
-		return "aborted"
+		return "replay"
 	case errs.Unavailable:
 		return "downstream_unavailable"
 	default:
@@ -149,11 +149,17 @@ func stableDownstreamMessage(err error) string {
 	if errors.As(err, &failure) {
 		return failure.message
 	}
-	switch errs.Code(err) {
+	return stableEncoreMessage(errs.Code(err), err.Error())
+}
+
+func stableEncoreMessage(code errs.ErrCode, message string) string {
+	switch code {
 	case errs.DeadlineExceeded:
 		return "downstream timeout"
-	case errs.InvalidArgument, errs.FailedPrecondition, errs.PermissionDenied, errs.Aborted:
-		return sanitizeClientMessage(err.Error())
+	case errs.InvalidArgument, errs.FailedPrecondition, errs.PermissionDenied:
+		return sanitizeClientMessage(message)
+	case errs.Aborted:
+		return sanitizeClientMessage("replay rejected: " + message)
 	case errs.Unavailable:
 		return "downstream unavailable"
 	default:

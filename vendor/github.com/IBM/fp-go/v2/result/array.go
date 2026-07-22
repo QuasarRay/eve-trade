@@ -1,0 +1,244 @@
+// Copyright (c) 2023 - 2025 IBM Corp.
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package result
+
+import (
+	"iter"
+
+	"github.com/IBM/fp-go/v2/either"
+)
+
+// TraverseArrayG transforms an array by applying a function that returns an Either to each element.
+// If any element produces a Left, the entire result is that Left (short-circuits).
+// Otherwise, returns Right containing the array of all Right values.
+// The G suffix indicates support for generic slice types.
+//
+// Example:
+//
+//	parse := func(s string) either.Result[int] {
+//	    v, err := strconv.Atoi(s)
+//	    return either.FromError(v, err)
+//	}
+//	result := either.TraverseArrayG[[]string, []int](parse)([]string{"1", "2", "3"})
+//	// result is Right([]int{1, 2, 3})
+//
+//go:inline
+func TraverseArrayG[GA ~[]A, GB ~[]B, A, B any](f Kleisli[A, B]) Kleisli[GA, GB] {
+	return either.TraverseArrayG[GA, GB](f)
+}
+
+// TraverseArray transforms an array by applying a function that returns an Either to each element.
+// If any element produces a Left, the entire result is that Left (short-circuits).
+// Otherwise, returns Right containing the array of all Right values.
+//
+// Example:
+//
+//	parse := func(s string) either.Result[int] {
+//	    v, err := strconv.Atoi(s)
+//	    return either.FromError(v, err)
+//	}
+//	result := either.TraverseArray(parse)([]string{"1", "2", "3"})
+//	// result is Right([]int{1, 2, 3})
+//
+//go:inline
+func TraverseArray[A, B any](f Kleisli[A, B]) Kleisli[[]A, []B] {
+	return either.TraverseArray(f)
+}
+
+// TraverseArrayWithIndexG transforms an array by applying an indexed function that returns an Either.
+// The function receives both the index and the element.
+// If any element produces a Left, the entire result is that Left (short-circuits).
+// The G suffix indicates support for generic slice types.
+//
+// Example:
+//
+//	validate := func(i int, s string) either.Result[string] {
+//	    if S.IsNonEmpty(s) {
+//	        return either.Right[error](fmt.Sprintf("%d:%s", i, s))
+//	    }
+//	    return either.Left[string](fmt.Errorf("empty at index %d", i))
+//	}
+//	result := either.TraverseArrayWithIndexG[[]string, []string](validate)([]string{"a", "b"})
+//	// result is Right([]string{"0:a", "1:b"})
+//
+//go:inline
+func TraverseArrayWithIndexG[GA ~[]A, GB ~[]B, A, B any](f func(int, A) Result[B]) Kleisli[GA, GB] {
+	return either.TraverseArrayWithIndexG[GA, GB](f)
+}
+
+// TraverseArrayWithIndex transforms an array by applying an indexed function that returns an Either.
+// The function receives both the index and the element.
+// If any element produces a Left, the entire result is that Left (short-circuits).
+//
+// Example:
+//
+//	validate := func(i int, s string) either.Result[string] {
+//	    if S.IsNonEmpty(s) {
+//	        return either.Right[error](fmt.Sprintf("%d:%s", i, s))
+//	    }
+//	    return either.Left[string](fmt.Errorf("empty at index %d", i))
+//	}
+//	result := either.TraverseArrayWithIndex(validate)([]string{"a", "b"})
+//	// result is Right([]string{"0:a", "1:b"})
+//
+//go:inline
+func TraverseArrayWithIndex[A, B any](f func(int, A) Result[B]) Kleisli[[]A, []B] {
+	return either.TraverseArrayWithIndex(f)
+}
+
+//go:inline
+func SequenceArrayG[GA ~[]A, GOA ~[]Result[A], A any](ma GOA) Result[GA] {
+	return either.SequenceArrayG[GA](ma)
+}
+
+// SequenceArray converts a homogeneous sequence of Either into an Either of sequence.
+// If any element is Left, returns that Left (short-circuits).
+// Otherwise, returns Right containing all the Right values.
+//
+// Example:
+//
+//	eithers := A.From(
+//	    either.Right[error](1),
+//	    either.Right[error](2),
+//	    either.Right[error](3),
+//	)
+//	result := either.SequenceArray(eithers)
+//	// result is Right([]int{1, 2, 3})
+//
+//go:inline
+func SequenceArray[A any](ma []Result[A]) Result[[]A] {
+	return either.SequenceArray(ma)
+}
+
+// CompactArrayG discards all Left values and keeps only the Right values.
+// The G suffix indicates support for generic slice types.
+//
+// Example:
+//
+//	eithers := A.From(
+//	    either.Right[error](1),
+//	    either.Left[int](errors.New("error")),
+//	    either.Right[error](3),
+//	)
+//	result := either.CompactArrayG[[]either.Result[int], []int](eithers)
+//	// result is []int{1, 3}
+//
+//go:inline
+func CompactArrayG[A1 ~[]Result[A], A2 ~[]A, A any](fa A1) A2 {
+	return either.CompactArrayG[A1, A2](fa)
+}
+
+// CompactArray discards all Left values and keeps only the Right values.
+//
+// Example:
+//
+//	eithers := A.From(
+//	    either.Right[error](1),
+//	    either.Left[int](errors.New("error")),
+//	    either.Right[error](3),
+//	)
+//	result := either.CompactArray(eithers)
+//	// result is []int{1, 3}
+//
+//go:inline
+func CompactArray[A any](fa []Result[A]) []A {
+	return either.CompactArray(fa)
+}
+
+// TraverseSeq transforms an iterator by applying a function that returns a Result to each element.
+// If any element produces a Left, the entire result is that Left (short-circuits).
+// Otherwise, returns Right containing an iterator of all Right values.
+//
+// The function eagerly evaluates all elements in the input iterator to detect any Left values,
+// then returns an iterator over the collected Right values. This is necessary because Result
+// represents computations that can fail, and we need to know if any element failed before
+// producing the result iterator.
+//
+// # Type Parameters
+//
+//   - A: The input element type
+//   - B: The output element type
+//
+// # Parameters
+//
+//   - f: A function that transforms each element into a Result
+//
+// # Returns
+//
+//   - A function that takes an iterator of A and returns Result containing an iterator of B
+//
+// # Example Usage
+//
+//	parse := func(s string) result.Result[int] {
+//	    v, err := strconv.Atoi(s)
+//	    return result.TryCatchError(v, err)
+//	}
+//	input := slices.Values([]string{"1", "2", "3"})
+//	result := result.TraverseSeq(parse)(input)
+//	// result is Right(iterator over [1, 2, 3])
+//
+// # See Also
+//
+//   - TraverseArray: For slice-based traversal
+//   - SequenceSeq: For sequencing iterators of Result values
+//
+//go:inline
+func TraverseSeq[A, B any](f Kleisli[A, B]) Kleisli[iter.Seq[A], iter.Seq[B]] {
+	return either.TraverseSeq(f)
+}
+
+// SequenceSeq converts an iterator of Result into a Result of iterator.
+// If any element is Left, returns that Left (short-circuits).
+// Otherwise, returns Right containing an iterator of all the Right values.
+//
+// This function eagerly evaluates all Result values in the input iterator to detect
+// any Left values, then returns an iterator over the collected Right values.
+//
+// # Type Parameters
+//
+//   - A: The value type for Right values
+//
+// # Parameters
+//
+//   - ma: An iterator of Result values
+//
+// # Returns
+//
+//   - Result containing an iterator of Right values, or the first Left encountered
+//
+// # Example Usage
+//
+//	results := slices.Values([]result.Result[int]{
+//	    result.Of(1),
+//	    result.Of(2),
+//	    result.Of(3),
+//	})
+//	result := result.SequenceSeq(results)
+//	// result is Right(iterator over [1, 2, 3])
+//
+// # See Also
+//
+//   - SequenceArray: For slice-based sequencing
+//   - TraverseSeq: For transforming and sequencing in one step
+//
+//go:inline
+func SequenceSeq[A any](ma iter.Seq[Result[A]]) Result[iter.Seq[A]] {
+	return either.SequenceSeq(ma)
+}
+
+func TraversableArray[A, B any]() Traversable[A, B, []A, []B] {
+	return either.TraversableArray[error, A, B]()
+}

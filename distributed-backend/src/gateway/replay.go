@@ -13,12 +13,27 @@ const (
 )
 
 type interactionReplayCache struct {
-	mu         sync.Mutex
-	ttl        time.Duration
-	maxEntries int
-	seen       map[string]*interactionReplayEntry
-	order      *list.List
-	now        func() time.Time
+	mu                  sync.Mutex
+	ttl                 time.Duration
+	maxEntries          int
+	perPrincipalEntries int
+	seen                map[interactionReplayKey]*interactionReplayEntry
+	order               *list.List
+	now                 func() time.Time
+	inFlightEntries     int
+	completedEntries    int
+	principalEntries    map[int64]int
+	principalRejections map[int64]uint64
+}
+
+type interactionReplayKey struct {
+	principalID   int64
+	interactionID string
+}
+
+type replayMetricsSnapshot struct {
+	CapacityUtilization float64
+	PrincipalRejections map[int64]uint64
 }
 
 type replayDisposition uint8
@@ -47,11 +62,14 @@ func newInteractionReplayCache(ttl time.Duration, maxEntries ...int) *interactio
 		capacity = maxEntries[0]
 	}
 	return &interactionReplayCache{
-		ttl:        ttl,
-		maxEntries: capacity,
-		seen:       make(map[string]*interactionReplayEntry, capacity),
-		order:      list.New(),
-		now:        time.Now,
+		ttl:                 ttl,
+		maxEntries:          capacity,
+		perPrincipalEntries: max(1, (capacity+1)/2),
+		seen:                make(map[interactionReplayKey]*interactionReplayEntry, capacity*2),
+		order:               list.New(),
+		now:                 time.Now,
+		principalEntries:    make(map[int64]int),
+		principalRejections: make(map[int64]uint64),
 	}
 }
 
@@ -63,14 +81,19 @@ func (s *QuilkinUDPServer) replay() *interactionReplayCache {
 }
 
 func (c *interactionReplayCache) begin(interactionID string, fingerprint [sha256.Size]byte) (replayDisposition, []byte) {
+	return c.beginForPrincipal(0, interactionID, fingerprint)
+}
+
+func (c *interactionReplayCache) beginForPrincipal(principalID int64, interactionID string, fingerprint [sha256.Size]byte) (replayDisposition, []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	now := c.now()
 	c.removeExpired(now, maxReplayCleanupPerCall)
-	if entry, ok := c.seen[interactionID]; ok {
+	key := interactionReplayKey{principalID: principalID, interactionID: interactionID}
+	if entry, ok := c.seen[key]; ok {
 		if !entry.expiresAt.After(now) {
-			c.remove(interactionID, entry)
+			c.remove(key, entry)
 		} else {
 			c.order.MoveToBack(entry.element)
 			if entry.fingerprint != fingerprint {
@@ -82,25 +105,48 @@ func (c *interactionReplayCache) begin(interactionID string, fingerprint [sha256
 			return replayCached, append([]byte(nil), entry.response...)
 		}
 	}
-	if len(c.seen) >= c.maxEntries {
+	principalLimit := c.perPrincipalEntries
+	if principalID == 0 {
+		principalLimit = c.maxEntries
+	}
+	if c.principalEntries[principalID] >= principalLimit {
+		c.principalRejections[principalID]++
+		return replayOverflow, nil
+	}
+	if c.inFlightEntries >= c.maxEntries {
+		c.principalRejections[principalID]++
 		return replayOverflow, nil
 	}
 	entry := &interactionReplayEntry{
 		fingerprint: fingerprint,
 		expiresAt:   now.Add(c.ttl),
 	}
-	entry.element = c.order.PushBack(interactionID)
-	c.seen[interactionID] = entry
+	entry.element = c.order.PushBack(key)
+	c.seen[key] = entry
+	c.inFlightEntries++
+	c.principalEntries[principalID]++
 	return replayNew, nil
 }
 
 func (c *interactionReplayCache) complete(interactionID string, fingerprint [sha256.Size]byte, response []byte) {
+	c.completeForPrincipal(0, interactionID, fingerprint, response)
+}
+
+func (c *interactionReplayCache) completeForPrincipal(principalID int64, interactionID string, fingerprint [sha256.Size]byte, response []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	entry, ok := c.seen[interactionID]
+	key := interactionReplayKey{principalID: principalID, interactionID: interactionID}
+	entry, ok := c.seen[key]
 	if !ok || entry.fingerprint != fingerprint {
 		return
+	}
+	if entry.response == nil {
+		if c.completedEntries >= c.maxEntries {
+			c.removeOldestCompleted()
+		}
+		c.inFlightEntries--
+		c.completedEntries++
 	}
 	entry.response = append([]byte(nil), response...)
 	entry.expiresAt = c.now().Add(c.ttl)
@@ -108,12 +154,17 @@ func (c *interactionReplayCache) complete(interactionID string, fingerprint [sha
 }
 
 func (c *interactionReplayCache) release(interactionID string, fingerprint [sha256.Size]byte) {
+	c.releaseForPrincipal(0, interactionID, fingerprint)
+}
+
+func (c *interactionReplayCache) releaseForPrincipal(principalID int64, interactionID string, fingerprint [sha256.Size]byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	entry, ok := c.seen[interactionID]
+	key := interactionReplayKey{principalID: principalID, interactionID: interactionID}
+	entry, ok := c.seen[key]
 	if ok && entry.fingerprint == fingerprint {
-		c.remove(interactionID, entry)
+		c.remove(key, entry)
 	}
 }
 
@@ -123,22 +174,56 @@ func (c *interactionReplayCache) removeExpired(now time.Time, limit int) {
 		if oldest == nil {
 			return
 		}
-		interactionID := oldest.Value.(string)
-		entry := c.seen[interactionID]
+		key := oldest.Value.(interactionReplayKey)
+		entry := c.seen[key]
 		if entry.expiresAt.After(now) {
 			return
 		}
-		c.remove(interactionID, entry)
+		c.remove(key, entry)
 	}
 }
 
-func (c *interactionReplayCache) remove(interactionID string, entry *interactionReplayEntry) {
-	delete(c.seen, interactionID)
+func (c *interactionReplayCache) remove(key interactionReplayKey, entry *interactionReplayEntry) {
+	delete(c.seen, key)
 	c.order.Remove(entry.element)
+	if entry.response == nil {
+		c.inFlightEntries--
+	} else {
+		c.completedEntries--
+	}
+	c.principalEntries[key.principalID]--
+	if c.principalEntries[key.principalID] == 0 {
+		delete(c.principalEntries, key.principalID)
+	}
+}
+
+func (c *interactionReplayCache) removeOldestCompleted() {
+	for element := c.order.Front(); element != nil; element = element.Next() {
+		key := element.Value.(interactionReplayKey)
+		entry := c.seen[key]
+		if entry.response != nil {
+			c.remove(key, entry)
+			return
+		}
+	}
 }
 
 func (c *interactionReplayCache) size() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return len(c.seen)
+}
+
+func (c *interactionReplayCache) metricsSnapshot() replayMetricsSnapshot {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	utilization := float64(max(c.inFlightEntries, c.completedEntries)) / float64(c.maxEntries)
+	rejections := make(map[int64]uint64, len(c.principalRejections))
+	for principalID, count := range c.principalRejections {
+		rejections[principalID] = count
+	}
+	return replayMetricsSnapshot{
+		CapacityUtilization: utilization,
+		PrincipalRejections: rejections,
+	}
 }

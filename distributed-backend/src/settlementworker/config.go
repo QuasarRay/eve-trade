@@ -7,14 +7,16 @@ import (
 )
 
 type Config struct {
-	TradeSettlementTarget string
-	RequestTimeout        time.Duration
+	TradeSettlementTarget  string
+	RequestTimeout         time.Duration
+	OutboxDispatchInterval time.Duration
 }
 
 func LoadConfig() Config {
 	return Config{
-		TradeSettlementTarget: envOr("TRADE_SETTLEMENT_GRPC_TARGET", "127.0.0.1:9092"),
-		RequestTimeout:        durationEnvOr("SETTLEMENT_WORKER_REQUEST_TIMEOUT", 10*time.Second),
+		TradeSettlementTarget:  envOr("TRADE_SETTLEMENT_GRPC_TARGET", "127.0.0.1:9092"),
+		RequestTimeout:         durationEnvOr("SETTLEMENT_WORKER_REQUEST_TIMEOUT", 10*time.Second),
+		OutboxDispatchInterval: durationEnvOr("SETTLEMENT_OUTBOX_DISPATCH_INTERVAL", time.Second),
 	}
 }
 

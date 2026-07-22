@@ -11,40 +11,121 @@ cel.dev/expr
 # encore.dev v1.57.5
 ## explicit; go 1.24.0
 encore.dev/beta/errs
+encore.dev/cron
 encore.dev/pubsub
 # github.com/IBM/fp-go/v2 v2.3.76
 ## explicit; go 1.24.0
 github.com/IBM/fp-go/v2/array
 github.com/IBM/fp-go/v2/array/generic
+github.com/IBM/fp-go/v2/array/nonempty
+github.com/IBM/fp-go/v2/assert
+github.com/IBM/fp-go/v2/boolean
+github.com/IBM/fp-go/v2/bytes
+github.com/IBM/fp-go/v2/circuitbreaker
+github.com/IBM/fp-go/v2/constant
 github.com/IBM/fp-go/v2/constraints
+github.com/IBM/fp-go/v2/consumer
+github.com/IBM/fp-go/v2/context/ioresult
+github.com/IBM/fp-go/v2/context/reader
+github.com/IBM/fp-go/v2/context/readerio
+github.com/IBM/fp-go/v2/context/readerioresult
+github.com/IBM/fp-go/v2/context/readerioresult/generic
+github.com/IBM/fp-go/v2/context/readerresult
+github.com/IBM/fp-go/v2/either
 github.com/IBM/fp-go/v2/endomorphism
 github.com/IBM/fp-go/v2/eq
+github.com/IBM/fp-go/v2/errors
 github.com/IBM/fp-go/v2/function
 github.com/IBM/fp-go/v2/function/generic
+github.com/IBM/fp-go/v2/http
+github.com/IBM/fp-go/v2/identity
+github.com/IBM/fp-go/v2/idiomatic/ioresult
+github.com/IBM/fp-go/v2/idiomatic/option
+github.com/IBM/fp-go/v2/idiomatic/readerresult
+github.com/IBM/fp-go/v2/idiomatic/result
 github.com/IBM/fp-go/v2/internal/applicative
 github.com/IBM/fp-go/v2/internal/apply
 github.com/IBM/fp-go/v2/internal/array
+github.com/IBM/fp-go/v2/internal/bracket
 github.com/IBM/fp-go/v2/internal/chain
 github.com/IBM/fp-go/v2/internal/context
+github.com/IBM/fp-go/v2/internal/eithert
+github.com/IBM/fp-go/v2/internal/eq
+github.com/IBM/fp-go/v2/internal/file
+github.com/IBM/fp-go/v2/internal/filterable
 github.com/IBM/fp-go/v2/internal/formatting
+github.com/IBM/fp-go/v2/internal/fromeither
+github.com/IBM/fp-go/v2/internal/fromio
+github.com/IBM/fp-go/v2/internal/fromioeither
+github.com/IBM/fp-go/v2/internal/fromiter
+github.com/IBM/fp-go/v2/internal/fromoption
+github.com/IBM/fp-go/v2/internal/fromreader
 github.com/IBM/fp-go/v2/internal/functor
 github.com/IBM/fp-go/v2/internal/iter
 github.com/IBM/fp-go/v2/internal/lazy
 github.com/IBM/fp-go/v2/internal/monad
+github.com/IBM/fp-go/v2/internal/optiont
 github.com/IBM/fp-go/v2/internal/pointed
+github.com/IBM/fp-go/v2/internal/readert
 github.com/IBM/fp-go/v2/internal/record
 github.com/IBM/fp-go/v2/internal/traversable
+github.com/IBM/fp-go/v2/internal/utils
+github.com/IBM/fp-go/v2/internal/witherable
+github.com/IBM/fp-go/v2/io
+github.com/IBM/fp-go/v2/io/generic
+github.com/IBM/fp-go/v2/ioeither
+github.com/IBM/fp-go/v2/ioeither/generic
+github.com/IBM/fp-go/v2/iooption
+github.com/IBM/fp-go/v2/iooption/generic
+github.com/IBM/fp-go/v2/ioref
+github.com/IBM/fp-go/v2/ioresult
+github.com/IBM/fp-go/v2/iterator/iter
+github.com/IBM/fp-go/v2/iterator/itereither
+github.com/IBM/fp-go/v2/iterator/iterresult
+github.com/IBM/fp-go/v2/iterator/stateless
+github.com/IBM/fp-go/v2/iterator/stateless/generic
+github.com/IBM/fp-go/v2/json
+github.com/IBM/fp-go/v2/lazy
 github.com/IBM/fp-go/v2/logging
 github.com/IBM/fp-go/v2/magma
 github.com/IBM/fp-go/v2/monoid
 github.com/IBM/fp-go/v2/number
+github.com/IBM/fp-go/v2/number/integer
+github.com/IBM/fp-go/v2/optics/iso
+github.com/IBM/fp-go/v2/optics/iso/lens
 github.com/IBM/fp-go/v2/optics/lens
+github.com/IBM/fp-go/v2/optics/lens/generic
+github.com/IBM/fp-go/v2/optics/lens/iso
+github.com/IBM/fp-go/v2/optics/lens/option
+github.com/IBM/fp-go/v2/optics/optional
+github.com/IBM/fp-go/v2/optics/prism
+github.com/IBM/fp-go/v2/optics/traversal/generic
+github.com/IBM/fp-go/v2/optics/traversal/option
 github.com/IBM/fp-go/v2/option
 github.com/IBM/fp-go/v2/ord
 github.com/IBM/fp-go/v2/pair
 github.com/IBM/fp-go/v2/pair/generic
 github.com/IBM/fp-go/v2/predicate
+github.com/IBM/fp-go/v2/reader
+github.com/IBM/fp-go/v2/reader/generic
+github.com/IBM/fp-go/v2/readereither
+github.com/IBM/fp-go/v2/readereither/generic
+github.com/IBM/fp-go/v2/readerio
+github.com/IBM/fp-go/v2/readerio/generic
+github.com/IBM/fp-go/v2/readerioeither
+github.com/IBM/fp-go/v2/readerioeither/generic
+github.com/IBM/fp-go/v2/readerioresult
+github.com/IBM/fp-go/v2/readeroption
+github.com/IBM/fp-go/v2/readeroption/generic
+github.com/IBM/fp-go/v2/readerresult
+github.com/IBM/fp-go/v2/record/generic
+github.com/IBM/fp-go/v2/result
+github.com/IBM/fp-go/v2/retry
+github.com/IBM/fp-go/v2/retry/generic
 github.com/IBM/fp-go/v2/semigroup
+github.com/IBM/fp-go/v2/state
+github.com/IBM/fp-go/v2/string
+github.com/IBM/fp-go/v2/tailrec
 github.com/IBM/fp-go/v2/tuple
 # github.com/andeya/gust v1.20.7
 ## explicit; go 1.24.0
@@ -63,6 +144,9 @@ github.com/cenkalti/backoff/v5
 # github.com/cespare/xxhash/v2 v2.3.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
+# github.com/davecgh/go-spew v1.1.1
+## explicit
+github.com/davecgh/go-spew/spew
 # github.com/ebitengine/purego v0.10.1
 ## explicit; go 1.18
 github.com/ebitengine/purego
@@ -105,6 +189,13 @@ github.com/google/cel-go/ext
 github.com/google/cel-go/interpreter
 github.com/google/cel-go/parser
 github.com/google/cel-go/parser/gen
+# github.com/google/go-cmp v0.7.0
+## explicit; go 1.21
+github.com/google/go-cmp/cmp
+github.com/google/go-cmp/cmp/internal/diff
+github.com/google/go-cmp/cmp/internal/flags
+github.com/google/go-cmp/cmp/internal/function
+github.com/google/go-cmp/cmp/internal/value
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid
@@ -151,6 +242,22 @@ github.com/lainio/err2/try
 # github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e
 ## explicit; go 1.21
 github.com/lufia/plan9stats
+# github.com/onsi/gomega v1.38.2
+## explicit; go 1.23.0
+github.com/onsi/gomega
+github.com/onsi/gomega/format
+github.com/onsi/gomega/internal
+github.com/onsi/gomega/internal/gutil
+github.com/onsi/gomega/matchers
+github.com/onsi/gomega/matchers/internal/miter
+github.com/onsi/gomega/matchers/support/goraph/bipartitegraph
+github.com/onsi/gomega/matchers/support/goraph/edge
+github.com/onsi/gomega/matchers/support/goraph/node
+github.com/onsi/gomega/matchers/support/goraph/util
+github.com/onsi/gomega/types
+# github.com/pmezard/go-difflib v1.0.0
+## explicit
+github.com/pmezard/go-difflib/difflib
 # github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55
 ## explicit; go 1.14
 github.com/power-devops/perfstat
@@ -162,6 +269,10 @@ github.com/shirou/gopsutil/v4/internal/common
 github.com/shirou/gopsutil/v4/mem
 github.com/shirou/gopsutil/v4/net
 github.com/shirou/gopsutil/v4/process
+# github.com/stretchr/testify v1.11.1
+## explicit; go 1.17
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/assert/yaml
 # github.com/tklauser/go-sysconf v0.4.0
 ## explicit; go 1.25.0
 github.com/tklauser/go-sysconf
@@ -297,6 +408,9 @@ go.yaml.in/yaml/v3
 golang.org/x/exp/slices
 # golang.org/x/net v0.55.0
 ## explicit; go 1.25.0
+golang.org/x/net/html
+golang.org/x/net/html/atom
+golang.org/x/net/html/charset
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
@@ -305,7 +419,7 @@ golang.org/x/net/internal/httpcommon
 golang.org/x/net/internal/httpsfv
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sync v0.20.0
+# golang.org/x/sync v0.21.0
 ## explicit; go 1.25.0
 golang.org/x/sync/semaphore
 # golang.org/x/sys v0.45.0
@@ -313,9 +427,19 @@ golang.org/x/sync/semaphore
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/text v0.37.0
+# golang.org/x/text v0.39.0
 ## explicit; go 1.25.0
 golang.org/x/text/cases
+golang.org/x/text/encoding
+golang.org/x/text/encoding/charmap
+golang.org/x/text/encoding/htmlindex
+golang.org/x/text/encoding/internal
+golang.org/x/text/encoding/internal/identifier
+golang.org/x/text/encoding/japanese
+golang.org/x/text/encoding/korean
+golang.org/x/text/encoding/simplifiedchinese
+golang.org/x/text/encoding/traditionalchinese
+golang.org/x/text/encoding/unicode
 golang.org/x/text/feature/plural
 golang.org/x/text/internal
 golang.org/x/text/internal/catmsg
@@ -325,6 +449,7 @@ golang.org/x/text/internal/language/compact
 golang.org/x/text/internal/number
 golang.org/x/text/internal/stringset
 golang.org/x/text/internal/tag
+golang.org/x/text/internal/utf8internal
 golang.org/x/text/language
 golang.org/x/text/message
 golang.org/x/text/message/catalog
@@ -342,7 +467,7 @@ google.golang.org/genproto/googleapis/api/httpbody
 # google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa
 ## explicit; go 1.25.0
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.81.1
+# google.golang.org/grpc v1.82.1
 ## explicit; go 1.25.0
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -364,6 +489,7 @@ google.golang.org/grpc/encoding
 google.golang.org/grpc/encoding/gzip
 google.golang.org/grpc/encoding/internal
 google.golang.org/grpc/encoding/proto
+google.golang.org/grpc/experimental/balancer/weight
 google.golang.org/grpc/experimental/stats
 google.golang.org/grpc/grpclog
 google.golang.org/grpc/grpclog/internal
@@ -371,7 +497,6 @@ google.golang.org/grpc/health/grpc_health_v1
 google.golang.org/grpc/internal
 google.golang.org/grpc/internal/backoff
 google.golang.org/grpc/internal/balancer/gracefulswitch
-google.golang.org/grpc/internal/balancer/weight
 google.golang.org/grpc/internal/balancerload
 google.golang.org/grpc/internal/binarylog
 google.golang.org/grpc/internal/buffer
@@ -397,6 +522,7 @@ google.golang.org/grpc/internal/stats
 google.golang.org/grpc/internal/status
 google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
+google.golang.org/grpc/internal/transport/internal
 google.golang.org/grpc/internal/transport/networktype
 google.golang.org/grpc/internal/transport/readyreader
 google.golang.org/grpc/keepalive
@@ -453,3 +579,6 @@ google.golang.org/protobuf/types/known/fieldmaskpb
 google.golang.org/protobuf/types/known/structpb
 google.golang.org/protobuf/types/known/timestamppb
 google.golang.org/protobuf/types/known/wrapperspb
+# gopkg.in/yaml.v3 v3.0.1
+## explicit
+gopkg.in/yaml.v3

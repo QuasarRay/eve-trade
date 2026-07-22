@@ -4,7 +4,12 @@ import unittest
 from pathlib import Path
 
 from observability.ci.ci_aggregate import aggregate_exit_code, diagnose_ci_needs, load_needs
-from observability.ci.ci_evidence import EVIDENCE_SCHEMA_VERSION, canonical_digest
+from observability.ci.ci_evidence import (
+    EVIDENCE_SCHEMA_VERSION,
+    canonical_digest,
+    sign_evidence,
+    workflow_definition_digest,
+)
 
 
 CONTEXT = {
@@ -14,6 +19,7 @@ CONTEXT = {
     "workflow": "verify",
     "run_id": "123",
     "run_attempt": "2",
+    "workflow_definition_digest": workflow_definition_digest(),
 }
 
 
@@ -73,8 +79,7 @@ def evidence(job: str, status: str = "success", started_at: str = "2026-07-10T00
         "collector_status": "COMPLETE",
         "provenance": {},
     }
-    bundle["artifact_digest"] = canonical_digest(bundle)
-    return bundle
+    return sign_evidence(bundle)
 
 
 class CiAggregateTests(unittest.TestCase):

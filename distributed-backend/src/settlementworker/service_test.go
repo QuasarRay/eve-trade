@@ -81,6 +81,10 @@ func (p *recordingResultPublisher) Publish(ctx context.Context, result *settleme
 	return "result-message", nil
 }
 
+func (p *recordingResultPublisher) Ready(context.Context) error {
+	return p.err
+}
+
 func validSettlementWork() *settlement.Work {
 	return &settlement.Work{
 		OperationID:         "11111111-1111-4111-8111-111111111111",
@@ -250,8 +254,10 @@ func TestHandleSettlementWorkRecoversCrashAfterResultPublication(t *testing.T) {
 	}
 }
 
-func TestHandleSettlementWorkRejectsInvalidOperationForRetry(t *testing.T) {
-	service := &Service{executor: &recordingExecutor{}, results: &recordingResultPublisher{}}
+func TestHandleSettlementWorkTerminalizesInvalidOperation(t *testing.T) {
+	executor := &recordingExecutor{}
+	results := &recordingResultPublisher{}
+	service := &Service{executor: executor, results: results}
 	err := service.HandleSettlementWork(context.Background(), &settlement.Work{
 		OperationID:      "11111111-1111-4111-8111-111111111111",
 		Intent:           settlement.IntentIssue,
@@ -261,7 +267,13 @@ func TestHandleSettlementWorkRejectsInvalidOperationForRetry(t *testing.T) {
 			{Kind: settlement.OperationCreateNewTradeInstanceRow},
 		},
 	})
-	if err == nil {
-		t.Fatal("expected invalid work to return an error")
+	if err != nil {
+		t.Fatalf("permanently invalid work was not acknowledged: %v", err)
+	}
+	if executor.currentOperation().GetState() != tradesettlementv1.SettlementOperationState_SETTLEMENT_OPERATION_STATE_FAILED {
+		t.Fatalf("invalid work state = %s, want FAILED", executor.currentOperation().GetState())
+	}
+	if len(results.results) != 1 {
+		t.Fatalf("invalid work results = %d, want 1", len(results.results))
 	}
 }

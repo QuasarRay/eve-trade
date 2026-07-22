@@ -16,6 +16,7 @@ spec:
         sidecar.istio.io/proxyMemory: 128Mi
         sidecar.istio.io/proxyMemoryLimit: 256Mi
         sidecar.istio.io/rewriteAppHTTPProbers: "true"
+        traffic.sidecar.istio.io/excludeOutboundPorts: "4150"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -68,6 +69,57 @@ spec:
             capabilities:
               drop:
                 - ALL
+      initContainers:
+        - name: nsq-client-proxy
+          image: envoyproxy/envoy:v1.38.1@sha256:4e3c734cbe9892a3513c97cf3974ff73cfef5d784f5cceed9ea758a2b80e0c31
+          imagePullPolicy: IfNotPresent
+          restartPolicy: Always
+          args:
+            - -c
+            - /etc/envoy-nsq/envoy.yaml
+            - --log-level
+            - warn
+          startupProbe:
+            tcpSocket:
+              host: 127.0.0.1
+              port: 4150
+            periodSeconds: 1
+            timeoutSeconds: 1
+            failureThreshold: 30
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: nsq-client-proxy-config
+              mountPath: /etc/envoy-nsq
+              readOnly: true
+            - name: nsq-client-tls
+              mountPath: /etc/nsq/client-tls
+              readOnly: true
+            - name: nsq-client-proxy-tmp
+              mountPath: /tmp
+      volumes:
+        - name: nsq-client-proxy-config
+          configMap:
+            name: nsq-client-proxy
+        - name: nsq-client-tls
+          secret:
+            secretName: nsq-client-tls
+        - name: nsq-client-proxy-tmp
+          emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
