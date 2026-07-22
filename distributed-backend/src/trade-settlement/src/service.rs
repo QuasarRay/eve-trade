@@ -898,12 +898,22 @@ mod tests {
                 .expect("connect to isolated outbox schema");
             {
                 let _migration_guard = OUTBOX_MIGRATION_LOCK.lock().await;
+                let mut migration_admin = admin
+                    .acquire()
+                    .await
+                    .expect("acquire migration lock connection");
+                sqlx::query(
+                    "SELECT pg_advisory_lock(hashtext('eve_trade_test_schema_migrations'))",
+                )
+                .execute(&mut *migration_admin)
+                .await
+                .expect("lock shared test schema migrations");
                 sqlx::query("CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public")
-                    .execute(&admin)
+                    .execute(&mut *migration_admin)
                     .await
                     .expect("install pgcrypto in public schema");
                 sqlx::query("ALTER EXTENSION pgcrypto SET SCHEMA public")
-                    .execute(&admin)
+                    .execute(&mut *migration_admin)
                     .await
                     .expect("keep pgcrypto visible to isolated schemas");
                 for migration in TEST_MIGRATIONS {
@@ -912,6 +922,12 @@ mod tests {
                         .await
                         .expect("apply outbox settlement migration");
                 }
+                sqlx::query(
+                    "SELECT pg_advisory_unlock(hashtext('eve_trade_test_schema_migrations'))",
+                )
+                .execute(&mut *migration_admin)
+                .await
+                .expect("unlock shared test schema migrations");
             }
             sqlx::query(
                 "INSERT INTO capsuleer (capsuleer_id, capsuleer_name) VALUES (1001, 'Outbox Tester')",

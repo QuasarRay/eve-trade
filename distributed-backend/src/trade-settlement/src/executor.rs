@@ -1244,24 +1244,37 @@ mod tests {
             .connect(&database_url)
             .await
             .expect("connect to settlement test database");
+        let mut migration_connection = pool
+            .acquire()
+            .await
+            .expect("acquire settlement migration connection");
+        sqlx::query("SELECT pg_advisory_lock(hashtext('eve_trade_test_schema_migrations'))")
+            .execute(&mut *migration_connection)
+            .await
+            .expect("lock shared test schema migrations");
         sqlx::raw_sql(
             "DROP SCHEMA IF EXISTS eve_trade_executor_test CASCADE; \
              CREATE SCHEMA eve_trade_executor_test; \
              SET search_path TO eve_trade_executor_test, public;",
         )
-        .execute(&pool)
+        .execute(&mut *migration_connection)
         .await
         .expect("reset isolated settlement test schema");
         for migration in TEST_MIGRATIONS {
             sqlx::raw_sql(migration)
-                .execute(&pool)
+                .execute(&mut *migration_connection)
                 .await
                 .expect("apply settlement migration");
         }
         sqlx::raw_sql(TEST_SEED)
-            .execute(&pool)
+            .execute(&mut *migration_connection)
             .await
             .expect("seed settlement test database");
+        sqlx::query("SELECT pg_advisory_unlock(hashtext('eve_trade_test_schema_migrations'))")
+            .execute(&mut *migration_connection)
+            .await
+            .expect("unlock shared test schema migrations");
+        drop(migration_connection);
 
         Some(TestDatabase {
             pool,

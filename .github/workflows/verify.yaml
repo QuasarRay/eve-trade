@@ -527,7 +527,7 @@ jobs:
           job-name: kubernetes / render
           artifact-key: kubernetes
           step-name: Run Kubernetes policy tests
-          command: python -m unittest discover -s scripts/tests -v
+          command: python -m unittest -v scripts.tests.test_verify_rendered_kubernetes
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:
@@ -647,7 +647,7 @@ jobs:
           job-name: architecture / boundaries and schema
           artifact-key: architecture
           step-name: Run architecture tests
-          command: python -m unittest discover -s scripts/tests -v
+          command: python -m unittest -v scripts.tests.test_verify_architecture_boundaries
       - if: ${{ always() }}
         uses: ./.github/actions/ci-evidence
         with:
@@ -844,6 +844,8 @@ jobs:
           artifact-key: canonical-regression
           step-name: Install canonical regression dependencies
           command: |
+            sudo apt-get update
+            sudo apt-get install -y protobuf-compiler
             python -m pip install \
               -r simulator/requirements-test.txt \
               -r distributed-backend/observability/requirements-test.txt \

@@ -30,10 +30,15 @@ def git(*arguments: str) -> str:
 
 def historical_schema_commits() -> list[str]:
     path = "distributed-backend/src/trade-settlement/migrations/0002_merge_item_stack_constraints.sql"
-    commits = git("log", "--all", "--diff-filter=A", "--format=%H", "--", path).splitlines()
-    if not commits:
+    introduction_commits = git(
+        "log", "HEAD", "--diff-filter=A", "--format=%H", "--", path
+    ).splitlines()
+    if not introduction_commits:
         raise AssertionError("repository history exposes no supported pre-collapse migration baseline")
-    return commits
+    baselines = [git("rev-parse", f"{introduction_commits[0]}^")]
+    if not all(migration_files_at(commit) for commit in baselines):
+        raise AssertionError("a migration introduction has no usable parent schema")
+    return baselines
 
 
 def migration_files_at(commit: str) -> list[str]:
@@ -149,15 +154,28 @@ class DatabaseFixture:
                 1001, '10000000-0000-4000-8000-000000000004',
                 0, '10000000-0000-4000-8000-000000000003'
             );
+            WITH ledger_entry AS (
+                SELECT compute_item_stack_ledger_payload_hash(
+                    '10000000-0000-4000-8000-000000000003',
+                    '10000000-0000-4000-8000-000000000005',
+                    1, 34, 1001, 60003760, 'CREATE_STACK',
+                    5, 0, 5, 'ABSENT', 'LOCKED', 0, 1, 'GENESIS', 'stack-checksum'
+                ) AS payload_hash
+            )
             INSERT INTO item_stack_ledger (
-                settlement_step_id, item_stack_id, item_type_id, owner_id, station_id, entry_kind,
-                quantity_delta, quantity_before, quantity_after, stack_version_before, stack_version_after,
-                stack_checksum_before, stack_checksum_after
-            ) VALUES (
+                settlement_step_id, item_stack_id, ledger_sequence,
+                previous_item_stack_ledger_hash, ledger_payload_hash, item_stack_ledger_hash,
+                item_type_id, owner_id, station_id, entry_kind,
+                quantity_delta, quantity_before, quantity_after, stack_state_before, stack_state_after,
+                stack_version_before, stack_version_after, stack_checksum_before, stack_checksum_after
+            )
+            SELECT
                 '10000000-0000-4000-8000-000000000003',
-                '10000000-0000-4000-8000-000000000005', 34, 1001, 60003760, 'TRANSFER_TO_ESCROW',
-                0, 5, 5, 0, 1, 'GENESIS', 'stack-checksum'
-            );
+                '10000000-0000-4000-8000-000000000005', 1,
+                'GENESIS', payload_hash, compute_item_stack_ledger_hash('GENESIS', payload_hash),
+                34, 1001, 60003760, 'CREATE_STACK',
+                5, 0, 5, 'ABSENT', 'LOCKED', 0, 1, 'GENESIS', 'stack-checksum'
+            FROM ledger_entry;
             """
         )
 

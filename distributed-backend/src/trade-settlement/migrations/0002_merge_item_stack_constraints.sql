@@ -22,6 +22,7 @@ ALTER TABLE item_stack_ledger
 ALTER TABLE item_stack_ledger
     ADD CONSTRAINT item_stack_ledger_entry_kind_check
     CHECK (entry_kind IN (
+        'CREATE_STACK',
         'TRANSFER_TO_ESCROW',
         'TRANSFER_FROM_ESCROW_TO_NEW_OWNER',
         'TRANSFER_FROM_ESCROW_TO_PREVIOUS_OWNER',
