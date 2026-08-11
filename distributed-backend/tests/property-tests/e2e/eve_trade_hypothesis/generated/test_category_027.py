@@ -1,0 +1,6 @@
+from eve_trade_hypothesis.registry import register_category
+
+CATEGORY_ID = 27
+CONTRACT_NAMES = ['test_runtime_role_cannot_create_function', 'test_runtime_role_cannot_create_trigger', 'test_runtime_role_cannot_disable_trigger', 'test_runtime_role_cannot_alter_constraint', 'test_runtime_role_cannot_truncate_table', 'test_runtime_role_cannot_set_role', 'test_runtime_role_cannot_grant_privileges', 'test_runtime_role_cannot_change_table_owner', 'test_runtime_role_cannot_modify_sequence_owned_by_protected_table', 'test_market_role_cannot_execute_mutating_security_definer_function', 'test_market_role_cannot_write_settlement_outbox', 'test_public_role_has_no_settlement_table_privileges', 'test_application_roles_cannot_read_database_objects_classified_as_secret_configuration']
+
+register_category(globals(), CATEGORY_ID, CONTRACT_NAMES)

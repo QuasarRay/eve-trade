@@ -1,0 +1,69 @@
+# Audit Fix Report
+
+## Scope
+
+- Proposed Hypothesis contracts: **1,353**
+- Existing native E2E wrappers: **131**
+- Combined named contracts: **1,484**
+- First-audit semantic reroutes: **202**
+- Additional second-pass semantic reroutes: **22**
+- Total semantic reroutes: **224**
+- First-audit missing-contract-logic findings closed by protocol-v2 evidence: **869**
+- First-audit missing-fault-logic findings closed by protocol-v2 evidence: **148**
+- Strategy-precedence defects repaired: **3**
+
+## Framework-level repairs
+
+- External drivers can no longer satisfy a contract with a bare `ok: true` result.
+- Every external result is bound to the exact Hypothesis example with `case_sha256`.
+- Every evidence contract requires `scenario.action_executed`, `scenario.preconditions_satisfied`, and `scenario.generated_case_applied`.
+- Every proposed name compiles to at least one additional semantic predicate; unsupported names raise instead of falling back.
+- Known weak direct implementations are intercepted before their old handlers can execute.
+- First-audit mismatch kinds receive extra anti-confounding assertions in `semantic_validation.py`.
+- Existing experimental-only native wrappers skip as not-applicable on `main` instead of failing strict mode.
+- Contract-generated identifiers use deterministic UUID5 values derived from the Hypothesis case instead of uncontrolled UUID4 values.
+- State-machine strategies run before generic numeric strategy matching and explicitly generate invalid/retry symbols when the test name requires them.
+
+## Direct logic repairs
+
+- Destination-stack ownership rejection now holds item type and station constant and changes only ownership.
+- Existing-success-response primary-key disclosure checks derive primary keys from PostgreSQL metadata instead of a hardcoded guess.
+- Completed/cancelled trade laws now create and validate multiple terminal trades rather than proving one-row examples only.
+- Open-trade remaining-quantity reconciliation now checks multiple open trades.
+- Database constraint/privilege categories cannot fall back to SQL-text presence when a live database is unavailable.
+- Random trade-sequence tests now use per-step idempotency keys and can execute multiple issue/accept/cancel cycles.
+- The contradictory item-type rejection contract was replaced by a response-authority contract consistent with the authoritative-state behavior.
+
+## Second-pass semantic reroutes
+
+- `test_concurrent_accepts_into_same_destination_stack_do_not_lose_updates` — success_count_not_required, concurrency_not_exercised
+- `test_concurrent_identical_requests_execute_business_operation_exactly_once` — concurrency_not_exercised
+- `test_concurrent_insert_of_same_idempotency_key_executes_single_settlement` — concurrency_not_exercised
+- `test_concurrent_issues_from_same_item_stack_cannot_escrow_more_than_owned` — concurrency_not_exercised
+- `test_different_idempotency_keys_generate_different_trade_ids_for_same_trade_payload` — payload_not_held_constant
+- `test_every_declared_race_contract_targets_at_least_one_go_test` — race_target_not_resolved
+- `test_govulncheck_scans_every_go_package_in_module` — command_presence_only
+- `test_idempotency_record_principal_binding_cannot_be_changed_after_creation` — mutation_not_attempted
+- `test_idempotency_record_request_fingerprint_cannot_be_changed_after_creation` — mutation_not_attempted
+- `test_idempotency_record_terminal_response_cannot_be_overwritten_by_retry` — terminal_response_not_compared
+- `test_issue_of_entire_source_stack_leaves_source_stack_quantity_zero_without_negative_quantity_or_orphaned_escrow` — orphan_postcondition_not_checked
+- `test_issue_rejects_nonexistent_seller` — nonexistent_seller_not_isolated
+- `test_istio_and_gateway_api_production_overlays_preserve_same_readiness_and_liveness_probes` — overlay_comparison_not_performed
+- `test_istio_and_gateway_api_production_overlays_preserve_same_resource_requests` — overlay_comparison_not_performed
+- `test_multiple_partial_accepts_and_cancel_race_conserves_items_and_isk` — concurrency_not_exercised
+- `test_partial_accept_and_cancel_race_conserves_items_and_isk` — concurrency_not_exercised
+- `test_postgres_search_path_is_fixed_for_runtime_role` — search_path_not_bound_to_role
+- `test_reordered_udp_datagrams_with_distinct_interaction_ids_are_processed_as_independent_requests` — ordering_not_observed
+- `test_replay_cache_fingerprint_includes_authenticated_principal` — principal_fingerprint_not_isolated
+- `test_security_definer_functions_set_safe_search_path_before_accessing_objects` — security_definer_search_path_not_checked
+- `test_udp_edge_does_not_reveal_whether_failure_was_unknown_key_id_or_wrong_secret` — partial_information_disclosure_check
+- `test_unknown_operation_enum_value_is_rejected_instead_of_mapping_to_zero_value_operation` — wrong_enum_field_exercised
+
+## Verification
+
+- `python -m compileall -q .`
+- `python tools/verify_generated_catalog.py`
+- `python tools/verify_audit_resolutions.py`
+- `python tools/export_evidence_specs.py`
+
+These checks are structural/static. Full live execution still requires the EVE Trade checkout, its service dependencies, Hypothesis, and environment-specific fault/evidence probes for contracts that intentionally cross external control planes.

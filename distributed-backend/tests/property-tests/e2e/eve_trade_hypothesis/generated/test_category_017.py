@@ -1,0 +1,6 @@
+from eve_trade_hypothesis.registry import register_category
+
+CATEGORY_ID = 17
+CONTRACT_NAMES = ['test_wallet_escrow_is_bound_to_exact_trade_instance', 'test_item_escrow_is_bound_to_exact_trade_instance', 'test_wallet_escrow_cannot_pay_different_trade', 'test_item_escrow_cannot_release_into_different_trade', 'test_wallet_escrow_cannot_be_reused_after_release', 'test_item_escrow_cannot_be_reused_after_release', 'test_cancel_cannot_release_item_escrow_owned_by_different_trade', 'test_accept_cannot_release_cancelled_item_escrow', 'test_orphan_wallet_escrow_cannot_be_created', 'test_orphan_item_escrow_cannot_be_created']
+
+register_category(globals(), CATEGORY_ID, CONTRACT_NAMES)

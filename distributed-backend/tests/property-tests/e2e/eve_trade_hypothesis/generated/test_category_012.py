@@ -1,0 +1,6 @@
+from eve_trade_hypothesis.registry import register_category
+
+CATEGORY_ID = 12
+CONTRACT_NAMES = ['test_trade_state_cannot_transition_open_to_open_via_settlement_operation', 'test_trade_state_cannot_transition_completed_to_open', 'test_trade_state_cannot_transition_cancelled_to_open', 'test_trade_state_cannot_transition_completed_to_cancelled', 'test_trade_state_cannot_transition_cancelled_to_completed', 'test_trade_state_rejects_unknown_state_value', 'test_trade_state_change_row_created_exactly_once_for_completion', 'test_trade_state_change_row_created_exactly_once_for_cancellation', 'test_retry_does_not_duplicate_trade_state_change_history', 'test_trade_state_change_history_is_append_only', 'test_trade_state_change_history_matches_current_trade_state']
+
+register_category(globals(), CATEGORY_ID, CONTRACT_NAMES)

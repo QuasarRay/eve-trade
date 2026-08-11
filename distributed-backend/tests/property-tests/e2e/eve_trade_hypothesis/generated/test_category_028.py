@@ -1,0 +1,6 @@
+from eve_trade_hypothesis.registry import register_category
+
+CATEGORY_ID = 28
+CONTRACT_NAMES = ['test_settlement_grpc_rejects_peer_missing_required_transport_identity', 'test_settlement_grpc_rejects_empty_idempotency_key', 'test_settlement_grpc_rejects_empty_external_request_id', 'test_settlement_grpc_rejects_unspecified_intent', 'test_settlement_grpc_rejects_unknown_intent', 'test_settlement_grpc_rejects_zero_caused_by_capsuleer_id', 'test_settlement_grpc_rejects_empty_created_by_service', 'test_settlement_grpc_rejects_request_with_no_operations', 'test_settlement_grpc_rejects_oversized_operation_batch', 'test_settlement_grpc_deadline_expiry_does_not_cancel_committed_transaction', 'test_settlement_grpc_client_disconnect_after_commit_is_idempotently_recoverable']
+
+register_category(globals(), CATEGORY_ID, CONTRACT_NAMES)

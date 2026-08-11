@@ -1,0 +1,6 @@
+from eve_trade_hypothesis.registry import register_category
+
+CATEGORY_ID = 11
+CONTRACT_NAMES = ['test_accept_rejects_buyer_wallet_owned_by_different_capsuleer', 'test_accept_rejects_nonexistent_buyer_wallet', 'test_accept_rejects_buyer_wallet_marked_unavailable_for_trading', 'test_accept_rejects_seller_wallet_claim_that_does_not_match_trade_seller', 'test_settlement_uses_authoritative_wallet_owners_not_request_claims', 'test_settlement_rejects_payment_to_wallet_not_owned_by_trade_seller', 'test_settlement_rejects_debit_from_wallet_not_owned_by_accepting_buyer']
+
+register_category(globals(), CATEGORY_ID, CONTRACT_NAMES)

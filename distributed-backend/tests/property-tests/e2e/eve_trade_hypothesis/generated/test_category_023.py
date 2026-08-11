@@ -1,0 +1,6 @@
+from eve_trade_hypothesis.registry import register_category
+
+CATEGORY_ID = 23
+CONTRACT_NAMES = ['test_pubsub_broker_unavailable_during_market_publish_does_not_lose_committed_operation', 'test_pubsub_broker_restart_redelivers_unacknowledged_work', 'test_pubsub_broker_restart_preserves_pending_settlement_results', 'test_pubsub_channel_recreation_does_not_silently_drop_pending_work', 'test_pubsub_backlog_never_causes_gateway_to_return_success_for_request_not_durably_accepted', 'test_pubsub_queue_depth_metric_matches_real_pending_work', 'test_pubsub_in_flight_metric_returns_to_zero_after_handler_completion']
+
+register_category(globals(), CATEGORY_ID, CONTRACT_NAMES)

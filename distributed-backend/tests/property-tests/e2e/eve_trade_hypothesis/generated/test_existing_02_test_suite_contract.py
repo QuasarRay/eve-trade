@@ -1,0 +1,6 @@
+from eve_trade_hypothesis.registry import register_existing
+
+NATIVE_FILE = 'test_suite_contract.py'
+CONTRACT_NAMES = ['test_documented_production_gate_values_are_strict', 'test_payload_helpers_preserve_every_falsey_value_on_the_wire', 'test_production_gate_does_not_inherit_the_all_skipped_escape_hatch', 'test_production_gate_fails_each_missing_dependency_or_credential', 'test_pubsub_pending_messages_covers_queue_and_active_delivery_states', 'test_pubsub_pending_messages_ignores_unrelated_channels']
+
+register_existing(globals(), NATIVE_FILE, CONTRACT_NAMES)

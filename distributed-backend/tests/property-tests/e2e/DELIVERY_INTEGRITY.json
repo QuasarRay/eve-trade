@@ -1,0 +1,701 @@
+{
+  "file_count_before_integrity_manifest": 139,
+  "files": [
+    {
+      "bytes": 5317,
+      "path": "FIXES_AFTER_LOGIC_AUDIT.md",
+      "sha256": "f88623e0e940b680044a05ce6d2998aa128eabdb486b9b1b7a0a55244b74cbbb"
+    },
+    {
+      "bytes": 2319,
+      "path": "IMPLEMENTATION_SUMMARY.md",
+      "sha256": "f5d9e6855554e58c2ed38d1f31b2781844e253bf4c816ad1b94d64e3ce7ca8de"
+    },
+    {
+      "bytes": 6388,
+      "path": "README.md",
+      "sha256": "88044a720cef6adcecb815a1bae3ed8b42c6082db925702c55c6c911c7057949"
+    },
+    {
+      "bytes": 644168,
+      "path": "audit_resolution_manifest.json",
+      "sha256": "1ea87d6c14936539e0305e2d0cc7c304432482bad93e93ff68b7f83c796b3c2b"
+    },
+    {
+      "bytes": 1262,
+      "path": "conftest.py",
+      "sha256": "0cf26e33ab1a7fbfbfd4aff7dba1591100127eb093f7bf6ceecc44ff4b3b5c1e"
+    },
+    {
+      "bytes": 2494,
+      "path": "drivers/README.md",
+      "sha256": "0042b9368e4407e796d8826f14ecb3c1ce84d743635d2f7716937e31acb838d9"
+    },
+    {
+      "bytes": 3775,
+      "path": "drivers/mapped_contract_driver.py",
+      "sha256": "f40493ca0ccfe54375abdc38976aaa4bee14bd3895d0817702f7c7826aa14d72"
+    },
+    {
+      "bytes": 22,
+      "path": "eve_trade_hypothesis/__init__.py",
+      "sha256": "27e8febb48ada44153ea2add9969a2c50a9831a74d9755fdd53c549a888b1cc2"
+    },
+    {
+      "bytes": 167212,
+      "path": "eve_trade_hypothesis/catalog.json",
+      "sha256": "7311a7ff16b2190f326d727d104d6908ea6be5328467a1460c5712bf70657af5"
+    },
+    {
+      "bytes": 757,
+      "path": "eve_trade_hypothesis/catalog.py",
+      "sha256": "d4ce9c62422ef22d209b783d0e825b049d70f9da22b816855fbd1a498f487ee9"
+    },
+    {
+      "bytes": 2317,
+      "path": "eve_trade_hypothesis/config.py",
+      "sha256": "0bf69f90cf44893b792f441c9ed826287817e04d3373b4d77fb782a5db5fac14"
+    },
+    {
+      "bytes": 59,
+      "path": "eve_trade_hypothesis/contracts/__init__.py",
+      "sha256": "f15cdf087e80dcca73cb434ae7d614c0d1b00134e7bea09ddaed66ea336f2b3b"
+    },
+    {
+      "bytes": 28588,
+      "path": "eve_trade_hypothesis/contracts/edge_contracts.py",
+      "sha256": "b52957d6e7a79dd4f751d501dadd231019fc689cb9c2067007db0836f3874468"
+    },
+    {
+      "bytes": 558,
+      "path": "eve_trade_hypothesis/contracts/fault_contracts.py",
+      "sha256": "c8a30306fdb237a0db510da125d02754e466e275eda2be68c8b35bd413f43ba0"
+    },
+    {
+      "bytes": 44042,
+      "path": "eve_trade_hypothesis/contracts/repo_contracts.py",
+      "sha256": "48ee229452ae248053cf8606e3d55c85402c1918f75b11514d7f913cfb3a0caa"
+    },
+    {
+      "bytes": 63005,
+      "path": "eve_trade_hypothesis/contracts/trade_contracts.py",
+      "sha256": "c0d313def763ea48c103988167fa505dc68ed747dc3e118b3575fd82a6e9d53c"
+    },
+    {
+      "bytes": 3205,
+      "path": "eve_trade_hypothesis/engine.py",
+      "sha256": "db80458dd2337a62ebd861ab67125cfb8df4c63f9b1abbe53df1c6a6a8025d9e"
+    },
+    {
+      "bytes": 63587,
+      "path": "eve_trade_hypothesis/evidence_specs.py",
+      "sha256": "6d0dde0299ec7d70281ca395c03d084246b7b13807c5b910056555f3d6857846"
+    },
+    {
+      "bytes": 3725,
+      "path": "eve_trade_hypothesis/external.py",
+      "sha256": "027cfb7471a8ccad5a06860974c429cde445f69182e0ccec630cd8714d4d027b"
+    },
+    {
+      "bytes": 0,
+      "path": "eve_trade_hypothesis/generated/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 2134,
+      "path": "eve_trade_hypothesis/generated/test_category_003.py",
+      "sha256": "bd891ffcef7e4d5603bfeab91d7bfce1458454635c5f0f6c26adeaae585d9234"
+    },
+    {
+      "bytes": 1732,
+      "path": "eve_trade_hypothesis/generated/test_category_004.py",
+      "sha256": "3b96f24fc17917163c8e2c469804bc326e5835a226a9963a52824aeb650a663f"
+    },
+    {
+      "bytes": 2149,
+      "path": "eve_trade_hypothesis/generated/test_category_005.py",
+      "sha256": "38e83dade41c9949483b75f1240fc09d6baa1d42d21767f98f8ff832227a4737"
+    },
+    {
+      "bytes": 1589,
+      "path": "eve_trade_hypothesis/generated/test_category_006.py",
+      "sha256": "f07c6ce2e206bf9da2f38014291d1d02027c4e9a30fc71c196696fbc6a08019c"
+    },
+    {
+      "bytes": 871,
+      "path": "eve_trade_hypothesis/generated/test_category_007.py",
+      "sha256": "60db8d982f5f2fc6d5047287e751247da536f7b80f6bedd2c126d9cd955b93d5"
+    },
+    {
+      "bytes": 1188,
+      "path": "eve_trade_hypothesis/generated/test_category_008.py",
+      "sha256": "ef888768b8fb269cc52714b08e3247e6649b90b78cec65de60f3f980fd558c6b"
+    },
+    {
+      "bytes": 905,
+      "path": "eve_trade_hypothesis/generated/test_category_009.py",
+      "sha256": "7a3c5058e2ebc2611a0455ead112f79b201710a35d6fa0926800e87bdf06f2dd"
+    },
+    {
+      "bytes": 769,
+      "path": "eve_trade_hypothesis/generated/test_category_010.py",
+      "sha256": "e91edb3d0ad1faac808ab69402cfdc4625731164c71a45f7291371691ab6eac1"
+    },
+    {
+      "bytes": 627,
+      "path": "eve_trade_hypothesis/generated/test_category_011.py",
+      "sha256": "08d3e87360c50b2bcc0dd23611a4ae27b278deeb94ea4cfd75cdaa47d38bf3d7"
+    },
+    {
+      "bytes": 822,
+      "path": "eve_trade_hypothesis/generated/test_category_012.py",
+      "sha256": "8b2f5ead97229dc70334a4692b53b748f896e2cf1afdd73d035a4feabb578f78"
+    },
+    {
+      "bytes": 865,
+      "path": "eve_trade_hypothesis/generated/test_category_013.py",
+      "sha256": "864a63fc0561c9681a265647d34c4c0cc31ce344c3e22e6e314c4429ab552b43"
+    },
+    {
+      "bytes": 1795,
+      "path": "eve_trade_hypothesis/generated/test_category_014.py",
+      "sha256": "c853cb9b3bb18dd890feddb69b1daf8cdfec88301b873e5cb1402b5edcc904d8"
+    },
+    {
+      "bytes": 1688,
+      "path": "eve_trade_hypothesis/generated/test_category_015.py",
+      "sha256": "0bbb0cfdab9fbaf9f09861a25e9443366d898def6b1bc22e851d0954c01c5dfe"
+    },
+    {
+      "bytes": 916,
+      "path": "eve_trade_hypothesis/generated/test_category_016.py",
+      "sha256": "d8833b87c6d9fb43e73697882381d7f40bde8dd497705470fd68edbe491760a1"
+    },
+    {
+      "bytes": 683,
+      "path": "eve_trade_hypothesis/generated/test_category_017.py",
+      "sha256": "2d4567b81a567fc672d5ba3910d28f88e5b36ca760fff0566cb679d51af8653e"
+    },
+    {
+      "bytes": 1063,
+      "path": "eve_trade_hypothesis/generated/test_category_018.py",
+      "sha256": "8e3cf402d358f8d9b6c1b84f2b39fa4dfe238ff39c0ba847b4c0de3190e4f398"
+    },
+    {
+      "bytes": 1991,
+      "path": "eve_trade_hypothesis/generated/test_category_019.py",
+      "sha256": "4cdb9ff828e2daf87de7e5aad0d916f46023ea6f2549304bc9a2bb4bafb0d303"
+    },
+    {
+      "bytes": 1887,
+      "path": "eve_trade_hypothesis/generated/test_category_020.py",
+      "sha256": "0f30139bf99a9fe6276411b746dde0bdb0588319cb4c74e5632623b1fff423ea"
+    },
+    {
+      "bytes": 1011,
+      "path": "eve_trade_hypothesis/generated/test_category_021.py",
+      "sha256": "67a6c8b1d87e8b6a9bfeb05ef21607f8481d5ad4fbe9ab4d9622fd40ea02b63a"
+    },
+    {
+      "bytes": 893,
+      "path": "eve_trade_hypothesis/generated/test_category_022.py",
+      "sha256": "a03bdd132330a270e5ca6356ab916688b92159b694d50c430b9bd15c73737bd2"
+    },
+    {
+      "bytes": 671,
+      "path": "eve_trade_hypothesis/generated/test_category_023.py",
+      "sha256": "48e2cb3fef66220f589e7fcf7c67a5b31840642c5096e143b362e8acd0a7571f"
+    },
+    {
+      "bytes": 2360,
+      "path": "eve_trade_hypothesis/generated/test_category_024.py",
+      "sha256": "7069afac76e617fc9ddcd93681376e7935516ec09919b5d59ce924bdc345069b"
+    },
+    {
+      "bytes": 1128,
+      "path": "eve_trade_hypothesis/generated/test_category_025.py",
+      "sha256": "2dff7458deae73cc419c2d70c06ed6662a08c90f2f802a832f1bec53e03c37ff"
+    },
+    {
+      "bytes": 1229,
+      "path": "eve_trade_hypothesis/generated/test_category_026.py",
+      "sha256": "32e874658c2f614cc2fcf2504f965391572a9854f4e503bec9453ba72b5b913d"
+    },
+    {
+      "bytes": 838,
+      "path": "eve_trade_hypothesis/generated/test_category_027.py",
+      "sha256": "49501fc6df19fab4ceebecc182bea6eebf209545f0ce716826fed34f4840d85c"
+    },
+    {
+      "bytes": 833,
+      "path": "eve_trade_hypothesis/generated/test_category_028.py",
+      "sha256": "c69c47816a5dbd925305f58e4b11333d75b562b29556d97287eadd344576617c"
+    },
+    {
+      "bytes": 875,
+      "path": "eve_trade_hypothesis/generated/test_category_029.py",
+      "sha256": "423e1b73781a95831b9a4a72d8968f8a19d9dcd34e8ac82b7cfc26a19359a1d9"
+    },
+    {
+      "bytes": 812,
+      "path": "eve_trade_hypothesis/generated/test_category_030.py",
+      "sha256": "2427c053af6ce087bb55aa38ae5047c603b186281f8131d545a261a86e94c9b7"
+    },
+    {
+      "bytes": 750,
+      "path": "eve_trade_hypothesis/generated/test_category_031.py",
+      "sha256": "31ce0223d6fd0a2ceb3b022a0100ceeffb9bc45ea0d99de98785d87ea61978c5"
+    },
+    {
+      "bytes": 856,
+      "path": "eve_trade_hypothesis/generated/test_category_032.py",
+      "sha256": "11b1231c99df429a42bbae779195f2252fcbc66f68fbe496f81ed0131680a720"
+    },
+    {
+      "bytes": 1075,
+      "path": "eve_trade_hypothesis/generated/test_category_033.py",
+      "sha256": "34f89f14d5d6e84d06c3400c7e0d871c9a35c1ffda5783728ccaf94c652e5315"
+    },
+    {
+      "bytes": 1931,
+      "path": "eve_trade_hypothesis/generated/test_category_034.py",
+      "sha256": "5fd826d3edab9d926fb58b4d547c8e1363b1899799805ecbcfbc11490fc0c37d"
+    },
+    {
+      "bytes": 1153,
+      "path": "eve_trade_hypothesis/generated/test_category_035.py",
+      "sha256": "d035cbc2737327d1bcc0948a71234a103716fbb104425beb254649195fddff00"
+    },
+    {
+      "bytes": 863,
+      "path": "eve_trade_hypothesis/generated/test_category_036.py",
+      "sha256": "590b83939637512bef08028b0db9ef9ceb08f6a5022816032b17fa68079e39ca"
+    },
+    {
+      "bytes": 1030,
+      "path": "eve_trade_hypothesis/generated/test_category_037.py",
+      "sha256": "acc7868f04c226d8fd60365599f431390be1582a618270c9a72f4d0c605c12d4"
+    },
+    {
+      "bytes": 2210,
+      "path": "eve_trade_hypothesis/generated/test_category_038.py",
+      "sha256": "f80897290bc70c01aa8c4ff279904ba93f518113cdd9c14f60def2f5e9e940cb"
+    },
+    {
+      "bytes": 1120,
+      "path": "eve_trade_hypothesis/generated/test_category_041.py",
+      "sha256": "71e97cc68afc6122b6897d92cc1df0e8fb8ea261c981dcd2694ddb8accdfdc31"
+    },
+    {
+      "bytes": 1099,
+      "path": "eve_trade_hypothesis/generated/test_category_042.py",
+      "sha256": "bf741d34e1fb8367eef0e97a1a940af41a1168157d5902cf4f6f3b75c2793844"
+    },
+    {
+      "bytes": 1114,
+      "path": "eve_trade_hypothesis/generated/test_category_043.py",
+      "sha256": "332441b893e69ed26673c89d70110098382b7d747c83d9f2e117b65719b355ed"
+    },
+    {
+      "bytes": 1220,
+      "path": "eve_trade_hypothesis/generated/test_category_044.py",
+      "sha256": "a437d73d47be0829bdfb915eb9a8ccaef78e2755e7960f28578ce175ae472a4c"
+    },
+    {
+      "bytes": 1103,
+      "path": "eve_trade_hypothesis/generated/test_category_045.py",
+      "sha256": "e02b5dc943cc720f943dfc3fe919da38bcc2ee66490c97f730a039094b8bd7a7"
+    },
+    {
+      "bytes": 933,
+      "path": "eve_trade_hypothesis/generated/test_category_046.py",
+      "sha256": "fd0fecb531cbe5bfadf2794578136f639fb537706f6a3262b73cc2d736608b9f"
+    },
+    {
+      "bytes": 1103,
+      "path": "eve_trade_hypothesis/generated/test_category_047.py",
+      "sha256": "110580304332ee137bed3e36a6250b1feda0604929e4e9e02165f7b836f85fd2"
+    },
+    {
+      "bytes": 1215,
+      "path": "eve_trade_hypothesis/generated/test_category_048.py",
+      "sha256": "924bd0971429a3972255f63f4bdb17a54b633e071737868aa468d8bc5aeabd28"
+    },
+    {
+      "bytes": 873,
+      "path": "eve_trade_hypothesis/generated/test_category_049.py",
+      "sha256": "2126faa0871e02e2ba6fd0eb522dcaa8ee1381a1af6291fe9575e5223785c3bc"
+    },
+    {
+      "bytes": 1152,
+      "path": "eve_trade_hypothesis/generated/test_category_050.py",
+      "sha256": "0ba0ea708dc87c3c28711a0ae1373d3d00ebbdeae9f8cc0d5f61249ae41b6bac"
+    },
+    {
+      "bytes": 1161,
+      "path": "eve_trade_hypothesis/generated/test_category_051.py",
+      "sha256": "5e081fdab619b6e75de946ac4dc68ce753ce8c7ca73dafb099eadb9e803f7947"
+    },
+    {
+      "bytes": 1056,
+      "path": "eve_trade_hypothesis/generated/test_category_052.py",
+      "sha256": "289a535763115fd3d765ed9c0af08ad6cdd93480ebea08c458ba714af1ea6cc1"
+    },
+    {
+      "bytes": 982,
+      "path": "eve_trade_hypothesis/generated/test_category_053.py",
+      "sha256": "07220b68dc06486b8d6ec0f8c99cc131ee4c203d9f0a0c5dcbbfa7b0e12ae142"
+    },
+    {
+      "bytes": 1179,
+      "path": "eve_trade_hypothesis/generated/test_category_054.py",
+      "sha256": "6d4c913ece5f4419e65a1c81dc93e8c7df22bdd16d1c747e08f1b8bdd623526f"
+    },
+    {
+      "bytes": 974,
+      "path": "eve_trade_hypothesis/generated/test_category_055.py",
+      "sha256": "cc75fe59924e079ea4e7d747ee7160aff0748947c8c602dcbc783a0c5cc14c83"
+    },
+    {
+      "bytes": 1130,
+      "path": "eve_trade_hypothesis/generated/test_category_056.py",
+      "sha256": "d18dea3b449db5a02396c120164c611f09633887f39893ac11d60f2436804373"
+    },
+    {
+      "bytes": 1080,
+      "path": "eve_trade_hypothesis/generated/test_category_057.py",
+      "sha256": "4de4ffd48362bd17e595aeb6e51b056294881ea58cb0dff8368101dabf897444"
+    },
+    {
+      "bytes": 1639,
+      "path": "eve_trade_hypothesis/generated/test_category_058.py",
+      "sha256": "8d8d943288ed23eb3f33cba89856b785c41f6a43973cf6ae1a752993757f249e"
+    },
+    {
+      "bytes": 1991,
+      "path": "eve_trade_hypothesis/generated/test_category_059.py",
+      "sha256": "8cb1c2764fa6f02b08ef2958378d8ab069544c1def9d2556e38d8ebacf10df4e"
+    },
+    {
+      "bytes": 2067,
+      "path": "eve_trade_hypothesis/generated/test_category_060.py",
+      "sha256": "37a66ebe557f057a2a5c691b47d2a96f11844a0ee41edb9fd776c49cadf0f699"
+    },
+    {
+      "bytes": 1677,
+      "path": "eve_trade_hypothesis/generated/test_category_061.py",
+      "sha256": "20d155a8c1342bcf8d9eac2c76f08596c3684ec79ca7055b85488b45f08235c9"
+    },
+    {
+      "bytes": 1469,
+      "path": "eve_trade_hypothesis/generated/test_category_062.py",
+      "sha256": "1b09c270a7fc2be342493d90901c59ef4a8ba555dbfd7367518713a0ec41cab8"
+    },
+    {
+      "bytes": 1488,
+      "path": "eve_trade_hypothesis/generated/test_category_063.py",
+      "sha256": "e66ec976f530980f365837f61349519a8d9a7ec0f06074b8e3ab69ebb4b68957"
+    },
+    {
+      "bytes": 1453,
+      "path": "eve_trade_hypothesis/generated/test_category_064.py",
+      "sha256": "a50b98846d4adcc58432cb35061a5cff2868a9cbcf4ca37c3ce8cad38a6ee95a"
+    },
+    {
+      "bytes": 1501,
+      "path": "eve_trade_hypothesis/generated/test_category_065.py",
+      "sha256": "62ff701cee2e222aac897d97de658902cf67d9e851e006398b64b62b8337112f"
+    },
+    {
+      "bytes": 1518,
+      "path": "eve_trade_hypothesis/generated/test_category_066.py",
+      "sha256": "bafb168804068044684488d31bc48fc2b9d7c2ff116f9329879054951356dc01"
+    },
+    {
+      "bytes": 1171,
+      "path": "eve_trade_hypothesis/generated/test_category_067.py",
+      "sha256": "dd17910bddeb5c1912fe03b34f596841e6771a0b7c2a8c9ee556ca8b9d4e1f35"
+    },
+    {
+      "bytes": 1130,
+      "path": "eve_trade_hypothesis/generated/test_category_068.py",
+      "sha256": "01e0a13a591881c2d6b9985fd5ae755d272fcb01bfa6b4b9026a3ef66a60e556"
+    },
+    {
+      "bytes": 1130,
+      "path": "eve_trade_hypothesis/generated/test_category_069.py",
+      "sha256": "152dd1ccbd836ba9edc4519bd1dd84e6f50a2abc791c8ef9e759a0169c86016d"
+    },
+    {
+      "bytes": 1127,
+      "path": "eve_trade_hypothesis/generated/test_category_070.py",
+      "sha256": "068a2991afffd54ce1e589da07be6327e7f952a2641bd1966deff629d6f7f18f"
+    },
+    {
+      "bytes": 949,
+      "path": "eve_trade_hypothesis/generated/test_category_071.py",
+      "sha256": "e1de2aa51eade57ab25251506962eb3cb5742502bac610ff223d3005fa69724a"
+    },
+    {
+      "bytes": 1197,
+      "path": "eve_trade_hypothesis/generated/test_category_072.py",
+      "sha256": "f882eb62c445fa5588e8212ad6ae88181ce2aaf25552392fe3df37cac9e19d25"
+    },
+    {
+      "bytes": 1121,
+      "path": "eve_trade_hypothesis/generated/test_category_073.py",
+      "sha256": "c0d1dec66835f09f678e9a34cd89a46b99e96e2b6257408bd458e54622f26e88"
+    },
+    {
+      "bytes": 1138,
+      "path": "eve_trade_hypothesis/generated/test_category_074.py",
+      "sha256": "6102b62c44ee59156026730a4ddb945fa1d51b2861c3ff8b8b3b84079d01d573"
+    },
+    {
+      "bytes": 1235,
+      "path": "eve_trade_hypothesis/generated/test_category_075.py",
+      "sha256": "5b8fb61046ba575025742db6ec9dbf22764f1186a38f2adda4cde565e41f783d"
+    },
+    {
+      "bytes": 1227,
+      "path": "eve_trade_hypothesis/generated/test_category_076.py",
+      "sha256": "fd3304db04042aedb3f677461e3127719c7658b58527077436c4f018599bc89f"
+    },
+    {
+      "bytes": 1311,
+      "path": "eve_trade_hypothesis/generated/test_category_077.py",
+      "sha256": "e5e00f5c48da086be247f6b6cd75d64e3cdb428bf8deea3981880cb6c2bcd2d4"
+    },
+    {
+      "bytes": 1244,
+      "path": "eve_trade_hypothesis/generated/test_category_078.py",
+      "sha256": "4b9a12d07a26c0a571af1aab71b748151bc7e5b57b4e481fe31da8ed9753e5ab"
+    },
+    {
+      "bytes": 1322,
+      "path": "eve_trade_hypothesis/generated/test_category_079.py",
+      "sha256": "15fbe32dfe8fc2c0ca2fd7329efb7eeb53a3f5351b5f95bfbc801d44cae518d4"
+    },
+    {
+      "bytes": 1173,
+      "path": "eve_trade_hypothesis/generated/test_category_080.py",
+      "sha256": "d519ec406c210d07e53d7756470b7fec2de26dcacd11474f10d9590cbeba6419"
+    },
+    {
+      "bytes": 1173,
+      "path": "eve_trade_hypothesis/generated/test_category_081.py",
+      "sha256": "a4bf45ad833b5310eaea73b33db50ac5a1eb0ba53c720dc47af68b80b7573787"
+    },
+    {
+      "bytes": 1222,
+      "path": "eve_trade_hypothesis/generated/test_category_082.py",
+      "sha256": "084dfddd707fcabb9a84e90dfaa1485a527413ed2341275105472265f6824f87"
+    },
+    {
+      "bytes": 1300,
+      "path": "eve_trade_hypothesis/generated/test_category_083.py",
+      "sha256": "6c48a7cc468a80845c3c316723e81444ed1011d0c8ca3657665ae202e0aac232"
+    },
+    {
+      "bytes": 1189,
+      "path": "eve_trade_hypothesis/generated/test_category_084.py",
+      "sha256": "e96887ac3970b2d3da08177feaea3cff9ab83b6a134f157600afa7c4aacdd5bd"
+    },
+    {
+      "bytes": 1123,
+      "path": "eve_trade_hypothesis/generated/test_category_085.py",
+      "sha256": "4b46338939b4c955c6a55f4e4488f471f32339a2d9939246997f6383d53bc900"
+    },
+    {
+      "bytes": 1327,
+      "path": "eve_trade_hypothesis/generated/test_category_086.py",
+      "sha256": "dc442350f555a2de834ea340a48894ee2fcf788cf7cb25f5fab9c9e768fccfb6"
+    },
+    {
+      "bytes": 1359,
+      "path": "eve_trade_hypothesis/generated/test_category_087.py",
+      "sha256": "7686cb7ac0f45c4d1bf470b8aa83f91d648c485b0c67a5fd407966c5dd185e29"
+    },
+    {
+      "bytes": 1186,
+      "path": "eve_trade_hypothesis/generated/test_category_088.py",
+      "sha256": "e3f5ff2c6238e2d869a0a8910c6384b0c0e17e5b3d13636735b25034cdfcb006"
+    },
+    {
+      "bytes": 1153,
+      "path": "eve_trade_hypothesis/generated/test_category_089.py",
+      "sha256": "0b5fbc58e7ff29babcfb0fb5387d6cee28122560e3802a148909df71efb6fdd0"
+    },
+    {
+      "bytes": 1194,
+      "path": "eve_trade_hypothesis/generated/test_category_090.py",
+      "sha256": "f9c9ba081bc908d9195ab9320ed5eae5b2fb6cdc2a9e56199312ec1fb7e9a607"
+    },
+    {
+      "bytes": 1230,
+      "path": "eve_trade_hypothesis/generated/test_category_091.py",
+      "sha256": "0754db6e456ead5905e3da1ab95dcef1b7fa0445e6a57fe5c63da12d7a0edd5f"
+    },
+    {
+      "bytes": 1194,
+      "path": "eve_trade_hypothesis/generated/test_category_092.py",
+      "sha256": "dc9c4fc07959f10c333f56191fdf48f3d91549d763e4a5a9be5da12927a1b915"
+    },
+    {
+      "bytes": 1017,
+      "path": "eve_trade_hypothesis/generated/test_category_093.py",
+      "sha256": "48a45513fdfed2e0af508c6b07fb873635db77114eb26fb9b85f909817b603e1"
+    },
+    {
+      "bytes": 1276,
+      "path": "eve_trade_hypothesis/generated/test_category_094.py",
+      "sha256": "81d74332a20fe505a6f10a7530d81a11cbdc5e50eafb006ea36d6d531d77fac2"
+    },
+    {
+      "bytes": 1327,
+      "path": "eve_trade_hypothesis/generated/test_category_095.py",
+      "sha256": "7de681dff3d25bf910ec4c61ebf12a0c1bf15d98b78964d696530e801df38edb"
+    },
+    {
+      "bytes": 1065,
+      "path": "eve_trade_hypothesis/generated/test_category_096.py",
+      "sha256": "b54f62c949d9c5db84b6b8d8573516053b9b2d4226147de634cd39d3300ba835"
+    },
+    {
+      "bytes": 1073,
+      "path": "eve_trade_hypothesis/generated/test_category_097.py",
+      "sha256": "e0ac17b66d7b3df1a6ab7e1d4aeb5a30b1dbcdf6bc7ecf1bca884b8a4dbe2f65"
+    },
+    {
+      "bytes": 995,
+      "path": "eve_trade_hypothesis/generated/test_category_098.py",
+      "sha256": "493f55c0d94a7f4f3e7f2d87cb39ecf313295e91f6b970051b26b79150df6a45"
+    },
+    {
+      "bytes": 1087,
+      "path": "eve_trade_hypothesis/generated/test_category_099.py",
+      "sha256": "757459e61da471f751526cb4f71d41ecd0240b2fc3432eb16701bc1b2ac195ed"
+    },
+    {
+      "bytes": 1089,
+      "path": "eve_trade_hypothesis/generated/test_category_100.py",
+      "sha256": "bda79fec414ea2db336a4d93caca285711b7da2b11140dd57224cd8e93b0504d"
+    },
+    {
+      "bytes": 1031,
+      "path": "eve_trade_hypothesis/generated/test_category_101.py",
+      "sha256": "64f3de1ed73c99e07e2a39779f8f2d90c7844c31c4ff0078870c5d88bc13c8d9"
+    },
+    {
+      "bytes": 239,
+      "path": "eve_trade_hypothesis/generated/test_existing_01_test_load_slo.py",
+      "sha256": "7f654e86a41c3cfbe8d8e834f9b1aae0f6773b327dd9ebdeb3f0a4f415cf4033"
+    },
+    {
+      "bytes": 563,
+      "path": "eve_trade_hypothesis/generated/test_existing_02_test_suite_contract.py",
+      "sha256": "d1adcd7dd1e4d195292045011ab943fbce2f3e317154cea613f4114efcc10bd7"
+    },
+    {
+      "bytes": 7364,
+      "path": "eve_trade_hypothesis/generated/test_existing_03_test_trade_lifecycle.py",
+      "sha256": "7cc7c8053776408a2d92aaa4955ad1af1ef28789573b3dd50140d3b4108e525d"
+    },
+    {
+      "bytes": 1225,
+      "path": "eve_trade_hypothesis/generated/test_existing_04_test_udp_pool_regressions.py",
+      "sha256": "530fcc4bf50158540001344dfc339ebf544d9a6ba96bd3d8eb613ea6167c63a8"
+    },
+    {
+      "bytes": 13906,
+      "path": "eve_trade_hypothesis/live.py",
+      "sha256": "df1bb310264ffbf074718950ceaaba324c634c0fbf3bda710a9536454c59aabd"
+    },
+    {
+      "bytes": 864,
+      "path": "eve_trade_hypothesis/modes.py",
+      "sha256": "c4897e722673c01e13cfea71dd383bcfc7d3bb1bdd9f024535ea91b50efe59e4"
+    },
+    {
+      "bytes": 3704,
+      "path": "eve_trade_hypothesis/registry.py",
+      "sha256": "0bbb9fba1f5cb42bd183100ff2856b8e81ca80d4df83a3b7be893a57b71927d4"
+    },
+    {
+      "bytes": 9013,
+      "path": "eve_trade_hypothesis/repo.py",
+      "sha256": "3b60c886a72f207eec3f9bca72f229e61651ec15072b6b78781d5d5f10e1fd63"
+    },
+    {
+      "bytes": 1074,
+      "path": "eve_trade_hypothesis/runtime.py",
+      "sha256": "dbd95b02e797d45d0152000e716d905009ad1ece065c63a26069ad9ce0effee6"
+    },
+    {
+      "bytes": 28693,
+      "path": "eve_trade_hypothesis/semantic_overrides.py",
+      "sha256": "7575e0cd4b5e2ab9d8c7c4788a17f8ff21a8fe044e33a22f2ce42f6d86119f6e"
+    },
+    {
+      "bytes": 31820,
+      "path": "eve_trade_hypothesis/semantic_validation.py",
+      "sha256": "22d99f26530fcfaa0e71fcf7888afab98b9893f6325e28084ae12db7e482d36e"
+    },
+    {
+      "bytes": 5643,
+      "path": "eve_trade_hypothesis/strategies.py",
+      "sha256": "d9dbf51eb1e9455dbada3e8c6356c58320023897fb11e5f66589f5aa2e5453d2"
+    },
+    {
+      "bytes": 1449958,
+      "path": "evidence_specs.json",
+      "sha256": "93c05c3152657ecd67be08275406b19cb20e5b46ab62c7777b099927085f6527"
+    },
+    {
+      "bytes": 599,
+      "path": "pyproject.toml",
+      "sha256": "9d44b2a77c2565f2826ced801bb19caa11705bc3a5a311c80ca8473950c19c5c"
+    },
+    {
+      "bytes": 473,
+      "path": "pytest.ini",
+      "sha256": "cb52c1998c5750334230c305173f6ff8c218457d8de00c7bfdd37792212a6da3"
+    },
+    {
+      "bytes": 129,
+      "path": "requirements.txt",
+      "sha256": "c3e73703c031a701a861fd05fe56948ba5be567807c94aebb98e2c06bb470aa6"
+    },
+    {
+      "bytes": 2690,
+      "path": "second_pass_semantic_fixes.json",
+      "sha256": "8f23e3ceb07dd4fa4490049b3c6d09876af6b8abea032cdcda552658d40ccc0c"
+    },
+    {
+      "bytes": 25672,
+      "path": "semantic_override_manifest.json",
+      "sha256": "dba7217c1ea1e33afb7ce8b998a26d99a2c805430165b162689017961b5c1c78"
+    },
+    {
+      "bytes": 7946,
+      "path": "tests/test_catalog_registry.py",
+      "sha256": "1c5dfc03ca909256a6a19c26d80fdc68578aea00928d196f2ef4ad98a70d9543"
+    },
+    {
+      "bytes": 1175,
+      "path": "tools/export_evidence_specs.py",
+      "sha256": "3c40df671ef2f055de81eae29d1109c6d75361cb3831109bb11d0a95d4e3653a"
+    },
+    {
+      "bytes": 5239,
+      "path": "tools/verify_audit_resolutions.py",
+      "sha256": "d48e6720bd828120d6d66741a052e2686b65011bbe598c798530cfe1aea819d0"
+    },
+    {
+      "bytes": 4731,
+      "path": "tools/verify_generated_catalog.py",
+      "sha256": "8446e33fa81485b7a87f17312a018c5645aaaa64f087a7da10f24166e0de2b79"
+    }
+  ],
+  "package": "eve_trade_hypothesis_impl_fixed"
+}
