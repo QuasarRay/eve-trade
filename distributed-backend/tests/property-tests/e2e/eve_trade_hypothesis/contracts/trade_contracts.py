@@ -233,11 +233,29 @@ def _destination_stack(runtime, name: str, case: dict[str, Any]) -> None:
         return runtime.evidence.run(name,case)
     elif "nonexistent_explicit_destination_stack" in name:
         destination=str(_uid(case, "auto_004"))
-    elif "does_not_merge_into_seller_source_stack" in name:
-        destination=world.seller_stack_id
-    elif "does_not_merge_into_item_escrow_backing_stack" in name:
-        # Escrow id is not an item_stack id; supplying it as destination must fail.
-        destination=trade.item_stack_escrow_id
+    elif "does_not_merge_into_seller_source_stack" in name or "does_not_merge_into_item_escrow_backing_stack" in name:
+        # Exercise a successful accept with automatic destination selection.  The
+        # old branch supplied a deliberately forbidden destination and greened on
+        # an ownership/not-found rejection, which never exercised merge behavior.
+        seller_before=int(live.item_stack_row(world.seller_stack_id)["quantity"])
+        escrow_before=int(live.item_escrow_row(trade)["quantity"])
+        buyer_before=int(live.scalar(
+            "SELECT COALESCE(SUM(quantity),0) FROM item_stack WHERE owner_id=%s AND item_type_id=%s AND station_id=%s",
+            (world.buyer_id,world.item_type_id,world.station_id),
+        ) or 0)
+        live.accept_trade(world,trade,quantity=1)
+        buyer_after=int(live.scalar(
+            "SELECT COALESCE(SUM(quantity),0) FROM item_stack WHERE owner_id=%s AND item_type_id=%s AND station_id=%s",
+            (world.buyer_id,world.item_type_id,world.station_id),
+        ) or 0)
+        assert int(live.item_stack_row(world.seller_stack_id)["quantity"])==seller_before
+        assert int(live.item_escrow_row(trade)["quantity"])==escrow_before-1
+        assert buyer_after==buyer_before+1
+        assert live.scalar(
+            "SELECT count(*) FROM item_stack WHERE item_stack_id=%s",
+            (trade.item_stack_escrow_id,),
+        )==0
+        return
     elif "concurrent_accepts_into_same_destination_stack" in name:
         trade=live.create_trade(world,quantity=8,unit_price_isk=price,idempotency_key=f"issue2-{_uid(case, "auto_005")}",item_stack_quantity=seller_q-4)
         q=2
@@ -677,13 +695,13 @@ def _assert_plan_from_batch(runtime,name,key,intent,world,trade,case):
     live=runtime.live
     row=live.batch_row(key)
     if "intent_is_" in name:
-        if "intent" in row: assert str(row["intent"]).upper()==intent
-        else: return runtime.evidence.run(name,{"batch":row,**case})
+        assert "intent" in row, "settlement_batch.intent is required for the plan oracle"
+        assert str(row["intent"]).upper()==intent
         return
     if "caused_by_capsuleer_id" in name:
         expected=world.seller_id if intent in {"ISSUE","CANCEL"} else world.buyer_id
-        if "caused_by_capsuleer_id" in row: assert int(row["caused_by_capsuleer_id"])==expected
-        else: return runtime.evidence.run(name,{"batch":row,**case})
+        assert "caused_by_capsuleer_id" in row, "settlement_batch.caused_by_capsuleer_id is required for the plan oracle"
+        assert int(row["caused_by_capsuleer_id"])==expected
         return
     if "created_by_service" in name:
         value=str(row.get("created_by_service") or ""); assert value and "market" in value.lower(); return
@@ -805,9 +823,9 @@ def _reconciliation(runtime, name: str, case: dict[str, Any]) -> None:
     if "wallet_current_balance_equals_initial_balance_plus_sum_of_committed_wallet_ledger_deltas" in name or "item_stack_current_quantity_equals_initial_quantity_plus_sum_of_committed_item_ledger_deltas" in name:
         return runtime.evidence.run(name,case)
     if "completed_trade_has_zero" in name:
-        live.accept_trade(world,trade,quantity=5,buyer_destination_item_stack_id=world.buyer_stack_id,idempotency_key=f"r3-{_uid(case, "auto_050")}"); assert int(live.trade_row(trade)["remaining_quantity"])==0 and int(live.item_escrow_row(trade)["quantity"])==0; return
+        live.accept_trade(world,trade,quantity=5,buyer_destination_item_stack_id=world.buyer_stack_id,idempotency_key=f"r3-{_uid(case, "auto_050")}"); row=live.trade_row(trade); assert str(row["trade_state"]).upper()=="COMPLETED" and int(row["remaining_quantity"])==0 and int(live.item_escrow_row(trade)["quantity"])==0; return
     if "cancelled_trade_has_zero" in name:
-        live.cancel_trade(world,trade,idempotency_key=f"rc-{_uid(case, "auto_051")}"); assert int(live.trade_row(trade)["remaining_quantity"])==0 and int(live.item_escrow_row(trade)["quantity"])==0; return
+        live.cancel_trade(world,trade,idempotency_key=f"rc-{_uid(case, "auto_051")}"); row=live.trade_row(trade); assert str(row["trade_state"]).upper()=="CANCELLED" and int(row["remaining_quantity"])==0 and int(live.item_escrow_row(trade)["quantity"])==0; return
     if "sum_of_wallet_balances" in name: assert final.total_isk==initial.total_isk; return
     if "sum_of_item_stacks" in name: assert final.total_items==initial.total_items; return
     if "failed_and_rolled_back" in name or "idempotent_replays" in name or "random_crash" in name:
@@ -877,6 +895,8 @@ def _batch_step_consistency(runtime, name: str, case: dict[str, Any]) -> None:
     if "completed_settlement_batch_has_every_required_step_completed" in name:
         assert str(batch["batch_state"]).upper()=="COMPLETED"; assert steps; assert all(str(s.get("step_state",s.get("state","COMPLETED"))).upper() in {"COMPLETED","SUCCEEDED"} for s in steps); return
     if "completed_settlement_batch_has_zero_failed_steps" in name:
+        assert str(batch["batch_state"]).upper()=="COMPLETED"
+        assert steps
         assert not any(str(s.get("step_state",s.get("state",""))).upper()=="FAILED" for s in steps); return
     if "step_ordinal_values_are_contiguous" in name:
         vals=[int(s.get("step_index",i)) for i,s in enumerate(steps)]; assert vals==list(range(min(vals),min(vals)+len(vals))) if vals else False; return

@@ -46,7 +46,11 @@ for executable in "${required_executables[@]}"; do
 done
 
 if ! kind get clusters | grep -Fxq "$cluster_name"; then
-  kind create cluster --name "$cluster_name" --config .github/kind-e2e.yaml --wait 120s
+  kind_create_args=(create cluster --name "$cluster_name" --config .github/kind-e2e.yaml --wait 120s)
+  if [[ -n "${EVE_TRADE_KIND_NODE_IMAGE:-}" ]]; then
+    kind_create_args+=(--image "$EVE_TRADE_KIND_NODE_IMAGE")
+  fi
+  kind "${kind_create_args[@]}"
   created_cluster=1
 fi
 
@@ -145,4 +149,16 @@ export EVE_TRADE_EDGE_BUYER_SECRET=buyer-player-secret
 export EVE_TRADE_EDGE_OTHER_KEY_ID=other
 export EVE_TRADE_EDGE_OTHER_SECRET=other-player-secret
 
-python distributed-backend/observability/ci/observed_run.py integration --strict
+if [[ -n "${EVE_TRADE_E2E_RUNNER:-}" ]]; then
+  case "$EVE_TRADE_E2E_RUNNER" in
+    distributed-backend/tests/property-tests/infra/*.sh)
+      bash "$EVE_TRADE_E2E_RUNNER"
+      ;;
+    *)
+      echo "refusing unapproved E2E runner path: $EVE_TRADE_E2E_RUNNER" >&2
+      exit 64
+      ;;
+  esac
+else
+  python distributed-backend/observability/ci/observed_run.py integration --strict
+fi

@@ -390,7 +390,7 @@ def validate_audited_semantics(name: str, result: dict[str, Any]) -> None:
         _true(result, 'scenario.first_action_valid_with_fresh_interaction_id')
         _true(result, 'scenario.second_action_valid_with_fresh_interaction_id')
         _eq(result, 'outcome.error_code', 'replay_conflict')
-    elif name == 'test_issue_response_does_not_echo_client_item_type_claim_when_it_differs_from_authoritative_source_stack_item_type':
+    elif name == 'test_issue_rejects_item_stack_with_wrong_item_type_claim':
         _different(result, 'state.client_claimed_item_type', 'state.authoritative_source_stack_item_type')
         _same(result, 'state.response_item_type', 'state.authoritative_source_stack_item_type')
         _different(result, 'state.response_item_type', 'state.client_claimed_item_type')

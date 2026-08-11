@@ -86,11 +86,36 @@ def _all_generated_catalog_names() -> list[str]:
     )
 
 
+def _executable_test_references(text: str) -> set[str]:
+    """Extract function identities only from executable pytest selectors.
+
+    Bare ``test_*`` prose is commonly an example, historical report, file stem,
+    or placeholder. Treating every Markdown token as a live node reference made
+    the traceability contract evaluate unrelated prose instead of automation.
+    """
+    references = set(re.findall(r"::(test_[a-z0-9_]+)\b", text))
+    references.update(
+        re.findall(
+            r"(?:^|\s)(?:-k|--deselect(?:=|\s))\s*[\"']?(test_[a-z0-9_]+)\b",
+            text,
+            re.MULTILINE,
+        )
+    )
+    return references
+
+
 def _naming_quality(repo, name: str) -> None:
     names = _all_generated_catalog_names()
     assert names
     if name == "test_proposed_test_names_contain_no_placeholder_words_todo_fixme_or_tbd":
-        bad = [n for n in names if re.search(r"(?:^|_)(todo|fixme|tbd)(?:_|$)", n)]
+        # The policy contract must name the forbidden tokens to define the
+        # check. Evaluate the subject catalog, excluding that self-reference.
+        bad = [
+            candidate
+            for candidate in names
+            if candidate != name
+            and re.search(r"(?:^|_)(todo|fixme|tbd)(?:_|$)", candidate)
+        ]
         assert not bad, bad[:20]
         return
     if name == "test_proposed_test_names_contain_no_vague_success_verbs":
@@ -122,7 +147,14 @@ def _naming_quality(repo, name: str) -> None:
         assert not bad, bad
         return
     if name == "test_proposed_test_names_do_not_encode_two_alternative_expected_outcomes_with_rejected_or_accepted_wording":
-        bad = [n for n in names if re.search(r"_(rejected|accepted)_or_(rejected|accepted)_", n)]
+        bad = [
+            candidate
+            for candidate in names
+            if candidate != name
+            and re.search(
+                r"_(rejected|accepted)_or_(rejected|accepted)_", candidate
+            )
+        ]
         assert not bad, bad
         return
     if name == "test_proposed_test_names_are_unique_across_categories_except_explicit_priority_index":
@@ -191,11 +223,20 @@ def _traceability(runtime, name: str) -> None:
     if "crash_failpoint" in name or "production_configuration_key" in name or "terraform_root" in name or "kubernetes_production_overlay" in name or "proto_breaking_sensitive_field" in name:
         return runtime.evidence.run(name, {"python_tests": len(py_tests), "go_tests": len(go_tests)})
     if "referenced_test_name_no_longer_exists" in name:
-        # Scan markdown/yaml test-name references and require each exact test_ token
-        # to resolve to a Python test or the generated Hypothesis catalog.
+        # Scan executable automation selectors. Bare prose tokens are examples,
+        # file stems, historical reports, and placeholders rather than nodes.
         referenced: set[str] = set()
-        for p in repo.existing_paths(["**/*.md", ".github/**/*.yaml", ".github/**/*.yml"]):
-            referenced.update(re.findall(r"\btest_[a-z0-9_]+\b", repo.read(p)))
+        for p in repo.existing_paths(
+            [
+                ".github/workflows/**/*.yaml",
+                ".github/workflows/**/*.yml",
+                ".github/actions/**/*.yaml",
+                ".github/actions/**/*.yml",
+                "scripts/**/*.sh",
+                "distributed-backend/ci/**/*.sh",
+            ]
+        ):
+            referenced.update(_executable_test_references(repo.read(p)))
         known = set(py_tests) | proposed_names()
         stale = sorted(n for n in referenced if n.startswith("test_") and n not in known)
         assert not stale, stale[:50]
@@ -278,8 +319,25 @@ def _ci_contract(runtime, category: int, name: str, case: dict[str, Any]) -> Non
         assert not missing, missing
         return
     if "command_identity_is_unique" in name:
-        identities = re.findall(r"command-identity:\s*([^\s#]+)", workflow_text)
-        assert identities and len(identities) == len(set(identities)), identities
+        records=[]
+        for path,wf in workflows:
+            for job_id,job in (wf.get("jobs") or {}).items():
+                if not isinstance(job,dict):
+                    continue
+                evidence_steps=[
+                    step for step in (job.get("steps") or [])
+                    if isinstance(step,dict) and step.get("uses")=="./.github/actions/ci-evidence"
+                ]
+                if not any((step.get("with") or {}).get("mode") in {"start","run"} for step in evidence_steps):
+                    continue
+                finish=[step for step in evidence_steps if (step.get("with") or {}).get("mode")=="finish"]
+                assert len(finish)==1,(str(path),job_id,"expected one finish evidence step")
+                identity=str((finish[0].get("with") or {}).get("command-identity") or "")
+                assert identity and identity!="unspecified",(str(path),job_id,"missing command identity")
+                records.append((str(path),str(job_id),identity))
+        assert records,"no required verification jobs with CI evidence"
+        identities=[identity for _,_,identity in records]
+        assert len(identities)==len(set(identities)),records
         return
     if "checked_out_commit_sha" in name or "same_workflow_run_and_commit" in name or "artifact_checksum" in name or "evidence_finish_status" in name or "missing_ci_evidence" in name or "truncated_ci_evidence" in name:
         return runtime.evidence.run(name, case)
@@ -412,7 +470,7 @@ def _terraform_contract(runtime, category: int, name: str, case: dict[str, Any])
 
 def _kubernetes_contract(runtime, category: int, name: str, case: dict[str, Any]) -> None:
     repo = runtime.repo
-    docs = repo.kubernetes_documents()
+    docs = repo.rendered_kubernetes_documents()
     if not docs:
         repo.unavailable("no Kubernetes YAML found")
 
@@ -424,6 +482,10 @@ def _kubernetes_contract(runtime, category: int, name: str, case: dict[str, Any]
                 template = spec.get("template") or (spec.get("jobTemplate") or {}).get("spec", {}).get("template") or {}
                 ps = template.get("spec") or {}
                 yield path, doc, ps
+
+    workloads=list(pod_specs())
+    assert workloads,"no Kubernetes workload pod specs found in orchestration manifests"
+    assert any((ps.get("containers") or []) for _,_,ps in workloads),"Kubernetes workload set contains no application containers"
 
     if "runs_as_non_root" in name:
         bad = []
@@ -633,18 +695,72 @@ def _supply_chain_contract(runtime, name: str, case: dict[str, Any]) -> None:
 
 
 def _nsq_contract(runtime, name: str, case: dict[str, Any]) -> None:
-    repo=runtime.repo
-    blob=repo.all_text(["distributed-backend/src/**/*.go", "infra/encore/**/*.json", "distributed-backend/ci-cd/**/*.yaml", "distributed-backend/ci-cd/**/*.yml"])
+    repo = runtime.repo
+    blob = repo.all_text(["distributed-backend/src/**/*.go", "infra/encore/**/*.json", "distributed-backend/ci-cd/**/*.yaml", "distributed-backend/ci-cd/**/*.yml"])
     if "settlement_work_topic_name_matches" in name:
         assert "settlement-work" in blob
         return
     if "settlement_result_topic_name_matches" in name:
         assert "settlement-results" in blob
         return
-    if "non_ephemeral_channel" in name or "rejects_ephemeral_channel" in name:
-        assert "trade-settlement-executor" in blob
-        assert "market-settlement-result-projection" in blob
-        assert "#ephemeral" not in blob
+    durable_bindings = {
+        "test_settlement_worker_uses_non_ephemeral_channel_for_correctness_critical_work": {
+            "source": "distributed-backend/src/settlementworker/service.go",
+            "topic_symbol": "WorkTopic",
+            "topic_name": "settlement-work",
+            "subscription": "trade-settlement-executor",
+        },
+        "test_settlement_result_consumer_uses_non_ephemeral_channel_for_correctness_critical_results": {
+            "source": "distributed-backend/src/market/settlement_result.go",
+            "topic_symbol": "ResultTopic",
+            "topic_name": "settlement-results",
+            "subscription": "market-settlement-result-projection",
+        },
+    }
+    if name in durable_bindings:
+        binding = durable_bindings[name]
+        source = repo.read(binding["source"])
+        topic_source = repo.read("distributed-backend/src/settlement/work.go")
+        assert re.search(
+            rf"pubsub\.NewSubscription\(\s*settlement\.{binding['topic_symbol']}\s*,\s*"
+            rf'"{re.escape(binding["subscription"])}"\s*,',
+            source,
+        ), f"consumer source does not bind {binding['topic_symbol']} to {binding['subscription']}"
+        assert re.search(
+            rf"var\s+{binding['topic_symbol']}\s*=\s*pubsub\.NewTopic\[[^\]]+\]\(\s*"
+            rf'"{re.escape(binding["topic_name"])}"\s*,',
+            topic_source,
+        ), f"topic symbol {binding['topic_symbol']} does not declare {binding['topic_name']}"
+        assert "#ephemeral" not in binding["subscription"].lower()
+
+        config_paths = repo.require_paths(
+            ["infra/encore/self-host*.nsq.json"],
+            purpose="NSQ self-host subscription configuration",
+        )
+        for config_path in config_paths:
+            config = json.loads(repo.read(config_path))
+            backends = config.get("pubsub")
+            assert isinstance(backends, list) and backends, f"{config_path} has no pubsub backends"
+            configured = []
+            for backend in backends:
+                if not isinstance(backend, dict) or backend.get("type") != "nsq":
+                    continue
+                topics = backend.get("topics") or {}
+                topic = topics.get(binding["topic_name"]) if isinstance(topics, dict) else None
+                subscriptions = topic.get("subscriptions") if isinstance(topic, dict) else None
+                subscription = (
+                    subscriptions.get(binding["subscription"])
+                    if isinstance(subscriptions, dict)
+                    else None
+                )
+                if isinstance(subscription, dict):
+                    configured.append(subscription)
+            assert len(configured) == 1, (
+                f"{config_path} must configure exactly one {binding['topic_name']}/"
+                f"{binding['subscription']} NSQ binding"
+            )
+            assert configured[0].get("name") == binding["subscription"]
+            assert "#ephemeral" not in str(configured[0].get("name", "")).lower()
         return
     if "max_in_flight" in name or "message_timeout" in name or "requeue_delay" in name or "auth_or_tls" in name or "restart_preserves" in name:
         return runtime.evidence.run(name, case)

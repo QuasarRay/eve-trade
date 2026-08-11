@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import base64
 import hashlib
 import hmac
@@ -53,6 +52,7 @@ class LiveAdapter:
         self._settlement = None
         self._edge = None
         self._lock = threading.RLock()
+        self._database_lock_held = False
 
     @property
     def helpers(self) -> ModuleType:
@@ -97,6 +97,20 @@ class LiveAdapter:
         self.require_basic()
         if self._db is None:
             self._db = self.helpers.Database(os.environ["EVE_TRADE_DATABASE_URL"])
+            # Database.reset() truncates the complete shared E2E schema.  A
+            # session-level lock makes cross-process collision impossible while
+            # keeping the lock on the same connection for this runtime's life.
+            acquired = self._db.scalar(
+                "SELECT pg_try_advisory_lock(%s, %s)",
+                (0x45564554, 0x52414445),  # "EVET" / "RADE"
+            )
+            if acquired is not True:
+                self._db.close()
+                self._db = None
+                self.unavailable(
+                    "another EVE Trade property runtime owns the destructive database-reset lock"
+                )
+            self._database_lock_held = True
         return self._db
 
     @property
@@ -138,11 +152,24 @@ class LiveAdapter:
                 self.helpers.wait_for_pubsub_idle(nsq_http)
 
     def close(self) -> None:
+        errors: list[BaseException] = []
         for value in (self._edge, self._settlement, self._gateway, self._db):
             if value is not None:
-                with contextlib.suppress(Exception):
+                try:
+                    if value is self._db and self._database_lock_held:
+                        released = value.scalar(
+                            "SELECT pg_advisory_unlock(%s, %s)",
+                            (0x45564554, 0x52414445),
+                        )
+                        if released is not True:
+                            raise RuntimeError("property database advisory lock was not held at cleanup")
+                        self._database_lock_held = False
                     value.close()
+                except BaseException as exc:  # cleanup failure must fail the test
+                    errors.append(exc)
         self._edge = self._settlement = self._gateway = self._db = None
+        if errors:
+            raise ExceptionGroup("EVE Trade property runtime cleanup failed", errors)
 
     def seed_world(self, **kwargs: Any):
         return self.helpers.seed_world(self.db, **kwargs)

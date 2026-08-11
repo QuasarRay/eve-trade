@@ -5,6 +5,8 @@ from typing import Any
 
 from hypothesis import strategies as st
 
+from eve_trade_hypothesis.requirements import litmus_contract_for, requirement_for
+
 
 SMALL_QUANTITY = st.integers(min_value=1, max_value=20)
 SMALL_PRICE = st.integers(min_value=1, max_value=10_000)
@@ -19,6 +21,21 @@ def _base(**extra):
     return st.fixed_dictionaries(values)
 
 
+def _litmus_strategy(name: str):
+    parameters: dict[str, Any] = {"nonce": NONCE}
+    for parameter, spec in litmus_contract_for(name)["generated_parameters"].items():
+        if "values" in spec:
+            parameters[parameter] = st.sampled_from(spec["values"])
+        elif "min" in spec and "max" in spec:
+            parameters[parameter] = st.integers(
+                min_value=int(spec["min"]),
+                max_value=int(spec["max"]),
+            )
+        else:
+            raise RuntimeError(f"unsupported Litmus strategy specification for {name}.{parameter}")
+    return st.fixed_dictionaries(parameters)
+
+
 def contract_strategy(category: int, name: str):
     """Return input generation that can actually reach the named boundary.
 
@@ -26,6 +43,9 @@ def contract_strategy(category: int, name: str):
     token matching; the previous ordering accidentally starved several sequence
     properties of their ``ops`` input.
     """
+    if requirement_for(name)["mechanism"] == "LITMUS_CHAOS":
+        return _litmus_strategy(name)
+
     if category in {32, 33, 83}:
         operation = st.sampled_from(["issue", "accept", "cancel", "retry", "invalid"])
         valid_operation = st.sampled_from(["issue", "accept", "cancel", "retry"])
@@ -44,6 +64,17 @@ def contract_strategy(category: int, name: str):
                 st.just("retry"),
                 st.lists(valid_operation, min_size=0, max_size=12),
             ).map(lambda parts: [*parts[0], parts[1], *parts[2]])
+        elif category == 32 and name.startswith(
+            "test_random_domain_valid_issue_accept_cancel_sequence_preserves_total_"
+        ):
+            # Conservation must be checked after a real state transition in every
+            # example.  A free list previously shrank to ``["retry"]`` or
+            # ``["invalid"]`` and proved only that doing nothing conserves state.
+            ops = st.tuples(
+                st.just("issue"),
+                st.sampled_from(["accept", "cancel"]),
+                st.lists(valid_operation, min_size=0, max_size=18),
+            ).map(lambda parts: [parts[0], parts[1], *parts[2]])
         else:
             ops = st.lists(operation, min_size=1, max_size=40)
         extra = {}

@@ -22,12 +22,14 @@ class ContractRuntime:
             repo_root=self.config.repo_root,
             strict=self.config.strict,
             role="fault",
+            run_id=self.config.run_id,
         )
         self.evidence = ExternalContractDriver(
             self.config.evidence_driver,
             repo_root=self.config.repo_root,
             strict=self.config.strict,
             role="evidence",
+            run_id=self.config.run_id,
         )
 
     def close(self) -> None:

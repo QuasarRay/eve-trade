@@ -9,19 +9,31 @@ import pytest
 
 from eve_trade_hypothesis.catalog import load_catalog
 from eve_trade_hypothesis.contracts import edge_contracts, fault_contracts, repo_contracts, trade_contracts
-from eve_trade_hypothesis.modes import runner_for
-from eve_trade_hypothesis.semantic_overrides import SEMANTIC_EVIDENCE_OVERRIDES
+from eve_trade_hypothesis.requirements import requirement_for
 
 
 def execute_contract(runtime, category: int, name: str, case: dict[str, Any]) -> None:
-    # Known weak direct implementations from the first audit are deliberately
-    # unreachable.  Protocol-v2 evidence requires raw observations and evaluates
-    # the named invariant in this Python process instead of trusting a boolean.
-    if name in SEMANTIC_EVIDENCE_OVERRIDES:
+    requirement = requirement_for(name)
+    mechanism = requirement["mechanism"]
+    if mechanism == "NON_APPLICABLE":
+        pytest.skip(requirement["rationale"])
+    if requirement["implementation_status"] in {
+        "SEMANTIC_ORACLE_REQUIRED",
+        "EXTERNAL_CAPABILITY_REQUIRED",
+        "INFRASTRUCTURE_READY",
+    }:
+        blockers = "; ".join(requirement.get("blockers", []))
+        runtime.live.unavailable(
+            f"{name} is fail-closed ({requirement['implementation_status']}) until its "
+            f"named independent oracle and physical capability are implemented: {blockers}"
+        )
+    if mechanism == "LITMUS_CHAOS":
+        runtime.fault.run(name, {"category": category, **case})
+        return
+    if mechanism == "PLATFORM_EXTERNAL":
         runtime.evidence.run(name, {"category": category, **case})
         return
-
-    runner = runner_for(category)
+    runner = str(requirement["runner"])
     if runner == "edge":
         edge_contracts.run(runtime, category, name, case)
         return
@@ -37,13 +49,8 @@ def execute_contract(runtime, category: int, name: str, case: dict[str, Any]) ->
     raise AssertionError(f"unknown contract runner {runner!r} for category {category}")
 
 
-def execute_existing(runtime, name: str, hash_seed: int) -> None:
-    """Re-run an existing native E2E test under Hypothesis-controlled process state.
-
-    Existing repository tests retain their native assertions.  Hypothesis varies
-    Python's hash seed across isolated pytest subprocesses, which is meaningful
-    for order/hash-sensitive bugs without replacing the original test logic.
-    """
+def execute_existing(runtime, name: str) -> None:
+    """Run an existing native E2E test once with its original semantic oracle."""
     catalog = load_catalog()
     meta = catalog["existing"].get(name)
     if meta is None:
@@ -57,7 +64,8 @@ def execute_existing(runtime, name: str, hash_seed: int) -> None:
         # must not turn an experimental-only native test into a failing main test.
         pytest.skip(f"{name} is not present on target branch {branch!r}")
 
-    repo = runtime.repo.require_repo()
+    runtime.repo.require_repo()
+    repo = runtime.repo.root
     target = repo / "distributed-backend" / "tests" / "e2e" / native_file
     if not target.exists():
         message = f"native E2E file missing for {name}: {target}"
@@ -66,7 +74,6 @@ def execute_existing(runtime, name: str, hash_seed: int) -> None:
         pytest.skip(message)
 
     env = os.environ.copy()
-    env["PYTHONHASHSEED"] = str(hash_seed)
     # The nested native test must not recursively collect this standalone
     # property package merely because it is adjacent to the checkout.
     env["EVE_TRADE_HYPOTHESIS_NATIVE_CHILD"] = "1"

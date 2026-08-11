@@ -46,6 +46,9 @@
     "scope_weaker_than_name",
     "concurrency_not_exercised"
   ],
+  "test_database_queries_do_not_construct_table_or_column_names_from_untrusted_request_fields": [
+    "regex_taint_proxy"
+  ],
   "test_deployed_backend_image_sha_matches_ci_commit_sha": [
     "sha_presence_not_equality"
   ],
@@ -245,14 +248,14 @@
   "test_issue_rejects_item_stack_owned_by_different_authenticated_principal": [
     "wrong_security_boundary"
   ],
+  "test_issue_rejects_item_stack_with_wrong_item_type_claim": [
+    "contradictory_contract"
+  ],
   "test_issue_rejects_nonexistent_seller": [
     "nonexistent_seller_not_isolated"
   ],
   "test_issue_rejects_source_stack_referencing_nonexistent_station": [
     "wrong_state_mutation"
-  ],
-  "test_issue_response_does_not_echo_client_item_type_claim_when_it_differs_from_authoritative_source_stack_item_type": [
-    "contradictory_contract"
   ],
   "test_issue_then_cancel_restores_original_item_state": [
     "partial_state"
@@ -301,6 +304,12 @@
   ],
   "test_no_terraform_output_exposes_hmac_secret": [
     "name_stronger_than_logic"
+  ],
+  "test_nsqd_configuration_rejects_ephemeral_channel_name_for_settlement_results": [
+    "configuration_rejection_not_exercised"
+  ],
+  "test_nsqd_configuration_rejects_ephemeral_channel_name_for_settlement_work": [
+    "configuration_rejection_not_exercised"
   ],
   "test_outbox_dispatch_query_uses_index_covering_unpublished_rows_and_claim_order": [
     "index_existence_not_usage"
@@ -431,6 +440,9 @@
   ],
   "test_rendered_kubernetes_configures_resource_requests_and_limits": [
     "half_assertion"
+  ],
+  "test_rendered_kubernetes_does_not_embed_plaintext_secrets": [
+    "unrendered_manifest_scope"
   ],
   "test_rendered_manifest_sha_matches_deployed_manifest_sha": [
     "sha_presence_not_equality"

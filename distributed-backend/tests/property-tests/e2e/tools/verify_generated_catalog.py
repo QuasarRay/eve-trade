@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Zero-dependency structural check of catalog, generated modules, and routes."""
 from __future__ import annotations
 
 import ast
@@ -8,9 +9,14 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+
 ROOT = Path(__file__).resolve().parents[1]
+PROPERTY_ROOT = ROOT.parent
 CATALOG_PATH = ROOT / "eve_trade_hypothesis" / "catalog.json"
 GENERATED = ROOT / "eve_trade_hypothesis" / "generated"
+AUTHORITATIVE = PROPERTY_ROOT / "tests-to-implement.md"
+REQUIREMENTS = PROPERTY_ROOT / "infra" / "test-requirements.json"
+LITMUS = PROPERTY_ROOT / "infra" / "litmus-contracts.json"
 
 
 def constants(path: Path) -> dict[str, object]:
@@ -27,90 +33,123 @@ def constants(path: Path) -> dict[str, object]:
 
 def main() -> int:
     catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
-    expected_proposed = {n for c in catalog["categories"].values() for n in c["names"]}
+    requirements_doc = json.loads(REQUIREMENTS.read_text(encoding="utf-8"))
+    litmus_doc = json.loads(LITMUS.read_text(encoding="utf-8"))
+    authoritative = re.findall(
+        r"`(test_[a-z0-9_]+)`", AUTHORITATIVE.read_text(encoding="utf-8")
+    )
+    expected_proposed = {name for category in catalog["categories"].values() for name in category["names"]}
     expected_existing = set(catalog["existing"])
-
+    requirement_records = {record["name"]: record for record in requirements_doc["contracts"]}
     proposed: list[str] = []
     existing: list[str] = []
     categories: set[int] = set()
     errors: list[str] = []
 
     for path in GENERATED.glob("test_category_*.py"):
-        c = constants(path)
-        category = int(c["CATEGORY_ID"])
+        item = constants(path)
+        category = int(item["CATEGORY_ID"])
         categories.add(category)
-        names = list(c["CONTRACT_NAMES"])
+        names = list(item["CONTRACT_NAMES"])
         proposed.extend(names)
-        expected = catalog["categories"].get(str(category), {}).get("names")
-        if names != expected:
+        if names != catalog["categories"].get(str(category), {}).get("names"):
             errors.append(f"{path.name}: CONTRACT_NAMES differs from catalog")
-
     for path in GENERATED.glob("test_existing_*.py"):
-        c = constants(path)
-        existing.extend(c["CONTRACT_NAMES"])
+        existing.extend(constants(path)["CONTRACT_NAMES"])
 
     for label, values, expected in (
         ("proposed", proposed, expected_proposed),
         ("existing", existing, expected_existing),
     ):
-        duplicates = [n for n, count in Counter(values).items() if count > 1]
+        duplicates = [name for name, count in Counter(values).items() if count > 1]
         if duplicates:
             errors.append(f"{label}: duplicate generated names: {duplicates[:10]}")
-        missing = sorted(expected - set(values))
-        extra = sorted(set(values) - expected)
-        if missing:
-            errors.append(f"{label}: missing {len(missing)} names: {missing[:10]}")
-        if extra:
-            errors.append(f"{label}: extra {len(extra)} names: {extra[:10]}")
+        if set(values) != expected:
+            errors.append(
+                f"{label}: missing={sorted(expected - set(values))[:10]} "
+                f"extra={sorted(set(values) - expected)[:10]}"
+            )
 
-    invalid = sorted(
-        n for n in expected_proposed | expected_existing
-        if not re.fullmatch(r"test_[a-z0-9_]+", n)
-    )
-    if invalid:
-        errors.append(f"invalid test identifiers: {invalid[:10]}")
-
+    combined = expected_existing | expected_proposed
+    if len(authoritative) != len(set(authoritative)):
+        errors.append("authoritative Markdown contains duplicate names")
+    if combined != set(authoritative):
+        errors.append("catalog names differ from authoritative Markdown")
+    if set(requirement_records) != set(authoritative):
+        errors.append("requirement names differ from authoritative Markdown")
     if expected_existing & expected_proposed:
         errors.append("existing and proposed name sets overlap")
 
-    # Every proposed name must compile to a concrete semantic evidence spec.
-    sys.path.insert(0, str(ROOT))
-    try:
-        from eve_trade_hypothesis.evidence_specs import build_evidence_spec
-        from eve_trade_hypothesis.semantic_overrides import SEMANTIC_EVIDENCE_OVERRIDES
-        for category_id, category in catalog["categories"].items():
-            for name in category["names"]:
-                spec = build_evidence_spec(int(category_id), name)
-                if len(spec.predicates) < 4:
-                    errors.append(f"{name}: evidence spec has no semantic postcondition")
-        if not SEMANTIC_EVIDENCE_OVERRIDES <= expected_proposed:
-            errors.append("semantic override set contains names absent from proposed catalog")
-        if len(SEMANTIC_EVIDENCE_OVERRIDES) < 202:
-            errors.append(f"semantic override count fell below audited baseline: {len(SEMANTIC_EVIDENCE_OVERRIDES)}")
-    except Exception as exc:
-        errors.append(f"semantic evidence verification failed: {exc}")
-
     mode_text = (ROOT / "eve_trade_hypothesis" / "modes.py").read_text(encoding="utf-8")
-    assigned = set()
-    for set_name in ("FAULT_CATEGORIES", "EDGE_CATEGORIES", "TRADE_CATEGORIES", "REPO_CATEGORIES"):
+    mode_categories: dict[str, set[int]] = {}
+    assigned: set[int] = set()
+    for set_name, runner in (
+        ("FAULT_CATEGORIES", "fault"),
+        ("EDGE_CATEGORIES", "edge"),
+        ("TRADE_CATEGORIES", "trade"),
+        ("REPO_CATEGORIES", "repo"),
+    ):
         match = re.search(rf"{set_name}\s*=\s*(\{{.*?\}})", mode_text, flags=re.S)
         if match:
-            assigned.update(ast.literal_eval(match.group(1)))
-    unassigned = sorted(categories - assigned)
-    if unassigned:
-        errors.append(f"categories without runner: {unassigned}")
+            mode_categories[runner] = set(ast.literal_eval(match.group(1)))
+            assigned.update(mode_categories[runner])
+
+    routes = {
+        "DIRECT_LIVE": {"trade", "edge", "repo", "fault"},
+        "LITMUS_CHAOS": {"litmus"},
+        "PLATFORM_EXTERNAL": {"platform"},
+        "REPOSITORY_STATIC": {"repo"},
+        "NATIVE_EXISTING": {"native"},
+        "NON_APPLICABLE": {"non_applicable"},
+    }
+    for name, record in requirement_records.items():
+        if record.get("mechanism") not in routes:
+            errors.append(f"{name}: unknown mechanism {record.get('mechanism')!r}")
+            continue
+        if record.get("runner") not in routes[record["mechanism"]]:
+            errors.append(f"{name}: incompatible runner {record.get('runner')!r}")
+        elif record["mechanism"] == "DIRECT_LIVE" and record.get("category") not in mode_categories.get(record["runner"], set()):
+            errors.append(
+                f"{name}: category {record.get('category')} is unsupported by direct runner "
+                f"{record.get('runner')!r}"
+            )
+        if not record.get("prerequisite") or not record.get("observable"):
+            errors.append(f"{name}: missing prerequisite/observable")
+        if record.get("implementation_status") not in {
+            "IMPLEMENTED", "SEMANTIC_ORACLE_REQUIRED", "EXTERNAL_CAPABILITY_REQUIRED",
+            "INFRASTRUCTURE_READY", "JUSTIFIED_NON_APPLICABLE",
+        }:
+            errors.append(f"{name}: unknown implementation status")
+
+    litmus_names = {record["contract"] for record in litmus_doc["contracts"]}
+    required_litmus = {
+        name for name, record in requirement_records.items() if record["mechanism"] == "LITMUS_CHAOS"
+    }
+    if litmus_names != required_litmus:
+        errors.append("Litmus contract names differ from LITMUS_CHAOS requirements")
+
+    if categories - assigned:
+        errors.append(f"categories without native runner: {sorted(categories - assigned)}")
 
     if errors:
         print("CATALOG VERIFICATION FAILED", file=sys.stderr)
         for error in errors:
             print(f"- {error}", file=sys.stderr)
         return 1
-
-    print(f"existing wrappers: {len(expected_existing)}")
-    print(f"proposed Hypothesis contracts: {len(expected_proposed)}")
-    print(f"combined named contracts: {len(expected_existing | expected_proposed)}")
-    print(f"generated category modules: {len(categories)}")
-    print("catalog registration: complete")
+    print(
+        json.dumps(
+            {
+                "authoritative_contracts": len(authoritative),
+                "existing": len(expected_existing),
+                "proposed": len(expected_proposed),
+                "generated_categories": len(categories),
+                "mechanisms": requirements_doc["counts"],
+                "implementation_statuses": requirements_doc["implementation_status_counts"],
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
     return 0
 
 

@@ -381,9 +381,15 @@ def _api_errors(runtime, name: str, case: dict[str, Any]) -> None:
     if "unknown_trade_and_forbidden_trade" in name or "unknown_wallet_and_forbidden_wallet" in name or "unknown_item_stack_and_forbidden_item_stack" in name:
         return runtime.evidence.run(name, case)
     if "validation_error_identifies_invalid_public_field" in name:
-        failure=live.expect_rpc_failure(lambda: live.gateway.issue_trade_instance(live.issue_payload(world,quantity=-1)))
-        assert "quantity" in failure.message.lower()
-        assert "secret" not in failure.message.lower()
+        packet=live.canonical_edge_packet(world,interaction_id=f"validation-{case['nonce']}-{_uid(case, 'validation-error')}")
+        packet["input"]["quantity"]=-1
+        key,secret=live.edge_credentials("seller")
+        response=live.edge.submit(packet,key,secret)
+        encoded=json.dumps(response,sort_keys=True,separators=(",",":"))
+        assert not _is_success_response(response)
+        assert "quantity" in encoded.lower()
+        assert secret not in encoded
+        _assert_no_trade(live,before)
         return
     if "error_response_contains_interaction_id" in name or "error_response_schema_is_stable" in name:
         return runtime.evidence.run(name, case)
@@ -407,8 +413,20 @@ def _api_errors(runtime, name: str, case: dict[str, Any]) -> None:
             "status", "remainingQuantity", "tradeState",
         }
         internal_pk_columns = {str(r["column_name"]) for r in rows}
-        response_keys = set(trade)
-        leaked = sorted(k for k in response_keys if k in internal_pk_columns and k not in public_contract_keys)
+
+        def lower_camel(value: str) -> str:
+            head,*tail=value.split("_")
+            return head+"".join(part[:1].upper()+part[1:] for part in tail)
+
+        def response_keys(value: Any) -> set[str]:
+            if isinstance(value,dict):
+                return set(value).union(*(response_keys(item) for item in value.values()))
+            if isinstance(value,list):
+                return set().union(*(response_keys(item) for item in value))
+            return set()
+
+        internal_names=internal_pk_columns|{lower_camel(column) for column in internal_pk_columns}
+        leaked=sorted((response_keys(trade)&internal_names)-public_contract_keys)
         assert not leaked, leaked
         return
     if "public_error_message_does_not_include_stack_trace" in name or "filesystem_path" in name:

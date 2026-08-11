@@ -8155,6 +8155,9 @@
     ]
   },
   "test_database_queries_do_not_construct_table_or_column_names_from_untrusted_request_fields": {
+    "audited_direct_override_findings": [
+      "regex_taint_proxy"
+    ],
     "category": 49,
     "name": "test_database_queries_do_not_construct_table_or_column_names_from_untrusted_request_fields",
     "predicates": [
@@ -8187,7 +8190,8 @@
       "outcome",
       "scenario",
       "security"
-    ]
+    ],
+    "requires_semantic_validation": true
   },
   "test_database_rejects_batch_bound_outbox_event_referencing_nonexistent_settlement_batch": {
     "category": 50,
@@ -22856,6 +22860,62 @@
     ],
     "requires_semantic_validation": true
   },
+  "test_issue_rejects_item_stack_with_wrong_item_type_claim": {
+    "audited_direct_override_findings": [
+      "contradictory_contract"
+    ],
+    "category": 8,
+    "name": "test_issue_rejects_item_stack_with_wrong_item_type_claim",
+    "predicates": [
+      {
+        "expected": true,
+        "op": "eq",
+        "other_path": null,
+        "path": "scenario.action_executed"
+      },
+      {
+        "expected": true,
+        "op": "eq",
+        "other_path": null,
+        "path": "scenario.preconditions_satisfied"
+      },
+      {
+        "expected": true,
+        "op": "eq",
+        "other_path": null,
+        "path": "scenario.generated_case_applied"
+      },
+      {
+        "expected": true,
+        "op": "eq",
+        "other_path": null,
+        "path": "scenario.control_case_valid"
+      },
+      {
+        "expected": true,
+        "op": "eq",
+        "other_path": null,
+        "path": "scenario.named_invalid_condition_present"
+      },
+      {
+        "expected": true,
+        "op": "eq",
+        "other_path": null,
+        "path": "scenario.only_named_dimension_differs"
+      },
+      {
+        "expected": false,
+        "op": "eq",
+        "other_path": null,
+        "path": "outcome.accepted"
+      }
+    ],
+    "required_sections": [
+      "outcome",
+      "scenario"
+    ],
+    "requires_semantic_validation": true
+  },
   "test_issue_rejects_nonexistent_item_stack": {
     "category": 8,
     "name": "test_issue_rejects_nonexistent_item_stack",
@@ -23398,51 +23458,6 @@
       "outcome",
       "scenario"
     ]
-  },
-  "test_issue_response_does_not_echo_client_item_type_claim_when_it_differs_from_authoritative_source_stack_item_type": {
-    "audited_direct_override_findings": [
-      "contradictory_contract"
-    ],
-    "category": 8,
-    "name": "test_issue_response_does_not_echo_client_item_type_claim_when_it_differs_from_authoritative_source_stack_item_type",
-    "predicates": [
-      {
-        "expected": true,
-        "op": "eq",
-        "other_path": null,
-        "path": "scenario.action_executed"
-      },
-      {
-        "expected": true,
-        "op": "eq",
-        "other_path": null,
-        "path": "scenario.preconditions_satisfied"
-      },
-      {
-        "expected": true,
-        "op": "eq",
-        "other_path": null,
-        "path": "scenario.generated_case_applied"
-      },
-      {
-        "expected": true,
-        "op": "eq",
-        "other_path": null,
-        "path": "scenario.named_forbidden_path_attempted"
-      },
-      {
-        "expected": false,
-        "op": "eq",
-        "other_path": null,
-        "path": "effects.forbidden_effect_observed"
-      }
-    ],
-    "required_sections": [
-      "effects",
-      "outcome",
-      "scenario"
-    ],
-    "requires_semantic_validation": true
   },
   "test_issue_then_cancel_restores_original_item_state": {
     "audited_direct_override_findings": [
@@ -28267,6 +28282,9 @@
     ]
   },
   "test_nsqd_configuration_rejects_ephemeral_channel_name_for_settlement_results": {
+    "audited_direct_override_findings": [
+      "configuration_rejection_not_exercised"
+    ],
     "category": 77,
     "name": "test_nsqd_configuration_rejects_ephemeral_channel_name_for_settlement_results",
     "predicates": [
@@ -28316,9 +28334,13 @@
     "required_sections": [
       "outcome",
       "scenario"
-    ]
+    ],
+    "requires_semantic_validation": true
   },
   "test_nsqd_configuration_rejects_ephemeral_channel_name_for_settlement_work": {
+    "audited_direct_override_findings": [
+      "configuration_rejection_not_exercised"
+    ],
     "category": 77,
     "name": "test_nsqd_configuration_rejects_ephemeral_channel_name_for_settlement_work",
     "predicates": [
@@ -28368,7 +28390,8 @@
     "required_sections": [
       "outcome",
       "scenario"
-    ]
+    ],
+    "requires_semantic_validation": true
   },
   "test_nsqd_message_timeout_exceeds_normal_worker_processing_deadline": {
     "category": 77,
@@ -38017,6 +38040,9 @@
     ]
   },
   "test_rendered_kubernetes_does_not_embed_plaintext_secrets": {
+    "audited_direct_override_findings": [
+      "unrendered_manifest_scope"
+    ],
     "category": 35,
     "name": "test_rendered_kubernetes_does_not_embed_plaintext_secrets",
     "predicates": [
@@ -38056,7 +38082,8 @@
       "effects",
       "outcome",
       "scenario"
-    ]
+    ],
+    "requires_semantic_validation": true
   },
   "test_rendered_kubernetes_rejects_latest_image_tag": {
     "category": 35,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Protocol-v2 external driver backed by an exact contract -> argv map.
+"""Protocol-v3 external driver backed by an exact contract -> argv map.
 
 The mapped command receives the full harness request JSON on stdin and must print
 RAW OBSERVATIONS as a JSON object.  It must *not* decide pass/fail by returning
@@ -25,9 +25,9 @@ def main() -> int:
     try:
         request = json.load(sys.stdin)
     except Exception as exc:  # noqa: BLE001
-        return _fail(2, f"invalid protocol-v2 request JSON: {exc}")
+        return _fail(2, f"invalid protocol-v3 request JSON: {exc}")
 
-    if request.get("protocol_version") != 2:
+    if request.get("protocol_version") != 3:
         return _fail(2, f"unsupported protocol version: {request.get('protocol_version')!r}")
     contract = str(request.get("contract") or "")
     case_sha = str(request.get("case_sha256") or "")
@@ -47,6 +47,9 @@ def main() -> int:
     env["EVE_TRADE_CONTRACT_CASE_SHA256"] = case_sha
     env["EVE_TRADE_CONTRACT_REPO_ROOT"] = str(request.get("repo_root") or "")
     env["EVE_TRADE_CONTRACT_ROLE"] = str(request.get("role") or "")
+    execution = request.get("execution") or {}
+    env["EVE_TRADE_CONTRACT_RUN_ID"] = str(execution.get("run_id") or "")
+    env["EVE_TRADE_CONTRACT_INVOCATION_ID"] = str(execution.get("invocation_id") or "")
     env["EVE_TRADE_EVIDENCE_SPEC_JSON"] = json.dumps(request.get("evidence_spec", {}), separators=(",", ":"))
 
     proc = subprocess.run(
@@ -81,9 +84,16 @@ def main() -> int:
     observations.pop("protocol_version", None)
     observations.pop("contract", None)
     observations.pop("case_sha256", None)
-    observations["protocol_version"] = 2
+    observations.pop("execution", None)
+    observations["protocol_version"] = 3
+    observations["evidence_schema"] = "eve-trade.external-evidence/v3"
     observations["contract"] = contract
     observations["case_sha256"] = case_sha
+    observations["execution"] = {
+        "run_id": execution.get("run_id"),
+        "invocation_id": execution.get("invocation_id"),
+        "nonce": execution.get("nonce"),
+    }
     print(json.dumps(observations, separators=(",", ":"), default=str))
     return 0
 

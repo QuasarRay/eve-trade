@@ -3258,7 +3258,7 @@
           "severity": "CRITICAL"
         }
       ],
-      "name": "test_issue_response_does_not_echo_client_item_type_claim_when_it_differs_from_authoritative_source_stack_item_type",
+      "name": "test_issue_rejects_item_stack_with_wrong_item_type_claim",
       "original_name": "test_issue_rejects_item_stack_with_wrong_item_type_claim",
       "original_route": "DIRECT"
     },
@@ -18730,9 +18730,7 @@
       "original_route": "FAULT_ONLY"
     }
   ],
-  "renamed_contracts": {
-    "test_issue_rejects_item_stack_with_wrong_item_type_claim": "test_issue_response_does_not_echo_client_item_type_claim_when_it_differs_from_authoritative_source_stack_item_type"
-  },
+  "renamed_contracts": {},
   "source_audit_summary": {
     "critical": 1090,
     "delegated": 988,

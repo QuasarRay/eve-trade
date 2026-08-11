@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import re
+import secrets
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,6 +18,7 @@ class SuiteConfig:
     live_max_examples: int
     static_max_examples: int
     model_max_examples: int
+    run_id: str
 
     @classmethod
     def from_env(cls) -> "SuiteConfig":
@@ -33,6 +36,7 @@ class SuiteConfig:
             live_max_examples=max(1, int(os.environ.get("EVE_TRADE_HYPOTHESIS_LIVE_EXAMPLES", "3"))),
             static_max_examples=max(1, int(os.environ.get("EVE_TRADE_HYPOTHESIS_STATIC_EXAMPLES", "5"))),
             model_max_examples=max(1, int(os.environ.get("EVE_TRADE_HYPOTHESIS_MODEL_EXAMPLES", "40"))),
+            run_id=_run_id(),
         )
 
 
@@ -56,3 +60,13 @@ def discover_repo_root() -> Path:
 
 def _truthy(value: str | None) -> bool:
     return (value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _run_id() -> str:
+    value = os.environ.get("EVE_TRADE_TEST_RUN_ID") or f"pt-{secrets.token_hex(8)}"
+    value = value.strip().lower()
+    if not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", value):
+        raise RuntimeError(
+            "EVE_TRADE_TEST_RUN_ID must be a DNS-label-safe identifier of at most 63 characters"
+        )
+    return value

@@ -79,7 +79,7 @@ SEMANTIC_OVERRIDE_FINDINGS: dict[str, tuple[str, ...]] = {
     'test_issue_plan_created_by_service_is_market_service_identity': ('substring_proxy',),  # category 60
     'test_issue_rejects_item_stack_owned_by_different_authenticated_principal': ('wrong_security_boundary',),  # category 8
     'test_issue_rejects_source_stack_referencing_nonexistent_station': ('wrong_state_mutation',),  # category 8
-    'test_issue_response_does_not_echo_client_item_type_claim_when_it_differs_from_authoritative_source_stack_item_type': ('contradictory_contract',),  # category 8
+    'test_issue_rejects_item_stack_with_wrong_item_type_claim': ('contradictory_contract',),  # category 8; retained verbatim and classified NON_APPLICABLE
     'test_issue_then_cancel_restores_original_item_state': ('partial_state',),  # category 33
     'test_issue_trade_without_expires_at_persists_null_expiration': ('vacuous_schema_guard',),  # category 58
     'test_issue_uses_authoritative_item_type_instead_of_client_claim': ('contradictory_contract',),  # category 8
@@ -253,6 +253,14 @@ SEMANTIC_OVERRIDE_FINDINGS: dict[str, tuple[str, ...]] = {
     'test_idempotency_record_request_fingerprint_cannot_be_changed_after_creation': ('mutation_not_attempted',),  # second-pass semantic audit
 
     'test_idempotency_record_terminal_response_cannot_be_overwritten_by_retry': ('terminal_response_not_compared',),  # second-pass semantic audit
+
+    'test_database_queries_do_not_construct_table_or_column_names_from_untrusted_request_fields': ('regex_taint_proxy',),  # final implemented-route audit
+
+    'test_rendered_kubernetes_does_not_embed_plaintext_secrets': ('unrendered_manifest_scope',),  # final implemented-route audit
+
+    'test_nsqd_configuration_rejects_ephemeral_channel_name_for_settlement_results': ('configuration_rejection_not_exercised',),  # final implemented-route audit
+
+    'test_nsqd_configuration_rejects_ephemeral_channel_name_for_settlement_work': ('configuration_rejection_not_exercised',),  # final implemented-route audit
 
 }
 

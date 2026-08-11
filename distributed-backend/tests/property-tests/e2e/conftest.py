@@ -29,6 +29,7 @@ def eve_suite_config(pytestconfig):
             live_max_examples=config.live_max_examples,
             static_max_examples=config.static_max_examples,
             model_max_examples=config.model_max_examples,
+            run_id=config.run_id,
         )
     return config
 

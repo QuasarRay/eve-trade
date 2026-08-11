@@ -22,9 +22,10 @@ class CommandResult:
     stdout: str
     stderr: str
 
-    def assert_ok(self) -> "CommandResult":
+    def assert_ok(self, context: str | None = None) -> "CommandResult":
         assert self.returncode == 0, (
-            f"command failed ({self.returncode}): {' '.join(self.argv)}\n"
+            (f"{context}: " if context else "")
+            + f"command failed ({self.returncode}): {' '.join(self.argv)}\n"
             f"stdout:\n{self.stdout}\nstderr:\n{self.stderr}"
         )
         return self
@@ -52,8 +53,37 @@ class RepoInspector:
         self.require_repo()
         results: list[Path] = []
         for pattern in patterns:
-            results.extend(p for p in self.root.glob(pattern) if p.is_file())
+            results.extend(
+                p
+                for p in self.root.glob(pattern)
+                if p.is_file() and self._is_checked_in_source_candidate(p)
+            )
         return sorted(set(results))
+
+    def _is_checked_in_source_candidate(self, path: Path) -> bool:
+        """Exclude disposable/generated trees from source-contract scans.
+
+        Several repository properties use recursive globs. Including provider
+        modules from ``.terraform`` made those tests evaluate downloaded third-
+        party variables as if they were EVE Trade source.
+        """
+        relative = path.relative_to(self.root)
+        excluded = {
+            ".git",
+            ".agents",
+            ".codex",
+            ".codex-task-state",
+            ".dagger",
+            ".o11y",
+            ".terraform",
+            ".venv",
+            ".ci-venv",
+            ".dagger-ci-venv",
+            "node_modules",
+            "__pycache__",
+            "target",
+        }
+        return excluded.isdisjoint(relative.parts)
 
     def require_paths(self, patterns: Sequence[str], *, purpose: str) -> list[Path]:
         paths = self.existing_paths(patterns)
@@ -144,6 +174,8 @@ class RepoInspector:
 
     def kubernetes_documents(self) -> list[tuple[Path, dict[str, Any]]]:
         patterns = [
+            "distributed-backend/orchestration/kubernetes/**/*.yaml",
+            "distributed-backend/orchestration/kubernetes/**/*.yml",
             "distributed-backend/ci-cd/**/*.yaml",
             "distributed-backend/ci-cd/**/*.yml",
             "infra/**/*.yaml",
@@ -151,22 +183,72 @@ class RepoInspector:
         ]
         return self.yaml_documents(patterns)
 
+    def rendered_kubernetes_documents(self) -> list[tuple[Path, dict[str, Any]]]:
+        """Render every leaf Kustomize target before evaluating pod semantics.
+
+        Patch fragments are not workloads. Treating them as standalone manifests
+        both misses inherited security settings and permits empty-set vacuity.
+        """
+        manifests = self.existing_paths(
+            [
+                "distributed-backend/orchestration/kubernetes/**/kustomization.yaml",
+                "distributed-backend/orchestration/kubernetes/**/kustomization.yml",
+            ]
+        )
+        if not manifests:
+            self.unavailable("no Kubernetes Kustomization roots found")
+
+        directories = {path.parent.resolve(): path for path in manifests}
+        referenced: set[Path] = set()
+        for path in manifests:
+            document = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            for resource in document.get("resources") or []:
+                candidate = (path.parent / str(resource)).resolve()
+                if candidate.is_file():
+                    candidate = candidate.parent
+                if candidate in directories:
+                    referenced.add(candidate)
+        leaves = sorted(set(directories) - referenced)
+        assert leaves,"Kustomize graph has no renderable leaf roots"
+
+        rendered: list[tuple[Path, dict[str, Any]]] = []
+        for directory in leaves:
+            result = self.run(
+                ["kubectl", "kustomize", str(directory)],
+                timeout=120,
+            ).assert_ok(f"render Kustomize target {directory.relative_to(self.root)}")
+            for document in yaml.safe_load_all(result.stdout):
+                if isinstance(document,dict):
+                    rendered.append((directories[directory],document))
+        assert rendered,"Kustomize leaf roots rendered zero Kubernetes objects"
+        return rendered
+
     def terraform_roots(self) -> list[Path]:
         self.require_repo()
         roots: set[Path] = set()
         for tf in self.root.rglob("*.tf"):
-            if ".terraform" in tf.parts:
+            if not self._is_checked_in_source_candidate(tf):
                 continue
             roots.add(tf.parent)
         return sorted(roots)
 
     def dockerfiles(self) -> list[Path]:
         self.require_repo()
-        return sorted({p for p in self.root.rglob("Dockerfile*") if p.is_file()})
+        return sorted(
+            {
+                p
+                for p in self.root.rglob("Dockerfile*")
+                if p.is_file() and self._is_checked_in_source_candidate(p)
+            }
+        )
 
     def requirements_files(self) -> list[Path]:
         self.require_repo()
-        return sorted(p for p in self.root.rglob("requirements*.txt") if p.is_file())
+        return sorted(
+            p
+            for p in self.root.rglob("requirements*.txt")
+            if p.is_file() and self._is_checked_in_source_candidate(p)
+        )
 
     def python_test_names(self, patterns: Sequence[str] = ("**/test_*.py",)) -> dict[str, Path]:
         names: dict[str, Path] = {}
@@ -222,4 +304,10 @@ class RepoInspector:
 
     def find_files_named(self, names: Iterable[str]) -> list[Path]:
         wanted = set(names)
-        return sorted(p for p in self.root.rglob("*") if p.is_file() and p.name in wanted)
+        return sorted(
+            p
+            for p in self.root.rglob("*")
+            if p.is_file()
+            and p.name in wanted
+            and self._is_checked_in_source_candidate(p)
+        )
