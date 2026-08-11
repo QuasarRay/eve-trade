@@ -1,0 +1,17 @@
+[module]
+id = "codex"
+name = "Codex Sequential Max Adapter"
+version = "4.0.0"
+kind = "agent-host"
+policy = ["POLICY.md"]
+requires_framework = ">=4.0.0"
+
+[detect]
+executables = ["codex"]
+environment_any = ["CODEX_HOME", "CODEX_SANDBOX"]
+
+[install]
+command = ["python", ".agents/modules/codex/install.py"]
+verify = ["python", ".agents/modules/codex/verify.py"]
+uninstall = ["python", ".agents/modules/codex/uninstall.py"]
+writes = [".codex", ".agents/persistent/install-state/codex"]

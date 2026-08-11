@@ -1,0 +1,33 @@
+# Law Test Name Files
+
+- `00_existing_python_unit_tests.md`
+- `01_existing_builtin_law_ids.md`
+- `02_existing_law_template_example_ids.md`
+- `10_release_distribution_and_manifest_integrity.md`
+- `11_atomic_filesystem_and_transaction_safety.md`
+- `12_bootstrap_install_upgrade_uninstall.md`
+- `13_state_identity_schema_and_path_confinement.md`
+- `14_workflow_state_machine_and_phase_invariants.md`
+- `15_acceptance_gates_risks_waivers_and_decisions.md`
+- `16_evidence_provenance_chain_and_command_capture.md`
+- `17_workspace_fingerprint_and_user_work_preservation.md`
+- `18_subagent_sequentiality_leases_and_handoffs.md`
+- `19_context_cache_freshness_and_bandwidth.md`
+- `20_law_runner_definition_integrity_and_process_isolation.md`
+- `21_law_library_property_semantics.md`
+- `22_module_schema_discovery_replacement_and_execution.md`
+- `23_codex_adapter_current_schema_and_static_configuration.md`
+- `24_codex_adapter_live_effective_runtime_guarantees.md`
+- `25_xonsh_and_interactive_environment_selection.md`
+- `26_python_meta_extension_safety_and_functionality.md`
+- `27_cli_contract_transactionality_and_error_handling.md`
+- `28_codex_and_bootstrap_persistent_install_recovery.md`
+- `29_security_secrets_permissions_and_supply_chain.md`
+- `30_portability_platform_and_filesystem_edge_cases.md`
+- `31_reasoning_max_context_cost_and_tool_economy.md`
+- `32_policy_executable_claim_consistency.md`
+- `33_fault_injection_race_and_crash_recovery.md`
+- `34_mutation_testing_and_adversarial_anti_cheating.md`
+- `35_migration_upgrade_backward_compatibility.md`
+- `36_performance_scalability_and_resource_bounds.md`
+- `37_end_to_end_guarantee_and_completeness_meta_laws.md`

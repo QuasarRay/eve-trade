@@ -1,0 +1,15 @@
+[module]
+id = "python-meta"
+name = "Optional Python Metaprogramming Extension"
+version = "4.0.0"
+kind = "developer-extension"
+policy = ["POLICY.md"]
+
+[detect]
+python_packages_all = ["mcpyrate", "unpythonic"]
+
+[python]
+optional_dependencies = ["mcpyrate", "unpythonic"]
+
+[install]
+verify = ["python", ".agents/modules/python-meta/probe.py"]

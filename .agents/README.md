@@ -1,67 +1,89 @@
-# EVE-TRADE sequential subagent pack
+# Aegis Framework 4.0.0
 
-This directory is the reusable source of truth for Codex's accuracy-first workflow in EVE-TRADE.
+Aegis is a project-independent, constitutionally opinionated software-engineering framework for coding agents. Projects define domain correctness; they may strengthen Aegis, but they cannot weaken its requirements for Test-Driven Development, evidence, falsification, review, workspace integrity, or truthful completion.
 
-## Why there is also `.codex/config.toml`
+## Trust and deployment model
 
-Codex's official project-scoped agent configuration is discovered through `.codex/config.toml` and, by default, standalone project agents under `.codex/agents/`.
+The three security domains are deliberately separate:
 
-This repository intentionally keeps the reusable role files in root `.agents/`. The small `.codex/config.toml` bridge registers those files and sets:
+```text
+framework source/   trusted human development and release verification
+.agents/             deployed governing input; ordinary agents read but never write
+.aegis/              mutable task state, evidence, locks, caches, compiled policy, and audits
+```
 
-- `max_threads = 1` — only one subagent thread may be open at a time;
-- `max_depth = 1` — only the root may spawn direct subagents.
+This repository root is the authoritative framework source. The checked-in active `.agents` tree is not a development mirror and is never synchronized by source commands. A human maintainer verifies a deterministic artifact outside `.agents`, then manually copies that artifact to the target repository.
 
-Do not remove those limits unless the user explicitly decides to permit parallelism or recursive delegation.
+Source-maintainer commands:
 
-## Normal use
+```text
+python -B bin/agentctl.py --root . doctor
+python -B bin/agentctl.py --root . audit
+python -B infra/law_tests/run_suite.py --root . --output .aegis/law-results/latest.json
+python -B scripts/verify_release.py
+python -B bin/agentctl.py --root . package build dist/aegis-governance
+```
 
-After installation, new prompts should usually contain only the task-specific goal, constraints, freshness signal, and acceptance criteria.
+The last command produces `dist/aegis-governance/.agents/`. It never writes the active `.agents` tree. After verification, a human may copy that directory into a target repository and manually merge the reviewed block from `bootstrap/root-AGENTS.block.md` into the target root `AGENTS.md`. Ordinary agent execution exposes verification but no bootstrap install, uninstall, module install, module scaffold, manifest-write, or self-update command.
 
-Do not rewrite `.agents/` for every prompt.
+## Constitutional core
 
-The root `AGENTS.md` tells Codex to load the reusable orchestration and EVE-TRADE invariants automatically for nontrivial tasks.
+The executable constitution defines AEGIS-I001 through AEGIS-I022. It enforces:
 
-## Role set
+- immutable governing policy and frozen acceptance criteria;
+- no self-waiver and no weakening of HARD gates;
+- current implementation/evidence epochs and production-path truth;
+- contract-test and oracle integrity;
+- independent acceptance, epistemic honesty, and capability honesty;
+- controlled scope, user-work preservation, and minimal unjustified change;
+- one active child globally, no nested delegation, and parent canonical authority;
+- Max reasoning where supported, mandatory falsification, and reference/oracle integrity;
+- test-first implementation authority, frozen RED/characterization contracts, same-contract GREEN, property-first assurance, and regression-first remediation.
 
-- `evidence-investigator.toml`: fresh bounded investigation, no implementation.
-- `adversarial-verifier.toml`: independent attempt to disprove one important claim.
-- `implementation-worker.toml`: one bounded writer after evidence and design are settled.
-- `final-auditor.toml`: fresh final completion challenge.
+Project contracts may add architecture, commands, laws, generated paths, compatibility requirements, dependencies, benchmarks, deployment targets, and stronger policy packs. Unknown constitutional keys or weakening values fail closed.
 
-The small role set is deliberate. More roles increase orchestration overhead, duplicated context, and token usage.
+## Enforced TDD lifecycle
 
-## Cost strategy
+Mutating behavioral work follows an executable lifecycle:
 
-The pack does **not** assume sequential execution is automatically cheaper than parallel execution.
+```text
+PRECHECK -> TRIAGE -> PLAN -> TEST_DESIGN -> BASELINE_EXECUTION
+         -> RED_OBSERVED | CHARACTERIZATION_OBSERVED | TEST_FIRST_OBSERVED
+         -> IMPLEMENT -> GREEN -> FALSIFY -> REVIEW -> VERIFY
+         -> FINAL_AUDIT -> FINALIZE
+```
 
-It saves credits only by:
+The compiled task contract selects `RED_REQUIRED`, `CHARACTERIZATION_REQUIRED`, or a justified non-behavioral test-first mode. Implementation write authority does not exist until the test/oracle digests are frozen and the required baseline observation is bound to the pre-implementation digest. GREEN must use the same frozen test and oracle against the current implementation epoch. A changed contract, oracle, governance snapshot, baseline, or harness revokes authority. A counterexample discovered after implementation starts a new regression-first cycle.
 
-1. refusing unnecessary delegation;
-2. spawning one agent only after prior evidence is known;
-3. using prior results to eliminate or narrow later work;
-4. giving each agent the smallest sufficient context packet;
-5. avoiding duplicate full-tree scans;
-6. reusing exact-SHA evidence;
-7. independently verifying only high-risk or materially uncertain claims;
-8. keeping raw logs outside model context.
+Hypothesis is a development/test dependency, not a runtime dependency. The stdlib-only control plane remains recoverable without it. Profiles are `focused` (25 examples), `standard` (100), and `stress` (500); `RuleBasedStateMachine` models cover temporal TDD authority and evidence-cycle behavior.
 
-Accuracy has priority over cost. Cost optimization may never justify skipping evidence, weakening tests, lowering high-risk reasoning depth, or accepting an unresolved contradiction.
+## Policy compiler and PRECHECK
 
-## Installation
+Structured project contracts compile into content-addressed artifacts under `.aegis/compiled-policy/`. Compilation performs monotonic task classification, applies non-weakenable policy packs, generates HARD/REQUIRED/ADVISORY gates, resolves source/generated/immutable/reference boundaries, freezes write scope and budgets, records command matrices, and derives review requirements. Reimplementation work requires a read-only reference contract, differential oracle, compatibility decisions, and reference digest.
 
-Extract the archive at the repository root.
+PRECHECK is artifact-based. It records governance and instruction provenance, repository discovery, workspace/user-change boundaries, test/law baselines, TDD plan, compiled policy, gates, budgets, commands, and review requirements. Boolean self-reports do not complete it.
 
-If the repository already has an `AGENTS.md` or `.codex/config.toml`, merge rather than blindly overwrite:
+## State, evidence, review, and final audit
 
-- preserve the mandatory sequential rules;
-- preserve `[agents] max_threads = 1` and `max_depth = 1`;
-- preserve all four role registrations;
-- resolve conflicting project instructions explicitly.
+Canonical task state lives under `.aegis/tasks/`; evidence, locks, cache, policy, audit, manifest, and migration state use distinct `.aegis` subdirectories. State transitions are locked, revisioned, append-only, epoch-aware, and anchor-history protected. Legacy `.agents/runtime` and `.agents/persistent` data can be copied into `.aegis` by the explicit, idempotent runtime migration command; migration never deletes or rewrites governance.
 
-Start a new Codex session after installation so project instructions are rediscovered.
+Evidence distinguishes observation, external authority, inference, assumption, untested, unavailable, and blocked outcomes. Gate proof requires task/epoch relevance. REQUIRED waivers require current task-bound external user/host evidence; HARD gates cannot be waived. Review receipts bind reviewer independence, current diff, requirements, evidence, specialist role, findings, and concrete falsification attempts.
 
-## Updating this pack
+Finalization requires the exact 40-check audit contract. Every check is evidence-sealed and workspace-bound; missing, manual-only, stale, blocked, or tampered observations fail closed. The final workspace fingerprint is recomputed on load after finalization.
 
-Change `.agents/` only when a durable EVE-TRADE invariant or working method changes.
+## Laws, properties, and capability truth
 
-Do not encode one-off ticket details, transient SHAs, temporary failures, or a specific prompt's checklist into these files.
+The acceptance system has two exact inventories:
+
+- 834 historical `tests-to-impl` requirements with a deterministic machine-readable registry;
+- 105 constitutional/TDD laws bound to exact executed test methods or generated state-machine `runTest` cases.
+
+Properties may subsume multiple named regressions only through reviewed observation mappings. A collected-but-unstarted, incomplete, vacuous, skipped, mutated, or unsealed result cannot become PASS. Host limitations are recorded as `UNAVAILABLE`, `BLOCKED`, `UNTESTED`, or justified `NOT_APPLICABLE`; they are never relabeled PASS.
+
+## Threat model and limits
+
+Aegis prevents writes through its managed mutation APIs and independently detects out-of-band governance changes. Path checks cover traversal, case aliases, symlinks, Windows junctions/reparse points, rename endpoints, Git/codegen/formatter destinations, and redirected `.aegis` state. No in-process framework can prevent an already-privileged external process from editing files; digest checkpoints and final workspace verification make such changes invalidate the task. Platform behavior not exercised on the current host remains an explicit capability limitation.
+
+The recovery-critical implementation uses Python 3.11+ and the standard library. Optional `mcpyrate`, `unpythonic`, Xonsh, and host adapters are capability-scoped and cannot weaken the constitutional core.
+
+See [INDEX.md](INDEX.md), [MIGRATION.md](MIGRATION.md), [protocols/STATE.md](protocols/STATE.md), [protocols/LAW_TESTS.md](protocols/LAW_TESTS.md), and [infra/README.md](infra/README.md).

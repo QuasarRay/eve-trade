@@ -1,0 +1,81 @@
+[[law]]
+id = "framework.max_is_default"
+description = "Host-independent framework defaults to Max reasoning."
+kind = "file_contains"
+path = ".agents/framework.toml"
+text = 'default_effort = "max"'
+severity = "hard"
+tags = ["reasoning"]
+
+[[law]]
+id = "framework.no_silent_reasoning_downgrade"
+description = "A host adapter may not silently reduce the reasoning effort."
+kind = "file_contains"
+path = ".agents/framework.toml"
+text = "allow_silent_downgrade = false"
+severity = "hard"
+
+[[law]]
+id = "framework.sequential_cap"
+description = "Framework records one active subagent as the maximum."
+kind = "file_contains"
+path = ".agents/framework.toml"
+text = "max_active = 1"
+severity = "hard"
+
+[[law]]
+id = "framework.nested_delegation_off"
+description = "Subagents may not recursively delegate."
+kind = "file_contains"
+path = ".agents/framework.toml"
+text = "nested_delegation = false"
+severity = "hard"
+
+[[law]]
+id = "framework.codex_sol"
+description = "Codex adapter pins GPT-5.6 Sol."
+kind = "file_contains"
+path = ".agents/modules/codex/config/managed.toml"
+text = 'model = "gpt-5.6-sol"'
+severity = "hard"
+
+[[law]]
+id = "framework.codex_max"
+description = "Codex adapter pins Max reasoning."
+kind = "file_contains"
+path = ".agents/modules/codex/config/managed.toml"
+text = 'model_reasoning_effort = "max"'
+severity = "hard"
+
+[[law]]
+id = "framework.codex_v2_root_plus_one_child"
+description = "Codex MultiAgentV2 capacity is capped at root plus one child without force-enabling V2."
+kind = "file_contains"
+path = ".agents/modules/codex/config/managed.toml"
+text = "max_concurrent_threads_per_session = 2"
+severity = "hard"
+
+[[law]]
+id = "framework.codex_depth_one"
+description = "Codex V1 nested spawning is mechanically capped at depth one in addition to policy prohibition."
+kind = "file_contains"
+path = ".agents/modules/codex/config/managed.toml"
+text = "max_depth = 1"
+severity = "hard"
+
+[[law]]
+id = "framework.self_tests"
+description = "Executable infrastructure passes its stdlib test suite."
+kind = "command"
+command = ["{python}", "-m", "unittest", "discover", "-s", ".agents/infra/tests", "-p", "test_*.py"]
+expected_exit = 0
+timeout_seconds = 60
+severity = "hard"
+
+[[law]]
+id = "framework.bootstrap_marked"
+description = "The repository bootstrap is an explicitly delimited managed block for safe composition."
+kind = "file_contains"
+path = "AGENTS.md"
+text = "<!-- AEGIS:BEGIN -->"
+severity = "hard"

@@ -1,0 +1,40 @@
+[framework]
+name = "Aegis Sequential Max Agent Framework"
+version = "4.0.0"
+project_independent = true
+
+[reasoning]
+default_effort = "max"
+allow_silent_downgrade = false
+cost_strategy = "reduce_calls_context_bandwidth_rework_not_reasoning"
+
+[subagents]
+sequential_only = true
+max_active = 1
+nested_delegation = false
+fresh_bounded_context = true
+parent_owns_canonical_state = true
+
+[context]
+avoid_redundant_fetch = true
+content_hash_freshness = true
+compact_between_phases = true
+
+[workflow]
+hardened_state_machine = true
+acceptance_gates_required_for_mutating_tasks = true
+evidence_required_for_finalization = true
+
+[laws]
+enabled = true
+production_path_only = true
+hash_law_files_before_and_after = true
+
+[modules]
+path = ".agents/modules"
+local_path = ".agents/local-modules"
+auto_execute_module_code = false
+
+[runtime]
+retention_policy = "manual-audited-only"
+automatic_cleanup = false

@@ -1,0 +1,14 @@
+model = "gpt-5.6-sol"
+model_reasoning_effort = "max"
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 1
+max_depth = 1
+default_subagent_model = "gpt-5.6-sol"
+default_subagent_reasoning_effort = "max"
+interrupt_message = true
+
+[features.multi_agent_v2]
+# V2 counts the root. 2 = root + at most one child. Do not force enabled=true.
+max_concurrent_threads_per_session = 2

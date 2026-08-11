@@ -1,8 +1,20 @@
 {
-  "330a01c490aca151604b8cf639adc76d48f6c5d4": {
-    "action": "actions/upload-artifact",
+  "3d3c42e5aac5ba805825da76410c181273ba90b1": {
+    "action": "actions/checkout",
+    "runtime": "node24",
+    "supported_on_ubuntu_24_04": true,
+    "reviewed_source": "https://github.com/actions/checkout/blob/3d3c42e5aac5ba805825da76410c181273ba90b1/action.yml"
+  },
+  "634f93cb2916e3fdff6788551b99b062d0335ce0": {
+    "action": "actions/download-artifact",
     "runtime": "node20",
     "supported_on_ubuntu_24_04": true,
-    "reviewed_source": "https://github.com/actions/upload-artifact/blob/330a01c490aca151604b8cf639adc76d48f6c5d4/action.yml"
+    "reviewed_source": "https://github.com/actions/download-artifact/blob/634f93cb2916e3fdff6788551b99b062d0335ce0/action.yml"
+  },
+  "b7c566a772e6b6bfb58ed0dc250532a479d7789f": {
+    "action": "actions/upload-artifact",
+    "runtime": "node24",
+    "supported_on_ubuntu_24_04": true,
+    "reviewed_source": "https://github.com/actions/upload-artifact/blob/b7c566a772e6b6bfb58ed0dc250532a479d7789f/action.yml"
   }
 }

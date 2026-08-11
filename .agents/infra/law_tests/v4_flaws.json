@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "version": "4.0.0",
+  "flaws": [
+    {"id": "V4-001", "summary": "Codex installer hashed newline-normalized text instead of destination bytes", "seeded_probe": "codex-static", "regression": "test_install_uninstall_roundtrip"},
+    {"id": "V4-002", "summary": "Bootstrap and Codex recovery metadata lived only in disposable runtime", "seeded_probe": "persistent-recovery", "regression": "bootstrap-recovery"},
+    {"id": "V4-003", "summary": "Task identifiers and mutable task identity could redirect state paths", "seeded_probe": "state-identity", "regression": "state-confinement"},
+    {"id": "V4-004", "summary": "Manual or stale evidence could be treated as direct current proof", "seeded_probe": "evidence", "regression": "evidence-provenance"},
+    {"id": "V4-005", "summary": "Law collections and property cases could pass vacuously", "seeded_probe": "law-runner", "regression": "law-nonvacuity"},
+    {"id": "V4-006", "summary": "Law subprocess output, environment, and descendant lifetime were unbounded", "seeded_probe": "law-runner", "regression": "process-isolation"},
+    {"id": "V4-007", "summary": "Module discovery accepted shallow schemas and unsafe entrypoints", "seeded_probe": "modules", "regression": "module-schema"},
+    {"id": "V4-008", "summary": "Static Codex TOML was conflated with effective live child behavior", "seeded_probe": "codex-live", "regression": "codex-capability-separation"},
+    {"id": "V4-009", "summary": "Manifest regeneration could bless unreviewed invariant tampering", "seeded_probe": "release", "regression": "release-anchor"},
+    {"id": "V4-010", "summary": "Context freshness accepted weak caller assertions and raced source reads", "seeded_probe": "context", "regression": "context-provenance"},
+    {"id": "V4-011", "summary": "Subagent lease release lacked full owner binding and handoff updates were split", "seeded_probe": "subagents", "regression": "lease-owner-binding"},
+    {"id": "V4-012", "summary": "Workspace Git probe failures and external dependencies could fail open", "seeded_probe": "workspace", "regression": "workspace-fail-closed"},
+    {"id": "V4-013", "summary": "Multi-file rollback could mutate one destination before discovering ambiguity in another", "seeded_probe": "atomic-transaction", "regression": "test_transaction_recovery_preflights_every_destination_before_rollback"},
+    {"id": "V4-014", "summary": "Rolling state and its current anchor back together bypassed local history detection", "seeded_probe": "state-identity", "regression": "test_state_and_current_anchor_rollback_is_rejected_by_anchor_history"},
+    {"id": "V4-015", "summary": "Caller-labelled proof, deletable gates or risks, and post-final evidence could manufacture or corrupt finalization", "seeded_probe": "evidence", "regression": "test_caller_cannot_label_manual_append_as_verified_observation"},
+    {"id": "V4-016", "summary": "A local module action could commit a rewrite of core hard-invariant policy", "seeded_probe": "modules", "regression": "test_local_module_apply_cannot_rewrite_core_policy_even_if_declared"},
+    {"id": "V4-017", "summary": "A Windows directory junction could redirect StateStore reads outside the project control root", "seeded_probe": "state-identity", "regression": "test_runtime_junction_cannot_redirect_state_reads_outside_project"},
+    {"id": "V4-018", "summary": "Polling missed transient acceptance-test mutation when bytes and timestamps were restored", "seeded_probe": "law-runner", "regression": "test_transient_protected_test_rewrite_is_detected_after_bytes_and_mtime_restore"},
+    {"id": "V4-019", "summary": "Traceability accepted an incomplete failing ledger and an invalid per-requirement evidence seal", "seeded_probe": "end-to-end", "regression": "test_traceability_rejects_invalid_top_level_run_and_evidence_seal"},
+    {"id": "V4-020", "summary": "Batch recovery could roll back an earlier journal before discovering ambiguity in a later journal", "seeded_probe": "persistent-recovery", "regression": "test_named_recovery_preflights_every_journal_before_any_rollback"}
+  ]
+}

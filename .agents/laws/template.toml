@@ -1,0 +1,36 @@
+[[law]]
+id = "example.public_entrypoint_exists"
+description = "The supported public entrypoint remains present."
+kind = "file_exists"
+path = "path/to/entrypoint"
+severity = "hard"
+tags = ["compatibility"]
+
+[[law]]
+id = "example.production_probe"
+description = "Production probe succeeds without fixture-specific behavior."
+kind = "command"
+command = ["{python}", "path/to/probe.py"]
+expected_exit = 0
+timeout_seconds = 30
+severity = "hard"
+tags = ["behavior"]
+
+# Lifecycle law example:
+# [[law]]
+# id = "example.lifecycle"
+# description = "A legal state sequence preserves the public invariant."
+# kind = "command_sequence"
+# steps = [
+#   { command = ["{python}", "probe.py", "create"], expected_exit = 0 },
+#   { command = ["{python}", "probe.py", "run"], expected_exit = 0 },
+# ]
+#
+# Differential law example:
+# [[law]]
+# id = "example.compatibility"
+# description = "Replacement and oracle agree on externally relevant JSON fields."
+# kind = "differential_json"
+# left_command = ["{python}", "new_probe.py"]
+# right_command = ["{python}", "oracle_probe.py"]
+# json_paths = ["result", "state"]

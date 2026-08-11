@@ -1,0 +1,15 @@
+[fingerprint]
+# Coordination state is excluded; source, tests, install policy, and persistent installer code are not.
+ephemeral = [
+  ".agents/runtime",
+  ".agents/persistent",
+  "__pycache__",
+  ".pytest_cache",
+  ".mypy_cache",
+  ".ruff_cache",
+  "node_modules",
+  "build",
+  "dist",
+]
+include_ignored = []
+external_symlinks = []

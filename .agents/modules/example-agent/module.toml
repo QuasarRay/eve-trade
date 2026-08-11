@@ -1,0 +1,9 @@
+[module]
+id = "example-agent"
+name = "Example Agent Host Adapter"
+version = "0.1.0"
+kind = "agent-host-template"
+policy = ["POLICY.md"]
+
+[detect]
+executables = ["replace-me"]

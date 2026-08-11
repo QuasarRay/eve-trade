@@ -83,9 +83,10 @@ runs:
           "${dependency_args[@]}"
     - name: Upload producer evidence
       if: inputs.mode == 'finish'
-      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
       with:
         name: o11y-producer-${{ inputs.artifact-key }}-${{ github.run_id }}-${{ github.run_attempt }}
         path: .o11y/producer-artifacts/${{ inputs.artifact-key }}.json
         if-no-files-found: error
+        include-hidden-files: true
         retention-days: 14

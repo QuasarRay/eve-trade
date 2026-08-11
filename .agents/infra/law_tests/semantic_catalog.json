@@ -1,0 +1,2656 @@
+{
+  "bindings": {
+    "example.production_probe": [
+      "outer-template::example.production_probe"
+    ],
+    "example.public_entrypoint_exists": [
+      "outer-template::example.public_entrypoint_exists"
+    ],
+    "framework.bootstrap_marked": [
+      "outer-law::framework.bootstrap_marked"
+    ],
+    "framework.codex_depth_one": [
+      "outer-law::framework.codex_depth_one"
+    ],
+    "framework.codex_max": [
+      "outer-law::framework.codex_max"
+    ],
+    "framework.codex_sol": [
+      "outer-law::framework.codex_sol"
+    ],
+    "framework.codex_v2_root_plus_one_child": [
+      "outer-law::framework.codex_v2_root_plus_one_child"
+    ],
+    "framework.max_is_default": [
+      "outer-law::framework.max_is_default"
+    ],
+    "framework.nested_delegation_off": [
+      "outer-law::framework.nested_delegation_off"
+    ],
+    "framework.no_silent_reasoning_downgrade": [
+      "outer-law::framework.no_silent_reasoning_downgrade"
+    ],
+    "framework.self_tests": [
+      "outer-law::framework.self_tests"
+    ],
+    "framework.sequential_cap": [
+      "outer-law::framework.sequential_cap"
+    ],
+    "test_acceptance_gate_description_must_be_nonempty_after_trimming": [
+      "gates-risks-decisions::gate-description-trimmed-nonempty"
+    ],
+    "test_acceptance_gate_identifier_is_unique_and_canonical": [
+      "gates-risks-decisions::gate-id-unique",
+      "gates-risks-decisions::gate-id-canonical"
+    ],
+    "test_acceptance_gate_proof_rejects_evidence_from_different_task": [
+      "gates-risks-decisions::gate-proof-other-task-rejected"
+    ],
+    "test_acceptance_gate_proof_rejects_evidence_from_prior_implementation_epoch": [
+      "gates-risks-decisions::gate-proof-prior-epoch-rejected"
+    ],
+    "test_acceptance_gate_proof_rejects_evidence_recorded_before_gate_definition_when_relevance_cannot_be_established": [
+      "gates-risks-decisions::gate-proof-predates-gate-rejected"
+    ],
+    "test_acceptance_gate_proof_rejects_failed_command_evidence": [
+      "gates-risks-decisions::gate-proof-failed-command-rejected"
+    ],
+    "test_acceptance_gate_proof_rejects_unexecuted_claim_only_evidence": [
+      "gates-risks-decisions::gate-proof-unexecuted-claim-rejected"
+    ],
+    "test_acceptance_gate_proof_requires_explicit_relevance_binding_to_gate": [
+      "gates-risks-decisions::gate-proof-without-relevance-rejected"
+    ],
+    "test_acceptance_gate_proof_requires_successful_direct_evidence": [
+      "gates-risks-decisions::gate-proof-task-epoch-relevance",
+      "gates-risks-decisions::gate-proof-failed-command-rejected",
+      "gates-risks-decisions::gate-proof-unexecuted-claim-rejected"
+    ],
+    "test_acceptance_gate_waiver_requires_explicit_authority_or_policy_basis": [
+      "gates-risks-decisions::waiver-authority-canonical-policy"
+    ],
+    "test_acceptance_gate_waiver_requires_nonempty_reason": [
+      "gates-risks-decisions::waiver-reason-nonempty"
+    ],
+    "test_acceptance_suite_detects_fake_counters_fake_callbacks_fake_evidence_and_hardcoded_outputs": [
+      "mutation::randomized-inputs-not-hardcoded",
+      "mutation::evidence-provenance-mutant-killed",
+      "lawlib::property-count"
+    ],
+    "test_active_child_state_without_global_lease_is_detected_and_recovery_required": [
+      "subagents::active-child-without-global-lease-detected"
+    ],
+    "test_active_subagent_blocks_final_audit": [
+      "workflow::active-child-blocks-final-audit"
+    ],
+    "test_active_subagent_blocks_finalization": [
+      "workflow::active-child-blocks-finalization"
+    ],
+    "test_active_subagent_blocks_parent_from_mutating_canonical_task_state_except_handoff_control": [
+      "workflow::active-child-blocks-parent-mutation"
+    ],
+    "test_agent_never_deletes_preexisting_untracked_user_files": [
+      "workspace::preexisting-user-files-preserved"
+    ],
+    "test_agent_never_reverts_preexisting_user_changes_during_recovery": [
+      "workspace::preexisting-user-files-preserved",
+      "workspace::final-diff-separates-preexisting-and-agent-changes"
+    ],
+    "test_agentctl_doctor_does_not_spawn_expensive_external_processes_redundantly": [
+      "performance::agentctl-doctor-expensive-probes-not-repeated"
+    ],
+    "test_all_acceptance_gates_cannot_be_waived_to_bypass_validation": [
+      "gates-risks-decisions::all-gates-waived-cannot-bypass-validation"
+    ],
+    "test_all_shell_wrappers_preserve_exit_status_and_argument_vector_equivalently": [
+      "xonsh::xonsh-wrapper-live",
+      "xonsh::xonsh-wrapper-exit-propagation",
+      "xonsh::shell-wrappers-declare-python-311-minimum"
+    ],
+    "test_atomic_write_cleans_temporary_file_after_pre_replace_failure": [
+      "atomic-transaction::atomic-cleans-temporary-files-after-failure"
+    ],
+    "test_atomic_write_cleans_temporary_file_after_replace_failure": [
+      "atomic-transaction::atomic-cleans-temporary-files-after-failure"
+    ],
+    "test_atomic_write_concurrent_writers_never_produce_torn_file": [
+      "atomic-transaction::concurrent-writers-no-torn-content"
+    ],
+    "test_atomic_write_confines_temporary_file_to_target_directory": [
+      "atomic-transaction::atomic-temporary-file-confined-to-target-directory"
+    ],
+    "test_atomic_write_does_not_accidentally_make_public_files_mode_0600": [
+      "atomic-transaction::atomic-default-public-file-not-secret-mode"
+    ],
+    "test_atomic_write_fsyncs_file_before_replace": [
+      "atomic-transaction::atomic-fsync-order-before-and-after-replace"
+    ],
+    "test_atomic_write_fsyncs_parent_directory_after_replace_when_supported": [
+      "atomic-transaction::atomic-fsync-order-before-and-after-replace"
+    ],
+    "test_atomic_write_handles_unicode_and_long_paths_without_data_loss": [
+      "atomic-transaction::atomic-unicode-long-path-roundtrip"
+    ],
+    "test_atomic_write_never_exposes_partial_target_contents": [
+      "atomic-transaction::atomic-never-exposes-partial-target"
+    ],
+    "test_atomic_write_preserves_existing_posix_permission_bits": [
+      "atomic-transaction::atomic-preserves-existing-mode"
+    ],
+    "test_atomic_write_preserves_file_metadata_required_by_platform_contract": [
+      "atomic-transaction::atomic-preserves-platform-metadata-contract"
+    ],
+    "test_atomic_write_preserves_required_executable_bit": [
+      "atomic-transaction::atomic-preserves-required-executable-bit"
+    ],
+    "test_atomic_write_rejects_parent_symlink_escape_when_policy_requires_root_confinement": [
+      "atomic-transaction::atomic-parent-symlink-escape-rejected"
+    ],
+    "test_atomic_write_rejects_target_symlink_when_policy_requires_real_file": [
+      "atomic-transaction::atomic-target-symlink-rejected"
+    ],
+    "test_atomic_write_reports_parent_directory_fsync_failure_when_durability_is_required": [
+      "atomic-transaction::atomic-required-directory-fsync-failure-reported"
+    ],
+    "test_blocked_only_resumes_previous_state": [
+      "outer-unit::test_blocked_only_resumes_previous_state"
+    ],
+    "test_blocked_state_can_resume_only_exact_recorded_pre_block_state": [
+      "workflow::blocked-resume"
+    ],
+    "test_blocked_state_recovery_cannot_skip_required_phase": [
+      "workflow::blocked-cannot-skip-phase"
+    ],
+    "test_blocked_state_requires_recorded_block_reason": [
+      "workflow::blocked-reason-recorded"
+    ],
+    "test_bootstrap_failure_never_leaves_half_inserted_instruction_block": [
+      "bootstrap::bootstrap-marker-rejection-zero-side-effect",
+      "bootstrap::bootstrap-install-journal-failure-restores-preinstall-file"
+    ],
+    "test_bootstrap_install_and_journal_commit_are_one_transaction": [
+      "bootstrap::bootstrap-journal-is-persistent-and-versioned",
+      "atomic-transaction::transaction-all-or-nothing"
+    ],
+    "test_bootstrap_install_and_uninstall_are_safe_under_paths_with_spaces_and_unicode": [
+      "portability::paths-with-spaces",
+      "portability::unicode-paths",
+      "bootstrap::bootstrap-uninstall-runtime-independent"
+    ],
+    "test_bootstrap_install_does_not_misinterpret_marker_text_inside_fenced_code_block": [
+      "bootstrap::bootstrap-fenced-marker-example-ignored"
+    ],
+    "test_bootstrap_install_does_not_misinterpret_marker_text_inside_quoted_example": [
+      "bootstrap::bootstrap-quoted-marker-example-ignored"
+    ],
+    "test_bootstrap_install_is_idempotent": [
+      "bootstrap::bootstrap-reinstall-idempotent"
+    ],
+    "test_bootstrap_install_journal_failure_restores_preinstall_agents_file": [
+      "bootstrap::bootstrap-install-journal-failure-restores-preinstall-file"
+    ],
+    "test_bootstrap_install_metadata_is_stored_in_durable_non_disposable_location": [
+      "persistent-recovery::bootstrap-recovery-metadata-outside-runtime"
+    ],
+    "test_bootstrap_install_never_overwrites_unrelated_user_backup_files": [
+      "bootstrap::bootstrap-install-journal-failure-restores-preinstall-file"
+    ],
+    "test_bootstrap_install_preserves_original_agents_file_permissions": [
+      "bootstrap::bootstrap-preserves-original-permissions"
+    ],
+    "test_bootstrap_install_preserves_original_newline_style": [
+      "bootstrap::bootstrap-preserves-crlf-and-bom"
+    ],
+    "test_bootstrap_install_preserves_unrelated_root_agents_instructions_exactly": [
+      "bootstrap::bootstrap-preserves-user-and-format"
+    ],
+    "test_bootstrap_install_preserves_utf8_bom_when_present": [
+      "bootstrap::bootstrap-preserves-crlf-and-bom"
+    ],
+    "test_bootstrap_install_refuses_multiple_existing_aegis_markers": [
+      "bootstrap::bootstrap-multiple-markers-rejected"
+    ],
+    "test_bootstrap_install_rejects_concurrent_destination_drift": [
+      "bootstrap::bootstrap-concurrent-install-drift-rejected",
+      "bootstrap::bootstrap-concurrent-drift-preserves-user-edit"
+    ],
+    "test_bootstrap_install_rejects_destination_symlink_escape": [
+      "bootstrap::bootstrap-destination-symlink-escape-rejected"
+    ],
+    "test_bootstrap_persistent_uninstall_state_survives_deletion_of_disposable_runtime_directory": [
+      "persistent-recovery::bootstrap-runtime-deletion-preserves-exact-uninstall"
+    ],
+    "test_bootstrap_plan_mode_has_zero_filesystem_side_effects": [
+      "bootstrap::bootstrap-dry-run-zero-side-effects"
+    ],
+    "test_bootstrap_reinstall_after_framework_upgrade_preserves_original_pre_aegis_baseline": [
+      "persistent-recovery::bootstrap-upgrade-chain-retains-original-baseline"
+    ],
+    "test_bootstrap_runtime_directory_can_be_deleted_without_losing_exact_rollback_capability": [
+      "persistent-recovery::bootstrap-runtime-deletion-preserves-exact-uninstall"
+    ],
+    "test_bootstrap_uninstall_exactly_restores_original_file_bytes": [
+      "bootstrap::bootstrap-uninstall-runtime-independent"
+    ],
+    "test_bootstrap_uninstall_is_transactional_across_all_persistent_artifacts": [
+      "persistent-recovery::bootstrap-backup-failure-has-zero-destination-mutation",
+      "atomic-transaction::transaction-all-or-nothing"
+    ],
+    "test_bootstrap_uninstall_post_write_failure_rolls_back_to_installed_state": [
+      "persistent-recovery::bootstrap-backup-failure-has-zero-destination-mutation"
+    ],
+    "test_bootstrap_uninstall_preflights_all_required_recovery_material_before_mutation": [
+      "persistent-recovery::bootstrap-backup-integrity-preflight",
+      "persistent-recovery::bootstrap-backup-failure-has-zero-destination-mutation"
+    ],
+    "test_bootstrap_uninstall_refuses_unknown_managed_block_drift": [
+      "bootstrap::bootstrap-uninstall-managed-drift-rejected"
+    ],
+    "test_bootstrap_uninstall_removes_created_root_agents_file_when_no_original_existed": [
+      "bootstrap::bootstrap-uninstall-removes-created-file"
+    ],
+    "test_bootstrap_upgrade_can_be_uninstalled_directly_to_original_pre_aegis_bytes": [
+      "persistent-recovery::bootstrap-upgrade-chain-restores-original"
+    ],
+    "test_build_cache_is_preserved_unless_stale_artifact_hypothesis_is_evidenced": [
+      "reasoning-cost::build-cache-is-declared-ephemeral-not-mutated"
+    ],
+    "test_cancelled_or_abandoned_task_has_explicit_terminal_semantics": [
+      "workflow::failed-cancelled-abandoned-explicit-terminal-semantics"
+    ],
+    "test_chain_and_tamper_detection": [
+      "outer-unit::test_chain_and_tamper_detection"
+    ],
+    "test_changelog_version_claims_match_release_artifacts_and_behavior": [
+      "policy-consistency::changelog-version-claim-matches-release"
+    ],
+    "test_child_cannot_close_own_lease_and_spawn_replacement_without_parent_integration": [
+      "subagents::next-child-only-after-prior-integration",
+      "subagents::close-state-failure-restores-global-lease"
+    ],
+    "test_child_cannot_spawn_nested_child_through_framework_control_plane": [
+      "subagents::framework-control-plane-nested-open-rejected"
+    ],
+    "test_child_context_brief_contains_only_verified_required_parent_facts": [
+      "subagents::child-context-bounded-verified-facts-only",
+      "subagents::child-context-rejects-unverified-facts"
+    ],
+    "test_child_context_brief_is_bounded_and_does_not_dump_parent_transcript": [
+      "subagents::child-context-bounded-verified-facts-only"
+    ],
+    "test_child_role_is_validated_against_registered_host_adapter_roles": [
+      "subagents::role-registry-and-path-validation"
+    ],
+    "test_child_role_rejects_unknown_or_path_like_role_names": [
+      "subagents::role-registry-and-path-validation"
+    ],
+    "test_clean_build_is_deferred_until_needed_for_reproducibility_or_stale_artifact_exclusion": [
+      "reasoning-cost::clean-build-deferred-until-falsifier-needs-it"
+    ],
+    "test_cli_commands_are_safe_under_project_paths_with_spaces_and_unicode": [
+      "cli::cli-paths-with-spaces-and-unicode-safe"
+    ],
+    "test_cli_decision_add_rejects_whitespace_only_rationale": [
+      "cli::cli-decision-rationale-rejected"
+    ],
+    "test_cli_decision_add_rejects_whitespace_only_statement": [
+      "cli::cli-decision-statement-rejected"
+    ],
+    "test_cli_evidence_add_verification_validates_state_before_appending_record": [
+      "cli::cli-verification-state-validated-before-append"
+    ],
+    "test_cli_gate_add_rejects_whitespace_only_description": [
+      "cli::cli-gate-description-rejected"
+    ],
+    "test_cli_gate_waive_rejects_whitespace_only_reason": [
+      "cli::cli-gate-waiver-reason-rejected"
+    ],
+    "test_cli_human_output_never_claims_success_after_partial_transaction_failure": [
+      "cli::cli-human-output-never-claims-partial-success"
+    ],
+    "test_cli_invalid_state_file_returns_clean_nonzero_error_without_traceback": [
+      "cli::cli-invalid-state-clean-error"
+    ],
+    "test_cli_invalid_task_id_returns_clean_nonzero_error_without_filesystem_escape": [
+      "cli::cli-invalid-id-clean-error"
+    ],
+    "test_cli_json_output_is_valid_and_stable_when_json_mode_is_requested": [
+      "cli::cli-json-output-valid-and-stable"
+    ],
+    "test_cli_manifest_write_cannot_be_used_as_acceptance_evidence_for_integrity_after_unreviewed_changes": [
+      "cli::cli-manifest-maintenance-authorization",
+      "release::manifest-regeneration-cannot-update-release-anchor"
+    ],
+    "test_cli_manifest_write_requires_explicit_maintenance_authorization": [
+      "cli::cli-manifest-maintenance-authorization"
+    ],
+    "test_cli_module_action_has_timeout": [
+      "modules::module-action-timeout-bounded-and-descendants-killed"
+    ],
+    "test_cli_module_action_never_prints_secret_environment_values": [
+      "modules::module-action-secret-environment-scrubbed",
+      "security::module-action-minimal-secret-environment"
+    ],
+    "test_cli_module_action_propagates_nonzero_exit_code": [
+      "modules::module-action-nonzero-exit-propagated"
+    ],
+    "test_cli_no_framework_root_returns_clean_nonzero_error_without_traceback": [
+      "cli::cli-invalid-root-clean-error"
+    ],
+    "test_cli_os_error_is_normalized_to_clean_failure_without_claiming_success": [
+      "cli::cli-os-error-clean-normalized"
+    ],
+    "test_cli_rejected_verification_evidence_has_zero_side_effects": [
+      "cli::cli-rejected-verification-zero-ledger-side-effects"
+    ],
+    "test_cli_risk_add_rejects_whitespace_only_description": [
+      "cli::cli-risk-description-rejected"
+    ],
+    "test_cli_risk_resolve_rejects_whitespace_only_resolution": [
+      "cli::cli-risk-resolution-rejected"
+    ],
+    "test_cli_root_must_contain_valid_aegis_framework_marker_or_explicit_initialization_contract": [
+      "cli::cli-root-requires-valid-framework-marker"
+    ],
+    "test_cli_subagent_close_is_transactional_if_lease_release_fails": [
+      "subagents::close-release-failure-keeps-active-state",
+      "subagents::close-release-failure-keeps-global-lease"
+    ],
+    "test_cli_subagent_close_requires_matching_active_child_and_lease": [
+      "subagents::wrong-task-binding",
+      "subagents::wrong-owner-binding"
+    ],
+    "test_cli_subagent_open_rejects_unknown_role": [
+      "cli::cli-unknown-subagent-role-rejected"
+    ],
+    "test_cli_subagent_recover_is_transactional_if_force_clear_fails": [
+      "subagents::recover-failure-rolls-back-evidence-and-restores-lease"
+    ],
+    "test_cli_subagent_recover_records_durable_recovery_decision_and_evidence": [
+      "subagents::force-recovery-durable-decision-and-evidence"
+    ],
+    "test_cli_subagent_recover_requires_target_task_match_global_lease": [
+      "subagents::wrong-task-binding"
+    ],
+    "test_cli_timeout_error_is_normalized_to_clean_failure_without_claiming_success": [
+      "cli::cli-timeout-clean-normalized"
+    ],
+    "test_codex_adapter_current_schema_probe_detects_reasoning_effort_value_incompatibility_before_install": [
+      "codex-static::codex-reasoning-value-unobservable-blocks-install"
+    ],
+    "test_codex_adapter_current_schema_probe_detects_removed_or_renamed_keys_before_install": [
+      "codex-static::codex-current-schema-missing-keys-fails-closed"
+    ],
+    "test_codex_adapter_detects_future_codex_schema_drift_and_fails_closed_until_revalidated": [
+      "codex-static::codex-current-schema-missing-keys-fails-closed"
+    ],
+    "test_codex_adapter_detects_future_model_reasoning_capability_drift_and_fails_closed_until_revalidated": [
+      "codex-static::codex-reasoning-value-unobservable-blocks-install"
+    ],
+    "test_codex_adapter_does_not_depend_on_undocumented_agents_max_depth_for_nested_delegation_guarantee": [
+      "codex-static::codex-nested-guarantee-has-instruction-enforcement"
+    ],
+    "test_codex_adapter_does_not_depend_on_undocumented_features_multi_agent_v2_table_without_runtime_schema_probe": [
+      "codex-static::codex-unobservable-current-probe-blocks-install"
+    ],
+    "test_codex_adapter_every_role_inherits_max_reasoning_instruction": [
+      "codex-static::codex-every-role-max-model-effort"
+    ],
+    "test_codex_adapter_every_role_inherits_no_nested_delegation_instruction": [
+      "codex-static::codex-every-role-prohibits-nested-delegation"
+    ],
+    "test_codex_adapter_install_and_journal_commit_are_transactional": [
+      "codex-static::codex-install-journal-transactional-metadata"
+    ],
+    "test_codex_adapter_install_journal_failure_rolls_back_all_codex_changes": [
+      "codex-static::codex-install-journal-transactional-metadata",
+      "atomic-transaction::transaction-all-or-nothing"
+    ],
+    "test_codex_adapter_install_preserves_existing_config_permissions": [
+      "codex-static::codex-install-preserves-config-permissions"
+    ],
+    "test_codex_adapter_install_preserves_unmanaged_comments_and_formatting_when_possible": [
+      "codex-static::codex-merge-preserves-comments-and-unmanaged-order"
+    ],
+    "test_codex_adapter_merger_preserves_arbitrary_valid_unmanaged_toml_semantics": [
+      "codex-static::codex-merger-valid-toml-property-corpus-preserved"
+    ],
+    "test_codex_adapter_merger_property_fuzzes_valid_toml_without_semantic_corruption": [
+      "codex-static::codex-merger-valid-toml-property-corpus-preserved"
+    ],
+    "test_codex_adapter_merger_rejects_ambiguous_dotted_managed_keys": [
+      "codex-static::codex-dotted-managed-key-rejected"
+    ],
+    "test_codex_adapter_merger_rejects_ambiguous_inline_managed_tables": [
+      "codex-static::codex-inline-managed-table-rejected"
+    ],
+    "test_codex_adapter_merger_rejects_quoted_or_array_table_forms_that_conflict_with_managed_agents": [
+      "codex-static::codex-array-managed-table-rejected"
+    ],
+    "test_codex_adapter_model_is_exact_gpt_5_6_sol": [
+      "codex-static::codex-exact-model-effort-limits"
+    ],
+    "test_codex_adapter_only_implementer_role_has_workspace_write_by_default": [
+      "codex-static::codex-nonimplementer-write-role-rejected"
+    ],
+    "test_codex_adapter_parent_reasoning_effort_is_exact_max_when_current_codex_supports_max": [
+      "codex-static::codex-every-role-max-model-effort"
+    ],
+    "test_codex_adapter_read_only_roles_have_read_only_declared_sandbox": [
+      "codex-static::codex-role-identity-and-sandbox",
+      "codex-static::codex-read-only-role-declarations"
+    ],
+    "test_codex_adapter_refuses_to_claim_max_effective_when_codex_config_schema_rejects_max": [
+      "codex-static::codex-static-does-not-claim-live-effective"
+    ],
+    "test_codex_adapter_reinstall_is_idempotent": [
+      "codex-static::codex-reinstall-idempotent"
+    ],
+    "test_codex_adapter_role_file_path_cannot_escape_codex_module_root": [
+      "codex-static::codex-role-path-traversal-rejected"
+    ],
+    "test_codex_adapter_role_name_cannot_create_path_traversal_in_generated_config_file": [
+      "codex-static::codex-role-path-traversal-rejected"
+    ],
+    "test_codex_adapter_role_name_is_canonical_and_cannot_collide_with_reserved_agents_scalar_names": [
+      "codex-static::codex-role-names-canonical",
+      "codex-static::codex-duplicate-role-name-rejected"
+    ],
+    "test_codex_adapter_role_registry_rejects_duplicate_names": [
+      "codex-static::codex-duplicate-role-name-rejected"
+    ],
+    "test_codex_adapter_role_registry_rejects_duplicate_slugs": [
+      "codex-static::codex-duplicate-role-slug-rejected"
+    ],
+    "test_codex_adapter_role_slug_is_unique_and_canonical": [
+      "codex-static::codex-role-slugs-canonical-unique",
+      "codex-static::codex-duplicate-role-slug-rejected"
+    ],
+    "test_codex_adapter_sets_agents_max_concurrent_threads_per_session_to_one": [
+      "codex-static::codex-agents-concurrency-limit-exactly-one"
+    ],
+    "test_codex_adapter_static_verifier_accepts_preserved_unmanaged_role_metadata_consistently_with_merger": [
+      "codex-static::codex-merger-valid-toml-property-corpus-preserved"
+    ],
+    "test_codex_adapter_static_verifier_rejects_conflicting_managed_role_fields": [
+      "codex-static::codex-conflict-rejected",
+      "codex-static::codex-nonimplementer-write-role-rejected"
+    ],
+    "test_codex_adapter_subagent_default_model_is_exact_gpt_5_6_sol": [
+      "codex-static::codex-exact-model-effort-limits"
+    ],
+    "test_codex_adapter_subagent_default_reasoning_effort_is_exact_max_when_current_codex_supports_max": [
+      "codex-static::codex-every-role-max-model-effort"
+    ],
+    "test_codex_adapter_uninstall_failure_rolls_back_to_fully_installed_state": [
+      "persistent-recovery::codex-backup-failure-has-zero-destination-mutation"
+    ],
+    "test_codex_adapter_uninstall_is_transactional_across_config_and_role_files": [
+      "persistent-recovery::codex-backup-failure-has-zero-destination-mutation",
+      "atomic-transaction::transaction-all-or-nothing"
+    ],
+    "test_codex_adapter_uninstall_preflights_all_backups_before_first_write": [
+      "persistent-recovery::codex-backup-integrity-preflight",
+      "persistent-recovery::codex-backup-failure-has-zero-destination-mutation"
+    ],
+    "test_codex_adapter_uninstall_refuses_post_install_managed_drift_without_touching_files": [
+      "codex-static::codex-uninstall-managed-drift-rejected"
+    ],
+    "test_codex_adapter_uninstall_survives_disposable_runtime_directory_deletion": [
+      "codex-static::codex-byte-exact-runtime-independent-uninstall"
+    ],
+    "test_codex_adapter_upgrade_preserves_original_pre_aegis_configuration_for_single_step_full_uninstall": [
+      "persistent-recovery::codex-upgrade-chain-retains-original-baseline",
+      "persistent-recovery::codex-upgrade-chain-restores-original"
+    ],
+    "test_codex_adapter_uses_only_current_officially_documented_config_keys_or_feature_gated_probed_keys": [
+      "codex-static::codex-current-schema-missing-keys-fails-closed"
+    ],
+    "test_codex_attempt_to_spawn_second_child_is_rejected_while_first_child_is_open": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "subagents::second-child-rejected"
+    ],
+    "test_codex_child_approval_policy_does_not_silently_inherit_more_permissive_parent_setting": [
+      "codex-static::codex-static-does-not-claim-live-effective"
+    ],
+    "test_codex_child_cannot_spawn_grandchild": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "subagents::framework-control-plane-nested-open-rejected"
+    ],
+    "test_codex_child_handoff_is_completed_before_real_second_spawn_is_allowed": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "subagents::next-child-only-after-prior-integration"
+    ],
+    "test_codex_config_merge_does_not_reparse_or_rewrite_unchanged_config_unnecessarily": [
+      "performance::noop-codex-performs-no-rewrite"
+    ],
+    "test_codex_current_cli_parses_installed_project_config_without_unknown_key_warning_or_error": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-installed-static"
+    ],
+    "test_codex_current_cli_project_is_trusted_before_project_scoped_aegis_config_is_considered_effective": [
+      "codex-static::codex-static-does-not-claim-live-effective"
+    ],
+    "test_codex_custom_role_instructions_are_loaded_in_actual_spawned_child": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-every-role-prohibits-nested-delegation"
+    ],
+    "test_codex_effective_parent_model_is_gpt_5_6_sol": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-exact-model-effort-limits"
+    ],
+    "test_codex_effective_parent_reasoning_effort_is_max": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-exact-model-effort-limits"
+    ],
+    "test_codex_effective_spawned_child_model_is_gpt_5_6_sol": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-every-role-max-model-effort"
+    ],
+    "test_codex_effective_spawned_child_reasoning_effort_is_max": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-every-role-max-model-effort"
+    ],
+    "test_codex_explicit_spawn_model_override_cannot_bypass_gpt_5_6_sol_invariant": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-exact-model-effort-limits"
+    ],
+    "test_codex_explicit_spawn_reasoning_override_cannot_bypass_max_invariant": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-every-role-max-model-effort"
+    ],
+    "test_codex_implementer_effective_sandbox_is_no_more_permissive_than_declared_policy": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-role-identity-and-sandbox"
+    ],
+    "test_codex_live_verification_never_reports_success_when_codex_executable_is_missing": [
+      "codex-static::codex-missing-executable-fails-closed"
+    ],
+    "test_codex_managed_config_or_runtime_probe_detects_higher_precedence_override_and_fails_closed": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-unobservable-current-probe-blocks-install"
+    ],
+    "test_codex_nested_delegation_is_runtime_proven_without_relying_on_undocumented_config_key": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-nested-guarantee-has-instruction-enforcement"
+    ],
+    "test_codex_only_aegis_registered_spawn_paths_are_permitted_when_strict_mode_is_enabled": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-role-path-traversal-rejected"
+    ],
+    "test_codex_parent_cli_override_cannot_silently_lower_reasoning_below_max": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-every-role-max-model-effort"
+    ],
+    "test_codex_parent_profile_override_cannot_silently_lower_reasoning_below_max": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-every-role-max-model-effort"
+    ],
+    "test_codex_project_config_install_is_not_reported_effective_until_live_debug_config_confirms_values": [
+      "codex-static::codex-static-does-not-claim-live-effective"
+    ],
+    "test_codex_read_only_role_effective_sandbox_is_read_only_under_parent_runtime_overrides": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-read-only-role-declarations"
+    ],
+    "test_codex_role_config_file_resolution_is_relative_to_declaring_config_as_expected": [
+      "codex-static::codex-role-path-traversal-rejected"
+    ],
+    "test_codex_role_generation_does_not_embed_secrets_from_environment_or_user_config": [
+      "security::codex-role-generation-excludes-environment-secrets"
+    ],
+    "test_codex_runtime_never_has_more_than_one_spawned_child_thread_open": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "subagents::global-lease-exactly-one-across-processes"
+    ],
+    "test_codex_runtime_verifier_records_codex_version_and_effective_config_proof": [
+      "codex-static::codex-static-does-not-claim-live-effective"
+    ],
+    "test_codex_sequential_lease_and_codex_native_thread_limit_agree_under_real_spawn_race": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "subagents::global-lease-exactly-one-across-processes"
+    ],
+    "test_codex_untrusted_project_causes_aegis_codex_verifier_to_fail_closed": [
+      "codex-static::codex-static-does-not-claim-live-effective"
+    ],
+    "test_codex_user_config_override_cannot_silently_lower_reasoning_below_max": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "codex-static::codex-conflict-rejected"
+    ],
+    "test_common_laws": [
+      "outer-unit::test_common_laws"
+    ],
+    "test_concurrent_task_creation_never_loses_or_misdirects_current_task_pointer": [
+      "state-identity::concurrent-task-create-no-loss",
+      "state-identity::current-pointer-transactionally-consistent"
+    ],
+    "test_conflict_fails": [
+      "outer-unit::test_conflict_fails"
+    ],
+    "test_context_cache_compaction_preserves_verified_facts_and_drops_redundant_raw_context": [
+      "context::context-compaction-preserves-digest-and-failure-region-not-raw"
+    ],
+    "test_context_cache_concurrent_writers_do_not_lose_entries": [
+      "context::context-concurrent-writers-no-loss"
+    ],
+    "test_context_cache_corruption_fails_closed_without_overwriting_forensic_state": [
+      "context::context-corruption-fails-closed"
+    ],
+    "test_context_cache_does_not_treat_caller_claimed_fingerprint_as_verified_content_without_provenance": [
+      "context::caller-fingerprint-not-verified"
+    ],
+    "test_context_cache_external_entry_requires_matching_fingerprint_and_unexpired_ttl_when_ttl_is_set": [
+      "context::verified-ttl-reuse",
+      "context::external-ttl-expiration"
+    ],
+    "test_context_cache_external_entry_with_ttl_expires_even_when_fingerprint_is_unchanged": [
+      "context::external-ttl-expiration"
+    ],
+    "test_context_cache_external_source_fingerprint_is_bound_to_source_identity": [
+      "context::external-source-identity-binding"
+    ],
+    "test_context_cache_file_entry_becomes_stale_after_content_change": [
+      "context::context-file-content-invalidation"
+    ],
+    "test_context_cache_file_entry_becomes_stale_after_symlink_retarget": [
+      "context::context-symlink-retarget-invalidation"
+    ],
+    "test_context_cache_file_entry_becomes_stale_when_file_disappears": [
+      "context::context-missing-invalidation"
+    ],
+    "test_context_cache_file_record_does_not_commit_inconsistent_hash_when_file_changes_mid_read": [
+      "context::mid-read-change-rejected-before-cache-commit"
+    ],
+    "test_context_cache_freshness_check_cost_is_lower_than_full_refetch_for_large_unchanged_file": [
+      "context::unchanged-context-reuse-avoids-content-reread"
+    ],
+    "test_context_cache_invalidates_transitive_conclusion_when_any_declared_dependency_changes": [
+      "context::context-dependency-invalidation"
+    ],
+    "test_context_cache_large_log_summary_retains_digest_and_failure_region_without_full_retransmission": [
+      "context::context-compaction-preserves-digest-and-failure-region-not-raw",
+      "context::large-summary-digest-not-raw"
+    ],
+    "test_context_cache_lookup_is_sublinear_or_bounded_for_large_cache": [
+      "performance::large-context-cache-lookup-bounded"
+    ],
+    "test_context_cache_never_persists_secrets_from_command_or_environment_context": [
+      "context::context-redaction-and-reuse",
+      "security::environment-secrets-absent-from-state-evidence-context-logs"
+    ],
+    "test_context_cache_project_path_is_confined_to_project_root": [
+      "context::context-path-confinement"
+    ],
+    "test_context_cache_rejects_malformed_entry_types": [
+      "context::context-malformed-entry-schema-rejected"
+    ],
+    "test_context_cache_rejects_negative_ttl": [
+      "context::context-negative-ttl"
+    ],
+    "test_context_cache_rejects_nonfinite_ttl": [
+      "context::context-nonfinite-ttl-nan"
+    ],
+    "test_context_cache_reuses_unchanged_context_without_re_reading_source": [
+      "context::unchanged-context-reuse-avoids-content-reread"
+    ],
+    "test_context_cache_schema_version_is_explicit_and_validated": [
+      "context::context-unknown-schema-rejected"
+    ],
+    "test_context_cache_updates_are_atomic": [
+      "context::context-atomic-schema-after-race"
+    ],
+    "test_cost_optimization_never_selects_lower_reasoning_effort": [
+      "reasoning-cost::cost-optimization-reduces-calls-before-reasoning"
+    ],
+    "test_cost_optimization_reduces_duplicate_tool_calls_before_reducing_reasoning": [
+      "reasoning-cost::cost-optimization-reduces-calls-before-reasoning"
+    ],
+    "test_critical_acceptance_gate_cannot_be_waived_without_user_authorization": [
+      "gates-risks-decisions::critical-gate-waiver-rejected"
+    ],
+    "test_critical_declared_task_risk_requires_adversarial_or_security_review_as_applicable": [
+      "gates-risks-decisions::critical-risk-specialist-review-required"
+    ],
+    "test_critical_risk_task_cannot_skip_plan_review_verify_and_final_audit": [
+      "workflow::critical-risk-review-cannot-be-skipped"
+    ],
+    "test_current_task_pointer_must_reference_existing_task_directory": [
+      "state-identity::current-pointer-missing-task-rejected"
+    ],
+    "test_current_task_pointer_rejects_absolute_paths": [
+      "state-identity::current-pointer-absolute-rejected"
+    ],
+    "test_current_task_pointer_rejects_parent_directory_traversal": [
+      "state-identity::current-pointer-traversal-rejected"
+    ],
+    "test_decision_rationale_must_be_nonempty_after_trimming": [
+      "gates-risks-decisions::decision-rationale-trimmed-nonempty"
+    ],
+    "test_decision_record": [
+      "outer-unit::test_decision_record"
+    ],
+    "test_decision_record_is_immutable_or_superseded_not_silently_rewritten": [
+      "gates-risks-decisions::decision-append-only-immutable",
+      "gates-risks-decisions::decision-supersession-history-preserved"
+    ],
+    "test_decision_statement_must_be_nonempty_after_trimming": [
+      "gates-risks-decisions::decision-statement-trimmed-nonempty"
+    ],
+    "test_decision_supersession_preserves_full_audit_history": [
+      "gates-risks-decisions::decision-supersession-history-preserved"
+    ],
+    "test_deleting_runtime_does_not_break_bootstrap_uninstall": [
+      "persistent-recovery::bootstrap-runtime-deletion-preserves-exact-uninstall"
+    ],
+    "test_deleting_runtime_does_not_break_bootstrap_upgrade_recovery": [
+      "persistent-recovery::bootstrap-recovery-metadata-outside-runtime",
+      "persistent-recovery::bootstrap-upgrade-chain-restores-original"
+    ],
+    "test_deleting_runtime_does_not_break_codex_uninstall": [
+      "persistent-recovery::codex-runtime-deletion-preserves-exact-uninstall"
+    ],
+    "test_deleting_runtime_does_not_break_codex_upgrade_recovery": [
+      "persistent-recovery::codex-recovery-metadata-outside-runtime",
+      "persistent-recovery::codex-upgrade-chain-restores-original"
+    ],
+    "test_dependency_install_requires_project_local_or_explicitly_authorized_environment": [
+      "security::dependency-actions-require-explicit-apply-authorization"
+    ],
+    "test_dependency_or_environment_probe_is_cached_until_relevant_state_changes": [
+      "reasoning-cost::dependency-probe-cache-invalidates-on-change"
+    ],
+    "test_differential_json_law": [
+      "outer-unit::test_differential_json_law"
+    ],
+    "test_differential_oracle_left_and_right_run_from_identical_isolated_workspace_snapshots": [
+      "law-runner::law-differential-identical-isolated-snapshots"
+    ],
+    "test_differential_oracle_result_is_independent_of_left_right_execution_order": [
+      "law-runner::law-differential-order-independent"
+    ],
+    "test_directory_must_match_module_id": [
+      "outer-unit::test_directory_must_match_module_id"
+    ],
+    "test_discover_framework": [
+      "outer-unit::test_discover_framework"
+    ],
+    "test_dotted_and_inline_managed_tables_fail_closed": [
+      "outer-unit::test_dotted_and_inline_managed_tables_fail_closed"
+    ],
+    "test_duplicate_evidence_id_is_rejected_during_load_and_finalize": [
+      "evidence::duplicate-evidence-id-rejected"
+    ],
+    "test_duplicate_requires_explicit_local_replacement": [
+      "outer-unit::test_duplicate_requires_explicit_local_replacement"
+    ],
+    "test_empty_sequence_is_not_vacuous_pass": [
+      "outer-unit::test_empty_sequence_is_not_vacuous_pass"
+    ],
+    "test_end_to_end_agent_edit_after_final_audit_invalidates_audit_and_prevents_finalize": [
+      "end-to-end::post-final-audit-edit-blocks-finalize-flow"
+    ],
+    "test_end_to_end_agent_edit_after_verification_invalidates_proof_and_prevents_finalize": [
+      "end-to-end::post-verification-edit-invalidates-proof-flow"
+    ],
+    "test_end_to_end_codex_nested_delegation_attempt_is_rejected": [
+      "end-to-end::codex-nested-delegation-fail-closed-flow"
+    ],
+    "test_end_to_end_codex_parent_and_child_are_live_verified_gpt_5_6_sol_max_or_run_fails_closed": [
+      "codex-static::codex-static-does-not-claim-live-effective",
+      "end-to-end::codex-nested-delegation-fail-closed-flow",
+      "end-to-end::codex-second-concurrent-child-rejected-flow"
+    ],
+    "test_end_to_end_codex_second_concurrent_child_attempt_is_rejected": [
+      "end-to-end::codex-second-concurrent-child-rejected-flow"
+    ],
+    "test_end_to_end_concurrent_process_fuzzing_never_violates_single_child_state_evidence_or_install_invariants": [
+      "historical-integrity::actual-process-concurrency-complete"
+    ],
+    "test_end_to_end_crash_at_every_transaction_boundary_recovers_to_pre_or_post_transaction_state": [
+      "end-to-end::all-transaction-boundaries-pre-or-post-flow"
+    ],
+    "test_end_to_end_install_upgrade_uninstall_restores_exact_pre_aegis_repository_control_files": [
+      "end-to-end::install-upgrade-uninstall-exact-restoration-flow"
+    ],
+    "test_end_to_end_law_test_attempt_to_cheat_by_test_detection_is_caught_by_hidden_metamorphic_case": [
+      "end-to-end::test-detection-cheating-hidden-metamorphic-flow"
+    ],
+    "test_end_to_end_law_test_attempt_to_modify_its_own_definition_is_rejected": [
+      "end-to-end::law-definition-self-mutation-rejected-flow"
+    ],
+    "test_end_to_end_mutating_task_cannot_finalize_without_current_epoch_direct_verification_and_workspace_bound_audit": [
+      "end-to-end::mutating-task-current-proof-and-workspace-audit-flow",
+      "end-to-end::acceptance-proof-task-epoch-workspace-evidence-bound"
+    ],
+    "test_end_to_end_only_one_subagent_can_exist_and_second_starts_only_after_parent_integrates_first_handoff": [
+      "end-to-end::single-child-handoff-integration-flow",
+      "subagents::global-lease-exactly-one-across-processes"
+    ],
+    "test_end_to_end_project_local_module_cannot_weaken_any_core_hard_invariant": [
+      "end-to-end::project-module-hard-invariant-protection-flow"
+    ],
+    "test_end_to_end_python_meta_enabled_and_disabled_paths_preserve_same_core_invariants": [
+      "end-to-end::python-meta-enabled-disabled-core-invariants-flow"
+    ],
+    "test_end_to_end_read_only_material_claim_task_cannot_finalize_without_direct_evidence": [
+      "end-to-end::read-only-material-claim-direct-evidence-flow"
+    ],
+    "test_end_to_end_release_zip_clean_extract_selftest_laws_and_self_audit_all_pass": [
+      "historical-integrity::release-clean-artifact-full-sequence-complete"
+    ],
+    "test_end_to_end_runtime_directory_deletion_does_not_destroy_persistent_uninstall_or_recovery_capability": [
+      "end-to-end::runtime-deletion-preserves-all-install-recovery"
+    ],
+    "test_end_to_end_xonsh_interactive_path_matches_direct_cli_semantics": [
+      "end-to-end::xonsh-interactive-matches-direct-cli-flow"
+    ],
+    "test_entering_implement_increments_implementation_epoch_exactly_once": [
+      "workflow::implement-increments-epoch-once"
+    ],
+    "test_entering_remediate_increments_implementation_epoch_exactly_once": [
+      "workflow::remediate-increments-epoch-once"
+    ],
+    "test_environment_executable_discovery_is_cached_within_command_invocation": [
+      "performance::environment-discovery-cached-per-process"
+    ],
+    "test_environment_selector_choice_is_explainable_by_declared_quality_correctness_cost_criteria": [
+      "xonsh::environment-selector-stable-explainable"
+    ],
+    "test_environment_selector_does_not_call_executable_discovery_redundantly_for_same_candidate": [
+      "xonsh::environment-selector-executable-discovery-cached"
+    ],
+    "test_environment_selector_does_not_launch_interactive_shell_for_simple_one_shot_command": [
+      "reasoning-cost::oneshot-selector-never-launches-interactive-shell"
+    ],
+    "test_environment_selector_does_not_switch_shells_without_material_expected_benefit": [
+      "xonsh::environment-selector-direct"
+    ],
+    "test_environment_selector_honors_project_declared_native_shell_requirement": [
+      "xonsh::environment-selector-project-native"
+    ],
+    "test_environment_selector_prefers_posix_shell_for_posix_native_semantics_when_it_reduces_error_risk": [
+      "xonsh::environment-selector-native-platform-semantics"
+    ],
+    "test_environment_selector_prefers_powershell_for_windows_native_semantics_when_it_reduces_error_risk": [
+      "xonsh::environment-selector-native-platform-semantics"
+    ],
+    "test_environment_selector_prefers_xonsh_only_when_task_requires_mixed_python_shell_interactivity_and_xonsh_is_compatible": [
+      "xonsh::environment-selector-xonsh-only-for-compatible-mixed-workload"
+    ],
+    "test_environment_selector_rejects_unknown_purpose_instead_of_silent_fallback": [
+      "xonsh::environment-selector-unknown-purpose"
+    ],
+    "test_environment_selector_uses_direct_argv_for_one_shot_commands_when_no_shell_semantics_are_needed": [
+      "xonsh::environment-selector-direct",
+      "xonsh::environment-selector-native-platform-semantics"
+    ],
+    "test_every_acceptance_proof_is_bound_to_task_epoch_workspace_and_executed_evidence": [
+      "end-to-end::acceptance-proof-task-epoch-workspace-evidence-bound"
+    ],
+    "test_every_disposable_directory_can_be_deleted_without_losing_persistent_recovery_capability": [
+      "end-to-end::every-disposable-runtime-recovery-path-survives-deletion"
+    ],
+    "test_every_executable_hard_invariant_is_documented_in_policy": [
+      "policy-consistency::hard-policy-invariants-have-executable-contracts"
+    ],
+    "test_every_existing_unit_test_and_builtin_law_still_passes_after_all_v4_0_flaw_fixes": [
+      "end-to-end::existing-regression-and-builtin-inventory-executable"
+    ],
+    "test_every_extension_point_is_unable_to_weaken_core_hard_invariants": [
+      "end-to-end::extension-points-cannot-weaken-hard-invariants"
+    ],
+    "test_every_external_host_assumption_has_version_or_capability_probe_and_fail_closed_law": [
+      "end-to-end::external-host-assumptions-probed-and-fail-closed"
+    ],
+    "test_every_hard_framework_claim_has_executable_enforcement_and_independent_adversarial_verification": [
+      "historical-integrity::hard-invariant-canonical-complete"
+    ],
+    "test_every_hard_invariant_has_independent_mutant_that_is_killed_by_suite": [
+      "historical-integrity::hard-invariant-canonical-complete"
+    ],
+    "test_every_hard_policy_invariant_maps_to_at_least_one_executable_enforcement_or_fail_closed_probe": [
+      "policy-consistency::hard-policy-invariants-have-executable-contracts"
+    ],
+    "test_every_path_from_untrusted_or_mutable_state_is_root_confined_before_filesystem_access": [
+      "end-to-end::untrusted-and-mutable-paths-root-confined"
+    ],
+    "test_every_persistent_mutation_has_transactional_crash_recovery_law": [
+      "end-to-end::persistent-mutations-have-transactional-recovery"
+    ],
+    "test_every_seeded_v4_0_known_defect_causes_at_least_one_proposed_law_to_fail": [
+      "historical-integrity::v4-canonical-execution-complete"
+    ],
+    "test_every_spawned_managed_subagent_uses_max_reasoning_or_spawn_fails_closed": [
+      "reasoning-cost::managed-spawn-roles-all-max"
+    ],
+    "test_every_v4_0_audited_flaw_has_at_least_one_direct_law_name_in_collection": [
+      "historical-integrity::v4-canonical-execution-complete"
+    ],
+    "test_every_v4_0_audited_flaw_has_at_least_one_failing_seeded_regression_before_fix": [
+      "historical-integrity::v4-canonical-execution-complete"
+    ],
+    "test_every_v4_0_audited_flaw_has_at_least_one_passing_regression_after_fix": [
+      "historical-integrity::v4-canonical-execution-complete"
+    ],
+    "test_every_workflow_state_has_explicit_allowed_incoming_and_outgoing_transitions": [
+      "workflow::transition-table-total"
+    ],
+    "test_evidence_added_after_final_audit_invalidates_final_audit_when_it_changes_claim_basis": [
+      "fault-race::race-finalize-vs-evidence-fails-closed",
+      "workflow::terminal-evidence-append-rejected",
+      "workflow::terminal-evidence-rejection-preserves-final-state"
+    ],
+    "test_evidence_append_cost_does_not_grow_quadratically_with_ledger_length": [
+      "performance::evidence-append-does-not-rescan-ledger"
+    ],
+    "test_evidence_append_is_atomic_under_process_crash": [
+      "evidence::evidence-append-crash-propagates"
+    ],
+    "test_evidence_append_is_concurrency_safe_without_lost_records": [
+      "evidence::evidence-concurrent-append-no-loss"
+    ],
+    "test_evidence_artifact_paths_cannot_escape_project_or_designated_artifact_root": [
+      "security::artifact-path-root-confinement"
+    ],
+    "test_evidence_chain_anchor_is_bound_to_task_and_revision": [
+      "evidence::evidence-anchor-task-revision-binding"
+    ],
+    "test_evidence_chain_has_external_or_task_state_anchor_preventing_full_chain_rewrite": [
+      "evidence::evidence-anchor-task-revision-binding",
+      "state-identity::state-anchor-history-detects-state-and-head-rollback"
+    ],
+    "test_evidence_chain_verification_is_linear_time_and_not_quadratic_on_append": [
+      "performance::evidence-append-does-not-rescan-ledger",
+      "performance::evidence-verification-one-validation-per-record"
+    ],
+    "test_evidence_from_other_workspace_fingerprint_never_satisfies_current_audit": [
+      "workflow::post-verification-workspace-change-rejected"
+    ],
+    "test_evidence_from_prior_epoch_never_satisfies_current_epoch_gate": [
+      "gates-risks-decisions::gate-proof-prior-epoch-rejected"
+    ],
+    "test_evidence_full_logs_are_referenced_by_digest_without_polluting_context": [
+      "evidence::evidence-large-output-digest-retained"
+    ],
+    "test_evidence_hash_chain_detects_record_deletion": [
+      "evidence::evidence-record-deletion-detected"
+    ],
+    "test_evidence_hash_chain_detects_record_insertion": [
+      "evidence::evidence-record-insertion-detected"
+    ],
+    "test_evidence_hash_chain_detects_record_modification": [
+      "evidence::evidence-tamper-detected"
+    ],
+    "test_evidence_hash_chain_detects_record_reordering": [
+      "evidence::evidence-record-reordering-detected"
+    ],
+    "test_evidence_id_is_globally_unique_within_task": [
+      "evidence::evidence-unique-sequenced-chain"
+    ],
+    "test_evidence_output_capture_is_bounded": [
+      "evidence::evidence-output-capture-bounded"
+    ],
+    "test_evidence_schema_rejects_invalid_epoch": [
+      "evidence::evidence-invalid-epoch-rejected"
+    ],
+    "test_evidence_schema_rejects_missing_required_fields": [
+      "evidence::evidence-missing-schema-field-rejected"
+    ],
+    "test_evidence_schema_rejects_task_mismatch": [
+      "evidence::evidence-task-mismatch-rejected"
+    ],
+    "test_evidence_schema_rejects_unknown_or_invalid_kind_values": [
+      "evidence::evidence-invalid-kind-rejected"
+    ],
+    "test_evidence_secret_redaction_occurs_before_persistent_log_storage": [
+      "evidence::evidence-secret-redaction"
+    ],
+    "test_evidence_truncated_tail_is_detected_and_never_silently_accepted": [
+      "evidence::evidence-append-crash-never-silently-accepted",
+      "evidence::evidence-truncated-tail"
+    ],
+    "test_evidence_verify_cost_is_linear_in_record_count": [
+      "performance::evidence-verification-one-validation-per-record"
+    ],
+    "test_expensive_full_test_suite_is_not_repeated_without_relevant_change_or_explicit_need": [
+      "reasoning-cost::expensive-suite-not-repeated-without-relevant-change"
+    ],
+    "test_external_fingerprint_and_ttl": [
+      "outer-unit::test_external_fingerprint_and_ttl"
+    ],
+    "test_external_tool_execution_uses_explicit_argv_and_avoids_shell_injection": [
+      "security::no-shell-argv-preservation",
+      "security::subprocess-construction-shell-disabled"
+    ],
+    "test_failed_command_cannot_be_recorded_as_successful_verification": [
+      "evidence::failed-command-not-successful-verification"
+    ],
+    "test_failed_hypothesis_updates_task_state_before_next_expensive_action": [
+      "reasoning-cost::failed-hypothesis-requires-recorded-model-update"
+    ],
+    "test_failed_state_has_explicit_recovery_or_terminal_semantics": [
+      "workflow::failed-cancelled-abandoned-explicit-terminal-semantics"
+    ],
+    "test_fault_injection_crash_after_atomic_replace_before_directory_fsync_is_detected_on_recovery": [
+      "fault-race::fault-crash-after-replace-before-directory-fsync-detected"
+    ],
+    "test_fault_injection_crash_before_atomic_replace_preserves_original_target": [
+      "fault-race::fault-crash-before-atomic-replace-preserves-original"
+    ],
+    "test_fault_injection_crash_during_bootstrap_install_recovers_coherently": [
+      "fault-race::fault-bootstrap-install-uninstall-coherent"
+    ],
+    "test_fault_injection_crash_during_bootstrap_uninstall_recovers_coherently": [
+      "fault-race::fault-bootstrap-install-uninstall-coherent"
+    ],
+    "test_fault_injection_crash_during_codex_install_recovers_coherently": [
+      "fault-race::fault-codex-install-uninstall-coherent"
+    ],
+    "test_fault_injection_crash_during_codex_uninstall_recovers_coherently": [
+      "fault-race::fault-codex-install-uninstall-coherent"
+    ],
+    "test_fault_injection_crash_during_evidence_append_recovers_coherently": [
+      "fault-race::fault-evidence-append-crash-detected"
+    ],
+    "test_fault_injection_crash_during_manifest_regeneration_never_leaves_truncated_manifest": [
+      "fault-race::fault-manifest-regeneration-never-truncated"
+    ],
+    "test_fault_injection_crash_during_state_transition_recovers_coherently": [
+      "fault-race::fault-state-transition-recovers-coherently"
+    ],
+    "test_fault_injection_crash_during_subagent_close_recovers_consistent_state_and_lease": [
+      "fault-race::fault-subagent-open-close-recover-coherent"
+    ],
+    "test_fault_injection_crash_during_subagent_open_recovers_consistent_state_and_lease": [
+      "fault-race::fault-subagent-open-close-recover-coherent"
+    ],
+    "test_fault_injection_crash_during_subagent_recover_recovers_consistent_state_and_lease": [
+      "fault-race::fault-subagent-open-close-recover-coherent"
+    ],
+    "test_fault_injection_every_persistent_write_boundary_preserves_pre_or_post_state_never_partial_state": [
+      "fault-race::fault-transaction-journal-boundaries-pre-or-post"
+    ],
+    "test_final_audit_rejects_unavailable_workspace_fingerprint": [
+      "workflow::final-audit-unavailable-workspace-rejected"
+    ],
+    "test_final_audit_requires_all_mandatory_acceptance_gates_proven_not_merely_present": [
+      "gates-risks-decisions::missing-gate-blocks-audit",
+      "gates-risks-decisions::nonwaived-gate-required-and-proven"
+    ],
+    "test_final_audit_requires_current_workspace_fingerprint_for_mutating_task": [
+      "workflow::complete-current-proof-flow",
+      "workflow::post-verification-workspace-change-rejected"
+    ],
+    "test_final_audit_requires_resolved_gates_and_critical_risks": [
+      "outer-unit::test_final_audit_requires_resolved_gates_and_critical_risks"
+    ],
+    "test_final_audit_requires_zero_unresolved_blocking_risks": [
+      "gates-risks-decisions::unresolved-high-risk-blocks-final-audit",
+      "gates-risks-decisions::unresolved-critical-risk-blocks-final-audit"
+    ],
+    "test_final_diff_audit_distinguishes_preexisting_user_changes_from_agent_changes": [
+      "workspace::final-diff-separates-preexisting-and-agent-changes"
+    ],
+    "test_finalize_is_idempotent_after_success": [
+      "workflow::finalize-idempotent"
+    ],
+    "test_finalize_recomputes_and_compares_workspace_fingerprint_atomically_with_proof_snapshot": [
+      "fault-race::race-finalize-vs-workspace-edit-fails-closed"
+    ],
+    "test_finalize_rejects_evidence_from_prior_epoch_even_if_state_is_tampered": [
+      "outer-unit::test_finalize_rejects_evidence_from_prior_epoch_even_if_state_is_tampered"
+    ],
+    "test_finalize_revalidates_evidence_chain_after_acquiring_finalization_lock": [
+      "fault-race::race-finalize-vs-evidence-fails-closed",
+      "workflow::terminal-evidence-append-rejected",
+      "workflow::terminal-evidence-rejection-preserves-final-state"
+    ],
+    "test_finalize_revalidates_gate_proofs_after_acquiring_finalization_lock": [
+      "fault-race::race-finalize-vs-gate-serialized"
+    ],
+    "test_finalize_revalidates_no_active_child_after_acquiring_finalization_lock": [
+      "subagents::finalization-rechecks-child-state",
+      "workflow::active-child-blocks-finalization"
+    ],
+    "test_finalized_task_rejects_further_mutation_without_explicit_reopen_transition": [
+      "workflow::finalized-rejects-mutation"
+    ],
+    "test_force_cleared_lease_emits_durable_recovery_evidence": [
+      "subagents::force-recovery-durable-decision-and-evidence"
+    ],
+    "test_framework_archive_extracts_and_selftests_on_windows_and_posix": [
+      "release::archive-byte-roundtrip",
+      "release::manifest-tree-and-release-anchor"
+    ],
+    "test_framework_default_operations_do_not_require_network_access": [
+      "performance::default-operations-require-no-network"
+    ],
+    "test_framework_default_reasoning_effort_is_exact_max_in_core_configuration": [
+      "reasoning-cost::reasoning-default-exact-max"
+    ],
+    "test_framework_does_not_send_repository_content_to_external_service_without_explicit_authorization": [
+      "security::no-implicit-repository-exfiltration"
+    ],
+    "test_framework_downgrade_refuses_incompatible_newer_state_without_data_loss": [
+      "migration::framework-downgrade-newer-state-rejected"
+    ],
+    "test_framework_fails_cleanly_on_non_utf8_control_file_instead_of_corrupting_it": [
+      "portability::non-utf8-control-file-clean-rejection"
+    ],
+    "test_framework_handles_antivirus_or_file_lock_contention_with_bounded_retry_or_clean_failure": [
+      "portability::file-lock-contention-bounded"
+    ],
+    "test_framework_handles_atomic_replace_failure_without_losing_original": [
+      "portability::atomic-replace-failure-preserves-original"
+    ],
+    "test_framework_handles_case_insensitive_filesystem_without_duplicate_identity": [
+      "state-identity::task-id-canonical-length-characters"
+    ],
+    "test_framework_handles_case_sensitive_filesystem_without_path_alias_confusion": [
+      "state-identity::task-id-canonical-length-characters",
+      "portability::unicode-paths"
+    ],
+    "test_framework_handles_crlf_and_lf_without_unintended_rewrites": [
+      "portability::crlf-lf-preserved"
+    ],
+    "test_framework_handles_disk_full_without_partial_commit": [
+      "portability::disk-full-no-partial-commit"
+    ],
+    "test_framework_handles_long_paths_with_platform_specific_limits": [
+      "portability::long-path-within-platform-limit"
+    ],
+    "test_framework_handles_paths_with_spaces": [
+      "portability::paths-with-spaces"
+    ],
+    "test_framework_handles_permission_denied_without_partial_commit": [
+      "portability::permission-denied-no-partial-commit"
+    ],
+    "test_framework_handles_read_only_files_with_clear_non_destructive_failure": [
+      "portability::read-only-file-clear-nondestructive-semantics"
+    ],
+    "test_framework_handles_unc_paths_when_supported": [
+      "portability::windows-unc-path-parsing",
+      "portability::supported-python-version"
+    ],
+    "test_framework_handles_unicode_paths": [
+      "portability::unicode-paths"
+    ],
+    "test_framework_handles_utf8_text_without_locale_dependency": [
+      "portability::utf8-locale-independent"
+    ],
+    "test_framework_handles_windows_drive_letter_paths": [
+      "portability::windows-drive-path"
+    ],
+    "test_framework_major_version_mismatch_fails_closed_for_modules": [
+      "migration::module-major-mismatch"
+    ],
+    "test_framework_manifest_covers_every_immutable_framework_file": [
+      "release::manifest-covers-every-immutable-file"
+    ],
+    "test_framework_manifest_excludes_only_explicit_mutable_extension_and_runtime_paths": [
+      "release::manifest-excludes-only-declared-mutable-generated-paths"
+    ],
+    "test_framework_manifest_parser_rejects_absolute_paths": [
+      "release::manifest-absolute"
+    ],
+    "test_framework_manifest_parser_rejects_duplicate_paths": [
+      "release::manifest-duplicate"
+    ],
+    "test_framework_manifest_parser_rejects_invalid_sha256_digests": [
+      "release::manifest-digest"
+    ],
+    "test_framework_manifest_parser_rejects_malformed_lines": [
+      "release::manifest-malformed"
+    ],
+    "test_framework_manifest_parser_rejects_parent_directory_traversal_paths": [
+      "release::manifest-traversal"
+    ],
+    "test_framework_manifest_rejects_symlinked_immutable_files": [
+      "release::manifest-symlinked-immutable-file-rejected"
+    ],
+    "test_framework_manifest_verification_detects_added_immutable_files": [
+      "release::manifest-detects-added-immutable-file"
+    ],
+    "test_framework_manifest_verification_detects_deleted_immutable_files": [
+      "release::manifest-detects-deleted-immutable-file"
+    ],
+    "test_framework_manifest_verification_detects_modified_immutable_files": [
+      "release::manifest-detects-modified-immutable-file"
+    ],
+    "test_framework_never_persists_environment_secrets_in_state_evidence_context_or_logs": [
+      "security::environment-secrets-absent-from-state-evidence-context-logs"
+    ],
+    "test_framework_never_silently_downgrades_reasoning_effort": [
+      "reasoning-cost::cost-strategy-never-lowers-reasoning"
+    ],
+    "test_framework_never_weakens_auth_tls_signature_or_security_checks_to_make_validation_pass": [
+      "security::no-auth-tls-signature-bypass"
+    ],
+    "test_framework_no_git_installation_uses_safe_non_git_fallback": [
+      "portability::no-git-safe-tree-fallback"
+    ],
+    "test_framework_python_wrappers_reject_python_older_than_declared_minimum": [
+      "portability::wrappers-enforce-python-minimum"
+    ],
+    "test_framework_redacts_common_token_key_password_and_private_key_patterns": [
+      "security::evidence-redacts-before-persistence",
+      "security::common-secret-pattern-redaction"
+    ],
+    "test_framework_rejects_symlinked_control_files_that_escape_repository": [
+      "security::sensitive-control-symlink-rejected"
+    ],
+    "test_framework_rejects_world_writable_sensitive_control_files_when_platform_can_detect_them": [
+      "security::sensitive-world-writable-control-rejected"
+    ],
+    "test_framework_runs_on_supported_linux_python_version": [
+      "portability::supported-python-version"
+    ],
+    "test_framework_runs_on_supported_macos_python_version": [
+      "portability::supported-python-version"
+    ],
+    "test_framework_runs_on_supported_windows_python_version": [
+      "portability::supported-python-version"
+    ],
+    "test_framework_runtime_control_files_are_not_group_or_world_writable_by_default": [
+      "security::runtime-control-files-not-group-world-writable"
+    ],
+    "test_framework_self_audit_cannot_pass_after_seeded_hard_invariant_mutation_and_manifest_regeneration": [
+      "release::self-audit-detects-hard-invariant-after-manifest-regeneration"
+    ],
+    "test_framework_self_audit_detects_permission_regressions_on_security_sensitive_files": [
+      "security::self-audit-enforces-sensitive-file-permissions"
+    ],
+    "test_framework_self_audit_detects_stale_cross_references_and_missing_policy_paths": [
+      "release::self-audit-detects-stale-paths-and-version-drift"
+    ],
+    "test_framework_self_audit_detects_version_drift_across_modules_and_core": [
+      "release::version-consistent-across-modules-and-core",
+      "release::self-audit-detects-stale-paths-and-version-drift"
+    ],
+    "test_framework_self_audit_fails_when_release_contains_transient_bytecode_artifacts": [
+      "release::self-audit-detects-transient-bytecode"
+    ],
+    "test_framework_self_audit_parses_every_toml_file_strictly": [
+      "release::self-audit-strictly-parses-every-toml"
+    ],
+    "test_framework_self_audit_syntax_checks_every_python_file": [
+      "release::self-audit-syntax-checks-python"
+    ],
+    "test_framework_self_audit_validates_every_shell_wrapper_supported_by_current_host": [
+      "release::self-audit-validates-host-shell-wrappers"
+    ],
+    "test_framework_self_audit_validates_xonsh_sources_when_xonsh_is_available": [
+      "release::self-audit-validates-host-shell-wrappers"
+    ],
+    "test_framework_tomllib_dependency_matches_declared_minimum_python": [
+      "portability::tomllib-matches-declared-python"
+    ],
+    "test_framework_upgrade_creates_recoverable_backup_before_first_persistent_change": [
+      "migration::framework-upgrade-recoverable-backup-before-first-change"
+    ],
+    "test_framework_upgrade_failure_rolls_back_entire_framework_to_previous_working_version": [
+      "migration::framework-upgrade-failure-rolls-back-all-files"
+    ],
+    "test_framework_upgrade_from_v4_0_can_restore_original_pre_aegis_codex_configuration": [
+      "migration::v4-original-codex-config-restorable"
+    ],
+    "test_framework_upgrade_from_v4_0_can_restore_original_pre_aegis_root_agents_file": [
+      "migration::v4-original-root-agents-restorable"
+    ],
+    "test_framework_upgrade_from_v4_0_detects_old_codex_undocumented_config_keys_and_rewrites_or_refuses_safely": [
+      "migration::v4-undocumented-codex-keys-rejected"
+    ],
+    "test_framework_upgrade_from_v4_0_migrates_persistent_install_journals_to_non_disposable_storage": [
+      "migration::v4-runtime-install-journals-migrate-to-persistent-storage"
+    ],
+    "test_framework_upgrade_from_v4_0_migrates_runtime_state_or_explicitly_refuses_incompatible_state_without_corruption": [
+      "migration::v4-schema-migrated-and-anchored"
+    ],
+    "test_framework_upgrade_from_v4_0_preserves_project_law_files": [
+      "migration::framework-upgrade-preserves-project-laws"
+    ],
+    "test_framework_upgrade_from_v4_0_preserves_project_local_module_configuration": [
+      "migration::framework-upgrade-preserves-project-local-module"
+    ],
+    "test_framework_upgrade_from_v4_0_preserves_unrelated_root_agents_content": [
+      "migration::framework-upgrade-preserves-root-agents-user-bytes"
+    ],
+    "test_framework_upgrade_from_v4_0_removes_stale_pyc_and___pycache___artifacts": [
+      "migration::framework-upgrade-replaces-declared-files-and-removes-bytecode"
+    ],
+    "test_framework_upgrade_is_dry_run_capable": [
+      "migration::framework-upgrade-dry-run-zero-side-effects"
+    ],
+    "test_framework_upgrade_is_idempotent": [
+      "migration::framework-upgrade-idempotent"
+    ],
+    "test_framework_version_matches_version_file_framework_toml_package_version_and_docs": [
+      "release::version-consistency",
+      "release::version-consistent-across-modules-and-core",
+      "release::self-audit-detects-stale-paths-and-version-drift"
+    ],
+    "test_freshness": [
+      "outer-unit::test_freshness"
+    ],
+    "test_full_adversarial_mutation_fault_injection_cross_platform_and_live_host_matrix_passes": [
+      "end-to-end::every-hard-claim-independent-adversarial-enforcement",
+      "end-to-end::concurrent-state-evidence-child-finalize-invariants-flow"
+    ],
+    "test_full_selftest_does_not_repeat_identical_expensive_probes_without_invalidation": [
+      "performance::semantic-family-expensive-probes-cached"
+    ],
+    "test_gate_change_after_verification_invalidates_affected_verification_status": [
+      "gates-risks-decisions::gate-change-invalidates-final-audit-and-proof-status",
+      "gates-risks-decisions::gate-history-deletion-rejected"
+    ],
+    "test_gate_change_after_verification_invalidates_final_audit": [
+      "gates-risks-decisions::gate-change-invalidates-final-audit-and-proof-status",
+      "gates-risks-decisions::gate-history-deletion-rejected"
+    ],
+    "test_git_fingerprint_changes_with_untracked_content": [
+      "outer-unit::test_git_fingerprint_changes_with_untracked_content"
+    ],
+    "test_global_lease_without_matching_active_child_state_is_detected_and_recovery_required": [
+      "subagents::global-lease-without-active-child-blocks-open"
+    ],
+    "test_global_subagent_lease_allows_exactly_one_active_child_across_processes": [
+      "subagents::global-lease-exactly-one-across-processes"
+    ],
+    "test_hard_acceptance_law_cannot_be_downgraded_to_soft_without_authorized_policy_change": [
+      "law-runner::hard-framework-law-downgrade-rejected"
+    ],
+    "test_hidden_law_values_are_not_visible_to_production_process_before_observation": [
+      "mutation::hidden-law-values-not-visible"
+    ],
+    "test_high_declared_task_risk_requires_independent_verification": [
+      "workflow::high-risk-review-cannot-be-skipped"
+    ],
+    "test_high_risk_task_cannot_skip_required_review_and_verification": [
+      "workflow::high-risk-review-cannot-be-skipped"
+    ],
+    "test_host_adapter_proves_no_unmanaged_spawn_path_can_bypass_framework_sequential_lease": [
+      "subagents::global-lease-exactly-one-across-processes"
+    ],
+    "test_host_adapter_reports_unverified_instead_of_claiming_max_when_effective_reasoning_cannot_be_observed": [
+      "reasoning-cost::host-unobservable-reported-not-claimed"
+    ],
+    "test_identical_failed_command_is_not_repeated_without_material_state_change": [
+      "reasoning-cost::identical-failed-command-not-repeated-without-change"
+    ],
+    "test_illegal_transition_is_rejected_without_any_state_or_evidence_side_effect": [
+      "workflow::illegal-transition-no-side-effect"
+    ],
+    "test_implementation_epoch_change_invalidates_all_prior_gate_proofs": [
+      "workflow::epoch-change-invalidates-gate-proofs"
+    ],
+    "test_implementation_epoch_change_invalidates_all_prior_verification_proofs": [
+      "workflow::epoch-change-invalidates-verification"
+    ],
+    "test_implementation_epoch_change_invalidates_prior_final_audit": [
+      "workflow::epoch-change-invalidates-final-audit"
+    ],
+    "test_implementation_invalidates_stale_proof": [
+      "outer-unit::test_implementation_invalidates_stale_proof"
+    ],
+    "test_install_roles_and_verify": [
+      "outer-unit::test_install_roles_and_verify"
+    ],
+    "test_install_uninstall_roundtrip": [
+      "outer-unit::test_install_uninstall_roundtrip"
+    ],
+    "test_interrupted_install_is_detected_on_next_invocation": [
+      "persistent-recovery::interrupted-install-detected-and-recovered-next-invocation"
+    ],
+    "test_interrupted_uninstall_is_detected_on_next_invocation": [
+      "persistent-recovery::interrupted-uninstall-detected-and-recovered-next-invocation"
+    ],
+    "test_invalid_severity_fails_loading": [
+      "outer-unit::test_invalid_severity_fails_loading"
+    ],
+    "test_json_law": [
+      "outer-unit::test_json_law"
+    ],
+    "test_large_command_output_is_summarized_with_artifact_reference_not_reinserted_repeatedly": [
+      "reasoning-cost::large-output-summary-retains-artifact-digest"
+    ],
+    "test_law_command_cannot_modify_acceptance_tests_unless_law_explicitly_authorizes_fixture_output": [
+      "law-runner::law-command-cannot-modify-acceptance-tests"
+    ],
+    "test_law_command_cannot_modify_law_definitions": [
+      "law-runner::law-command-cannot-modify-acceptance-tests"
+    ],
+    "test_law_command_environment_does_not_expose_unneeded_credentials": [
+      "security::law-and-tool-environment-credential-scrub"
+    ],
+    "test_law_command_workspace_mutation_is_detected_and_rejected_for_read_only_laws": [
+      "law-runner::law-read-only-workspace-mutation-rejected"
+    ],
+    "test_law_definition_file_hash_is_captured_before_execution": [
+      "law-runner::law-definition-hashes-recorded"
+    ],
+    "test_law_definition_file_hash_is_rechecked_after_execution": [
+      "law-runner::law-definition-hashes-recorded"
+    ],
+    "test_law_definition_files_are_made_read_only_or_snapshot_isolated_during_law_execution": [
+      "law-runner::law-definitions-readonly-or-snapshot-isolated"
+    ],
+    "test_law_definition_id_is_nonempty_canonical_and_unique_across_all_loaded_files": [
+      "law-runner::law-id-unique-across-files"
+    ],
+    "test_law_definition_kind_is_known": [
+      "law-runner::unknown-kind-fails-closed"
+    ],
+    "test_law_definition_kind_specific_schema_is_validated_before_execution": [
+      "law-runner::law-command-schema-rejected",
+      "law-runner::law-timeout-schema-rejected"
+    ],
+    "test_law_definition_mutation_during_execution_is_detected_even_if_original_bytes_are_restored_before_exit": [
+      "law-runner::mutate-restore-definition-detected"
+    ],
+    "test_law_definition_path_is_confined_to_project_root_unless_explicit_external_oracle_is_authorized": [
+      "law-runner::law-path-root-confined"
+    ],
+    "test_law_definition_severity_is_known": [
+      "law-runner::law-severity-schema-rejected"
+    ],
+    "test_law_runner_counterexample_is_recorded_for_property_failure": [
+      "law-runner::law-property-counterexample-recorded"
+    ],
+    "test_law_runner_detects_test_file_changes_before_reporting_pass": [
+      "law-runner::law-test-file-change-detected-before-pass"
+    ],
+    "test_law_runner_does_not_invoke_shell_unless_law_explicitly_requires_shell_semantics": [
+      "law-runner::law-argv-boundaries-no-shell"
+    ],
+    "test_law_runner_empty_law_collection_fails_when_acceptance_laws_are_required": [
+      "law-runner::empty-acceptance-fails"
+    ],
+    "test_law_runner_hard_law_failure_always_produces_nonzero_overall_exit": [
+      "law-runner::law-hard-failure-overall-nonzero"
+    ],
+    "test_law_runner_has_timeout_for_each_external_command": [
+      "law-runner::law-timeout-schema-rejected",
+      "law-runner::timeout-reported"
+    ],
+    "test_law_runner_internal_exception_is_reported_as_failure_not_pass_or_skip": [
+      "law-runner::law-internal-exception-is-error"
+    ],
+    "test_law_runner_large_output_memory_usage_is_bounded": [
+      "performance::law-runner-large-output-memory-bounded"
+    ],
+    "test_law_runner_preserves_argv_boundaries_for_spaces_quotes_unicode_and_metacharacters": [
+      "law-runner::law-argv-boundaries-no-shell"
+    ],
+    "test_law_runner_production_probe_uses_same_binary_entrypoint_and_features_as_normal_execution": [
+      "law-runner::law-json-production-command",
+      "law-runner::law-argv-boundaries-no-shell"
+    ],
+    "test_law_runner_randomizes_or_hides_nonessential_test_identifiers_from_production_process": [
+      "law-runner::law-nonessential-test-identity-hidden",
+      "law-runner::law-json-production-command"
+    ],
+    "test_law_runner_rejects_catastrophic_or_unbounded_regex_configuration": [
+      "law-runner::catastrophic-regex-rejected"
+    ],
+    "test_law_runner_rejects_cfg_test_or_equivalent_branch_as_only_implementation_of_required_behavior": [
+      "mutation::production-has-no-test-framework-branch",
+      "mutation::production-behavior-independent-of-test-framework-modules"
+    ],
+    "test_law_runner_rejects_test_only_production_behavior": [
+      "mutation::production-behavior-independent-of-test-framework-modules",
+      "law-runner::law-nonessential-test-identity-hidden"
+    ],
+    "test_law_runner_repeated_execution_from_same_seed_is_deterministic": [
+      "law-runner::law-repeated-seed-deterministic"
+    ],
+    "test_law_runner_reports_exact_exit_code_and_timeout_status": [
+      "law-runner::law-exact-exit-status"
+    ],
+    "test_law_runner_reproducible_seed_is_recorded_for_generated_cases": [
+      "law-runner::law-reproducible-seed-recorded"
+    ],
+    "test_law_runner_retains_full_large_output_by_digest_or_artifact_reference_without_context_flood": [
+      "law-runner::law-large-output-digest-retained"
+    ],
+    "test_law_runner_scrubs_test_detection_environment_variables_comprehensively": [
+      "law-runner::law-test-detection-environment-scrubbed"
+    ],
+    "test_law_runner_soft_law_failure_never_masks_hard_law_failure": [
+      "law-runner::law-soft-failure-never-masks-hard"
+    ],
+    "test_law_runner_timeout_cleanup_is_bounded": [
+      "performance::law-timeout-and-descendant-cleanup-bounded"
+    ],
+    "test_law_stdout_and_stderr_capture_is_bounded": [
+      "law-runner::law-capture-bounded-with-digests"
+    ],
+    "test_law_timeout_leaves_no_orphan_processes": [
+      "law-runner::law-timeout-leaves-no-orphan-processes"
+    ],
+    "test_law_timeout_terminates_entire_descendant_process_group": [
+      "law-runner::law-timeout-kills-descendant-group"
+    ],
+    "test_lawlib_associative_property_cannot_pass_by_mutating_shared_input": [
+      "lawlib::associative-inputs-deepcopy-isolated"
+    ],
+    "test_lawlib_associative_rejects_zero_cases": [
+      "lawlib::associative-zero"
+    ],
+    "test_lawlib_commutative_property_cannot_pass_by_mutating_shared_input": [
+      "lawlib::commutative-inputs-deepcopy-isolated"
+    ],
+    "test_lawlib_commutative_rejects_zero_cases": [
+      "lawlib::commutative-zero"
+    ],
+    "test_lawlib_conservation_rejects_zero_cases": [
+      "lawlib::conservation-zero"
+    ],
+    "test_lawlib_conservation_uses_explicit_numeric_tolerance_when_floats_are_allowed": [
+      "lawlib::conservation-explicit-float-tolerance"
+    ],
+    "test_lawlib_deterministic_rejects_runs_less_than_two": [
+      "lawlib::deterministic-runs-less-than-two"
+    ],
+    "test_lawlib_deterministic_rejects_zero_cases": [
+      "lawlib::deterministic-zero"
+    ],
+    "test_lawlib_differential_functions_receive_independent_equivalent_inputs": [
+      "lawlib::differential-inputs-independent"
+    ],
+    "test_lawlib_differential_rejects_zero_cases": [
+      "lawlib::differential-zero"
+    ],
+    "test_lawlib_generated_cases_have_reproducible_seed": [
+      "lawlib::generated-seed-reproducible"
+    ],
+    "test_lawlib_generated_failure_supports_counterexample_shrinking_or_minimization": [
+      "lawlib::counterexample-minimized"
+    ],
+    "test_lawlib_idempotence_detects_second_application_state_change": [
+      "lawlib::non-idempotent"
+    ],
+    "test_lawlib_idempotent_rejects_zero_cases": [
+      "lawlib::idempotent-zero"
+    ],
+    "test_lawlib_invariant_sequence_rejects_vacuous_sequence_when_nonempty_actions_are_required": [
+      "lawlib::sequence-zero"
+    ],
+    "test_lawlib_monotonic_rejects_zero_cases": [
+      "lawlib::monotonic-zero"
+    ],
+    "test_lawlib_monotonicity_supports_explicit_comparator_and_direction_contract": [
+      "lawlib::monotonic-explicit-comparator-direction"
+    ],
+    "test_lawlib_mutable_case_inputs_are_isolated_between_property_invocations": [
+      "lawlib::mutable-case-inputs-isolated-across-properties"
+    ],
+    "test_lawlib_nan_equality_semantics_are_explicit_not_accidental": [
+      "lawlib::nan-default-is-not-accidental-equality"
+    ],
+    "test_lawlib_property_exception_is_reported_as_failure_with_case_identity": [
+      "lawlib::property-exception-has-case-identity"
+    ],
+    "test_lawlib_property_suite_records_case_count_and_nonvacuity": [
+      "lawlib::property-count",
+      "lawlib::commutative-zero"
+    ],
+    "test_lawlib_roundtrip_detects_lossy_encoding": [
+      "lawlib::lossy-roundtrip"
+    ],
+    "test_lawlib_roundtrip_rejects_zero_cases": [
+      "lawlib::roundtrip-zero"
+    ],
+    "test_lawlib_state_sequence_checks_invariant_before_and_after_every_action": [
+      "lawlib::sequence-before-and-after"
+    ],
+    "test_lawlib_state_sequence_detects_illegal_intermediate_state_even_if_final_state_is_valid": [
+      "lawlib::sequence-illegal-intermediate-detected"
+    ],
+    "test_lease_file_corruption_fails_closed": [
+      "subagents::corrupt-lease-fails-closed"
+    ],
+    "test_lease_release_rejects_wrong_task_role_or_owner_binding": [
+      "subagents::wrong-owner-binding"
+    ],
+    "test_lease_release_requires_exact_random_lease_token": [
+      "subagents::lease-random-identifiers",
+      "subagents::exact-owner-release"
+    ],
+    "test_local_module_cannot_override_core_hard_invariant_checker_without_explicit_framework_extension_contract": [
+      "security::core-hard-invariant-checker-cannot-be-replaced"
+    ],
+    "test_local_module_replacement_cannot_enable_nested_delegation": [
+      "modules::protected-module-replacement-rejected",
+      "modules::local-module-core-policy-write-rejected",
+      "modules::local-module-core-policy-preserved"
+    ],
+    "test_local_module_replacement_cannot_weaken_evidence_truthfulness_invariant": [
+      "modules::protected-module-replacement-rejected",
+      "modules::local-module-core-policy-write-rejected",
+      "modules::local-module-core-policy-preserved"
+    ],
+    "test_local_module_replacement_cannot_weaken_max_reasoning_invariant": [
+      "modules::protected-module-replacement-rejected",
+      "modules::local-module-core-policy-write-rejected",
+      "modules::local-module-core-policy-preserved"
+    ],
+    "test_local_module_replacement_cannot_weaken_single_child_sequentiality_invariant": [
+      "modules::protected-module-replacement-rejected",
+      "modules::local-module-core-policy-write-rejected",
+      "modules::local-module-core-policy-preserved"
+    ],
+    "test_local_module_replacement_cannot_weaken_test_integrity_invariant": [
+      "modules::protected-module-replacement-rejected",
+      "modules::local-module-core-policy-write-rejected",
+      "modules::local-module-core-policy-preserved"
+    ],
+    "test_local_module_replacement_cannot_weaken_user_work_preservation_invariant": [
+      "modules::protected-module-replacement-rejected",
+      "modules::local-module-core-policy-write-rejected",
+      "modules::local-module-core-policy-preserved"
+    ],
+    "test_local_module_replacement_target_must_exist": [
+      "modules::module-replacement-target-must-exist"
+    ],
+    "test_local_module_requires_framework_constraint_is_rechecked_after_upgrade": [
+      "migration::local-module-constraint-rechecked-after-upgrade"
+    ],
+    "test_local_module_shadowing_builtin_requires_explicit_replaces_field": [
+      "modules::module-local-shadow-requires-explicit-replaces"
+    ],
+    "test_managed_role_allows_extra_unmanaged_metadata": [
+      "outer-unit::test_managed_role_allows_extra_unmanaged_metadata"
+    ],
+    "test_manifest_regeneration_cannot_silently_convert_tampering_into_trusted_release_state": [
+      "release::manifest-regeneration-cannot-update-release-anchor"
+    ],
+    "test_manifest_regeneration_is_atomic_and_locked": [
+      "release::manifest-regeneration-atomic-and-locked"
+    ],
+    "test_manifest_verification_scales_linearly_with_file_count_and_bytes": [
+      "performance::manifest-verification-linear-file-hashing"
+    ],
+    "test_manual_lease_file_deletion_is_detected_as_state_lease_inconsistency": [
+      "subagents::active-child-without-global-lease-detected"
+    ],
+    "test_merge_preserves_user": [
+      "outer-unit::test_merge_preserves_user"
+    ],
+    "test_merge_with_existing_nested_agent_but_no_parent_table": [
+      "outer-unit::test_merge_with_existing_nested_agent_but_no_parent_table"
+    ],
+    "test_metamorphic_laws_defeat_test_name_detection": [
+      "mutation::renamed-test-metamorphic-behavior"
+    ],
+    "test_module_action_command_schema_is_validated_before_module_is_listed_as_runnable": [
+      "modules::module-action-schema-prevalidated",
+      "modules::module-kind-validated"
+    ],
+    "test_module_action_environment_scrubs_unneeded_secrets": [
+      "modules::module-action-secret-environment-scrubbed"
+    ],
+    "test_module_action_has_bounded_timeout": [
+      "modules::module-action-timeout-bounded-and-descendants-killed"
+    ],
+    "test_module_action_output_is_bounded_and_large_logs_are_artifact_referenced": [
+      "modules::module-action-output-bounded-with-digests"
+    ],
+    "test_module_action_path_cannot_escape_module_root_without_explicit_trust_capability": [
+      "modules::action-path-confinement",
+      "modules::local-module-core-policy-write-rejected",
+      "modules::local-module-core-policy-preserved"
+    ],
+    "test_module_action_receives_minimal_environment_allowlist_by_default": [
+      "security::module-action-minimal-secret-environment"
+    ],
+    "test_module_action_requires_explicit_user_or_parent_authorization_for_external_or_destructive_effects": [
+      "modules::module-action-explicit-apply-authorization"
+    ],
+    "test_module_action_timeout_kills_descendant_processes": [
+      "modules::module-action-timeout-bounded-and-descendants-killed"
+    ],
+    "test_module_detection_never_imports_optional_dependency_code": [
+      "modules::module-detection-does-not-import-optional-code"
+    ],
+    "test_module_discovery_cost_is_linear_in_manifest_count": [
+      "performance::module-discovery-linear-and-inert-at-scale"
+    ],
+    "test_module_discovery_does_not_import_or_execute_all_modules": [
+      "performance::module-discovery-linear-and-inert-at-scale"
+    ],
+    "test_module_discovery_never_executes_module_code": [
+      "modules::module-discovery-does-not-execute-code"
+    ],
+    "test_module_discovery_rejects_duplicate_builtin_module_ids": [
+      "modules::module-id-directory-match",
+      "modules::module-local-shadow-requires-explicit-replaces"
+    ],
+    "test_module_id_length_is_bounded": [
+      "modules::module-id-length-bounded"
+    ],
+    "test_module_id_matches_directory_and_canonical_id_regex": [
+      "modules::module-id-directory-match"
+    ],
+    "test_module_install_is_transactional_or_explicitly_reports_nontransactional_capability": [
+      "modules::module-install-transactional-commit"
+    ],
+    "test_module_install_supports_dry_run_with_zero_persistent_side_effects": [
+      "modules::module-install-dry-run-zero-persistent-side-effects"
+    ],
+    "test_module_kind_is_from_declared_supported_kind_set": [
+      "modules::module-kind-validated"
+    ],
+    "test_module_list_rejects_invalid_manifest_instead_of_deferring_failure_to_action_time": [
+      "modules::module-action-schema-prevalidated",
+      "modules::module-kind-validated"
+    ],
+    "test_module_policy_is_array_of_safe_relative_paths": [
+      "modules::module-policy-array-validated"
+    ],
+    "test_module_policy_path_cannot_escape_module_root": [
+      "modules::module-policy-path-confined"
+    ],
+    "test_module_replacement_hard_invariant_conformance_is_executable_not_documentation_only": [
+      "modules::protected-module-replacement-rejected"
+    ],
+    "test_module_replacement_is_treated_as_trusted_code_and_requires_explicit_registration": [
+      "security::trusted-module-replacement-registration"
+    ],
+    "test_module_requires_framework_rejects_incompatible_future_major_version": [
+      "modules::module-future-major-rejected"
+    ],
+    "test_module_requires_framework_uses_correct_semver_prerelease_ordering": [
+      "modules::module-semver-strict"
+    ],
+    "test_module_scaffold_generated_manifest_passes_strict_schema": [
+      "modules::scaffold-strict-compatible"
+    ],
+    "test_module_scaffold_includes_requires_framework_compatibility_constraint": [
+      "modules::scaffold-strict-compatible"
+    ],
+    "test_module_scaffold_is_atomic_or_removes_partial_directory_on_failure": [
+      "modules::module-scaffold-failure-cleans-partial-directory"
+    ],
+    "test_module_uninstall_is_transactional_or_explicitly_reports_nontransactional_capability": [
+      "modules::module-uninstall-transactional-commit"
+    ],
+    "test_module_verify_action_is_read_only_or_declares_and_proves_mutation_contract": [
+      "modules::module-verify-read-only-contract",
+      "modules::module-action-bounded-and-read-only"
+    ],
+    "test_module_version_is_valid_semver": [
+      "modules::module-semver-strict"
+    ],
+    "test_mutating_task_cannot_finalize_without_current_epoch_verification": [
+      "workflow::complete-current-proof-flow",
+      "workflow::epoch-change-invalidates-verification"
+    ],
+    "test_mutating_task_cannot_jump_from_implement_directly_to_final_audit": [
+      "workflow::mutating-implement-direct-final-audit-rejected"
+    ],
+    "test_mutating_task_requires_at_least_one_nonwaived_acceptance_gate": [
+      "gates-risks-decisions::nonwaived-gate-required-and-proven",
+      "gates-risks-decisions::gate-history-deletion-rejected",
+      "gates-risks-decisions::proven-gate-empty-evidence-rejected"
+    ],
+    "test_mutation_score_for_hard_invariant_code_is_one_hundred_percent_or_explicitly_justified_equivalent_proof": [
+      "historical-integrity::hard-mutation-canonical-complete"
+    ],
+    "test_mutation_suite_kills_acceptance_gate_requirement": [
+      "historical-integrity::acceptance-gate-requirement-mutant-killed"
+    ],
+    "test_mutation_suite_kills_codex_project_trust_verification": [
+      "historical-integrity::codex-project-trust-claim-mutant-killed"
+    ],
+    "test_mutation_suite_kills_current_epoch_evidence_requirement": [
+      "historical-integrity::current-epoch-mutant-killed"
+    ],
+    "test_mutation_suite_kills_evidence_provenance_validation": [
+      "historical-integrity::evidence-provenance-mutant-killed"
+    ],
+    "test_mutation_suite_kills_external_context_ttl_enforcement": [
+      "historical-integrity::external-context-ttl-mutant-killed"
+    ],
+    "test_mutation_suite_kills_manifest_integrity_validation": [
+      "historical-integrity::manifest-mutant-killed"
+    ],
+    "test_mutation_suite_kills_model_change_from_gpt_5_6_sol": [
+      "historical-integrity::model-identity-mutant-killed"
+    ],
+    "test_mutation_suite_kills_module_replacement_hard_invariant_guard": [
+      "historical-integrity::module-replacement-hard-invariant-mutant-killed"
+    ],
+    "test_mutation_suite_kills_nested_delegation_prohibition": [
+      "historical-integrity::nested-delegation-mutant-killed"
+    ],
+    "test_mutation_suite_kills_path_confinement_guard": [
+      "historical-integrity::path-confinement-mutant-corpus"
+    ],
+    "test_mutation_suite_kills_python_meta_dependency_failure_status": [
+      "historical-integrity::python-meta-dependency-status-mutant-killed"
+    ],
+    "test_mutation_suite_kills_removal_of_max_reasoning_enforcement": [
+      "historical-integrity::max-reasoning-mutant-killed"
+    ],
+    "test_mutation_suite_kills_sequential_child_limit_enforcement": [
+      "historical-integrity::sequential-child-limit-mutant-killed"
+    ],
+    "test_mutation_suite_kills_test_mutation_detection": [
+      "historical-integrity::test-definition-mutation-mutant-killed"
+    ],
+    "test_mutation_suite_kills_transaction_rollback_guard": [
+      "historical-integrity::transaction-rollback-mutant-killed"
+    ],
+    "test_mutation_suite_kills_user_work_preservation_guard": [
+      "historical-integrity::user-work-preservation-mutant-killed"
+    ],
+    "test_mutation_suite_kills_workspace_fingerprint_recheck": [
+      "historical-integrity::workspace-recheck-mutant-killed"
+    ],
+    "test_mutation_suite_kills_xonsh_exit_code_propagation": [
+      "historical-integrity::xonsh-exit-code-mutant-killed"
+    ],
+    "test_no_known_v4_0_flaw_catalog_entry_remains_uncovered_unfixed_or_unverified": [
+      "historical-integrity::v4-canonical-execution-complete"
+    ],
+    "test_no_policy_file_contains_stale_path_role_command_or_config_key_reference": [
+      "policy-consistency::policy-path-and-role-references-are-live",
+      "policy-consistency::policy-module-no-autoexecute"
+    ],
+    "test_no_two_policy_files_define_conflicting_hard_invariant_values": [
+      "policy-consistency::hard-invariant-values-have-no-structured-conflict"
+    ],
+    "test_non_git_fallback_changes": [
+      "outer-unit::test_non_git_fallback_changes"
+    ],
+    "test_non_git_workspace_fingerprint_excludes_known_build_cache_directories_by_declared_policy": [
+      "performance::large-build-excluded"
+    ],
+    "test_non_mutating_transition_does_not_increment_implementation_epoch": [
+      "workflow::nonmutating-transition-keeps-epoch"
+    ],
+    "test_noop_bootstrap_install_performs_no_rewrite": [
+      "performance::noop-bootstrap-performs-no-rewrite"
+    ],
+    "test_noop_codex_install_performs_no_rewrite": [
+      "performance::noop-codex-performs-no-rewrite"
+    ],
+    "test_oneshot_is_direct": [
+      "outer-unit::test_oneshot_is_direct"
+    ],
+    "test_optional_dependency_install_never_occurs_implicitly": [
+      "security::optional-dependencies-never-implicitly-install"
+    ],
+    "test_parent_cannot_open_child_for_second_task_while_global_child_lease_exists": [
+      "subagents::global-lease-and-task-child-open-consistent"
+    ],
+    "test_parent_explicitly_integrates_or_rejects_child_findings_before_next_child": [
+      "subagents::next-child-only-after-prior-integration"
+    ],
+    "test_parent_finalization_rechecks_global_and_task_child_state_under_same_lock_boundary": [
+      "subagents::finalization-rechecks-child-state"
+    ],
+    "test_persistent_install_backup_integrity_is_hash_verified_before_restore": [
+      "persistent-recovery::bootstrap-backup-integrity-preflight",
+      "persistent-recovery::codex-backup-integrity-preflight"
+    ],
+    "test_persistent_install_backup_is_never_symlink_followed_outside_framework_control": [
+      "persistent-recovery::persistent-backup-symlink-escape-rejected"
+    ],
+    "test_persistent_install_backup_permissions_are_preserved": [
+      "persistent-recovery::persistent-backup-permissions-private-posix"
+    ],
+    "test_persistent_install_journal_has_schema_version": [
+      "persistent-recovery::bootstrap-persistent-journal-schema",
+      "persistent-recovery::codex-persistent-journal-schema"
+    ],
+    "test_persistent_install_journal_records_exact_destination_paths_relative_to_project_root": [
+      "persistent-recovery::bootstrap-persistent-journal-hashes-version-relative-destination"
+    ],
+    "test_persistent_install_journal_records_framework_version": [
+      "persistent-recovery::bootstrap-persistent-journal-hashes-version-relative-destination",
+      "persistent-recovery::codex-persistent-journal-hashes-version-relative-destinations"
+    ],
+    "test_persistent_install_journal_records_original_and_installed_hashes": [
+      "persistent-recovery::bootstrap-persistent-journal-hashes-version-relative-destination",
+      "persistent-recovery::codex-persistent-journal-hashes-version-relative-destinations"
+    ],
+    "test_persistent_install_journal_rejects_absolute_or_traversal_destination_paths": [
+      "persistent-recovery::bootstrap-journal-destination-confinement",
+      "persistent-recovery::codex-journal-destination-confinement"
+    ],
+    "test_persistent_install_recovery_metadata_is_not_stored_only_under_runtime": [
+      "persistent-recovery::bootstrap-recovery-metadata-outside-runtime",
+      "persistent-recovery::codex-recovery-metadata-outside-runtime"
+    ],
+    "test_pid_reuse_cannot_authorize_stale_lock_owner": [
+      "fault-race::pid-reuse-cannot-authorize-stale-owner"
+    ],
+    "test_policy_claim_acceptance_gates_required_cannot_be_bypassed_by_waiving_every_gate": [
+      "policy-consistency::policy-gates-cannot-all-be-waived"
+    ],
+    "test_policy_claim_current_host_adapter_support_is_version_probed_not_assumed": [
+      "policy-consistency::policy-host-support-version-or-capability-probed"
+    ],
+    "test_policy_claim_evidence_is_direct_rejects_manual_fabricated_command_strings": [
+      "policy-consistency::policy-direct-evidence-rejects-fabricated-claims"
+    ],
+    "test_policy_claim_final_claims_require_evidence_applies_to_read_and_write_tasks_with_material_claims": [
+      "policy-consistency::policy-final-claims-require-direct-evidence"
+    ],
+    "test_policy_claim_law_definitions_are_read_only_matches_execution_isolation": [
+      "policy-consistency::policy-law-definitions-read-only-enforced"
+    ],
+    "test_policy_claim_max_reasoning_matches_effective_parent_and_child_runtime": [
+      "policy-consistency::policy-sequential-claim-matches-global-lease",
+      "policy-consistency::policy-max-claim-does-not-overstate-live-proof"
+    ],
+    "test_policy_claim_module_replacement_cannot_weaken_hard_invariants_is_executable": [
+      "policy-consistency::hard-policy-invariants-have-executable-contracts"
+    ],
+    "test_policy_claim_nested_delegation_false_matches_live_host_behavior": [
+      "policy-consistency::policy-nested-delegation-claim-matches-control-plane"
+    ],
+    "test_policy_claim_no_test_cheating_has_adversarial_hidden_and_metamorphic_detection": [
+      "policy-consistency::policy-no-test-cheating-adversarially-enforced"
+    ],
+    "test_policy_claim_parent_owns_canonical_state_is_enforced_by_write_capabilities_or_detected_on_violation": [
+      "policy-consistency::policy-parent-owns-canonical-state"
+    ],
+    "test_policy_claim_runtime_is_disposable_matches_persistent_install_recovery_design": [
+      "policy-consistency::policy-runtime-disposable-matches-persistent-recovery"
+    ],
+    "test_policy_claim_sequential_only_matches_live_host_and_global_lease_enforcement": [
+      "policy-consistency::policy-sequential-claim-matches-global-lease"
+    ],
+    "test_policy_claim_transition_history_append_only_matches_actual_tamper_resistance": [
+      "policy-consistency::policy-transition-history-append-only-anchored"
+    ],
+    "test_policy_claim_workspace_inspected_is_backed_by_actual_recorded_snapshot": [
+      "policy-consistency::policy-workspace-inspection-records-snapshot"
+    ],
+    "test_policy_router_loads_only_task_relevant_specialist_policy_files": [
+      "reasoning-cost::policy-router-references-only-existing-targets"
+    ],
+    "test_posix_wrapper_fails_clearly_when_python3_is_missing_or_too_old": [
+      "xonsh::posix-wrapper-python-minimum-fails-clearly"
+    ],
+    "test_post_final_audit_workspace_change_prevents_finalization": [
+      "workflow::post-audit-mutation-rejected"
+    ],
+    "test_post_verification_workspace_change_forces_remediation_or_reverification": [
+      "workflow::post-verification-workspace-change-rejected"
+    ],
+    "test_powershell_wrapper_selects_compatible_python_without_ambiguous_older_interpreter": [
+      "xonsh::powershell-wrapper-selects-compatible-python"
+    ],
+    "test_precheck_fails_closed": [
+      "outer-unit::test_precheck_fails_closed"
+    ],
+    "test_precheck_records_actual_initial_workspace_snapshot_not_only_boolean_inspected_flag": [
+      "workspace::precheck-records-actual-workspace-snapshot"
+    ],
+    "test_preexisting_dirty_user_files_are_recorded_before_agent_edits": [
+      "workspace::preexisting-user-files-preserved"
+    ],
+    "test_preserves_existing_and_roundtrips": [
+      "outer-unit::test_preserves_existing_and_roundtrips"
+    ],
+    "test_production_process_behavior_is_identical_under_renamed_test_files_and_functions": [
+      "mutation::renamed-test-metamorphic-behavior",
+      "mutation::production-behavior-independent-of-test-framework-modules"
+    ],
+    "test_production_process_behavior_is_identical_when_test_framework_modules_are_absent": [
+      "mutation::production-behavior-independent-of-test-framework-modules"
+    ],
+    "test_production_process_cannot_pass_by_inspecting_parent_process_command_line_for_test_names": [
+      "mutation::production-behavior-independent-of-parent-test-command-line"
+    ],
+    "test_production_process_cannot_pass_by_inspecting_pytest_or_unittest_environment_markers": [
+      "mutation::hidden-law-values-not-visible",
+      "mutation::production-behavior-independent-of-test-framework-modules"
+    ],
+    "test_project_extensions_do_not_invalidate_framework_manifest": [
+      "outer-unit::test_project_extensions_do_not_invalidate_framework_manifest"
+    ],
+    "test_project_law_schema_version_is_migrated_or_rejected_explicitly": [
+      "migration::project-law-schema-rejected-explicitly"
+    ],
+    "test_prompt_policy_size_regression_is_bounded_and_duplicate_instruction_scan_passes": [
+      "reasoning-cost::prompt-policy-size-and-duplication-bounded"
+    ],
+    "test_python_meta_extension_can_add_module_hooks_without_bypassing_hard_invariants": [
+      "python-meta::python-meta-hard-invariants-cannot-be-lowered"
+    ],
+    "test_python_meta_extension_can_be_disabled_without_affecting_core_bootstrap_or_recovery": [
+      "python-meta::python-meta-disabled-path-explicit",
+      "python-meta::python-meta-core-stdlib-independent"
+    ],
+    "test_python_meta_extension_cannot_lower_max_reasoning_or_enable_parallel_subagents": [
+      "python-meta::python-meta-extension-cannot-lower-max-or-sequentiality"
+    ],
+    "test_python_meta_extension_does_not_execute_automatically_during_module_discovery": [
+      "python-meta::python-meta-discovery-is-inert"
+    ],
+    "test_python_meta_extension_does_not_install_dependencies_automatically": [
+      "python-meta::python-meta-no-implicit-dependency-install"
+    ],
+    "test_python_meta_extension_generated_code_is_auditable_and_deterministic": [
+      "python-meta::python-meta-generated-code-auditable-deterministic"
+    ],
+    "test_python_meta_extension_optional_dependency_probe_has_nonzero_exit_when_requirements_not_met": [
+      "python-meta::python-meta-probe-nonzero-when-unmet"
+    ],
+    "test_python_meta_import_hook_is_scoped_and_does_not_mutate_unrelated_project_import_semantics": [
+      "python-meta::python-meta-import-hook-scoped"
+    ],
+    "test_python_meta_macro_expansion_failure_isolated_from_core_control_plane": [
+      "python-meta::python-meta-macro-failure-isolated-from-core"
+    ],
+    "test_python_meta_requirements_define_tested_compatible_version_ranges": [
+      "python-meta::python-meta-tested-version-ranges"
+    ],
+    "test_python_meta_sample_extension_compiles_and_executes_with_mcpyrate": [
+      "python-meta::python-meta-sample-extension-functional"
+    ],
+    "test_python_meta_sample_extension_executes_with_unpythonic": [
+      "python-meta::python-meta-sample-extension-functional"
+    ],
+    "test_python_meta_verify_fails_when_mcpyrate_is_missing": [
+      "python-meta::python-meta-mcpyrate-missing-fails"
+    ],
+    "test_python_meta_verify_fails_when_unpythonic_is_missing": [
+      "python-meta::python-meta-unpythonic-missing-fails"
+    ],
+    "test_python_meta_verify_imports_mcpyrate_not_only_find_spec": [
+      "python-meta::python-meta-functional-imports"
+    ],
+    "test_python_meta_verify_imports_unpythonic_not_only_find_spec": [
+      "python-meta::python-meta-functional-imports"
+    ],
+    "test_python_meta_verify_rejects_incompatible_mcpyrate_version": [
+      "python-meta::python-meta-incompatible-mcpyrate-version-rejected"
+    ],
+    "test_python_meta_verify_rejects_incompatible_unpythonic_version": [
+      "python-meta::python-meta-incompatible-unpythonic-version-rejected"
+    ],
+    "test_race_finalize_against_gate_change_cannot_commit_stale_finalization": [
+      "fault-race::race-finalize-vs-gate-serialized"
+    ],
+    "test_race_finalize_against_new_evidence_cannot_commit_stale_finalization": [
+      "fault-race::race-finalize-vs-evidence-fails-closed"
+    ],
+    "test_race_finalize_against_risk_change_cannot_commit_stale_finalization": [
+      "fault-race::race-finalize-vs-risk-serialized"
+    ],
+    "test_race_finalize_against_workspace_edit_cannot_commit_stale_finalization": [
+      "fault-race::race-finalize-vs-workspace-edit-fails-closed"
+    ],
+    "test_race_installer_against_user_config_edit_never_clobbers_user_change": [
+      "fault-race::race-installer-user-edit-never-clobbered"
+    ],
+    "test_race_two_context_cache_writes_preserve_both_updates": [
+      "fault-race::race-context-cache-writers-no-loss"
+    ],
+    "test_race_two_evidence_appends_preserve_both_records_and_chain_order": [
+      "fault-race::race-evidence-no-loss"
+    ],
+    "test_race_two_subagent_opens_allow_exactly_one": [
+      "fault-race::race-one-child-winner"
+    ],
+    "test_race_two_task_mutations_preserve_one_winner_and_clean_conflict_for_loser": [
+      "fault-race::race-task-revision-one-winner"
+    ],
+    "test_randomized_law_inputs_defeat_hardcoded_fixture_answers": [
+      "mutation::randomized-inputs-not-hardcoded"
+    ],
+    "test_randomized_operation_sequence_preserves_global_state_machine_invariants": [
+      "fault-race::randomized-operation-sequence-preserves-state-invariant"
+    ],
+    "test_read_only_task_with_material_final_claims_requires_direct_evidence_before_finalize": [
+      "workflow::read-material-claim-needs-direct-evidence"
+    ],
+    "test_readme_feature_matrix_is_generated_from_or_verified_against_executable_capabilities": [
+      "policy-consistency::readme-capability-claims-match-executable-configuration"
+    ],
+    "test_reasoning_policy_has_single_canonical_statement_of_max_default_without_conflicting_duplicate_instructions": [
+      "reasoning-cost::reasoning-default-exact-max",
+      "reasoning-cost::prompt-policy-size-and-duplication-bounded"
+    ],
+    "test_reclaims_proven_dead_same_host_lock": [
+      "outer-unit::test_reclaims_proven_dead_same_host_lock"
+    ],
+    "test_recovery_never_guesses_when_destination_drift_is_ambiguous": [
+      "persistent-recovery::recovery-ambiguous-destination-never-guessed",
+      "persistent-recovery::recovery-batch-later-ambiguity-rejected"
+    ],
+    "test_recovery_plan_is_dry_run_before_mutation_when_ambiguity_exists": [
+      "persistent-recovery::recovery-ambiguity-has-zero-mutation-and-durable-plan",
+      "persistent-recovery::recovery-batch-preflight-failure-zero-destination-mutation"
+    ],
+    "test_rejected_evidence_command_has_zero_ledger_side_effects": [
+      "cli::cli-rejected-verification-zero-ledger-side-effects"
+    ],
+    "test_release_archive_contains_no___pycache___directories": [
+      "release::archive-no-pycache-directories"
+    ],
+    "test_release_archive_contains_no_pyc_or_pyo_bytecode_files": [
+      "release::archive-no-bytecode-files"
+    ],
+    "test_release_archive_contains_no_runtime_generated_artifacts": [
+      "release::no-generated-artifacts"
+    ],
+    "test_release_archive_contains_no_transient_logs_locks_leases_or_task_state": [
+      "release::archive-no-transient-control-files"
+    ],
+    "test_release_archive_contains_only_declared_distribution_files": [
+      "release::archive-declared-files-only"
+    ],
+    "test_release_archive_extracts_without_overwriting_paths_outside_destination": [
+      "release::archive-safe-extraction"
+    ],
+    "test_release_archive_file_set_matches_release_manifest_exactly": [
+      "release::archive-manifest-file-set-exact"
+    ],
+    "test_release_archive_has_deterministic_file_order": [
+      "release::archive-order-and-inventory"
+    ],
+    "test_release_archive_has_deterministic_metadata_or_normalized_timestamps": [
+      "release::archive-normalized-timestamps"
+    ],
+    "test_release_archive_is_reproducible_from_identical_source_tree": [
+      "release::archive-reproducible"
+    ],
+    "test_release_archive_rejects_absolute_paths": [
+      "release::archive-absolute-member-rejected"
+    ],
+    "test_release_archive_rejects_duplicate_member_paths": [
+      "release::archive-duplicate-member-rejected"
+    ],
+    "test_release_archive_rejects_parent_directory_traversal_entries": [
+      "release::archive-safe-extraction"
+    ],
+    "test_release_archive_rejects_symlinks_that_escape_framework_root": [
+      "release::archive-symlink-member-rejected"
+    ],
+    "test_release_archive_roundtrip_preserves_every_text_file_byte_for_byte": [
+      "release::archive-byte-roundtrip"
+    ],
+    "test_release_archive_roundtrip_preserves_required_executable_mode_bits": [
+      "release::archive-required-executable-modes"
+    ],
+    "test_release_has_external_or_release_bound_integrity_anchor_independent_of_regeneratable_manifest": [
+      "release::manifest-tree-and-release-anchor"
+    ],
+    "test_repeated_framework_upgrade_chain_can_restore_original_pre_aegis_state": [
+      "persistent-recovery::bootstrap-upgrade-chain-restores-original",
+      "persistent-recovery::codex-upgrade-chain-restores-original"
+    ],
+    "test_requires_framework_is_enforced": [
+      "outer-unit::test_requires_framework_is_enforced"
+    ],
+    "test_research_task_with_current_external_claims_requires_fresh_source_evidence_before_finalize": [
+      "workflow::research-fresh-external-source-finalizes"
+    ],
+    "test_resolved_risk_preserves_resolution_evidence": [
+      "gates-risks-decisions::risk-resolution-evidence-preserved"
+    ],
+    "test_retry_count_is_bounded_and_transient_failure_must_have_new_information_before_retry": [
+      "reasoning-cost::retry-policy-is-explicitly-bounded"
+    ],
+    "test_risk_description_must_be_nonempty_after_trimming": [
+      "gates-risks-decisions::risk-description-trimmed-nonempty"
+    ],
+    "test_risk_reopened_after_new_implementation_invalidates_final_audit": [
+      "gates-risks-decisions::resolved-risk-reopens-on-implementation",
+      "gates-risks-decisions::risk-history-deletion-rejected"
+    ],
+    "test_risk_resolution_must_be_nonempty_after_trimming": [
+      "gates-risks-decisions::risk-resolution-trimmed-nonempty"
+    ],
+    "test_risk_severity_is_validated_in_library_and_cli": [
+      "gates-risks-decisions::risk-severity-library-validation"
+    ],
+    "test_role_registry_is_single_source": [
+      "outer-unit::test_role_registry_is_single_source"
+    ],
+    "test_runtime_concurrency_probe_observes_never_more_than_one_spawned_child": [
+      "subagents::global-lease-exactly-one-across-processes"
+    ],
+    "test_same_external_source_is_not_refetched_before_ttl_or_fingerprint_invalidation": [
+      "reasoning-cost::external-source-reuse-until-invalidation"
+    ],
+    "test_scaffold_local_module": [
+      "outer-unit::test_scaffold_local_module"
+    ],
+    "test_second_child_open_is_rejected_while_first_lease_exists": [
+      "subagents::second-child-rejected"
+    ],
+    "test_second_child_open_rejection_has_zero_task_state_side_effects": [
+      "subagents::second-child-rejection-zero-task-side-effects"
+    ],
+    "test_sequence_law": [
+      "outer-unit::test_sequence_law"
+    ],
+    "test_sequential_and_cross_invocation_release": [
+      "outer-unit::test_sequential_and_cross_invocation_release"
+    ],
+    "test_shell_wrapper_python_interpreter_is_python_3_11_or_newer": [
+      "xonsh::posix-wrapper-python-minimum-fails-clearly",
+      "xonsh::powershell-wrapper-selects-compatible-python"
+    ],
+    "test_stale_lock_recovery_requires_process_identity_stronger_than_pid_when_available": [
+      "fault-race::pid-reuse-cannot-authorize-stale-owner"
+    ],
+    "test_stale_runtime_cleanup_never_removes_active_task_or_lease": [
+      "performance::runtime-retention-policy-explicit-and-nondestructive"
+    ],
+    "test_state_create_validates_mode_complexity_and_risk_in_library_api_not_only_cli": [
+      "state-identity::state-create-library-enums",
+      "state-identity::state-unknown-complexity"
+    ],
+    "test_state_file_task_id_must_match_owning_task_directory_name": [
+      "state-identity::state-owner-id-mismatch"
+    ],
+    "test_state_history_is_cryptographically_or_externally_anchored_against_rewrite_when_claimed_append_only": [
+      "state-identity::state-anchor-history-detects-state-and-head-rollback"
+    ],
+    "test_state_integrity_detects_manual_acceptance_gate_tampering": [
+      "state-identity::state-integrity-gate-tamper"
+    ],
+    "test_state_integrity_detects_manual_epoch_tampering": [
+      "state-identity::state-integrity-epoch-tamper"
+    ],
+    "test_state_integrity_detects_manual_final_audit_tampering": [
+      "state-identity::state-integrity-final-audit-tamper"
+    ],
+    "test_state_integrity_detects_manual_mode_tampering": [
+      "state-identity::state-integrity-mode-tamper"
+    ],
+    "test_state_load_cost_is_bounded_for_large_history_or_uses_compaction_without_losing_auditability": [
+      "performance::state-load-large-history-bounded-and-auditable"
+    ],
+    "test_state_mutation_optimistic_revision_prevents_lost_updates": [
+      "state-identity::state-optimistic-revision-prevents-lost-update"
+    ],
+    "test_state_mutation_reloads_state_after_acquiring_task_lock_or_retries_cleanly": [
+      "state-identity::state-mutation-reloads-under-lock"
+    ],
+    "test_state_schema_rejects_corrupted_transition_history": [
+      "state-identity::state-corrupt-transition-history"
+    ],
+    "test_state_schema_rejects_duplicate_child_handoff_ids": [
+      "state-identity::state-duplicate-handoff-id"
+    ],
+    "test_state_schema_rejects_duplicate_decision_ids": [
+      "state-identity::state-duplicate-decision-id"
+    ],
+    "test_state_schema_rejects_duplicate_gate_ids": [
+      "state-identity::state-duplicate-gate-id"
+    ],
+    "test_state_schema_rejects_duplicate_risk_ids": [
+      "state-identity::state-duplicate-risk-id"
+    ],
+    "test_state_schema_rejects_missing_required_fields": [
+      "state-identity::state-missing-required-field"
+    ],
+    "test_state_schema_rejects_negative_implementation_epoch": [
+      "state-identity::state-negative-epoch"
+    ],
+    "test_state_schema_rejects_negative_revision": [
+      "state-identity::state-negative-revision"
+    ],
+    "test_state_schema_rejects_unknown_complexity_values": [
+      "state-identity::state-unknown-complexity"
+    ],
+    "test_state_schema_rejects_unknown_mode_values": [
+      "state-identity::state-unknown-mode"
+    ],
+    "test_state_schema_rejects_unknown_risk_values": [
+      "state-identity::state-unknown-risk"
+    ],
+    "test_state_schema_rejects_unknown_state_enum_values": [
+      "state-identity::state-unknown-enum"
+    ],
+    "test_state_schema_rejects_wrong_field_types": [
+      "state-identity::state-wrong-field-type"
+    ],
+    "test_state_store_never_reads_or_writes_outside_runtime_tasks_root": [
+      "state-identity::state-store-root-confinement",
+      "state-identity::state-control-redirection-root-escape-rejected",
+      "state-identity::state-control-redirection-preserves-outside"
+    ],
+    "test_state_store_rejects_symlinked_state_file_escape": [
+      "state-identity::state-symlinked-state-file-rejected"
+    ],
+    "test_state_store_rejects_symlinked_task_directory_escape": [
+      "state-identity::state-symlinked-task-directory-rejected"
+    ],
+    "test_state_store_save_cannot_redirect_write_by_mutating_task_id_field": [
+      "state-identity::state-save-id-redirect"
+    ],
+    "test_subagent_close_release_failure_rolls_back_active_child_state": [
+      "subagents::close-release-failure-keeps-active-state"
+    ],
+    "test_subagent_close_requires_durable_handoff_before_lease_release": [
+      "subagents::durable-handoff-before-lease-release",
+      "subagents::close-release-failure-keeps-global-lease"
+    ],
+    "test_subagent_close_task_state_and_global_lease_release_are_transactional": [
+      "subagents::close-release-failure-keeps-global-lease",
+      "subagents::close-state-failure-restores-global-lease"
+    ],
+    "test_subagent_context_brief_does_not_include_unrelated_secrets_or_sensitive_files": [
+      "subagents::child-context-bounded-verified-facts-only"
+    ],
+    "test_subagent_context_does_not_duplicate_unrelated_parent_history": [
+      "reasoning-cost::subagent-context-excludes-parent-history"
+    ],
+    "test_subagent_handoff_evidence_ids_must_exist_and_belong_to_task": [
+      "subagents::handoff-evidence-must-exist-in-task"
+    ],
+    "test_subagent_handoff_is_preserved_after_task_compaction": [
+      "subagents::handoff-preserves-context-and-evidence-binding",
+      "context::context-compaction-preserves-digest-and-failure-region-not-raw"
+    ],
+    "test_subagent_handoff_status_is_one_of_accepted_rejected_partial": [
+      "subagents::handoff-outcome-enum-enforced",
+      "subagents::next-child-only-after-prior-integration"
+    ],
+    "test_subagent_handoff_summary_must_be_nonempty_after_trimming": [
+      "subagents::blank-handoff-rolls-back-lease-release"
+    ],
+    "test_subagent_is_not_created_for_mechanical_work_when_parent_direct_action_is_lower_expected_cost": [
+      "reasoning-cost::mechanical-work-prefers-direct-deterministic-action"
+    ],
+    "test_subagent_recover_cannot_clear_another_tasks_lease": [
+      "subagents::wrong-task-binding",
+      "subagents::global-lease-blocks-other-parent-task"
+    ],
+    "test_subagent_recover_requires_lease_task_id_to_match_target_task": [
+      "subagents::wrong-task-binding"
+    ],
+    "test_subagent_recover_requires_nonempty_audited_reason": [
+      "subagents::recover-reason-trimmed-nonempty"
+    ],
+    "test_subagent_recover_state_clear_and_lease_clear_are_transactional": [
+      "subagents::recover-state-failure-is-transactional",
+      "subagents::recover-failure-rolls-back-evidence-and-restores-lease"
+    ],
+    "test_subagent_sequence_reuses_verified_parent_summary_without_reloading_entire_repository": [
+      "reasoning-cost::subagent-sequence-reuses-verified-summary"
+    ],
+    "test_task_creation_and_current_pointer_update_are_transactionally_consistent": [
+      "state-identity::current-pointer-transactionally-consistent"
+    ],
+    "test_task_declared_risk_level_is_enforced_even_without_manually_added_risk_records": [
+      "gates-risks-decisions::declared-critical-risk-requires-plan"
+    ],
+    "test_task_id_has_canonical_length_and_character_constraints": [
+      "state-identity::task-id-canonical-length-characters"
+    ],
+    "test_task_id_rejects_absolute_paths": [
+      "state-identity::task-id-absolute-path-rejected"
+    ],
+    "test_task_id_rejects_dot_and_dotdot": [
+      "state-identity::task-id-dot-components-rejected"
+    ],
+    "test_task_id_rejects_empty_or_whitespace_only_values": [
+      "state-identity::task-id-empty-whitespace-rejected"
+    ],
+    "test_task_id_rejects_parent_directory_traversal": [
+      "state-identity::task-id-parent-traversal-rejected"
+    ],
+    "test_task_id_rejects_path_separators": [
+      "state-identity::task-id-path-separators-rejected"
+    ],
+    "test_task_list_and_durable_child_handoff": [
+      "outer-unit::test_task_list_and_durable_child_handoff"
+    ],
+    "test_task_runtime_storage_has_defined_compaction_or_retention_policy": [
+      "performance::runtime-retention-policy-explicit-and-nondestructive"
+    ],
+    "test_timed_out_command_cannot_be_recorded_as_successful_verification": [
+      "evidence::timed-out-command-not-successful-verification"
+    ],
+    "test_transaction_backup_failure_occurs_before_any_destination_mutation": [
+      "atomic-transaction::transaction-backup-preflight-before-destination-mutation",
+      "atomic-transaction::transaction-preflight-failure-zero-destination-mutation"
+    ],
+    "test_transaction_commit_is_all_or_nothing_across_multiple_managed_files": [
+      "atomic-transaction::transaction-all-or-nothing"
+    ],
+    "test_transaction_journal_failure_rolls_back_all_persistent_changes": [
+      "atomic-transaction::transaction-boundary-pre-or-post-after_journal",
+      "atomic-transaction::transaction-all-or-nothing"
+    ],
+    "test_transaction_journal_is_durable_before_irreversible_persistent_commit": [
+      "atomic-transaction::transaction-journal-durable-before-destination"
+    ],
+    "test_transaction_lock_cannot_be_stolen_by_pid_reuse": [
+      "atomic-transaction::transaction-lock-pid-reuse-does-not-authorize-stale-owner"
+    ],
+    "test_transaction_lock_corruption_fails_closed_with_audited_recovery_path": [
+      "atomic-transaction::transaction-lock-corruption-fails-closed"
+    ],
+    "test_transaction_lock_foreign_host_state_fails_closed_with_audited_recovery_path": [
+      "atomic-transaction::transaction-lock-foreign-host-fails-closed"
+    ],
+    "test_transaction_lock_has_unique_owner_nonce_not_pid_only": [
+      "atomic-transaction::transaction-lock-pid-reuse-does-not-authorize-stale-owner"
+    ],
+    "test_transaction_lock_release_requires_exact_owner_nonce": [
+      "atomic-transaction::lock-release-exact-nonce"
+    ],
+    "test_transaction_post_write_verification_failure_rolls_back_all_changes": [
+      "atomic-transaction::transaction-post-write-failure-rolls-back-all"
+    ],
+    "test_transaction_recovery_after_process_crash_restores_coherent_state": [
+      "atomic-transaction::transaction-rollback-bytes-bound-to-before-hash",
+      "atomic-transaction::transaction-recovery-idempotent"
+    ],
+    "test_transaction_recovery_is_idempotent": [
+      "atomic-transaction::transaction-recovery-idempotent"
+    ],
+    "test_transition_history_entry_and_state_commit_are_atomic": [
+      "workflow::illegal-transition-no-side-effect",
+      "workflow::transition-revisions-monotonic"
+    ],
+    "test_transition_history_epoch_matches_committed_state_epoch": [
+      "workflow::transition-epochs-match-state-history"
+    ],
+    "test_transition_history_is_atomic_state": [
+      "outer-unit::test_transition_history_is_atomic_state"
+    ],
+    "test_transition_history_revision_is_strictly_monotonic": [
+      "workflow::transition-revisions-monotonic"
+    ],
+    "test_transition_reason_must_be_nonempty_after_trimming": [
+      "workflow::transition-reason-trimmed-nonempty"
+    ],
+    "test_unchanged_file_is_not_refetched_when_content_hash_and_dependency_set_are_fresh": [
+      "reasoning-cost::unchanged-file-reuse-without-refetch"
+    ],
+    "test_unexecuted_manual_text_claim_cannot_be_recorded_as_direct_verification": [
+      "gates-risks-decisions::gate-proof-unexecuted-claim-rejected",
+      "evidence::evidence-caller-verified-provenance-rejected"
+    ],
+    "test_uninstall_refuses_post_install_drift": [
+      "outer-unit::test_uninstall_refuses_post_install_drift"
+    ],
+    "test_unknown_managed_edit_fails_closed": [
+      "outer-unit::test_unknown_managed_edit_fails_closed"
+    ],
+    "test_unresolved_critical_risk_blocks_final_audit": [
+      "gates-risks-decisions::unresolved-critical-risk-blocks-final-audit"
+    ],
+    "test_unresolved_high_risk_blocks_finalization_when_policy_marks_high_as_blocking": [
+      "gates-risks-decisions::unresolved-high-risk-blocks-final-audit"
+    ],
+    "test_untrusted_repository_script_is_not_executed_without_task_relevance_and_policy_permission": [
+      "security::untrusted-repository-script-not-executed-without-explicit-action"
+    ],
+    "test_upgrade_does_not_regenerate_trust_manifest_without_explicit_authorization": [
+      "migration::upgrade-never-regenerates-trust-without-authorization"
+    ],
+    "test_upgrade_failure_rolls_back_to_previous_fully_working_aegis_version": [
+      "migration::framework-upgrade-failure-rolls-back-all-files"
+    ],
+    "test_v2_limit_conflict_fails_closed": [
+      "outer-unit::test_v2_limit_conflict_fails_closed"
+    ],
+    "test_valid_precheck": [
+      "outer-unit::test_valid_precheck"
+    ],
+    "test_verification_evidence_added_outside_verify_state_is_rejected_before_ledger_append": [
+      "cli::cli-verification-state-validated-before-append"
+    ],
+    "test_verification_evidence_can_only_be_created_by_framework_executed_command_or_verified_observation": [
+      "evidence::command-provenance-and-exit",
+      "evidence::evidence-caller-verified-provenance-rejected",
+      "gates-risks-decisions::gate-proof-unexecuted-claim-rejected"
+    ],
+    "test_verification_evidence_records_actual_exit_code": [
+      "evidence::command-provenance-and-exit"
+    ],
+    "test_verification_evidence_records_exact_argv_without_shell_reinterpretation": [
+      "evidence::command-argv-cwd-time-digests"
+    ],
+    "test_verification_evidence_records_execution_timestamp": [
+      "evidence::command-argv-cwd-time-digests"
+    ],
+    "test_verification_evidence_records_stdout_and_stderr_digest_or_durable_artifact_reference": [
+      "evidence::command-argv-cwd-time-digests",
+      "evidence::evidence-large-output-digest-retained"
+    ],
+    "test_verification_evidence_records_working_directory": [
+      "evidence::command-argv-cwd-time-digests"
+    ],
+    "test_verification_evidence_records_workspace_fingerprint": [
+      "evidence::command-workspace-fingerprint-bound"
+    ],
+    "test_violation_raises": [
+      "outer-unit::test_violation_raises"
+    ],
+    "test_workspace_fingerprint_avoids_rehashing_unchanged_large_files_when_safe_cache_is_available": [
+      "performance::git-fingerprint-avoids-rehashing-clean-tracked-large-file"
+    ],
+    "test_workspace_fingerprint_changes_when_relevant_file_mode_changes": [
+      "workspace::git-relevant-mode-change"
+    ],
+    "test_workspace_fingerprint_changes_when_relevant_symlink_target_text_changes": [
+      "workspace::workspace-symlink-target-text-change"
+    ],
+    "test_workspace_fingerprint_changes_when_staged_content_changes": [
+      "workspace::git-staged-content-change"
+    ],
+    "test_workspace_fingerprint_changes_when_tracked_file_content_changes": [
+      "workspace::git-tracked-content-change"
+    ],
+    "test_workspace_fingerprint_changes_when_untracked_file_content_changes": [
+      "workspace::git-untracked-content"
+    ],
+    "test_workspace_fingerprint_detects_declared_external_symlink_dependency_content_change": [
+      "workspace::workspace-declared-external-symlink-content-change"
+    ],
+    "test_workspace_fingerprint_excludes_only_declared_ephemeral_paths": [
+      "workspace::declared-build-ephemeral"
+    ],
+    "test_workspace_fingerprint_git_command_timeout_fails_closed_or_uses_verified_fallback": [
+      "workspace::git-required-probe-failures-fail-closed"
+    ],
+    "test_workspace_fingerprint_git_diff_failure_fails_closed": [
+      "workspace::git-prefix-failure-fails-closed"
+    ],
+    "test_workspace_fingerprint_git_head_failure_has_explicit_unborn_repository_semantics": [
+      "workspace::git-unborn-head-explicit"
+    ],
+    "test_workspace_fingerprint_git_missing_falls_back_to_tree_without_traceback": [
+      "workspace::git-missing-explicit-tree-fallback"
+    ],
+    "test_workspace_fingerprint_git_prefix_failure_fails_closed": [
+      "workspace::git-prefix-failure-fails-closed"
+    ],
+    "test_workspace_fingerprint_git_status_failure_fails_closed": [
+      "workspace::git-prefix-failure-fails-closed"
+    ],
+    "test_workspace_fingerprint_includes_behaviorally_relevant_ignored_files_or_requires_explicit_exclusion": [
+      "workspace::declared-relevant-ignored-file-tracked"
+    ],
+    "test_workspace_fingerprint_is_deterministic_for_unchanged_workspace": [
+      "workspace::tree-deterministic-schema"
+    ],
+    "test_workspace_fingerprint_never_reports_available_true_after_required_git_probe_failure": [
+      "workspace::git-timeout-never-claims-available"
+    ],
+    "test_workspace_fingerprint_non_git_tree_has_bounded_behavior_on_large_build_directories": [
+      "performance::large-build-excluded"
+    ],
+    "test_workspace_fingerprint_non_git_tree_rejects_symlink_escape_or_tracks_external_dependency_explicitly": [
+      "workspace::workspace-undeclared-external-symlink-fails-closed"
+    ],
+    "test_workspace_fingerprint_non_git_tree_respects_declared_ignore_policy": [
+      "workspace::tree-ignore-policy-enforced"
+    ],
+    "test_workspace_fingerprint_schema_version_is_explicit": [
+      "workspace::workspace-schema-version-explicit"
+    ],
+    "test_workspace_snapshot_and_final_audit_are_bound_to_same_repository_root": [
+      "workspace::workspace-snapshot-final-root-binding"
+    ],
+    "test_xl_complexity_task_cannot_jump_directly_from_triage_to_implement": [
+      "workflow::xl-direct-implement-rejected"
+    ],
+    "test_xonsh_agentctl_wrapper_preserves_argument_boundaries_with_spaces": [
+      "xonsh::xonsh-wrapper-live"
+    ],
+    "test_xonsh_agentctl_wrapper_preserves_quotes_and_metacharacters_without_injection": [
+      "xonsh::xonsh-wrapper-live"
+    ],
+    "test_xonsh_agentctl_wrapper_preserves_unicode_arguments": [
+      "xonsh::xonsh-wrapper-live"
+    ],
+    "test_xonsh_agentctl_wrapper_propagates_exit_code_exactly": [
+      "xonsh::xonsh-wrapper-exit-propagation"
+    ],
+    "test_xonsh_agentctl_wrapper_uses_same_python_interpreter_version_required_by_framework": [
+      "xonsh::xonsh-version",
+      "xonsh::shell-wrappers-declare-python-311-minimum"
+    ],
+    "test_xonsh_environment_switch_preserves_only_expected_environment_state": [
+      "xonsh::xonsh-argv-unicode-exit-streams"
+    ],
+    "test_xonsh_environment_switch_preserves_working_directory": [
+      "xonsh::xonsh-argv-unicode-exit-streams"
+    ],
+    "test_xonsh_live_smoke_test_runs_agentctl_doctor_successfully": [
+      "xonsh::xonsh-wrapper-doctor"
+    ],
+    "test_xonsh_module_detects_installed_version": [
+      "xonsh::xonsh-version"
+    ],
+    "test_xonsh_module_enforces_minimum_supported_version_or_uses_version_compatible_verification": [
+      "xonsh::xonsh-version"
+    ],
+    "test_xonsh_preferred_for_mixed_interactive_when_available": [
+      "outer-unit::test_xonsh_preferred_for_mixed_interactive_when_available"
+    ],
+    "test_xonsh_rc_source_does_not_duplicate_aliases_or_path_entries": [
+      "xonsh::xonsh-rc-idempotence"
+    ],
+    "test_xonsh_rc_source_does_not_overwrite_unrelated_user_environment_variables": [
+      "xonsh::xonsh-rc-idempotence"
+    ],
+    "test_xonsh_rc_source_is_idempotent": [
+      "xonsh::xonsh-rc-idempotence"
+    ],
+    "test_xonsh_rc_source_sets_aegis_root_to_canonical_project_root": [
+      "xonsh::xonsh-rc-idempotence"
+    ],
+    "test_xonsh_verify_executes_live_wrapper_smoke_test_when_xonsh_is_available": [
+      "xonsh::xonsh-wrapper-live"
+    ]
+  },
+  "requirement_count": 834,
+  "schema": 1
+}

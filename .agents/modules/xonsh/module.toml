@@ -1,0 +1,12 @@
+[module]
+id = "xonsh"
+name = "Xonsh Interactive Environment Adapter"
+version = "4.0.0"
+kind = "environment"
+policy = ["POLICY.md"]
+
+[detect]
+executables = ["xonsh"]
+
+[install]
+verify = ["python", ".agents/modules/xonsh/verify.py"]

@@ -1,0 +1,84 @@
+[[agent]]
+slug = "explorer"
+name = "aegis_explorer"
+description = "Read-only clean-context repository mapper; returns evidence, never delegates."
+sandbox_mode = "read-only"
+role = "roles/explorer.md"
+
+[[agent]]
+slug = "researcher"
+name = "aegis_researcher"
+description = "Read-only primary-source researcher for current external facts; never delegates."
+sandbox_mode = "read-only"
+role = "roles/researcher.md"
+
+[[agent]]
+slug = "architect"
+name = "aegis_architect"
+description = "Read-only architecture analyst for one bounded design decision; never delegates."
+sandbox_mode = "read-only"
+role = "roles/architect.md"
+
+[[agent]]
+slug = "implementer"
+name = "aegis_implementer"
+description = "Bounded write-capable implementer for an approved plan; never delegates."
+sandbox_mode = "workspace-write"
+role = "roles/implementer.md"
+
+[[agent]]
+slug = "diagnostician"
+name = "aegis_diagnostician"
+description = "Read-only root-cause analyst for reproduced failures; never delegates."
+sandbox_mode = "read-only"
+role = "roles/diagnostician.md"
+
+
+[[agent]]
+slug = "migration-analyst"
+name = "aegis_migration_analyst"
+description = "Read-only migration and compatibility analyst for staged upgrades, rollback, data/API evolution, and mixed-version risks."
+sandbox_mode = "read-only"
+role = "roles/migration-analyst.md"
+
+[[agent]]
+slug = "test-engineer"
+name = "aegis_test_engineer"
+description = "Read-only test-strategy engineer for acceptance coverage, regressions, flakiness, hidden-test risk, and production-path validation."
+sandbox_mode = "read-only"
+role = "roles/test-engineer.md"
+
+[[agent]]
+slug = "law-analyst"
+name = "aegis_law_analyst"
+description = "Read-only behavioral-law analyst focused on invariant coverage and anti-overfitting."
+sandbox_mode = "read-only"
+role = "roles/law-analyst.md"
+
+[[agent]]
+slug = "adversarial-reviewer"
+name = "aegis_adversarial_reviewer"
+description = "Read-only independent reviewer seeking counterexamples and weak evidence."
+sandbox_mode = "read-only"
+role = "roles/adversarial-reviewer.md"
+
+[[agent]]
+slug = "security-reviewer"
+name = "aegis_security_reviewer"
+description = "Read-only security/unsafe/supply-chain reviewer when justified."
+sandbox_mode = "read-only"
+role = "roles/security-reviewer.md"
+
+[[agent]]
+slug = "performance-reviewer"
+name = "aegis_performance_reviewer"
+description = "Read-only measured performance/resource reviewer when justified."
+sandbox_mode = "read-only"
+role = "roles/performance-reviewer.md"
+
+[[agent]]
+slug = "verifier"
+name = "aegis_verifier"
+description = "Read-only clean-context verifier of final acceptance gates from direct evidence."
+sandbox_mode = "read-only"
+role = "roles/verifier.md"
