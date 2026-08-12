@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_ROLLING_VERSION_CHANGE",
+  "activation_barrier": "both immutable image digests are ready in the same namespace",
+  "affected_path": "versioned producer-consumer path",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "Kubernetes pod image IDs and application build-info endpoints identify both versions",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "rollout or rollback reaches its declared replica set",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "rolling_cross_version_compatibility",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "selected application deployment"
+}

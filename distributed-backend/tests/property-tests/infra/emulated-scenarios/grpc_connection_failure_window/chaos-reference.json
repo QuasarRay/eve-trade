@@ -1,0 +1,22 @@
+{
+  "action_kind": "LITMUS_DIRECTIONAL_NETWORK_PARTITION_AT_GRPC_BARRIER",
+  "activation_barrier": "gRPC transport failpoint distinguishes before-write from possible-commit phase",
+  "affected_path": "worker-to-settlement",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent worker-origin gRPC probe failure are required",
+  "independent_effect_witness_adapter": "INDEPENDENT_NETWORK_PROBE",
+  "litmus_experiment": "pod-network-partition",
+  "release_barrier": "partition is absent and idempotency status lookup succeeds",
+  "runtime_fixed_environment": {
+    "NAMESPACE_SELECTOR": "kubernetes.io/metadata.name=${RUN_NAMESPACE}",
+    "POD_SELECTOR": "app.kubernetes.io/name=trade-settlement",
+    "POLICY_TYPES": "egress"
+  },
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "grpc_connection_failure_window",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "worker egress to trade-settlement"
+}

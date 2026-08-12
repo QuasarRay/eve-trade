@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_POD_DELETE_AT_TRANSACTION_BARRIER",
+  "activation_barrier": "production-disabled transaction barrier confirms the transaction is open before commit",
+  "affected_path": "settlement-to-postgres",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement, Kubernetes UID loss, and independent pg_stat_activity observation prove overlap",
+  "independent_effect_witness_adapter": "KUBERNETES_PROCESS_IDENTITY_TRANSITION",
+  "litmus_experiment": "pod-delete",
+  "release_barrier": "replacement settlement pod is ready and transaction/idempotency state is queryable",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=trade-settlement"
+  },
+  "scenario_id": "settlement_pod_delete_during_database_transaction",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "trade-settlement pod selected by exact labels and UID"
+}

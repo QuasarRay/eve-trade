@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_POD_DELETE",
+  "activation_barrier": "workload request is observed at the selected gateway before deletion",
+  "affected_path": "quilkin-to-gateway",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and Kubernetes old-pod UID disappearance/replacement are both required",
+  "independent_effect_witness_adapter": "KUBERNETES_PROCESS_IDENTITY_TRANSITION",
+  "litmus_experiment": "pod-delete",
+  "release_barrier": "replacement pod is ready and UDP control probe succeeds",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "gateway_pod_delete_during_udp_workload",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "encore-backend pod selected by exact labels and UID"
+}

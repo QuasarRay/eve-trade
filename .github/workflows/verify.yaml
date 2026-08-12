@@ -15,6 +15,20 @@ permissions:
   contents: read
 
 jobs:
+  deterministic-emulation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact revision without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Bootstrap hash-locked Dagger runtime
+        run: python3 .github/dagger/_bootstrap.py
+      - name: Validate deterministic emulation and explicit property tests
+        run: .dagger-ci-venv/bin/python .github/dagger/property_tests.py
+
   reliability-contract:
     runs-on: ubuntu-24.04
     timeout-minutes: 10

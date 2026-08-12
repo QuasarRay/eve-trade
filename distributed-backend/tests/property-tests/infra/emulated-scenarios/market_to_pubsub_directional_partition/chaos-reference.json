@@ -1,0 +1,22 @@
+{
+  "action_kind": "LITMUS_DIRECTIONAL_NETWORK_PARTITION",
+  "activation_barrier": "SQL witness observes the durable operation/outbox row before activation",
+  "affected_path": "market-to-nsqd",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent source-to-destination network probe failure are required",
+  "independent_effect_witness_adapter": "INDEPENDENT_NETWORK_PROBE",
+  "litmus_experiment": "pod-network-partition",
+  "release_barrier": "partition is absent, probe succeeds, and durable operation reaches broker",
+  "runtime_fixed_environment": {
+    "NAMESPACE_SELECTOR": "kubernetes.io/metadata.name=${RUN_NAMESPACE}",
+    "POD_SELECTOR": "app.kubernetes.io/name=nsqd",
+    "POLICY_TYPES": "egress"
+  },
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "market_to_pubsub_directional_partition",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "encore-backend egress to nsqd"
+}

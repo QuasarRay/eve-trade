@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_NODE_DRAIN",
+  "activation_barrier": "selected worker/node and unaffected worker are ready",
+  "affected_path": "nsqd-to-worker replicas",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement, node unschedulable state, pod relocation, and broker state prove the effect",
+  "independent_effect_witness_adapter": "KUBERNETES_NODE_AND_POD_RELOCATION",
+  "litmus_experiment": "node-drain",
+  "release_barrier": "replacement topology is ready and scenario-owned messages leave in-flight state",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "worker_single_node_drain",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "node hosting a selected encore-backend pod that runs settlement-worker"
+}

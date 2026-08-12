@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eve-trade.invalid/schemas/scenario-invocation-v1.json",
+  "title": "EVE Trade deterministic emulation invocation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scenario_id",
+    "scenario_revision",
+    "run_id",
+    "namespace",
+    "AnySystem_seed",
+    "source_revision",
+    "deployment_artifact_revisions",
+    "scenario_parameters",
+    "business_property_input",
+    "action_inputs"
+  ],
+  "properties": {
+    "schema_version": {"const": "eve-trade.scenario-invocation/v1"},
+    "scenario_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "scenario_revision": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"},
+    "namespace": {"type": "string", "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"},
+    "AnySystem_seed": {"type": "integer", "minimum": 0, "maximum": 18446744073709551615},
+    "source_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "deployment_artifact_revisions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "application_images",
+        "deployment_manifest_sha256",
+        "configuration_sha256",
+        "database_schema_version",
+        "dependency_lock_digests",
+        "kubernetes_environment",
+        "Dagger_version",
+        "Litmus_version",
+        "AnySystem_revision"
+      ],
+      "properties": {
+        "application_images": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^(?:[a-z0-9._/:@-]+@)?sha256:[0-9a-f]{64}$"
+          }
+        },
+        "deployment_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "configuration_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "database_schema_version": {"type": ["string", "integer"]},
+        "dependency_lock_digests": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        },
+        "kubernetes_environment": {"type": "object", "minProperties": 1},
+        "Dagger_version": {"const": "0.21.8"},
+        "Litmus_version": {
+          "const": {
+            "chaos_charts_git_commit": "57ffd877b859a71a05821bb66ff9be76d981d7e4",
+            "helm_git_commit": "9e409651ce4c2293a44de56ba46ac9ab9fe1d329",
+            "installed_chart": "litmus-agent",
+            "installed_chart_version": "3.30.0",
+            "operator_image_tag": "3.30.0",
+            "release_tag": "litmus-core-3.31.0",
+            "runner_image_tag": "3.30.0",
+            "version": "3.31.0"
+          }
+        },
+        "AnySystem_revision": {"const": "74613a368c73fb12f25778ce33ca11c9a833da96"}
+      }
+    },
+    "scenario_parameters": {"type": "object"},
+    "business_property_input": {"type": "object", "minProperties": 1},
+    "action_inputs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["adapter", "request"],
+        "properties": {
+          "adapter": {
+            "enum": ["ACTION_SEQUENCE", "KUBERNETES", "LITMUS", "HTTP_JSON", "UDP_JSON", "POSTGRES_SQL", "NSQ_HTTP", "OBSERVE_ONLY"]
+          },
+          "request": {"type": "object"}
+        }
+      }
+    }
+  }
+}

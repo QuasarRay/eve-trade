@@ -1,0 +1,15 @@
+{
+  "action_kind": "BROKER_PUBLISH_DECLARED_RESULT_ORDER",
+  "activation_barrier": "durable source rows and initial projection version are observed",
+  "affected_path": "nsqd-to-market-projection",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "broker and application observations record exact message IDs and delivery order",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "all scenario-owned results reach terminal handler state and projection observation is available",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "market_projection_out_of_order_delivery",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "market result channel"
+}

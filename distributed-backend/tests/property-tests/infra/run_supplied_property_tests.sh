@@ -6,8 +6,8 @@ set -euo pipefail
 
 run_id="${EVE_TRADE_TEST_RUN_ID:-$(python -c 'import secrets; print("pt-" + secrets.token_hex(8))')}"
 artifact_root="${EVE_TRADE_PROPERTY_ARTIFACTS:-${RUNNER_TEMP:-/tmp}/eve-trade-property-${run_id}}"
-suite="${EVE_TRADE_PROPERTY_SUITE:-implemented}"
 namespace="${EVE_TRADE_APP_NAMESPACE:-eve-trade}"
+: "${EVE_TRADE_SCENARIO_INVOCATION:?EVE_TRADE_SCENARIO_INVOCATION is required}"
 
 mkdir -p "$artifact_root"
 export EVE_TRADE_TEST_RUN_ID="$run_id"
@@ -17,7 +17,5 @@ python distributed-backend/tests/property-tests/infra/orchestrate.py \
   --namespace "$namespace" \
   --run-id "$run_id" \
   --artifacts "$artifact_root" \
-  --suite "$suite" \
-  --chaos-examples "${EVE_TRADE_HYPOTHESIS_CHAOS_EXAMPLES:-3}" \
+  --invocation "$EVE_TRADE_SCENARIO_INVOCATION" \
   --confirm-disposable-context "$EVE_TRADE_DISPOSABLE_CONTEXT"
-

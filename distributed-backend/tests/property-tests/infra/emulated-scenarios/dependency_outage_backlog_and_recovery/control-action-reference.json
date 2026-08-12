@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_SCALE_DEPENDENCY_TO_ZERO",
+  "activation_barrier": "clean dependency and service-health baselines are observed",
+  "affected_path": "declared service dependency edge",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "Kubernetes zero-ready state and independent path probe prove unavailability",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "dependency and application readiness recover and scenario-owned backlog drains",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "dependency_outage_backlog_and_recovery",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "scenario-declared postgres, nsqd, or settlement dependency"
+}

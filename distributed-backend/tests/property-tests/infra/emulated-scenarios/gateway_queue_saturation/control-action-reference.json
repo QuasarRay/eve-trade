@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_BOUNDED_LOAD_AND_DEPENDENCY_DELAY",
+  "activation_barrier": "independent application metric observes the configured queue capacity boundary",
+  "affected_path": "quilkin-to-gateway-to-market",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "request observations and bounded memory/queue metrics prove saturation",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "queue drains and capacity returns to baseline",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "gateway_queue_saturation",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "gateway queue and worker pool"
+}

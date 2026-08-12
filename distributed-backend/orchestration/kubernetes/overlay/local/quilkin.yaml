@@ -60,7 +60,7 @@ spec:
                 --log-format json
           env:
             - name: QUILKIN_BACKEND_ENDPOINT
-              value: encore-backend.eve-trade.svc.cluster.local:26000
+              value: encore-backend:26000
           ports:
             - name: udp
               containerPort: 26001

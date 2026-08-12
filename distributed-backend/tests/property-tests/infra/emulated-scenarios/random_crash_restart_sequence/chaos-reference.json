@@ -1,0 +1,15 @@
+{
+  "action_kind": "LITMUS_SEEDED_POD_DELETE_SEQUENCE",
+  "activation_barrier": "controller trace records selected target and ready-state barrier before each deletion",
+  "affected_path": "seed-selected application path",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "each Litmus acknowledgement is paired with Kubernetes UID disappearance/replacement evidence",
+  "independent_effect_witness_adapter": "KUBERNETES_PROCESS_IDENTITY_TRANSITION",
+  "litmus_experiment": "pod-delete",
+  "release_barrier": "every selected component passes its declared recovery barrier before the next logical tick",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": "${ANYSYSTEM_SELECTED_VARIANT}",
+  "scenario_id": "random_crash_restart_sequence",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "seed-selected pods from the explicit scenario allowlist"
+}

@@ -1,0 +1,15 @@
+{
+  "action_kind": "LITMUS_CONTAINER_KILL_AT_DECLARED_BOUNDARY",
+  "activation_barrier": "production-disabled failpoint confirms the seed-selected boundary",
+  "affected_path": "seed-selected persistence boundary",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and Kubernetes container identity transition prove the exact kill",
+  "independent_effect_witness_adapter": "KUBERNETES_PROCESS_IDENTITY_TRANSITION",
+  "litmus_experiment": "container-kill",
+  "release_barrier": "selected component is ready and all scenario-owned operations are terminal or retryable",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": "${ANYSYSTEM_SELECTED_VARIANT}",
+  "scenario_id": "random_service_kill_mixed_workload",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "seed-selected member of the scenario allowlist"
+}

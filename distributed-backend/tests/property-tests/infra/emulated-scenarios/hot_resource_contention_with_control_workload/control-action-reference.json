@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_CONCURRENT_WORKLOAD",
+  "activation_barrier": "hot workload reaches declared in-flight/lock/backlog threshold",
+  "affected_path": "application-to-shared-resource and unrelated control path",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "independent SQL/broker probe observes hot pressure while control identities remain distinct",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "both workloads complete and pressure metrics return to baseline",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "hot_resource_contention_with_control_workload",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "scenario-selected hot trade, wallet, or outbox stream"
+}

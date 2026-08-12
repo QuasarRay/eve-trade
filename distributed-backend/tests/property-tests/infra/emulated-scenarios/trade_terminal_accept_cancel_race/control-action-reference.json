@@ -1,0 +1,15 @@
+{
+  "action_kind": "APPLICATION_TRANSACTION_RACE_BARRIER",
+  "activation_barrier": "all contenders report arrival immediately before the target commit race",
+  "affected_path": "concurrent settlement transactions",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "independent pg_stat_activity/lock probe identifies both exact contender transactions",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "all contenders finish and no scenario-owned transaction remains open",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "trade_terminal_accept_cancel_race",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "trade row/version"
+}

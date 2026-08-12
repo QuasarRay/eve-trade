@@ -1,0 +1,15 @@
+{
+  "action_kind": "APPLICATION_OUTBOX_CLAIM_BARRIER",
+  "activation_barrier": "all dispatchers report arrival before claim acquisition",
+  "affected_path": "dispatcher-to-postgres claim",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "independent PostgreSQL lock/activity probe identifies every dispatcher contender",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "dispatchers finish and no scenario-owned claim remains stale",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "concurrent_outbox_claim_race",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "outbox row or per-trade ordered row set"
+}

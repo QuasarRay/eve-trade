@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_MEMORY_HOG",
+  "activation_barrier": "selected pod identity, broker baseline, and memory baseline are recorded",
+  "affected_path": "nsqd-to-selected-worker",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent working-set probe observe declared pressure",
+  "independent_effect_witness_adapter": "INDEPENDENT_RESOURCE_PROBE",
+  "litmus_experiment": "pod-memory-hog",
+  "release_barrier": "memory stress is absent, worker is ready, and unfinished messages are recoverable",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "worker_memory_pressure",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "selected encore-backend pod hosting settlement-worker"
+}

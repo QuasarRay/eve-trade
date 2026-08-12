@@ -1,0 +1,248 @@
+{
+  "AnySystem_revision": "74613a368c73fb12f25778ce33ca11c9a833da96",
+  "action_plan": [
+    {
+      "action_id": "deploy-real-components",
+      "adapter_policy": {
+        "adapter": "ACTION_SEQUENCE",
+        "allowed_nested_adapters": [
+          "KUBERNETES",
+          "HTTP_JSON",
+          "UDP_JSON",
+          "POSTGRES_SQL",
+          "NSQ_HTTP"
+        ],
+        "request_allowed_fields": [
+          "actions"
+        ],
+        "request_fixed_fields": {},
+        "request_required_fields": [
+          "actions"
+        ]
+      },
+      "kind": "DAGGER_VERIFY_REAL_DEPLOYMENT",
+      "requires_barrier": "deployment-ready"
+    },
+    {
+      "action_id": "initialize-scenario-fixture",
+      "adapter_policy": {
+        "adapter": "ACTION_SEQUENCE",
+        "allowed_nested_adapters": [
+          "KUBERNETES",
+          "HTTP_JSON",
+          "UDP_JSON",
+          "POSTGRES_SQL",
+          "NSQ_HTTP"
+        ],
+        "request_allowed_fields": [
+          "actions"
+        ],
+        "request_fixed_fields": {},
+        "request_required_fields": [
+          "actions"
+        ]
+      },
+      "kind": "DAGGER_INITIALIZE_FIXTURE",
+      "requires_barrier": "initial-state-witnessed"
+    },
+    {
+      "action_id": "establish-controlled-prerequisite",
+      "adapter_policy": {
+        "adapter": "ACTION_SEQUENCE",
+        "allowed_nested_adapters": [
+          "KUBERNETES",
+          "HTTP_JSON",
+          "UDP_JSON",
+          "POSTGRES_SQL",
+          "NSQ_HTTP"
+        ],
+        "request_allowed_fields": [
+          "actions"
+        ],
+        "request_fixed_fields": {},
+        "request_required_fields": [
+          "actions"
+        ]
+      },
+      "kind": "WORKER_HANDLER_FAILPOINT_AND_BROKER_REDELIVERY",
+      "requires_barrier": "controlled-prerequisite-witnessed"
+    },
+    {
+      "action_id": "execute-identified-workload",
+      "adapter_policy": {
+        "adapter": "ACTION_SEQUENCE",
+        "allowed_nested_adapters": [
+          "KUBERNETES",
+          "HTTP_JSON",
+          "UDP_JSON",
+          "POSTGRES_SQL",
+          "NSQ_HTTP"
+        ],
+        "request_allowed_fields": [
+          "actions"
+        ],
+        "request_fixed_fields": {},
+        "request_required_fields": [
+          "actions"
+        ]
+      },
+      "kind": "DAGGER_EXECUTE_WORKLOAD",
+      "requires_barrier": "workload-path-witnessed"
+    },
+    {
+      "action_id": "release-controlled-condition",
+      "adapter_policy": {
+        "adapter": "ACTION_SEQUENCE",
+        "allowed_nested_adapters": [
+          "KUBERNETES",
+          "HTTP_JSON",
+          "UDP_JSON",
+          "POSTGRES_SQL",
+          "NSQ_HTTP"
+        ],
+        "request_allowed_fields": [
+          "actions"
+        ],
+        "request_fixed_fields": {},
+        "request_required_fields": [
+          "actions"
+        ]
+      },
+      "kind": "DAGGER_RELEASE_SCENARIO_ACTION",
+      "requires_barrier": "recovery-witnessed"
+    },
+    {
+      "action_id": "collect-factual-observations",
+      "adapter_policy": {
+        "adapter": "ACTION_SEQUENCE",
+        "allowed_nested_adapters": [
+          "KUBERNETES",
+          "HTTP_JSON",
+          "UDP_JSON",
+          "POSTGRES_SQL",
+          "NSQ_HTTP"
+        ],
+        "request_allowed_fields": [
+          "actions"
+        ],
+        "request_fixed_fields": {},
+        "request_required_fields": [
+          "actions"
+        ]
+      },
+      "kind": "DAGGER_COLLECT_OBSERVATIONS",
+      "requires_barrier": "observations-complete"
+    },
+    {
+      "action_id": "cleanup-scenario-owned-state",
+      "adapter_policy": {
+        "adapter": "ACTION_SEQUENCE",
+        "allowed_nested_adapters": [
+          "KUBERNETES",
+          "HTTP_JSON",
+          "UDP_JSON",
+          "POSTGRES_SQL",
+          "NSQ_HTTP"
+        ],
+        "request_allowed_fields": [
+          "actions"
+        ],
+        "request_fixed_fields": {},
+        "request_required_fields": [
+          "actions"
+        ]
+      },
+      "kind": "DAGGER_SCOPED_CLEANUP",
+      "requires_barrier": "cleanup-complete"
+    }
+  ],
+  "application_clock_mode": "REAL_UNINJECTED",
+  "barrier_timeout_policy": {
+    "default_seconds": 120,
+    "deployment_seconds": 600,
+    "recovery_seconds": 300,
+    "timeout_transition": "FAIL_CLOSED_AND_COLLECT_ARTIFACTS"
+  },
+  "behavioral_clauses": {
+    "controller.barrier_gating": "The controller cannot advance until the current action's declared barrier outcome is supplied.",
+    "controller.seed": "The AnySystem seed and canonical scenario parameters determine one replayable logical plan.",
+    "controller.transitions": "The controller emits only declared actions in declared logical order.",
+    "dagger.execution": "Dagger executes the exact controller command and preserves scenario IDs, seed, parameters, and order.",
+    "deployment.components": "The real deployed components exactly match the registered scenario component set.",
+    "deployment.namespace": "The run uses a unique non-production chaos-safe namespace and exact run identity.",
+    "deployment.revisions": "Source, images, manifests, schema, dependencies, Dagger, Litmus, and AnySystem revisions are recorded.",
+    "initial_state.fixture": "Every material fixture entity and initial observation is present before controlled actions begin.",
+    "observations.completeness": "Every observation required by consuming oracles is present and bound to exact entities.",
+    "observations.no_business_answers": "Scenario outputs contain facts and never derived expected business answers or pass/fail fields.",
+    "observations.provenance": "Every exported fact has one allowed provenance class and source reference.",
+    "prerequisite.negative_control": "The prerequisite witness remains false when any critical declared component is absent.",
+    "prerequisite.witness": "The structured prerequisite witness is true only after every declared condition and exact entity is observed.",
+    "recovery.condition": "message is terminally acknowledged or quarantined and the channel is healthy.",
+    "reset.isolation": "Scenario-owned Kubernetes, broker, database, controller, and evidence state cannot bleed into another run.",
+    "termination.condition": "Completion is emitted only after observations and scoped cleanup barriers succeed.",
+    "time.logical_ticks": "Controller logical ticks order phases and never claim to control physical infrastructure time.",
+    "time.physical": "Wall-clock durations are recorded as physical observations and do not choose controller transitions.",
+    "workload.identity": "Every workload action carries exact scenario, request, actor, and entity identities.",
+    "workload.phase": "The identified workload begins only in the declared scenario phase and targets the registered deployment."
+  },
+  "blocker": "The worker has no exact handler-boundary failpoints and NSQ test hooks for deterministic redelivery timing.",
+  "controller_seed_policy": "required unsigned 64-bit integer",
+  "deployed_components": [
+    "nsqd",
+    "settlement-worker",
+    "trade-settlement",
+    "postgres"
+  ],
+  "observation_schema": {
+    "allowed_provenance_classes": [
+      "SCENARIO_INPUT",
+      "ANYSYSTEM_CONTROLLER",
+      "DAGGER_ORCHESTRATOR",
+      "LITMUS_CONTROL_PLANE",
+      "KUBERNETES_CONTROL_PLANE",
+      "REAL_APPLICATION",
+      "REAL_DATABASE",
+      "REAL_BROKER",
+      "INDEPENDENT_NETWORK_PROBE",
+      "INDEPENDENT_RESOURCE_PROBE",
+      "PHYSICAL_CLOCK",
+      "INJECTED_APPLICATION_CLOCK"
+    ],
+    "facts_only": true,
+    "forbidden_derived_field_prefixes": [
+      "expected_",
+      "should_"
+    ],
+    "forbidden_derived_fields": [
+      "business_valid",
+      "invariant_satisfied",
+      "test_passed",
+      "correct_trade_state"
+    ]
+  },
+  "prerequisite_witness": {
+    "activation_condition": "handler failpoint confirms the exact commit/publish/ack boundary",
+    "independent_condition": "NSQ stats independently show the message in-flight or requeued with the same identity",
+    "required_fields": [
+      "scenario_id",
+      "scenario_revision",
+      "run_id",
+      "namespace",
+      "AnySystem_seed",
+      "relevant_entity_ids",
+      "established_conditions",
+      "controller_state",
+      "logical_tick_or_phase",
+      "real_observation_timestamp",
+      "trace_position",
+      "control_plane_evidence_refs",
+      "independent_effect_evidence_refs"
+    ]
+  },
+  "scenario_id": "pubsub_handler_redelivery_boundary",
+  "scenario_revision": "1",
+  "schema_version": "eve-trade.emulation-scenario/v1",
+  "status": "PLANNED",
+  "uses_controller_logical_ticks": true,
+  "workload": "single identified NSQ message and handler workload"
+}

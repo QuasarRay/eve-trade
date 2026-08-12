@@ -1,0 +1,22 @@
+{
+  "action_kind": "LITMUS_DIRECTIONAL_NETWORK_PARTITION",
+  "activation_barrier": "request identity is observed at the destination before response-path activation",
+  "affected_path": "declared request/response service edge",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement plus directional probes prove request success and response failure",
+  "independent_effect_witness_adapter": "INDEPENDENT_NETWORK_PROBE",
+  "litmus_experiment": "pod-network-partition",
+  "release_barrier": "both directional probes succeed and status/replay path is available",
+  "runtime_fixed_environment": {
+    "NAMESPACE_SELECTOR": "kubernetes.io/metadata.name=${RUN_NAMESPACE}",
+    "POD_SELECTOR": "app.kubernetes.io/name=nsqd",
+    "POLICY_TYPES": "egress"
+  },
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "asymmetric_response_path_partition",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "scenario-selected response path"
+}

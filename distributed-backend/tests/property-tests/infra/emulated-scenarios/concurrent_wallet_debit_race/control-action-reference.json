@@ -1,0 +1,15 @@
+{
+  "action_kind": "APPLICATION_TRANSACTION_RACE_BARRIER",
+  "activation_barrier": "all contenders report arrival before the same wallet mutation boundary",
+  "affected_path": "concurrent wallet-debit transactions",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "independent PostgreSQL lock/activity probe identifies every contender",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "all contenders finish and wallet row locks are released",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "concurrent_wallet_debit_race",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "wallet row"
+}

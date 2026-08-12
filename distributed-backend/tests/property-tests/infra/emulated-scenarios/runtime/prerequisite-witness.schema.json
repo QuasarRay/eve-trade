@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eve-trade.invalid/schemas/prerequisite-witness-v1.json",
+  "title": "EVE Trade emulation prerequisite witness",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scenario_id",
+    "scenario_revision",
+    "run_id",
+    "namespace",
+    "AnySystem_seed",
+    "relevant_entity_ids",
+    "established_conditions",
+    "controller_state",
+    "logical_tick_or_phase",
+    "real_observation_timestamp",
+    "trace_position",
+    "control_plane_evidence_refs",
+    "independent_effect_evidence_refs"
+  ],
+  "properties": {
+    "schema_version": {"const": "eve-trade.prerequisite-witness/v1"},
+    "scenario_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "scenario_revision": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "namespace": {"type": "string", "minLength": 1},
+    "AnySystem_seed": {"type": "integer", "minimum": 0},
+    "relevant_entity_ids": {"type": "object", "minProperties": 1},
+    "established_conditions": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "controller_state": {"type": "string", "minLength": 1},
+    "logical_tick_or_phase": {"type": ["integer", "string"]},
+    "real_observation_timestamp": {"type": "string", "format": "date-time"},
+    "trace_position": {"type": "integer", "minimum": 0},
+    "control_plane_evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "independent_effect_evidence_refs": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+  }
+}

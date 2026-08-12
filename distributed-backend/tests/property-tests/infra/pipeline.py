@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import importlib.metadata
+import json
 import os
 import re
 import shlex
+import subprocess
 import sys
 from pathlib import Path
 
@@ -31,8 +34,10 @@ BUF_SHA256 = "e2bbcdd324da09c16a15963dc2dae0525c955c05dc118223cf732f4f7509c5e6"
 RUSTUP_VERSION = "1.28.2"
 RUSTUP_SHA256 = "20a06e644b0d9bd2fbdbfd52d42540bdde820ea7df86e92e533c073da0cdd43c"
 RUST_TOOLCHAIN = "1.95.0"
+RUST_IMAGE = "rust:1.95.0-bookworm@sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1"
 ENCORE_VERSION = "1.57.9"
 ENCORE_SHA256 = "dfd43dcd456f91414a823315480da921333e6d1e3535ab48c47c09225d022af5"
+EXPECTED_DAGGER_VERSION = "0.21.8"
 SOURCE_EXCLUDES = [
     ".git", ".agents", ".codex", ".codex-task-state", ".terraform",
     ".venv", ".ci-venv", ".dagger-ci-venv", ".dagger-ci-bin",
@@ -57,7 +62,6 @@ FORWARDED_ENV = (
     "EVE_TRADE_EDGE_BUYER_SECRET",
     "EVE_TRADE_EDGE_OTHER_KEY_ID",
     "EVE_TRADE_EDGE_OTHER_SECRET",
-    "EVE_TRADE_APP_NAMESPACE",
     "EVE_TRADE_DISPOSABLE_CONTEXT",
 )
 
@@ -134,13 +138,17 @@ set -euo pipefail
 python -m pip install --disable-pip-version-check \
   -r distributed-backend/tests/property-tests/e2e/requirements.txt \
   -r distributed-backend/tests/property-tests/infra/requirements.txt
-python -m compileall -q distributed-backend/tests/property-tests/e2e distributed-backend/tests/property-tests/infra
-python distributed-backend/tests/property-tests/e2e/tools/sync_authoritative_catalog.py --check
-python distributed-backend/tests/property-tests/infra/generate_contract_manifests.py --check
-python distributed-backend/tests/property-tests/e2e/tools/generate_hypothesis_audit.py --check
-python distributed-backend/tests/property-tests/e2e/tools/generate_delivery_integrity.py --check
-python -m pytest -q distributed-backend/tests/property-tests/e2e/tests
-python distributed-backend/tests/property-tests/infra/verify_collection.py
+python -m compileall -q \
+  distributed-backend/tests/property-tests/e2e \
+  distributed-backend/tests/property-tests/reusable-oracles \
+  distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime \
+  distributed-backend/tests/property-tests/infra/orchestrate.py \
+  distributed-backend/tests/property-tests/infra/install_litmus.py
+python distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/generate_manifests.py --check
+python distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/validate.py
+python -m pytest --collect-only -q \
+  -c distributed-backend/tests/property-tests/e2e/pytest.ini \
+  distributed-backend/tests/property-tests/e2e
 """
     container = (
         client.container()
@@ -152,6 +160,19 @@ python distributed-backend/tests/property-tests/infra/verify_collection.py
     output = await container.stdout()
     if output.strip():
         print(output, flush=True)
+    controller = (
+        client.container()
+        .from_(RUST_IMAGE)
+        .with_directory("/src", source)
+        .with_workdir(
+            "/src/distributed-backend/tests/property-tests/infra/"
+            "emulated-scenarios/runtime/deterministic-controller"
+        )
+        .with_exec(["cargo", "check"])
+    )
+    controller_output = await controller.stdout()
+    if controller_output.strip():
+        print(controller_output, flush=True)
 
 
 async def run_pipeline(args: argparse.Namespace) -> None:
@@ -160,6 +181,49 @@ async def run_pipeline(args: argparse.Namespace) -> None:
     await validate_source(args.client, source)
     if args.mode == "structural":
         return
+    if not args.invocation:
+        raise ValueError("--invocation is required for real scenario execution")
+    invocation_path = Path(args.invocation).expanduser().resolve()
+    if not invocation_path.is_file():
+        raise ValueError(f"scenario invocation does not exist: {invocation_path}")
+    invocation = json.loads(invocation_path.read_text(encoding="utf-8"))
+    if not isinstance(invocation, dict):
+        raise ValueError("scenario invocation must be a JSON object")
+    if invocation.get("run_id") != rid:
+        raise ValueError("--run-id must equal invocation run_id")
+    revision_process = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=False,
+    )
+    if revision_process.returncode != 0:
+        raise ValueError("cannot bind the Dagger source snapshot to the current Git revision")
+    status_process = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=False,
+    )
+    if status_process.returncode != 0 or status_process.stdout.strip():
+        raise ValueError(
+            "real scenario execution requires a clean worktree so source_revision identifies the exact Dagger snapshot"
+        )
+    if invocation.get("source_revision") != revision_process.stdout.strip():
+        raise ValueError("invocation source revision differs from the source snapshot supplied to Dagger")
+    sdk_version = importlib.metadata.version("dagger-io")
+    if sdk_version != EXPECTED_DAGGER_VERSION:
+        raise ValueError(f"Dagger SDK version {sdk_version} differs from the repository pin {EXPECTED_DAGGER_VERSION}")
+    if invocation.get("deployment_artifact_revisions", {}).get("Dagger_version") != sdk_version:
+        raise ValueError("invocation Dagger version differs from the executing Dagger SDK")
+    namespace = str(invocation.get("namespace") or "")
+    if namespace != f"emu-{rid}" or len(namespace) > 63:
+        raise ValueError("invocation namespace must be the run-isolated emu-<run-id> namespace")
+    invocation_file = args.client.host().file(str(invocation_path))
     artifacts = REPO_ROOT / ".o11y" / "runs" / f"local-property-{rid}"
     artifacts.mkdir(parents=True, exist_ok=True)
 
@@ -176,13 +240,12 @@ async def run_pipeline(args: argparse.Namespace) -> None:
             .from_(GOLANG_IMAGE)
             .with_directory("/src", source)
             .with_file("/kubeconfig", args.client.host().file(str(kubeconfig)))
+            .with_file("/scenario-invocation.json", invocation_file)
             .with_workdir("/src")
             .with_env_variable("KUBECONFIG", "/kubeconfig")
             .with_env_variable("EVE_TRADE_TEST_RUN_ID", rid)
-            .with_env_variable("EVE_TRADE_PROPERTY_SUITE", args.suite)
-            .with_env_variable(
-                "EVE_TRADE_HYPOTHESIS_CHAOS_EXAMPLES", str(args.chaos_examples)
-            )
+            .with_env_variable("EVE_TRADE_APP_NAMESPACE", namespace)
+            .with_env_variable("EVE_TRADE_SCENARIO_INVOCATION", "/scenario-invocation.json")
             .with_env_variable("EVE_TRADE_PROPERTY_ARTIFACTS", "/artifacts")
         )
         supplied = with_forwarded_environment(supplied, args.client)
@@ -217,12 +280,10 @@ async def run_pipeline(args: argparse.Namespace) -> None:
         args.client.container()
         .from_(DEBIAN_IMAGE)
         .with_directory("/validated-src", source)
+        .with_file("/scenario-invocation.json", invocation_file)
         .with_unix_socket("/var/run/docker.sock", args.client.host().unix_socket(str(socket_path)))
         .with_env_variable("EVE_TRADE_TEST_RUN_ID", rid)
-        .with_env_variable("EVE_TRADE_PROPERTY_SUITE", args.suite)
-        .with_env_variable(
-            "EVE_TRADE_HYPOTHESIS_CHAOS_EXAMPLES", str(args.chaos_examples)
-        )
+        .with_env_variable("EVE_TRADE_APP_NAMESPACE", namespace)
         .with_env_variable("EVE_TRADE_PROPERTY_ARTIFACTS", "/artifacts")
         .with_env_variable("ENCORE_CLI_VERSION", ENCORE_VERSION)
         .with_env_variable("ENCORE_CLI_SHA256", ENCORE_SHA256)
@@ -252,8 +313,8 @@ bash scripts/run_kind_e2e.sh
     container_name = f"eve-trade-property-{rid}"
     docker_env = [
         "-e", f"EVE_TRADE_TEST_RUN_ID={rid}",
-        "-e", f"EVE_TRADE_PROPERTY_SUITE={args.suite}",
-        "-e", f"EVE_TRADE_HYPOTHESIS_CHAOS_EXAMPLES={args.chaos_examples}",
+        "-e", f"EVE_TRADE_APP_NAMESPACE={namespace}",
+        "-e", "EVE_TRADE_SCENARIO_INVOCATION=/scenario-invocation.json",
         "-e", "EVE_TRADE_PROPERTY_ARTIFACTS=/artifacts",
         "-e", f"ENCORE_CLI_VERSION={ENCORE_VERSION}",
         "-e", f"ENCORE_CLI_SHA256={ENCORE_SHA256}",
@@ -266,6 +327,7 @@ bash scripts/run_kind_e2e.sh
     create_command = shlex.join(
         [
             "docker", "create", "--name", container_name, "--network", "host",
+            "--volume", "/var/run/docker.sock:/var/run/docker.sock",
             *docker_env,
             "-w", "/src", GOLANG_IMAGE,
             "bash", "/tmp/eve-kind-inner.sh",
@@ -285,6 +347,7 @@ trap cleanup EXIT
 created=1
 docker cp /validated-src/. "$container_name:/src"
 docker cp /eve-kind-inner.sh "$container_name:/tmp/eve-kind-inner.sh"
+docker cp /scenario-invocation.json "$container_name:/scenario-invocation.json"
 set +e
 docker start -a "$container_name"
 status=$?
@@ -324,10 +387,9 @@ async def async_main(args: argparse.Namespace) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("structural", "kind", "supplied"), default="kind")
-    parser.add_argument("--suite", choices=("structural", "implemented", "full-strict"), default="implemented")
     parser.add_argument("--kubeconfig")
     parser.add_argument("--run-id")
-    parser.add_argument("--chaos-examples", type=int, choices=range(1, 6), default=3)
+    parser.add_argument("--invocation")
     args = parser.parse_args()
     asyncio.run(async_main(args))
     return 0

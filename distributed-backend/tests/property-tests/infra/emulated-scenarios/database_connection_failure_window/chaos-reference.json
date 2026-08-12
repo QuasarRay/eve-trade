@@ -1,0 +1,22 @@
+{
+  "action_kind": "LITMUS_NETWORK_PARTITION",
+  "activation_barrier": "clean SQL probe and declared request phase are observed",
+  "affected_path": "application-to-postgres",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent application-origin SQL probe failure are required",
+  "independent_effect_witness_adapter": "INDEPENDENT_NETWORK_PROBE",
+  "litmus_experiment": "pod-network-partition",
+  "release_barrier": "partition is absent, SQL probe succeeds, and pool capacity returns to baseline",
+  "runtime_fixed_environment": {
+    "NAMESPACE_SELECTOR": "kubernetes.io/metadata.name=${RUN_NAMESPACE}",
+    "POD_SELECTOR": "app.kubernetes.io/name=postgres",
+    "POLICY_TYPES": "egress"
+  },
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "database_connection_failure_window",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "application egress to postgres"
+}

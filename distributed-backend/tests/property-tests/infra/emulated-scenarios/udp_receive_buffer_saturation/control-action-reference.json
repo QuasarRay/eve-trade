@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_UDP_SOCKET_BUFFER_SATURATION",
+  "activation_barrier": "socket identity, receive-buffer capacity, and clean control exchange are observed",
+  "affected_path": "quilkin-to-gateway-udp-socket",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "independent kernel socket/drop counters and application receipts identify the saturated interval",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "receive queue and drop counters stabilize and a clean control exchange succeeds",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "udp_receive_buffer_saturation",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "selected gateway UDP socket and host receive queue"
+}

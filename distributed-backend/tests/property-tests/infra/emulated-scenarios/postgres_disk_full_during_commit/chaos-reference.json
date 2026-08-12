@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_DISK_FILL_AT_TRANSACTION_BARRIER",
+  "activation_barrier": "transaction failpoint confirms the pre-commit phase",
+  "affected_path": "settlement-to-postgres",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent filesystem probe observe declared utilization",
+  "independent_effect_witness_adapter": "INDEPENDENT_RESOURCE_PROBE",
+  "litmus_experiment": "disk-fill",
+  "release_barrier": "fill files are removed, filesystem is writable, and PostgreSQL is ready",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=postgres"
+  },
+  "scenario_id": "postgres_disk_full_during_commit",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "postgres data filesystem"
+}

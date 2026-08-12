@@ -1,0 +1,15 @@
+{
+  "action_kind": "BROKER_PUBLISH_DUPLICATE",
+  "activation_barrier": "first delivery identity is observed at the declared consumer boundary",
+  "affected_path": "publisher-to-nsqd-to-consumer",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "NSQ stats and application message observations record at least two deliveries of the same logical identity",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "all deliveries reach terminal handling and channel in-flight count returns to baseline",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "duplicate_message_delivery",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "declared NSQ topic and channel"
+}

@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_ROLLOUT_RESTART",
+  "activation_barrier": "message or lease identity is observed before old replica termination",
+  "affected_path": "nsqd-to-worker-to-settlement",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "pod UID transition, broker stats, and SQL lease observations bind recovery to the new replica",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "rollout completes and no scenario-owned lease remains stale",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "rolling_worker_replica_replacement",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "encore-backend deployment hosting the settlement-worker service"
+}

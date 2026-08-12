@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_WORKLOAD_BARRIER_RELEASE",
+  "activation_barrier": "all generated requests are connected and ready at the client-side release barrier",
+  "affected_path": "client/broker-to-multiple-replicas",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "application request observations and SQL connection/activity evidence identify every contender",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "all request attempts terminate and the barrier-owned clients close",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "concurrent_idempotency_key_race",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "multiple selected application replicas"
+}

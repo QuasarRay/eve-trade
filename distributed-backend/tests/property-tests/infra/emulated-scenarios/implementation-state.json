@@ -1,0 +1,69 @@
+{
+  "business": {
+    "blocked_breakdown": {
+      "implemented_awaiting_real_deployment_execution": 12,
+      "not_implemented": 1448
+    },
+    "execution_blocker": "No disposable real-deployment scenario invocation was supplied in this workspace; context-independent tests are collected but intentionally never run against fabricated evidence.",
+    "oracle_sources": {
+      "assert_catalog_digest": "reusable-oracles/eve_trade_oracles/catalog_quality.py",
+      "assert_catalog_names_equal_classification": "reusable-oracles/eve_trade_oracles/catalog_quality.py",
+      "assert_catalog_names_unique": "reusable-oracles/eve_trade_oracles/catalog_quality.py",
+      "assert_concurrent_names_identify_shared_resource_or_boundary": "reusable-oracles/eve_trade_oracles/catalog_quality.py",
+      "assert_crash_names_identify_window_and_recovery": "reusable-oracles/eve_trade_oracles/catalog_quality.py",
+      "assert_invalid_names_identify_invalid_property": "reusable-oracles/eve_trade_oracles/catalog_quality.py",
+      "assert_no_alternative_accept_reject_outcomes": "reusable-oracles/eve_trade_oracles/catalog_quality.py",
+      "assert_no_placeholder_words": "reusable-oracles/eve_trade_oracles/catalog_quality.py",
+      "assert_no_vague_success_verbs": "reusable-oracles/eve_trade_oracles/catalog_quality.py",
+      "assert_real_deployment_prerequisite": "reusable-oracles/eve_trade_oracles/deployment_evidence.py",
+      "assert_reject_names_identify_rejected_condition": "reusable-oracles/eve_trade_oracles/catalog_quality.py",
+      "assert_retry_names_identify_business_effect_repeatability": "reusable-oracles/eve_trade_oracles/catalog_quality.py",
+      "assert_timeout_names_identify_boundary_and_persistence_invariant": "reusable-oracles/eve_trade_oracles/catalog_quality.py"
+    },
+    "oracles_implemented": 13,
+    "test_sources": {
+      "test_proposed_test_names_are_unique_across_categories_except_explicit_priority_index": "e2e/test_catalog_governance.py",
+      "test_proposed_test_names_contain_no_placeholder_words_todo_fixme_or_tbd": "e2e/test_catalog_governance.py",
+      "test_proposed_test_names_contain_no_vague_success_verbs": "e2e/test_catalog_governance.py",
+      "test_proposed_test_names_do_not_encode_two_alternative_expected_outcomes_with_rejected_or_accepted_wording": "e2e/test_catalog_governance.py",
+      "test_proposed_test_names_using_concurrent_identify_the_shared_resource_or_race_boundary": "e2e/test_catalog_governance.py",
+      "test_proposed_test_names_using_crash_identify_crash_window_and_post_restart_invariant": "e2e/test_catalog_governance.py",
+      "test_proposed_test_names_using_invalid_identify_the_exact_invalid_property": "e2e/test_catalog_governance.py",
+      "test_proposed_test_names_using_reject_identify_the_specific_rejected_condition": "e2e/test_catalog_governance.py",
+      "test_proposed_test_names_using_retry_identify_whether_business_effect_may_repeat": "e2e/test_catalog_governance.py",
+      "test_proposed_test_names_using_timeout_identify_timeout_boundary_and_persistence_invariant": "e2e/test_catalog_governance.py",
+      "test_regression_canonical_test_catalog_contains_every_required_contract": "e2e/test_catalog_governance.py",
+      "test_regression_canonical_test_catalog_rejects_removed_contract_without_explicit_update": "e2e/test_catalog_governance.py"
+    },
+    "tests_blocked": 1460,
+    "tests_failing": 0,
+    "tests_implemented": 12,
+    "tests_implemented_on_pending_emulation_verification": 12,
+    "tests_passing": 0
+  },
+  "emulation_verification_test_functions_implemented": 0,
+  "remaining_state": {
+    "implemented_scenarios_awaiting_emulation_verification": 31,
+    "planned_emulation_scenarios": 28,
+    "safe_atomic_tests_not_implemented": 1448,
+    "safe_composite_parents_awaiting_child_implementation": 12,
+    "unsafe_unresolved_contracts": 12
+  },
+  "scenario_counts": {
+    "canonical_scenarios_identified": 59,
+    "canonical_scenarios_implemented": 31,
+    "canonical_scenarios_planned": 28,
+    "emulation_verification_test_functions_implemented": 0,
+    "emulation_verification_test_names_generated": 1334,
+    "scenarios_using_anysystem_logical_ticks": 59,
+    "scenarios_using_application_visible_clock_injection": 0,
+    "scenarios_using_litmus": 29,
+    "scenarios_with_independent_effect_witnesses": 59
+  },
+  "schema_version": "eve-trade.property-implementation-state/v1",
+  "trust_ceiling": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING",
+  "validation": {
+    "generated_state_does_not_claim_execution": true,
+    "results_path": "infra/emulated-scenarios/validation-results.json"
+  }
+}

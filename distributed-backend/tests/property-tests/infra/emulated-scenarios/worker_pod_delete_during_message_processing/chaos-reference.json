@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_POD_DELETE",
+  "activation_barrier": "application/SQL witness observes the message processing owner",
+  "affected_path": "nsqd-to-worker-to-settlement",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement, Kubernetes UID loss, and broker in-flight transition prove the effect",
+  "independent_effect_witness_adapter": "KUBERNETES_PROCESS_IDENTITY_TRANSITION",
+  "litmus_experiment": "pod-delete",
+  "release_barrier": "replacement worker is ready and the message is no longer permanently in flight",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "worker_pod_delete_during_message_processing",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "encore-backend pod hosting settlement-worker, selected by exact labels and UID"
+}

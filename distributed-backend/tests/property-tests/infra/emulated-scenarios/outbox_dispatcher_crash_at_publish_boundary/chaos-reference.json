@@ -1,0 +1,20 @@
+{
+  "action_kind": "LITMUS_CONTAINER_KILL_AT_FAILPOINT",
+  "activation_barrier": "dispatcher failpoint confirms before-publish or after-publish-before-mark boundary",
+  "affected_path": "postgres-outbox-to-nsqd",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Kubernetes observes dispatcher process loss and SQL probe observes the claim state",
+  "independent_effect_witness_adapter": "KUBERNETES_PROCESS_IDENTITY_TRANSITION",
+  "litmus_experiment": "container-kill",
+  "release_barrier": "dispatcher recovers the claim and the event reaches its terminal published state",
+  "runtime_fixed_environment": {
+    "TARGET_CONTAINER": "encore-backend"
+  },
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "outbox_dispatcher_crash_at_publish_boundary",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "outbox dispatcher container"
+}

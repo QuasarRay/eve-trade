@@ -1,0 +1,20 @@
+{
+  "action_kind": "LITMUS_CONTAINER_KILL_AT_FAILPOINT",
+  "activation_barrier": "production-disabled settlement failpoint confirms the named transaction boundary",
+  "affected_path": "worker-to-settlement-to-postgres",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Kubernetes observes container termination after the confirmed boundary",
+  "independent_effect_witness_adapter": "KUBERNETES_PROCESS_IDENTITY_TRANSITION",
+  "litmus_experiment": "container-kill",
+  "release_barrier": "settlement is ready and idempotency-key status is independently queryable",
+  "runtime_fixed_environment": {
+    "TARGET_CONTAINER": "trade-settlement"
+  },
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=trade-settlement"
+  },
+  "scenario_id": "settlement_crash_at_transaction_boundary",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "trade-settlement container"
+}

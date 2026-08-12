@@ -1,0 +1,172 @@
+{
+  "authoritative_inputs": {
+    "AnySystem_main_and_pinned_revision": "74613a368c73fb12f25778ce33ca11c9a833da96",
+    "oracle_inference_safety_criteria_sha256": "0f883d23f8712801350668ac051d1847727f783315ef2ecf01c40ce64b14531a",
+    "source_business_catalog_sha256": "3756963f3dc7a896d4565bdbb24523c29566462c38b8a962f65fddcb137b5e84",
+    "source_revision": "e3ff01c3d9c2b7e9cae0f977c1c4b7bbaef4b91c",
+    "test_rules_v1_sha256": "0a8f6ffa2cc44ecca4d520ad2bd2cc4cab8984c85a96904235055e1db9c3e035"
+  },
+  "blocked_or_not_executed": [
+    {
+      "check": "AnySystem controller cargo check",
+      "classification": "ENVIRONMENT_CAPABILITY_BLOCKER",
+      "detail": "Cargo could not resolve its task-local AnySystem Git database because Windows returned Access is denied. Cargo.toml remains pinned to the exact upstream revision; cargo fmt and a static API compatibility inspection passed, but compilation is not claimed.",
+      "result": "BLOCKED"
+    },
+    {
+      "check": "Cargo dependency lock",
+      "classification": "REPRODUCIBILITY_LIMITATION",
+      "detail": "No Cargo.lock could be generated while Cargo dependency resolution was blocked. The Dagger structural gate therefore invokes cargo check without --locked.",
+      "result": "NOT_AVAILABLE"
+    },
+    {
+      "check": "kubectl kustomize local overlay",
+      "classification": "ENVIRONMENT_CAPABILITY_BLOCKER",
+      "detail": "Docker Desktop's kubectl executable returned an evalsymlink Access is denied error for the repository path. The three changed YAML files parsed successfully and the namespace renderer passed its focused sample.",
+      "result": "BLOCKED"
+    },
+    {
+      "check": "Dagger plus Kind plus Litmus real-deployment scenarios",
+      "classification": "ENVIRONMENT_CAPABILITY_BLOCKER",
+      "detail": "The Dagger CLI is unavailable and Docker daemon access is denied at npipe:////./pipe/docker_engine. No physical chaos action or real-deployment scenario is reported as executed.",
+      "result": "NOT_EXECUTED"
+    },
+    {
+      "check": "business property tests against real deployment",
+      "classification": "MISSING_REAL_DEPLOYMENT_INVOCATION",
+      "detail": "No disposable real-deployment invocation/evidence was supplied and the local container runtime is unavailable. All 12 explicit tests were collected; passing and failing counts both remain zero, with 1460 safe atomic tests recorded as blocked or not implemented.",
+      "result": "NOT_EXECUTED"
+    },
+    {
+      "check": "emulation-verification test functions",
+      "classification": "INTENTIONALLY_PROHIBITED_BY_TASK",
+      "detail": "The 1334 future verification identities and clause coverage records were generated, but no corresponding pytest function was implemented or run.",
+      "result": "NOT_IMPLEMENTED"
+    },
+    {
+      "check": "deployed image, manifest, configuration, schema, and environment fidelity",
+      "classification": "REQUIRES_REAL_SCENARIO_RUN",
+      "detail": "Closed-schema fidelity inputs and exact version pins were validated structurally. Actual deployed artifacts were not available for independent comparison.",
+      "result": "NOT_EXECUTED"
+    }
+  ],
+  "diagnostics": [
+    {
+      "check": "independent catalog oracle preflight",
+      "detail": "Eleven direct catalog-oracle diagnostics passed. The vague-success-verb oracle correctly identified three immutable source names: test_udp_pool_handles_delayed_duplicate_after_session_reuse, test_udp_pool_handles_more_concurrent_callers_than_capacity, and test_udp_pool_handles_stale_datagram_after_session_reuse. This diagnostic is not counted as an executed pytest failure because the required real-deployment prerequisite was unavailable.",
+      "result": "SOURCE_CONTRACT_DEFECT_DETECTED"
+    }
+  ],
+  "passed": [
+    {
+      "check": "generated manifest drift",
+      "command": "python infra/emulated-scenarios/runtime/generate_manifests.py --check",
+      "result": "PASSED"
+    },
+    {
+      "check": "deterministic catalog and scenario validator",
+      "command": "python infra/emulated-scenarios/runtime/validate.py",
+      "result": {
+        "business_test_names": 1484,
+        "future_verification_functions": 0,
+        "future_verification_names": 1334,
+        "implemented_pending_scenarios": 31,
+        "scenarios": 59,
+        "status": "PASSED"
+      }
+    },
+    {
+      "check": "Python compilation",
+      "command": "python -m compileall -q e2e infra/emulated-scenarios infra/install_litmus.py infra/orchestrate.py infra/pipeline.py infra/render_run_namespace.py reusable-oracles",
+      "result": "PASSED"
+    },
+    {
+      "check": "explicit business-test collection",
+      "command": "python -m pytest --collect-only -q e2e",
+      "result": {
+        "collected": 12,
+        "status": "PASSED"
+      }
+    },
+    {
+      "check": "runtime invocation and action-policy guards",
+      "command": "in-memory closed-schema validation of one ordinary and one Litmus scenario invocation",
+      "result": {
+        "invocation_schema_validated": true,
+        "negative_controls_rejected": 4,
+        "ordinary_plan_actions": 7,
+        "scenario_specific_litmus_plan_actions": 8,
+        "seeded_target_binding_validated": true,
+        "status": "PASSED"
+      }
+    },
+    {
+      "check": "JSON Schema and YAML syntax",
+      "command": "Draft202012Validator.check_schema plus yaml.safe_load_all",
+      "result": {
+        "json_schemas": 4,
+        "status": "PASSED",
+        "yaml_files": 3
+      }
+    },
+    {
+      "check": "scenario-specific Litmus selection",
+      "command": "install_litmus.scenario_experiments for every registered chaos scenario",
+      "result": {
+        "scenarios": 29,
+        "status": "PASSED"
+      }
+    },
+    {
+      "check": "run namespace renderer",
+      "command": "render_run_namespace.py focused two-document sample",
+      "result": {
+        "documents": 2,
+        "status": "PASSED"
+      }
+    },
+    {
+      "check": "Dagger workflow static contracts",
+      "command": "python -m pytest -q .github/dagger/tests/test_static_contracts.py",
+      "result": {
+        "passed": 17,
+        "status": "PASSED"
+      }
+    },
+    {
+      "check": "Rust formatting",
+      "command": "cargo fmt --check",
+      "result": "PASSED"
+    },
+    {
+      "check": "shell syntax",
+      "command": "Git for Windows bash -n over the three changed shell launchers",
+      "result": {
+        "files": 3,
+        "status": "PASSED"
+      }
+    },
+    {
+      "check": "AnySystem upstream and API compatibility inspection",
+      "command": "git ls-remote main plus exact-revision source signature inspection",
+      "result": {
+        "main_revision": "74613a368c73fb12f25778ce33ca11c9a833da96",
+        "pinned_revision": "74613a368c73fb12f25778ce33ca11c9a833da96",
+        "status": "PASSED"
+      }
+    },
+    {
+      "check": "patch whitespace",
+      "command": "git diff --check",
+      "result": "PASSED_WITH_LINE_ENDING_NOTICES"
+    },
+    {
+      "check": "authoritative read-only inputs",
+      "command": "git status plus deterministic SHA-256 recomputation",
+      "result": "PASSED_UNCHANGED"
+    }
+  ],
+  "schema_version": "eve-trade.property-validation-results/v1",
+  "status": "STATIC_VALIDATION_PASSED_REAL_EXECUTION_BLOCKED",
+  "trust_ceiling": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+}

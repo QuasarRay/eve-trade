@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_WORKLOAD_BARRIER_RELEASE",
+  "activation_barrier": "all generated requests are ready at the client-side release barrier",
+  "affected_path": "quilkin-to-gateway replicas",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "application observations identify principal, replica, and terminal response for every request",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "all requests terminate and rate-limit observations are collected",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "cluster_rate_limit_replica_race",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "multiple gateway replicas and one logical rate-limit bucket"
+}

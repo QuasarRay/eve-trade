@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_GRACEFUL_POD_TERMINATION",
+  "activation_barrier": "request/message identity is observed at the declared queued or in-flight boundary",
+  "affected_path": "client-or-broker-to-selected-service",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "Kubernetes termination state plus application/broker observations prove drain disposition",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "replacement is ready and unfinished work is either completed or redeliverable",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "graceful_shutdown_with_inflight_work",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "scenario-selected application pod"
+}

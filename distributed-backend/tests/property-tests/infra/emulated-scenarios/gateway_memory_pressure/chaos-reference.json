@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_MEMORY_HOG",
+  "activation_barrier": "selected pod identity and memory baseline are recorded",
+  "affected_path": "quilkin-to-selected-gateway",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent working-set probe observe declared pressure",
+  "independent_effect_witness_adapter": "INDEPENDENT_RESOURCE_PROBE",
+  "litmus_experiment": "pod-memory-hog",
+  "release_barrier": "memory stress is absent and gateway is ready",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "gateway_memory_pressure",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "selected encore-backend pod"
+}

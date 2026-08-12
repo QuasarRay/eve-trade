@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_CONFIGURATION_RELOAD",
+  "activation_barrier": "pre-reload request and old complete configuration version are observed",
+  "affected_path": "configuration-source-to-gateway",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "application configuration-version observation proves one complete version per request",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "new configuration version is active and control request succeeds",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "configuration_reload_during_inflight_request",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "gateway configuration source"
+}

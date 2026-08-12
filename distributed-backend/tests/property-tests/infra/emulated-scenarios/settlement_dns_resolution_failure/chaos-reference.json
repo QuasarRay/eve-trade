@@ -1,0 +1,20 @@
+{
+  "action_kind": "LITMUS_DNS_ERROR",
+  "activation_barrier": "worker-origin control lookup resolves the exact service name",
+  "affected_path": "worker-to-cluster-dns-to-settlement",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent worker-origin DNS probe observes the declared failure",
+  "independent_effect_witness_adapter": "INDEPENDENT_NETWORK_PROBE",
+  "litmus_experiment": "pod-dns-error",
+  "release_barrier": "DNS fault is absent, lookup resolves, and work message reaches terminal handling",
+  "runtime_fixed_environment": {
+    "TARGET_HOSTNAMES": "[\"trade-settlement.${RUN_NAMESPACE}.svc.cluster.local\"]"
+  },
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "settlement_dns_resolution_failure",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "settlement-worker DNS lookup for trade-settlement service"
+}

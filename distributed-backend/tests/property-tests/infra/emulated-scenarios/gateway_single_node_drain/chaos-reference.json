@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_NODE_DRAIN",
+  "activation_barrier": "selected pod/node and unaffected replica are both ready",
+  "affected_path": "quilkin-to-gateway replicas",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement, node unschedulable state, and selected pod relocation are required",
+  "independent_effect_witness_adapter": "KUBERNETES_NODE_AND_POD_RELOCATION",
+  "litmus_experiment": "node-drain",
+  "release_barrier": "replacement topology satisfies the registered minimum-ready condition",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "gateway_single_node_drain",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "node hosting a selected encore-backend pod"
+}

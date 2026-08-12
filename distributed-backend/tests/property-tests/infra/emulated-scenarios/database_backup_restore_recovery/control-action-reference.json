@@ -1,0 +1,15 @@
+{
+  "action_kind": "EXTERNAL_DATABASE_RESTORE",
+  "activation_barrier": "backup identity and requested restore point are recorded",
+  "affected_path": "application-to-restored-postgres",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "independent SQL probe observes the restored timeline and exact recovery point",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "all application pools reconnect and authoritative state is queryable",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "database_backup_restore_recovery",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "postgres primary"
+}

@@ -1,0 +1,1542 @@
+{
+  "clustering_rule": "tests share a scenario only when components, state, workload phase, controlled action, barriers, witnesses, recovery, and observations are semantically equivalent",
+  "records": [
+    {
+      "consuming_business_tests": [
+        "test_outbox_dispatch_after_database_restore_does_not_lose_pre_backup_unpublished_event",
+        "test_restore_to_point_after_settlement_commit_contains_business_state_and_matching_outbox_row",
+        "test_restore_to_point_before_settlement_commit_does_not_contain_partial_settlement",
+        "test_restored_database_preserves_idempotency_records_needed_for_duplicate_suppression",
+        "test_restored_database_preserves_ledger_history",
+        "test_restored_database_preserves_open_trade_remaining_quantities",
+        "test_restored_database_preserves_total_isk_conservation",
+        "test_restored_database_preserves_total_item_conservation",
+        "test_restored_database_preserves_unpublished_outbox_rows",
+        "test_schema_migrations_apply_cleanly_to_documented_restore_baseline",
+        "test_worker_reconnect_after_database_restore_does_not_duplicate_already_committed_settlement"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "EXTERNAL_DATABASE_RESTORE",
+        "activation_barrier": "backup identity and requested restore point are recorded",
+        "affected_path": "application-to-restored-postgres",
+        "components": [
+          "postgres",
+          "encore-backend",
+          "trade-settlement",
+          "settlement-worker",
+          "nsqd"
+        ],
+        "independent_witness": "independent SQL probe observes the restored timeline and exact recovery point",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "all application pools reconnect and authoritative state is queryable",
+        "target": "postgres primary",
+        "workload": "restore-boundary status and replay workload"
+      },
+      "scenario_id": "database_backup_restore_recovery",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_connection_pool_discards_connections_to_demoted_primary",
+        "test_failover_during_outbox_claim_does_not_publish_event_more_than_logically_once",
+        "test_new_primary_accepts_idempotent_retry_after_failover",
+        "test_primary_failover_after_commit_recovers_committed_result_without_duplicate_effect",
+        "test_primary_failover_before_commit_retries_without_partial_business_state"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "EXTERNAL_DATABASE_FAILOVER",
+        "activation_barrier": "transaction boundary and original primary identity are observed",
+        "affected_path": "application-to-postgres-primary",
+        "components": [
+          "postgres-ha",
+          "encore-backend",
+          "trade-settlement",
+          "settlement-worker"
+        ],
+        "independent_witness": "independent SQL topology probe observes a different writable primary",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "clients discard the demoted connection and reach the new primary",
+        "target": "postgres primary",
+        "workload": "transaction and idempotent recovery workload"
+      },
+      "scenario_id": "database_primary_failover",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_database_migration_is_backward_compatible_with_previous_deployed_binary_during_rollout",
+        "test_immediately_previous_and_current_market_versions_process_same_supported_schema_concurrently_without_projection_divergence",
+        "test_immediately_previous_and_current_worker_versions_process_same_supported_schema_concurrently_without_state_divergence",
+        "test_rollback_to_previous_binary_after_forward_compatible_migration_preserves_existing_state"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_ROLLING_VERSION_CHANGE",
+        "activation_barrier": "both immutable image digests are ready in the same namespace",
+        "affected_path": "versioned producer-consumer path",
+        "components": [
+          "encore-backend",
+          "trade-settlement",
+          "settlement-worker",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "Kubernetes pod image IDs and application build-info endpoints identify both versions",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "rollout or rollback reaches its declared replica set",
+        "target": "selected application deployment",
+        "workload": "cross-version contract workload"
+      },
+      "scenario_id": "rolling_cross_version_compatibility",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_backfill_restart_resumes_without_duplicating_audit_or_outbox_rows"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_RESTART_MIGRATION_AT_BACKFILL_BARRIER",
+        "activation_barrier": "the exact durable backfill checkpoint and remaining source rows are independently observed",
+        "affected_path": "migration-job-to-postgres",
+        "components": [
+          "postgres"
+        ],
+        "independent_witness": "Kubernetes job identity and SQL checkpoint/output rows prove interruption at that boundary",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "the same migration revision completes and every source row has one required derived row",
+        "target": "settlement database migration job",
+        "workload": "version-bound pre-migration fixture containing multiple backfill batches"
+      },
+      "scenario_id": "migration_backfill_restart",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_gateway_crash_after_downstream_acceptance_before_replay_success_persist_returns_durable_result_on_retry_without_reexecution",
+        "test_gateway_crash_after_market_acceptance_before_udp_response_allows_retry_without_second_market_operation",
+        "test_gateway_crash_before_market_call_allows_retry_to_create_exactly_one_market_operation",
+        "test_gateway_restart_after_crash_with_reserved_replay_entry_allows_same_request_to_resume_without_permanent_conflict",
+        "test_gateway_worker_panic_does_not_permanently_reduce_worker_capacity"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_CONTAINER_KILL_AT_FAILPOINT",
+        "activation_barrier": "production-disabled gateway failpoint confirms the exact named boundary",
+        "affected_path": "quilkin-to-gateway-to-market handoff",
+        "components": [
+          "quilkin",
+          "encore-backend",
+          "postgres"
+        ],
+        "independent_witness": "Kubernetes observes the old container exit after failpoint confirmation",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "replacement gateway is ready and replay lookup is observable",
+        "target": "gateway container",
+        "workload": "authenticated UDP request and same-identity replay"
+      },
+      "scenario_id": "gateway_crash_at_handoff_boundary",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_gateway_to_market_network_partition_returns_no_false_business_success"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "APPLICATION_INTERNAL_DEPENDENCY_FAILPOINT",
+        "activation_barrier": "gateway request reaches the exact pre-Market-call boundary",
+        "affected_path": "gateway-to-market in-process call",
+        "components": [
+          "encore-backend",
+          "postgres"
+        ],
+        "independent_witness": "application boundary observation proves the Market call is unavailable while the process stays live",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "the failpoint is absent and a control Gateway-to-Market request succeeds",
+        "target": "Gateway-to-Market call boundary inside encore-backend",
+        "workload": "identified authenticated gateway request and durable Market status probe"
+      },
+      "scenario_id": "gateway_to_market_internal_link_disruption",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_market_crash_after_database_commit_before_outbox_visibility_check_is_recovered",
+        "test_market_crash_after_operation_insert_before_pubsub_publish_is_recovered",
+        "test_market_crash_after_outbox_dispatch_ack_before_local_success_bookkeeping_is_recovered",
+        "test_market_crash_after_pubsub_publish_before_response_allows_retry_without_second_business_effect",
+        "test_market_crash_before_durable_operation_insert_allows_retry_to_insert_exactly_one_operation"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_CONTAINER_KILL_AT_FAILPOINT",
+        "activation_barrier": "production-disabled Market failpoint confirms the exact named boundary",
+        "affected_path": "market-to-postgres-to-nsqd",
+        "components": [
+          "encore-backend",
+          "postgres",
+          "nsqd",
+          "settlement-worker"
+        ],
+        "independent_witness": "Kubernetes process identity changes after the confirmed boundary",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "Market is ready and durable operation/outbox state is observable",
+        "target": "market process in encore-backend",
+        "workload": "market operation and idempotent status workload"
+      },
+      "scenario_id": "market_crash_at_persistence_publish_boundary",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_restart_after_unclean_shutdown_recovers_every_stale_processing_lease",
+        "test_worker_crash_after_grpc_response_before_marking_operation_terminal_is_recovered",
+        "test_worker_crash_after_marking_processing_before_grpc_call_is_recovered",
+        "test_worker_crash_after_receiving_message_before_processing_lease_is_redelivered",
+        "test_worker_crash_after_result_publish_before_ack_is_recovered",
+        "test_worker_crash_after_settlement_commit_before_recording_worker_success_is_recovered",
+        "test_worker_crash_before_processing_transition_leaves_message_redeliverable_without_settlement",
+        "test_worker_crash_during_grpc_call_is_recovered_by_settlement_idempotency",
+        "test_worker_replica_crash_transfers_stale_processing_lease_to_other_replica_exactly_once"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_CONTAINER_KILL_AT_FAILPOINT",
+        "activation_barrier": "production-disabled worker failpoint confirms the named boundary",
+        "affected_path": "nsqd-to-worker-to-trade-settlement",
+        "components": [
+          "settlement-worker",
+          "trade-settlement",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "Kubernetes observes the selected container terminate and message remains independently visible",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "another worker owns or completes the operation and the channel drains",
+        "target": "encore-backend container hosting the settlement-worker service",
+        "workload": "settlement work message and idempotent recovery workload"
+      },
+      "scenario_id": "worker_crash_at_processing_boundary",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_settlement_crash_after_business_mutations_before_idempotency_terminal_update_rolls_back_atomically",
+        "test_settlement_crash_after_commit_before_outbox_dispatch_cannot_lose_terminal_event",
+        "test_settlement_crash_after_idempotency_reservation_before_business_mutation_is_recoverable",
+        "test_settlement_service_crash_after_database_commit_before_grpc_response_is_idempotently_recoverable",
+        "test_settlement_service_crash_before_database_commit_leaves_no_partial_state",
+        "test_settlement_task_panic_before_commit_rolls_back_transaction"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_CONTAINER_KILL_AT_FAILPOINT",
+        "activation_barrier": "production-disabled settlement failpoint confirms the named transaction boundary",
+        "affected_path": "worker-to-settlement-to-postgres",
+        "components": [
+          "trade-settlement",
+          "postgres",
+          "settlement-worker"
+        ],
+        "independent_witness": "Kubernetes observes container termination after the confirmed boundary",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "settlement is ready and idempotency-key status is independently queryable",
+        "target": "trade-settlement container",
+        "workload": "settlement request and status recovery workload"
+      },
+      "scenario_id": "settlement_crash_at_transaction_boundary",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_outbox_dispatcher_recovers_crash_after_publish_before_marking_published",
+        "test_outbox_dispatcher_recovers_crash_before_publish",
+        "test_outbox_dispatcher_restart_preserves_retry_attempt_metadata",
+        "test_outbox_dispatcher_retries_unpublished_record_after_restart",
+        "test_stale_outbox_claim_is_recovered_after_dispatcher_crash"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_CONTAINER_KILL_AT_FAILPOINT",
+        "activation_barrier": "dispatcher failpoint confirms before-publish or after-publish-before-mark boundary",
+        "affected_path": "postgres-outbox-to-nsqd",
+        "components": [
+          "settlement-worker",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "Kubernetes observes dispatcher process loss and SQL probe observes the claim state",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "dispatcher recovers the claim and the event reaches its terminal published state",
+        "target": "outbox dispatcher container",
+        "workload": "committed outbox event and result-consumer workload"
+      },
+      "scenario_id": "outbox_dispatcher_crash_at_publish_boundary",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_handler_cancellation_after_commit_does_not_make_committed_business_effect_repeat_on_redelivery",
+        "test_handler_cancellation_before_commit_leaves_message_redeliverable",
+        "test_handler_failure_after_result_publish_before_ack_does_not_duplicate_projection",
+        "test_handler_failure_after_settlement_before_result_publish_recovers_without_reexecution",
+        "test_handler_failure_before_settlement_call_leaves_message_unacknowledged_for_redelivery",
+        "test_redelivery_after_handler_success_is_acknowledged_without_execution",
+        "test_redelivery_during_first_handler_execution_does_not_execute_concurrently",
+        "test_shutdown_does_not_ack_in_flight_pubsub_message_before_durable_completion"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "WORKER_HANDLER_FAILPOINT_AND_BROKER_REDELIVERY",
+        "activation_barrier": "handler failpoint confirms the exact commit/publish/ack boundary",
+        "affected_path": "nsqd-to-settlement-worker",
+        "components": [
+          "nsqd",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres"
+        ],
+        "independent_witness": "NSQ stats independently show the message in-flight or requeued with the same identity",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "message is terminally acknowledged or quarantined and the channel is healthy",
+        "target": "settlement work channel handler",
+        "workload": "single identified NSQ message and handler workload"
+      },
+      "scenario_id": "pubsub_handler_redelivery_boundary",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_cleanup_job_crash_between_batches_can_resume_without_skipping_eligible_rows"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "APPLICATION_CLEANUP_BATCH_FAILPOINT",
+        "activation_barrier": "the first exact cleanup batch is committed and the next eligible row set is observed",
+        "affected_path": "cleanup-worker-to-postgres",
+        "components": [
+          "postgres",
+          "settlement-worker"
+        ],
+        "independent_witness": "application and SQL observations prove the cleanup process stopped at the inter-batch boundary",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "the cleanup worker restarts, resumes, and leaves protected control rows unchanged",
+        "target": "retention cleanup worker between committed batches",
+        "workload": "multiple identified retention-eligible batches plus protected control rows"
+      },
+      "scenario_id": "cleanup_job_crash_between_batches",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_chaos_experiment_leaves_zero_duplicate_terminal_trade_state_changes",
+        "test_database_unique_constraint_prevents_duplicate_settlement_outbox_event_id",
+        "test_deadlock_retry_cannot_duplicate_settlement",
+        "test_different_message_ids_with_same_idempotency_key_produce_one_business_effect",
+        "test_duplicate_delivery_spans_link_to_original_message_trace_without_creating_false_parentage",
+        "test_duplicate_redelivery_after_process_restart_produces_one_business_effect",
+        "test_duplicate_settlement_result_delivery_changes_projection_once",
+        "test_duplicate_settlement_work_delivery_executes_business_settlement_once",
+        "test_duplicate_terminal_result_with_different_message_id_is_projection_idempotent",
+        "test_every_pubsub_handler_has_duplicate_delivery_test_reference",
+        "test_idempotency_cleanup_never_deletes_record_before_all_duplicate_delivery_windows_expire",
+        "test_pubsub_redelivery_preserves_idempotency_key",
+        "test_random_duplicate_message_injection_during_mixed_trade_workload_preserves_projection_consistency",
+        "test_same_message_id_with_different_payload_is_rejected_as_integrity_violation",
+        "test_serialization_failure_retry_cannot_duplicate_settlement"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "BROKER_PUBLISH_DUPLICATE",
+        "activation_barrier": "first delivery identity is observed at the declared consumer boundary",
+        "affected_path": "publisher-to-nsqd-to-consumer",
+        "components": [
+          "nsqd",
+          "settlement-worker",
+          "trade-settlement",
+          "encore-backend",
+          "postgres"
+        ],
+        "independent_witness": "NSQ stats and application message observations record at least two deliveries of the same logical identity",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "all deliveries reach terminal handling and channel in-flight count returns to baseline",
+        "target": "declared NSQ topic and channel",
+        "workload": "duplicate identified work or result message"
+      },
+      "scenario_id": "duplicate_message_delivery",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_outbox_poison_record_does_not_block_later_records_forever",
+        "test_poison_message_is_not_acked_as_success",
+        "test_poison_message_redelivery_count_remains_observable_across_worker_restart",
+        "test_poison_message_retry_loop_does_not_starve_healthy_settlement_work",
+        "test_poison_message_terminal_handling_preserves_original_payload_and_failure_reason",
+        "test_poison_work_message_does_not_block_subscription_forever",
+        "test_quarantining_poison_message_after_retry_limit_does_not_block_later_decodable_messages_on_same_channel",
+        "test_redelivery_counter_exhaustion_moves_poison_message_to_documented_terminal_handling_path"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "BROKER_PUBLISH_POISON_AND_CONTROL",
+        "activation_barrier": "poison payload and healthy control payload are durably published in order",
+        "affected_path": "nsqd-to-settlement-worker",
+        "components": [
+          "nsqd",
+          "settlement-worker",
+          "postgres"
+        ],
+        "independent_witness": "broker counters and application logs identify poison redeliveries and later healthy-message processing",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "poison message reaches declared terminal handling and healthy work completes",
+        "target": "declared correctness-critical NSQ channel",
+        "workload": "poison message followed by healthy identified work"
+      },
+      "scenario_id": "poison_message_retry_and_quarantine",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_gateway_shutdown_does_not_accept_request_after_listener_stops",
+        "test_gateway_shutdown_returns_explicit_rejection_for_each_queued_request_not_started_before_shutdown_deadline",
+        "test_gateway_shutdown_stops_accepting_udp_datagrams_before_worker_pool_teardown",
+        "test_service_shutdown_closes_listener_connections_and_database_pool_exactly_once",
+        "test_settlement_shutdown_closes_database_pool_after_in_flight_requests_finish",
+        "test_shutdown_deadline_expiry_leaves_unfinished_message_redeliverable",
+        "test_shutdown_marks_service_unready_before_stopping_request_acceptance",
+        "test_shutdown_waits_for_in_flight_transaction_to_commit_or_rollback_before_exit",
+        "test_termination_grace_period_exceeds_maximum_in_flight_settlement_shutdown_window",
+        "test_worker_shutdown_during_idle_exits_cleanly",
+        "test_worker_shutdown_during_processing_does_not_ack_unfinished_work"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_GRACEFUL_POD_TERMINATION",
+        "activation_barrier": "request/message identity is observed at the declared queued or in-flight boundary",
+        "affected_path": "client-or-broker-to-selected-service",
+        "components": [
+          "encore-backend",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "Kubernetes termination state plus application/broker observations prove drain disposition",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "replacement is ready and unfinished work is either completed or redeliverable",
+        "target": "scenario-selected application pod",
+        "workload": "queued and in-flight identified request/message"
+      },
+      "scenario_id": "graceful_shutdown_with_inflight_work",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_gateway_restart_rebinds_udp_socket_without_leaking_previous_listener",
+        "test_load_balancer_removes_unready_gateway_replica_before_new_requests_are_routed_to_it",
+        "test_rate_limiter_restart_does_not_grant_more_than_documented_burst_capacity",
+        "test_replay_cache_restart_does_not_weaken_durable_exactly_once_guarantee",
+        "test_rolling_gateway_replica_replacement_does_not_weaken_idempotency_for_in_flight_request",
+        "test_rolling_gateway_restart_does_not_duplicate_accepted_request",
+        "test_rolling_update_max_unavailable_preserves_at_least_one_ready_gateway_replica",
+        "test_udp_socket_rebind_after_restart_does_not_leave_two_gateway_listeners_accepting_same_port"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_ROLLOUT_RESTART",
+        "activation_barrier": "old and new replica identities overlap at the declared rollout phase",
+        "affected_path": "quilkin-to-gateway",
+        "components": [
+          "quilkin",
+          "encore-backend",
+          "postgres"
+        ],
+        "independent_witness": "Kubernetes EndpointSlice and pod UID observations prove unready routing removal and replacement",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "rollout completes with required ready replicas",
+        "target": "encore-backend deployment",
+        "workload": "authenticated UDP requests with stable idempotency identities"
+      },
+      "scenario_id": "rolling_gateway_replica_replacement",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_market_projection_is_idempotent_across_process_restart",
+        "test_rolling_market_restart_does_not_lose_durable_operation"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_ROLLOUT_RESTART",
+        "activation_barrier": "durable operation identity exists before old replica termination",
+        "affected_path": "market-to-postgres-to-nsqd",
+        "components": [
+          "encore-backend",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "pod UID transition and SQL/outbox observations bind the operation across the rollout",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "rollout completes and operation reaches terminal publication state",
+        "target": "encore-backend deployment",
+        "workload": "durably accepted market operation"
+      },
+      "scenario_id": "rolling_market_replica_replacement",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_request_attempt_history_survives_worker_restart",
+        "test_rolling_update_max_unavailable_preserves_at_least_one_ready_worker_replica",
+        "test_rolling_worker_replica_replacement_does_not_leave_processing_operation_permanently_stale",
+        "test_rolling_worker_restart_does_not_duplicate_settlement",
+        "test_worker_restart_does_not_reexecute_committed_operation",
+        "test_worker_restart_recovers_processing_operation"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_ROLLOUT_RESTART",
+        "activation_barrier": "message or lease identity is observed before old replica termination",
+        "affected_path": "nsqd-to-worker-to-settlement",
+        "components": [
+          "settlement-worker",
+          "nsqd",
+          "trade-settlement",
+          "postgres"
+        ],
+        "independent_witness": "pod UID transition, broker stats, and SQL lease observations bind recovery to the new replica",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "rollout completes and no scenario-owned lease remains stale",
+        "target": "encore-backend deployment hosting the settlement-worker service",
+        "workload": "identified settlement message and processing lease"
+      },
+      "scenario_id": "rolling_worker_replica_replacement",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_rolling_settlement_restart_does_not_leave_partial_transaction",
+        "test_worker_returns_to_pre_failure_throughput_slo_after_settlement_service_restart"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_ROLLOUT_RESTART",
+        "activation_barrier": "request identity is observed before old replica termination",
+        "affected_path": "worker-to-settlement-to-postgres",
+        "components": [
+          "trade-settlement",
+          "postgres",
+          "settlement-worker"
+        ],
+        "independent_witness": "pod UID transition and SQL transaction/idempotency observations bind the request across rollout",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "rollout completes and settlement status is queryable",
+        "target": "trade-settlement deployment",
+        "workload": "identified settlement requests"
+      },
+      "scenario_id": "rolling_settlement_replica_replacement",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_pod_deletion_during_udp_load_preserves_exactly_once_business_effect"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_POD_DELETE",
+        "activation_barrier": "workload request is observed at the selected gateway before deletion",
+        "affected_path": "quilkin-to-gateway",
+        "components": [
+          "quilkin",
+          "encore-backend",
+          "postgres"
+        ],
+        "independent_witness": "Litmus acknowledgement and Kubernetes old-pod UID disappearance/replacement are both required",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "replacement pod is ready and UDP control probe succeeds",
+        "target": "encore-backend pod selected by exact labels and UID",
+        "workload": "authenticated UDP issue/accept/cancel requests"
+      },
+      "scenario_id": "gateway_pod_delete_during_udp_workload",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_worker_pod_deletion_during_message_processing_leaves_message_redeliverable"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_POD_DELETE",
+        "activation_barrier": "application/SQL witness observes the message processing owner",
+        "affected_path": "nsqd-to-worker-to-settlement",
+        "components": [
+          "nsqd",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres"
+        ],
+        "independent_witness": "Litmus acknowledgement, Kubernetes UID loss, and broker in-flight transition prove the effect",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "replacement worker is ready and the message is no longer permanently in flight",
+        "target": "encore-backend pod hosting settlement-worker, selected by exact labels and UID",
+        "workload": "identified settlement work message"
+      },
+      "scenario_id": "worker_pod_delete_during_message_processing",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_trade_settlement_pod_deletion_during_database_transaction_leaves_atomic_database_state"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_POD_DELETE_AT_TRANSACTION_BARRIER",
+        "activation_barrier": "production-disabled transaction barrier confirms the transaction is open before commit",
+        "affected_path": "settlement-to-postgres",
+        "components": [
+          "trade-settlement",
+          "postgres",
+          "settlement-worker"
+        ],
+        "independent_witness": "Litmus acknowledgement, Kubernetes UID loss, and independent pg_stat_activity observation prove overlap",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "replacement settlement pod is ready and transaction/idempotency state is queryable",
+        "target": "trade-settlement pod selected by exact labels and UID",
+        "workload": "identified multi-operation settlement request"
+      },
+      "scenario_id": "settlement_pod_delete_during_database_transaction",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_single_node_drain_does_not_make_all_gateway_replicas_unavailable"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_NODE_DRAIN",
+        "activation_barrier": "selected pod/node and unaffected replica are both ready",
+        "affected_path": "quilkin-to-gateway replicas",
+        "components": [
+          "quilkin",
+          "encore-backend"
+        ],
+        "independent_witness": "Litmus acknowledgement, node unschedulable state, and selected pod relocation are required",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "replacement topology satisfies the registered minimum-ready condition",
+        "target": "node hosting a selected encore-backend pod",
+        "workload": "continuous authenticated UDP control workload"
+      },
+      "scenario_id": "gateway_single_node_drain",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_single_node_drain_does_not_make_all_settlement_worker_replicas_unavailable"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_NODE_DRAIN",
+        "activation_barrier": "selected worker/node and unaffected worker are ready",
+        "affected_path": "nsqd-to-worker replicas",
+        "components": [
+          "settlement-worker",
+          "nsqd",
+          "trade-settlement"
+        ],
+        "independent_witness": "Litmus acknowledgement, node unschedulable state, pod relocation, and broker state prove the effect",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "replacement topology is ready and scenario-owned messages leave in-flight state",
+        "target": "node hosting a selected encore-backend pod that runs settlement-worker",
+        "workload": "identified settlement message plus healthy control message"
+      },
+      "scenario_id": "worker_single_node_drain",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_market_to_pubsub_network_partition_preserves_durable_operation_for_later_publish",
+        "test_pubsub_broker_unavailable_during_market_publish_does_not_lose_committed_operation"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_DIRECTIONAL_NETWORK_PARTITION",
+        "activation_barrier": "SQL witness observes the durable operation/outbox row before activation",
+        "affected_path": "market-to-nsqd",
+        "components": [
+          "encore-backend",
+          "postgres",
+          "nsqd",
+          "settlement-worker"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent source-to-destination network probe failure are required",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "partition is absent, probe succeeds, and durable operation reaches broker",
+        "target": "encore-backend egress to nsqd",
+        "workload": "durably accepted market operation"
+      },
+      "scenario_id": "market_to_pubsub_directional_partition",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_worker_to_settlement_network_partition_leaves_work_message_unacknowledged_until_idempotent_retry_succeeds"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_DIRECTIONAL_NETWORK_PARTITION",
+        "activation_barrier": "worker observes the identified work message before activation",
+        "affected_path": "worker-to-trade-settlement",
+        "components": [
+          "nsqd",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent worker-origin gRPC reachability probe failure are required",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "partition is absent, gRPC probe succeeds, and message reaches terminal handling",
+        "target": "encore-backend pod egress from settlement-worker to trade-settlement",
+        "workload": "identified settlement work message"
+      },
+      "scenario_id": "worker_to_settlement_directional_partition",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_postgres_connection_failure_after_commit_ack_loss_maps_to_unknown_commit_recovery",
+        "test_settlement_to_postgres_network_partition_after_commit_is_recovered_by_idempotency_status",
+        "test_settlement_to_postgres_network_partition_before_commit_leaves_no_partial_business_state"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_DIRECTIONAL_NETWORK_PARTITION_AT_TRANSACTION_BARRIER",
+        "activation_barrier": "transaction boundary failpoint confirms before-commit or after-commit state",
+        "affected_path": "settlement-to-postgres",
+        "components": [
+          "trade-settlement",
+          "postgres",
+          "settlement-worker"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent settlement-origin PostgreSQL probe failure are required",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "partition is absent, SQL probe succeeds, and idempotency status is queryable",
+        "target": "trade-settlement egress to postgres",
+        "workload": "identified settlement request and idempotency status lookup"
+      },
+      "scenario_id": "settlement_to_postgres_unknown_commit_partition",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_asymmetric_partition_where_requests_arrive_but_responses_are_lost_remains_idempotent"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_DIRECTIONAL_NETWORK_PARTITION",
+        "activation_barrier": "request identity is observed at the destination before response-path activation",
+        "affected_path": "declared request/response service edge",
+        "components": [
+          "encore-backend",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "Litmus acknowledgement plus directional probes prove request success and response failure",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "both directional probes succeed and status/replay path is available",
+        "target": "scenario-selected response path",
+        "workload": "identified idempotent request and replay"
+      },
+      "scenario_id": "asymmetric_response_path_partition",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_packet_duplication_between_quilkin_and_gateway_does_not_duplicate_business_effect"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_NETWORK_DUPLICATION",
+        "activation_barrier": "clean sequence-numbered UDP control exchange is observed",
+        "affected_path": "quilkin-to-gateway",
+        "components": [
+          "quilkin",
+          "encore-backend",
+          "postgres"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent UDP sequence probe observes duplicate datagrams",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "duplication qdisc is absent and clean control exchange succeeds",
+        "target": "quilkin egress to encore-backend UDP",
+        "workload": "sequence-numbered authenticated UDP requests"
+      },
+      "scenario_id": "quilkin_gateway_packet_duplication",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_litmus_network_delay_experiment_records_injected_latency_range_in_test_evidence",
+        "test_random_network_delay_during_mixed_trade_workload_preserves_exactly_once_business_effect"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_NETWORK_LATENCY",
+        "activation_barrier": "clean baseline latency distribution is recorded",
+        "affected_path": "declared source-to-destination service edge",
+        "components": [
+          "quilkin",
+          "encore-backend",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent probe observes latency above the generated lower bound",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "latency qdisc is absent and recovered probe returns within the bounded control envelope",
+        "target": "scenario-selected application path",
+        "workload": "mixed issue/accept/cancel workload with stable identities"
+      },
+      "scenario_id": "mixed_workload_network_delay",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_litmus_network_loss_experiment_proves_impairment_is_active_before_workload_assertions_begin"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_NETWORK_LOSS",
+        "activation_barrier": "clean control probe batch has zero observed loss",
+        "affected_path": "declared service edge",
+        "components": [
+          "encore-backend",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent sequence probe observes loss within declared tolerance",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "loss qdisc is absent and recovered probe batch succeeds",
+        "target": "scenario-selected source pod and destination",
+        "workload": "sequence-numbered path-specific control and business workload"
+      },
+      "scenario_id": "targeted_network_loss",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_dns_resolution_failure_for_settlement_endpoint_is_retryable_without_losing_work"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_DNS_ERROR",
+        "activation_barrier": "worker-origin control lookup resolves the exact service name",
+        "affected_path": "worker-to-cluster-dns-to-settlement",
+        "components": [
+          "settlement-worker",
+          "trade-settlement",
+          "nsqd"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent worker-origin DNS probe observes the declared failure",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "DNS fault is absent, lookup resolves, and work message reaches terminal handling",
+        "target": "settlement-worker DNS lookup for trade-settlement service",
+        "workload": "identified settlement work message"
+      },
+      "scenario_id": "settlement_dns_resolution_failure",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_cpu_saturation_does_not_violate_replay_or_idempotency_invariants"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_CPU_HOG",
+        "activation_barrier": "selected and control replica identities plus CPU baseline are recorded",
+        "affected_path": "quilkin-to-selected-gateway",
+        "components": [
+          "quilkin",
+          "encore-backend",
+          "postgres"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent container CPU metric cross the declared threshold",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "CPU stress is absent and selected replica returns to readiness",
+        "target": "selected encore-backend pod",
+        "workload": "authenticated duplicate/replay workload plus unaffected-replica control"
+      },
+      "scenario_id": "gateway_cpu_pressure",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_gateway_under_memory_pressure_does_not_crash_process_while_rejecting_excess_work",
+        "test_gateway_under_memory_pressure_rejects_excess_work_without_false_success"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_MEMORY_HOG",
+        "activation_barrier": "selected pod identity and memory baseline are recorded",
+        "affected_path": "quilkin-to-selected-gateway",
+        "components": [
+          "quilkin",
+          "encore-backend",
+          "postgres"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent working-set probe observe declared pressure",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "memory stress is absent and gateway is ready",
+        "target": "selected encore-backend pod",
+        "workload": "authenticated overload workload"
+      },
+      "scenario_id": "gateway_memory_pressure",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_worker_under_memory_pressure_leaves_unfinished_messages_redeliverable"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_MEMORY_HOG",
+        "activation_barrier": "selected pod identity, broker baseline, and memory baseline are recorded",
+        "affected_path": "nsqd-to-selected-worker",
+        "components": [
+          "settlement-worker",
+          "nsqd",
+          "trade-settlement"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent working-set probe observe declared pressure",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "memory stress is absent, worker is ready, and unfinished messages are recoverable",
+        "target": "selected encore-backend pod hosting settlement-worker",
+        "workload": "identified settlement work and healthy control message"
+      },
+      "scenario_id": "worker_memory_pressure",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_disk_full_during_postgres_commit_returns_no_false_success"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_DISK_FILL_AT_TRANSACTION_BARRIER",
+        "activation_barrier": "transaction failpoint confirms the pre-commit phase",
+        "affected_path": "settlement-to-postgres",
+        "components": [
+          "trade-settlement",
+          "postgres"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent filesystem probe observe declared utilization",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "fill files are removed, filesystem is writable, and PostgreSQL is ready",
+        "target": "postgres data filesystem",
+        "workload": "identified settlement transaction"
+      },
+      "scenario_id": "postgres_disk_full_during_commit",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_disk_full_during_application_logging_does_not_change_committed_business_result"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_DISK_FILL",
+        "activation_barrier": "application log path and clean filesystem baseline are observed",
+        "affected_path": "application-to-log-sink",
+        "components": [
+          "encore-backend",
+          "postgres"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent filesystem probe observe declared utilization",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "fill files are removed and application readiness is restored",
+        "target": "encore-backend log filesystem",
+        "workload": "identified request with durable status lookup"
+      },
+      "scenario_id": "application_logging_disk_full",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_postgres_restart_during_settlement_does_not_create_partial_commit"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_POD_DELETE",
+        "activation_barrier": "request identity and original PostgreSQL pod UID are recorded",
+        "affected_path": "settlement-to-postgres",
+        "components": [
+          "trade-settlement",
+          "postgres",
+          "settlement-worker"
+        ],
+        "independent_witness": "Litmus acknowledgement and Kubernetes old-pod UID disappearance/replacement are required",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "replacement PostgreSQL is ready and status query succeeds",
+        "target": "postgres pod selected by exact labels and UID",
+        "workload": "identified settlement request and status recovery"
+      },
+      "scenario_id": "postgres_restart_during_settlement",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_nsq_restart_during_delivery_does_not_duplicate_business_effect",
+        "test_nsqd_restart_preserves_unacknowledged_correctness_critical_messages_under_configured_storage_mode",
+        "test_pubsub_broker_restart_preserves_pending_settlement_results",
+        "test_pubsub_broker_restart_redelivers_unacknowledged_work"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_POD_DELETE",
+        "activation_barrier": "broker stats observe the message and original nsqd UID",
+        "affected_path": "publisher-to-nsqd-to-consumer",
+        "components": [
+          "nsqd",
+          "settlement-worker",
+          "encore-backend",
+          "postgres"
+        ],
+        "independent_witness": "Litmus acknowledgement and Kubernetes old-pod UID disappearance/replacement are required",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "replacement nsqd is ready and message terminal state is observable",
+        "target": "nsqd pod selected by exact labels and UID",
+        "workload": "identified pending or in-flight NSQ message"
+      },
+      "scenario_id": "nsq_restart_during_delivery",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_process_sigkill_at_each_persistence_boundary_preserves_exactly_once_business_effect",
+        "test_random_service_kill_during_mixed_trade_workload_preserves_global_conservation"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_CONTAINER_KILL_AT_DECLARED_BOUNDARY",
+        "activation_barrier": "production-disabled failpoint confirms the seed-selected boundary",
+        "affected_path": "seed-selected persistence boundary",
+        "components": [
+          "encore-backend",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "Litmus acknowledgement and Kubernetes container identity transition prove the exact kill",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "selected component is ready and all scenario-owned operations are terminal or retryable",
+        "target": "seed-selected member of the scenario allowlist",
+        "workload": "mixed issue/accept/cancel workload with stable identities"
+      },
+      "scenario_id": "random_service_kill_mixed_workload",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_random_crash_and_restart_sequence_converges_to_single_terminal_effect",
+        "test_reconciliation_holds_after_random_crash_restart_and_redelivery_sequence"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_SEEDED_POD_DELETE_SEQUENCE",
+        "activation_barrier": "controller trace records selected target and ready-state barrier before each deletion",
+        "affected_path": "seed-selected application path",
+        "components": [
+          "encore-backend",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "each Litmus acknowledgement is paired with Kubernetes UID disappearance/replacement evidence",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "every selected component passes its declared recovery barrier before the next logical tick",
+        "target": "seed-selected pods from the explicit scenario allowlist",
+        "workload": "identified trade workload spanning seeded crash steps"
+      },
+      "scenario_id": "random_crash_restart_sequence",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_health_endpoint_does_not_report_ready_when_postgres_is_unreachable",
+        "test_health_endpoint_does_not_report_ready_when_required_pubsub_is_unavailable",
+        "test_liveness_endpoint_stays_successful_during_recoverable_downstream_outage",
+        "test_pubsub_backlog_recovers_after_downstream_pause",
+        "test_quilkin_backend_unavailable_returns_no_false_success",
+        "test_readiness_endpoint_fails_while_required_dependency_prevents_new_business_work"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_SCALE_DEPENDENCY_TO_ZERO",
+        "activation_barrier": "clean dependency and service-health baselines are observed",
+        "affected_path": "declared service dependency edge",
+        "components": [
+          "encore-backend",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "Kubernetes zero-ready state and independent path probe prove unavailability",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "dependency and application readiness recover and scenario-owned backlog drains",
+        "target": "scenario-declared postgres, nsqd, or settlement dependency",
+        "workload": "identified workload plus readiness/liveness probes"
+      },
+      "scenario_id": "dependency_outage_backlog_and_recovery",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_database_connection_loss_after_commit_is_recoverable_by_idempotency_key",
+        "test_database_connection_loss_before_commit_leaves_no_partial_settlement",
+        "test_database_connection_pool_exhaustion_fails_without_state_corruption",
+        "test_half_open_postgres_connection_is_discarded_from_pool_after_io_failure",
+        "test_postgres_connection_failure_before_begin_maps_to_retryable_infrastructure_failure",
+        "test_random_postgres_disconnects_during_mixed_trade_workload_preserve_atomicity",
+        "test_settlement_under_database_connection_pressure_preserves_atomicity"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_NETWORK_PARTITION",
+        "activation_barrier": "clean SQL probe and declared request phase are observed",
+        "affected_path": "application-to-postgres",
+        "components": [
+          "trade-settlement",
+          "postgres",
+          "encore-backend"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent application-origin SQL probe failure are required",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "partition is absent, SQL probe succeeds, and pool capacity returns to baseline",
+        "target": "application egress to postgres",
+        "workload": "identified database-backed request and connection-pool probes"
+      },
+      "scenario_id": "database_connection_failure_window",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_grpc_deadline_exceeded_after_possible_commit_uses_status_recovery_before_reexecution",
+        "test_grpc_deadline_exceeded_with_unknown_commit_outcome_maps_to_status_recovery_path",
+        "test_grpc_unavailable_before_request_write_maps_to_retryable_worker_failure",
+        "test_half_open_grpc_connection_is_detected_without_blocking_worker_forever",
+        "test_transient_grpc_unavailable_is_retried_with_same_idempotency_key",
+        "test_worker_grpc_connection_failure_before_request_write_retries_without_creating_settlement_batch",
+        "test_worker_loses_grpc_connection_after_commit_and_before_response_does_not_duplicate_settlement",
+        "test_worker_loses_grpc_connection_during_request_and_recovers_by_idempotency_key"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "LITMUS_DIRECTIONAL_NETWORK_PARTITION_AT_GRPC_BARRIER",
+        "activation_barrier": "gRPC transport failpoint distinguishes before-write from possible-commit phase",
+        "affected_path": "worker-to-settlement",
+        "components": [
+          "settlement-worker",
+          "trade-settlement",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "Litmus acknowledgement and independent worker-origin gRPC probe failure are required",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "partition is absent and idempotency status lookup succeeds",
+        "target": "worker egress to trade-settlement",
+        "workload": "identified gRPC request and status recovery"
+      },
+      "scenario_id": "grpc_connection_failure_window",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_accept_and_cancel_transactions_cannot_both_commit_terminal_changes_from_same_open_trade_version",
+        "test_accept_racing_with_retry_of_successful_cancel_does_not_resurrect_trade",
+        "test_cancel_racing_with_retry_of_successful_accept_does_not_refund_sold_items",
+        "test_concurrent_full_accept_and_cancel_conserve_isk",
+        "test_concurrent_full_accept_and_cancel_conserve_items",
+        "test_concurrent_full_accept_and_cancel_have_exactly_one_terminal_winner",
+        "test_multiple_partial_accepts_and_cancel_race_conserves_isk",
+        "test_multiple_partial_accepts_and_cancel_race_conserves_items",
+        "test_partial_accept_and_cancel_race_conserves_isk",
+        "test_partial_accept_and_cancel_race_conserves_items",
+        "test_two_full_accepts_and_cancel_have_exactly_one_terminal_outcome"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "APPLICATION_TRANSACTION_RACE_BARRIER",
+        "activation_barrier": "all contenders report arrival immediately before the target commit race",
+        "affected_path": "concurrent settlement transactions",
+        "components": [
+          "encore-backend",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres"
+        ],
+        "independent_witness": "independent pg_stat_activity/lock probe identifies both exact contender transactions",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "all contenders finish and no scenario-owned transaction remains open",
+        "target": "trade row/version",
+        "workload": "accept and cancel contenders for one exact trade version"
+      },
+      "scenario_id": "trade_terminal_accept_cancel_race",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_concurrent_accepts_at_expiration_boundary_cannot_commit_after_expiration_check_fails",
+        "test_concurrent_accepts_cannot_make_buyer_wallet_negative",
+        "test_concurrent_accepts_cannot_sell_more_than_available_quantity",
+        "test_concurrent_accepts_creating_destination_stack_do_not_create_duplicate_canonical_stacks",
+        "test_concurrent_accepts_into_same_destination_stack_do_not_lose_updates",
+        "test_concurrent_partial_accepts_produce_unique_monotonic_trade_versions",
+        "test_different_buyers_cannot_write_partial_fills_into_same_buyer_owned_destination_stack",
+        "test_different_trades_concurrently_crediting_same_destination_stack_do_not_lose_quantity",
+        "test_same_buyer_concurrent_partial_accepts_use_serializable_wallet_balance",
+        "test_two_accept_transactions_cannot_both_commit_after_reading_same_remaining_quantity"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "APPLICATION_TRANSACTION_RACE_BARRIER",
+        "activation_barrier": "all contenders report the same pre-mutation trade version/quantity boundary",
+        "affected_path": "concurrent accept transactions",
+        "components": [
+          "encore-backend",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres"
+        ],
+        "independent_witness": "independent PostgreSQL lock/activity probe identifies every contender",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "all contenders finish and row locks are released",
+        "target": "trade and item-escrow rows",
+        "workload": "multiple accept requests for one exact trade version"
+      },
+      "scenario_id": "concurrent_accept_quantity_race",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_concurrent_requests_to_same_wallet_preserve_invariants_under_load",
+        "test_different_trades_concurrently_debiting_same_wallet_cannot_overdraw_wallet",
+        "test_random_cross_trade_wallet_contention_never_overdraws_wallet",
+        "test_two_wallet_debits_cannot_both_commit_after_reading_same_available_balance"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "APPLICATION_TRANSACTION_RACE_BARRIER",
+        "activation_barrier": "all contenders report arrival before the same wallet mutation boundary",
+        "affected_path": "concurrent wallet-debit transactions",
+        "components": [
+          "settlement-worker",
+          "trade-settlement",
+          "postgres"
+        ],
+        "independent_witness": "independent PostgreSQL lock/activity probe identifies every contender",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "all contenders finish and wallet row locks are released",
+        "target": "wallet row",
+        "workload": "multiple settlements sharing one wallet"
+      },
+      "scenario_id": "concurrent_wallet_debit_race",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_concurrent_issue_and_external_stack_mutation_cannot_create_negative_source_quantity",
+        "test_concurrent_issues_from_same_item_stack_cannot_escrow_more_than_owned",
+        "test_concurrent_issues_from_same_stack_preserve_total_item_quantity",
+        "test_concurrent_requests_to_same_item_stack_preserve_invariants_under_load",
+        "test_random_cross_trade_stack_contention_never_oversells_items",
+        "test_two_item_escrow_reservations_cannot_both_commit_after_reading_same_source_stack_quantity"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "APPLICATION_TRANSACTION_RACE_BARRIER",
+        "activation_barrier": "all contenders report arrival before the same stack mutation boundary",
+        "affected_path": "concurrent item-reservation transactions",
+        "components": [
+          "settlement-worker",
+          "trade-settlement",
+          "postgres"
+        ],
+        "independent_witness": "independent PostgreSQL lock/activity probe identifies every contender",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "all contenders finish and item row locks are released",
+        "target": "source item-stack row",
+        "workload": "multiple issue requests sharing one item stack"
+      },
+      "scenario_id": "concurrent_item_reservation_race",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_concurrent_conflicting_requests_with_same_interaction_id_have_exactly_one_winner",
+        "test_concurrent_identical_requests_execute_business_operation_exactly_once",
+        "test_concurrent_insert_of_same_idempotency_key_executes_single_settlement",
+        "test_conflicting_payloads_with_same_idempotency_key_sent_to_different_gateway_replicas_cannot_both_execute",
+        "test_same_authenticated_request_sent_to_two_gateway_replicas_produces_one_durable_business_effect",
+        "test_same_authenticated_request_sent_to_two_gateway_replicas_returns_semantically_identical_terminal_result",
+        "test_two_market_replicas_receiving_same_request_create_one_durable_settlement_operation",
+        "test_two_worker_replicas_receiving_duplicate_work_messages_execute_one_settlement"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_WORKLOAD_BARRIER_RELEASE",
+        "activation_barrier": "all generated requests are connected and ready at the client-side release barrier",
+        "affected_path": "client/broker-to-multiple-replicas",
+        "components": [
+          "quilkin",
+          "encore-backend",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "application request observations and SQL connection/activity evidence identify every contender",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "all request attempts terminate and the barrier-owned clients close",
+        "target": "multiple selected application replicas",
+        "workload": "barrier-released requests sharing one exact idempotency identity"
+      },
+      "scenario_id": "concurrent_idempotency_key_race",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_concurrent_outbox_dispatchers_do_not_publish_same_record_concurrently",
+        "test_two_outbox_dispatcher_replicas_cannot_hold_active_claim_for_same_outbox_row",
+        "test_two_outbox_dispatcher_replicas_preserve_per_trade_event_order"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "APPLICATION_OUTBOX_CLAIM_BARRIER",
+        "activation_barrier": "all dispatchers report arrival before claim acquisition",
+        "affected_path": "dispatcher-to-postgres claim",
+        "components": [
+          "settlement-worker",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "independent PostgreSQL lock/activity probe identifies every dispatcher contender",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "dispatchers finish and no scenario-owned claim remains stale",
+        "target": "outbox row or per-trade ordered row set",
+        "workload": "one eligible outbox row plus dispatcher contenders"
+      },
+      "scenario_id": "concurrent_outbox_claim_race",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_concurrent_rate_limit_checks_never_admit_more_than_configured_capacity",
+        "test_configured_cluster_rate_limit_cannot_be_bypassed_by_alternating_gateway_replicas"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_WORKLOAD_BARRIER_RELEASE",
+        "activation_barrier": "all generated requests are ready at the client-side release barrier",
+        "affected_path": "quilkin-to-gateway replicas",
+        "components": [
+          "quilkin",
+          "encore-backend"
+        ],
+        "independent_witness": "application observations identify principal, replica, and terminal response for every request",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "all requests terminate and rate-limit observations are collected",
+        "target": "multiple gateway replicas and one logical rate-limit bucket",
+        "workload": "authenticated requests for one principal plus independent control principal"
+      },
+      "scenario_id": "cluster_rate_limit_replica_race",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_accept_of_unrelated_trades_does_not_acquire_conflicting_table_level_lock",
+        "test_cancel_of_one_trade_does_not_block_accept_of_unrelated_trade_beyond_configured_lock_slo",
+        "test_concurrent_requests_to_same_trade_preserve_invariants_under_load",
+        "test_large_outbox_backlog_for_one_trade_does_not_starve_events_for_unrelated_trades",
+        "test_p99_latency_for_unrelated_trade_stays_below_slo_during_hot_trade_contention",
+        "test_single_hot_trade_with_concurrent_accept_contention_does_not_starve_unrelated_trades",
+        "test_single_hot_wallet_with_lock_contention_does_not_block_unrelated_wallet_settlements"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_CONCURRENT_WORKLOAD",
+        "activation_barrier": "hot workload reaches declared in-flight/lock/backlog threshold",
+        "affected_path": "application-to-shared-resource and unrelated control path",
+        "components": [
+          "encore-backend",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "independent SQL/broker probe observes hot pressure while control identities remain distinct",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "both workloads complete and pressure metrics return to baseline",
+        "target": "scenario-selected hot trade, wallet, or outbox stream",
+        "workload": "hot-resource workload plus unrelated identified control workload"
+      },
+      "scenario_id": "hot_resource_contention_with_control_workload",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_gateway_queue_full_request_does_not_create_replay_success_entry",
+        "test_gateway_queue_full_response_does_not_claim_request_was_queued",
+        "test_gateway_queue_memory_remains_bounded_under_overload",
+        "test_gateway_queue_saturation_increments_backpressure_metric",
+        "test_gateway_rejects_new_work_when_bounded_queue_is_full",
+        "test_gateway_slow_downstream_cannot_grow_pending_work_without_bound",
+        "test_load_shedding_prefers_explicit_backpressure_over_unbounded_queue_growth"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_BOUNDED_LOAD_AND_DEPENDENCY_DELAY",
+        "activation_barrier": "independent application metric observes the configured queue capacity boundary",
+        "affected_path": "quilkin-to-gateway-to-market",
+        "components": [
+          "quilkin",
+          "encore-backend",
+          "postgres"
+        ],
+        "independent_witness": "request observations and bounded memory/queue metrics prove saturation",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "queue drains and capacity returns to baseline",
+        "target": "gateway queue and worker pool",
+        "workload": "bounded authenticated request burst plus slow downstream control"
+      },
+      "scenario_id": "gateway_queue_saturation",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_udp_receive_buffer_saturation_does_not_create_false_success_response"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_UDP_SOCKET_BUFFER_SATURATION",
+        "activation_barrier": "socket identity, receive-buffer capacity, and clean control exchange are observed",
+        "affected_path": "quilkin-to-gateway-udp-socket",
+        "components": [
+          "quilkin",
+          "encore-backend"
+        ],
+        "independent_witness": "independent kernel socket/drop counters and application receipts identify the saturated interval",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "receive queue and drop counters stabilize and a clean control exchange succeeds",
+        "target": "selected gateway UDP socket and host receive queue",
+        "workload": "sequence-numbered authenticated UDP burst above the observed socket drain rate"
+      },
+      "scenario_id": "udp_receive_buffer_saturation",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_authenticated_udp_accept_burst_meets_slo",
+        "test_authenticated_udp_accept_burst_preserves_state",
+        "test_authenticated_udp_cancel_burst_meets_slo",
+        "test_authenticated_udp_cancel_burst_preserves_state",
+        "test_authenticated_udp_issue_burst_meets_slo",
+        "test_authenticated_udp_issue_burst_preserves_state",
+        "test_duplicate_delivery_storm_does_not_amplify_settlement_calls",
+        "test_mixed_issue_accept_cancel_burst_meets_slo",
+        "test_mixed_issue_accept_cancel_burst_preserves_state",
+        "test_one_overloaded_gateway_replica_does_not_make_healthy_replica_return_false_success",
+        "test_p99_latency_stays_below_configured_slo_at_documented_sustainable_request_rate",
+        "test_random_concurrent_trade_sequence_preserves_per_trade_state_machine",
+        "test_slow_settlement_requests_do_not_consume_every_worker_slot_indefinitely",
+        "test_sustained_duplicate_delivery_load_does_not_amplify_settlement_execution"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_BOUNDED_LOAD",
+        "activation_barrier": "all workload actors and exact completion target are registered before release",
+        "affected_path": "quilkin-to-gateway-to-market-to-worker-to-settlement",
+        "components": [
+          "quilkin",
+          "encore-backend",
+          "settlement-worker",
+          "trade-settlement",
+          "postgres",
+          "nsqd"
+        ],
+        "independent_witness": "application, database, broker, and resource probes account for every request identity",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "configured completion target is reached and resource pools return to baseline",
+        "target": "full deployed request path",
+        "workload": "bounded mixed trade load with exact completion target"
+      },
+      "scenario_id": "sustained_mixed_trade_load",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_configuration_reload_is_atomic_and_never_exposes_partially_parsed_keyset",
+        "test_dns_target_change_is_observed_without_requiring_worker_process_restart",
+        "test_hmac_keyset_reload_is_atomic_for_concurrent_requests",
+        "test_invalid_configuration_reload_keeps_last_known_good_configuration",
+        "test_invalid_hmac_keyset_reload_preserves_last_known_good_keyset",
+        "test_rate_limit_configuration_reload_does_not_reset_existing_principal_bucket_above_new_capacity",
+        "test_request_started_after_hmac_reload_uses_new_complete_keyset_version",
+        "test_request_started_before_hmac_reload_uses_one_complete_keyset_version",
+        "test_secret_reload_does_not_log_secret_material",
+        "test_timeout_configuration_reload_does_not_extend_deadline_of_already_started_request",
+        "test_udp_edge_credential_reload_failure_keeps_last_known_good_keyset"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_CONFIGURATION_RELOAD",
+        "activation_barrier": "pre-reload request and old complete configuration version are observed",
+        "affected_path": "configuration-source-to-gateway",
+        "components": [
+          "encore-backend",
+          "quilkin"
+        ],
+        "independent_witness": "application configuration-version observation proves one complete version per request",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "new configuration version is active and control request succeeds",
+        "target": "gateway configuration source",
+        "workload": "identified pre-reload and post-reload requests"
+      },
+      "scenario_id": "configuration_reload_during_inflight_request",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_udp_edge_accepts_new_key_immediately_after_key_rotation",
+        "test_udp_edge_key_rotation_accepts_previous_key_only_during_configured_overlap_window",
+        "test_udp_edge_key_rotation_rejects_previous_key_after_overlap_window_expires",
+        "test_udp_edge_rejects_retired_key_after_key_rotation"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_CREDENTIAL_ROTATION",
+        "activation_barrier": "old keyset version and authenticated control request are observed",
+        "affected_path": "configuration-source-to-gateway-authenticator",
+        "components": [
+          "quilkin",
+          "encore-backend"
+        ],
+        "independent_witness": "application keyset-version observation proves overlap and retirement phases",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "new key is active, retired key is outside overlap, and control request succeeds",
+        "target": "gateway HMAC keyset",
+        "workload": "old-key, new-key, and invalid-key authenticated UDP requests"
+      },
+      "scenario_id": "udp_key_rotation_overlap_window",
+      "status": "PLANNED"
+    },
+    {
+      "consuming_business_tests": [
+        "test_duplicate_outbox_publication_is_harmless_to_market_projection",
+        "test_market_projection_does_not_treat_replica_lag_as_missing_committed_settlement",
+        "test_market_projection_recovers_when_result_arrives_before_database_replica_is_current",
+        "test_market_read_model_does_not_regress_cancelled_trade_to_open_after_stale_result_delivery",
+        "test_market_read_model_does_not_regress_completed_trade_to_open_after_stale_result_delivery",
+        "test_out_of_order_partial_accept_results_converge_to_highest_committed_trade_version",
+        "test_out_of_order_result_delivery_cannot_regress_terminal_state",
+        "test_stale_result_for_older_operation_cannot_overwrite_newer_terminal_state"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "BROKER_PUBLISH_DECLARED_RESULT_ORDER",
+        "activation_barrier": "durable source rows and initial projection version are observed",
+        "affected_path": "nsqd-to-market-projection",
+        "components": [
+          "nsqd",
+          "encore-backend",
+          "postgres"
+        ],
+        "independent_witness": "broker and application observations record exact message IDs and delivery order",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "all scenario-owned results reach terminal handler state and projection observation is available",
+        "target": "market result channel",
+        "workload": "versioned settlement result sequence"
+      },
+      "scenario_id": "market_projection_out_of_order_delivery",
+      "status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING"
+    },
+    {
+      "consuming_business_tests": [
+        "test_logging_failure_does_not_fail_committed_business_transaction",
+        "test_metrics_exporter_failure_does_not_block_request_completion",
+        "test_metrics_scrape_failure_does_not_change_business_success_response",
+        "test_observability_backpressure_does_not_exhaust_business_worker_pool",
+        "test_trace_sampling_never_changes_business_behavior"
+      ],
+      "prerequisite_contract": {
+        "action_kind": "DAGGER_SCALE_OBSERVABILITY_BACKEND_TO_ZERO",
+        "activation_barrier": "business and telemetry control paths are healthy before outage",
+        "affected_path": "application-to-observability-backend",
+        "components": [
+          "encore-backend",
+          "otel-collector",
+          "postgres"
+        ],
+        "independent_witness": "Kubernetes zero-ready state and independent exporter probe prove outage",
+        "initial_state": "minimal consuming-test fixture plus clean deployment/broker/database baseline",
+        "release_barrier": "observability backend recovers and application remains ready",
+        "target": "optional observability collector/exporter",
+        "workload": "identified business request plus telemetry control event"
+      },
+      "scenario_id": "observability_backend_outage",
+      "status": "PLANNED"
+    }
+  ],
+  "schema_version": "eve-trade.emulation-prerequisite-inventory/v1"
+}

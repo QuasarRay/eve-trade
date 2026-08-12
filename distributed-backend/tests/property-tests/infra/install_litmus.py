@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -13,6 +14,7 @@ import yaml
 
 
 INFRA_ROOT = Path(__file__).resolve().parent
+SCENARIO_ROOT = INFRA_ROOT / "emulated-scenarios"
 LITMUS_HELM_REPOSITORY = "https://github.com/litmuschaos/litmus-helm.git"
 CHAOS_CHARTS_REPOSITORY = "https://github.com/litmuschaos/chaos-charts.git"
 LITMUS_HELM_COMMIT = "9e409651ce4c2293a44de56ba46ac9ab9fe1d329"
@@ -239,14 +241,40 @@ def wait_for_operator(namespace: str) -> None:
     raise InstallError("pinned Litmus chart installed no discoverable chaos-operator deployment")
 
 
-def install(namespace: str, run_id: str) -> None:
+def scenario_experiments(scenario_id: str | None) -> list[str]:
+    if scenario_id is None:
+        # Legacy/full installation remains available to callers that explicitly
+        # request it, while deterministic scenarios use the narrow branch below.
+        manifest = json.loads((INFRA_ROOT / "litmus-contracts.json").read_text(encoding="utf-8"))
+        return sorted({record["fault_injection"]["experiment"] for record in manifest["contracts"]})
+    if not re.fullmatch(r"[a-z0-9_]+", scenario_id):
+        raise InstallError("scenario ID has invalid syntax")
+    scenario_path = SCENARIO_ROOT / scenario_id / "scenario.json"
+    if not scenario_path.is_file():
+        raise InstallError(f"unregistered deterministic scenario: {scenario_id}")
+    scenario = json.loads(scenario_path.read_text(encoding="utf-8"))
+    if scenario.get("scenario_id") != scenario_id:
+        raise InstallError("scenario file identity mismatch")
+    experiments = sorted(
+        {
+            action["litmus_experiment"]
+            for action in scenario.get("action_plan", [])
+            if str(action.get("kind", "")).startswith("LITMUS_")
+        }
+    )
+    if len(experiments) != 1:
+        raise InstallError(
+            f"chaos scenario must resolve to exactly one declared Litmus primitive: {experiments}"
+        )
+    return experiments
+
+
+def install(namespace: str, run_id: str, scenario_id: str | None = None) -> None:
     assert_safety_marker(namespace, run_id)
     manifest = json.loads((INFRA_ROOT / "litmus-contracts.json").read_text(encoding="utf-8"))
     pins = manifest["litmus_core"]
     validate_manifest_pins(pins)
-    experiments = sorted(
-        {record["fault_injection"]["experiment"] for record in manifest["contracts"]}
-    )
+    experiments = scenario_experiments(scenario_id)
     with tempfile.TemporaryDirectory(prefix="eve-trade-litmus-") as temporary:
         root = Path(temporary)
         helm_checkout = root / "litmus-helm"
@@ -293,8 +321,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--namespace", required=True)
     parser.add_argument("--run-id", required=True)
+    parser.add_argument("--scenario-id")
     args = parser.parse_args()
-    install(args.namespace, args.run_id)
+    install(args.namespace, args.run_id, args.scenario_id)
     return 0
 
 

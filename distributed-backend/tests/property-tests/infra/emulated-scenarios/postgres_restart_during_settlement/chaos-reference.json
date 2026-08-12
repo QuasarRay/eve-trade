@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_POD_DELETE",
+  "activation_barrier": "request identity and original PostgreSQL pod UID are recorded",
+  "affected_path": "settlement-to-postgres",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and Kubernetes old-pod UID disappearance/replacement are required",
+  "independent_effect_witness_adapter": "KUBERNETES_PROCESS_IDENTITY_TRANSITION",
+  "litmus_experiment": "pod-delete",
+  "release_barrier": "replacement PostgreSQL is ready and status query succeeds",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=postgres"
+  },
+  "scenario_id": "postgres_restart_during_settlement",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "postgres pod selected by exact labels and UID"
+}

@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_BOUNDED_LOAD",
+  "activation_barrier": "all workload actors and exact completion target are registered before release",
+  "affected_path": "quilkin-to-gateway-to-market-to-worker-to-settlement",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "application, database, broker, and resource probes account for every request identity",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "configured completion target is reached and resource pools return to baseline",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "sustained_mixed_trade_load",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "full deployed request path"
+}

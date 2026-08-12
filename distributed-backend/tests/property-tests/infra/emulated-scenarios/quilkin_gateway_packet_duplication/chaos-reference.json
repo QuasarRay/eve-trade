@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_NETWORK_DUPLICATION",
+  "activation_barrier": "clean sequence-numbered UDP control exchange is observed",
+  "affected_path": "quilkin-to-gateway",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent UDP sequence probe observes duplicate datagrams",
+  "independent_effect_witness_adapter": "INDEPENDENT_NETWORK_PROBE",
+  "litmus_experiment": "pod-network-duplication",
+  "release_barrier": "duplication qdisc is absent and clean control exchange succeeds",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=quilkin"
+  },
+  "scenario_id": "quilkin_gateway_packet_duplication",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "quilkin egress to encore-backend UDP"
+}

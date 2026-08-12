@@ -1,0 +1,15 @@
+{
+  "action_kind": "APPLICATION_INTERNAL_DEPENDENCY_FAILPOINT",
+  "activation_barrier": "gateway request reaches the exact pre-Market-call boundary",
+  "affected_path": "gateway-to-market in-process call",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "application boundary observation proves the Market call is unavailable while the process stays live",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "the failpoint is absent and a control Gateway-to-Market request succeeds",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "gateway_to_market_internal_link_disruption",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "Gateway-to-Market call boundary inside encore-backend"
+}

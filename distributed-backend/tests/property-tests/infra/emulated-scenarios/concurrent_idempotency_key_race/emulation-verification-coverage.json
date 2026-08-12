@@ -1,0 +1,2427 @@
+{
+  "clauses": {
+    "controller.barrier_gating": [
+      "test_concurrent_idempotency_key_race_ambient_wall_clock_delay_cannot_advance_a_barrier_gated_controller_phase",
+      "test_concurrent_idempotency_key_race_controller_does_not_advance_before_the_current_barrier_outcome_is_supplied",
+      "test_concurrent_idempotency_key_race_controller_does_not_enter_post_recovery_phase_before_recovery_witness",
+      "test_concurrent_idempotency_key_race_workload_starts_only_after_the_declared_prerequisite_phase"
+    ],
+    "controller.seed": [
+      "test_concurrent_idempotency_key_race_changing_an_external_oracle_expectation_does_not_change_the_scenario_control_plan",
+      "test_concurrent_idempotency_key_race_controller_trace_replay_reconstructs_the_same_logical_tick_sequence",
+      "test_concurrent_idempotency_key_race_logical_tick_progression_is_identical_for_identical_seed_and_barrier_inputs",
+      "test_concurrent_idempotency_key_race_same_seed_parameters_and_barrier_outcomes_replay_identical_controller_transitions",
+      "test_concurrent_idempotency_key_race_second_run_controller_uses_only_the_second_run_seed_and_parameters"
+    ],
+    "controller.transitions": [
+      "test_concurrent_idempotency_key_race_controller_emits_no_action_outside_the_declared_scenario_plan",
+      "test_concurrent_idempotency_key_race_dagger_executes_each_controller_action_without_reordering",
+      "test_concurrent_idempotency_key_race_same_seed_parameters_and_barrier_outcomes_replay_identical_controller_transitions"
+    ],
+    "dagger.execution": [
+      "test_concurrent_idempotency_key_race_dagger_executes_each_controller_action_without_reordering",
+      "test_concurrent_idempotency_key_race_dagger_propagates_exact_scenario_revision_seed_parameters_and_action_identity",
+      "test_concurrent_idempotency_key_race_each_declared_action_adapter_reports_a_real_boundary_receipt_bound_to_its_action",
+      "test_concurrent_idempotency_key_race_failed_orchestration_does_not_emit_a_successful_prerequisite_witness"
+    ],
+    "deployment.components": [
+      "test_concurrent_idempotency_key_race_deploys_every_declared_real_component_in_the_registered_namespace",
+      "test_concurrent_idempotency_key_race_records_exact_declared_replica_counts_pod_identities_and_deployment_topology",
+      "test_concurrent_idempotency_key_race_registered_service_endpoints_resolve_only_to_declared_scenario_pods"
+    ],
+    "deployment.namespace": [
+      "test_concurrent_idempotency_key_race_deploys_every_declared_real_component_in_the_registered_namespace",
+      "test_concurrent_idempotency_key_race_registered_service_endpoints_resolve_only_to_declared_scenario_pods",
+      "test_concurrent_idempotency_key_race_workload_targets_the_registered_namespace_and_not_an_unrelated_deployment"
+    ],
+    "deployment.revisions": [
+      "test_concurrent_idempotency_key_race_records_exact_declared_replica_counts_pod_identities_and_deployment_topology",
+      "test_concurrent_idempotency_key_race_records_exact_source_image_manifest_schema_dependency_and_tool_revisions"
+    ],
+    "initial_state.fixture": [
+      "test_concurrent_idempotency_key_race_initial_database_and_broker_observations_identify_the_declared_fixture_state",
+      "test_concurrent_idempotency_key_race_initial_process_pod_and_controller_phase_identities_are_recorded_before_activation",
+      "test_concurrent_idempotency_key_race_initial_state_witness_identifies_every_declared_fixture_entity_before_controlled_actions"
+    ],
+    "observations.completeness": [
+      "test_concurrent_idempotency_key_race_exports_every_oracle_consumed_observation_with_exact_entity_binding"
+    ],
+    "observations.no_business_answers": [
+      "test_concurrent_idempotency_key_race_changing_an_external_oracle_expectation_does_not_change_the_scenario_control_plan",
+      "test_concurrent_idempotency_key_race_does_not_substitute_controller_or_orchestrator_values_for_real_application_observations",
+      "test_concurrent_idempotency_key_race_scenario_output_contains_no_derived_expected_business_answer_or_pass_fail_field"
+    ],
+    "observations.provenance": [
+      "test_concurrent_idempotency_key_race_does_not_substitute_controller_or_orchestrator_values_for_real_application_observations",
+      "test_concurrent_idempotency_key_race_each_declared_action_adapter_reports_a_real_boundary_receipt_bound_to_its_action",
+      "test_concurrent_idempotency_key_race_exports_each_observation_with_an_allowed_independent_provenance_class",
+      "test_concurrent_idempotency_key_race_initial_database_and_broker_observations_identify_the_declared_fixture_state",
+      "test_concurrent_idempotency_key_race_recovery_witness_identifies_the_declared_real_process_connectivity_and_resource_state"
+    ],
+    "prerequisite.negative_control": [
+      "test_concurrent_idempotency_key_race_failed_orchestration_does_not_emit_a_successful_prerequisite_witness",
+      "test_concurrent_idempotency_key_race_old_prerequisite_witness_is_invalid_for_a_new_run_identity",
+      "test_concurrent_idempotency_key_race_prerequisite_witness_remains_false_when_one_required_initial_entity_is_absent",
+      "test_concurrent_idempotency_key_race_prerequisite_witness_stays_false_before_the_declared_condition_is_established"
+    ],
+    "prerequisite.witness": [
+      "test_concurrent_idempotency_key_race_initial_process_pod_and_controller_phase_identities_are_recorded_before_activation",
+      "test_concurrent_idempotency_key_race_initial_state_witness_identifies_every_declared_fixture_entity_before_controlled_actions",
+      "test_concurrent_idempotency_key_race_prerequisite_witness_identifies_the_exact_affected_entities_and_controller_phase"
+    ],
+    "recovery.condition": [
+      "test_concurrent_idempotency_key_race_controller_does_not_enter_post_recovery_phase_before_recovery_witness",
+      "test_concurrent_idempotency_key_race_recovery_witness_identifies_the_declared_real_process_connectivity_and_resource_state",
+      "test_concurrent_idempotency_key_race_recovery_witness_remains_false_until_the_declared_recovery_condition_is_observed"
+    ],
+    "reset.isolation": [
+      "test_concurrent_idempotency_key_race_cleanup_removes_only_state_owned_by_the_exact_scenario_run",
+      "test_concurrent_idempotency_key_race_old_prerequisite_witness_is_invalid_for_a_new_run_identity",
+      "test_concurrent_idempotency_key_race_second_run_controller_uses_only_the_second_run_seed_and_parameters",
+      "test_concurrent_idempotency_key_race_second_run_inherits_no_database_broker_kubernetes_or_controller_state_from_first_run"
+    ],
+    "termination.condition": [
+      "test_concurrent_idempotency_key_race_controller_emits_completion_only_after_every_required_action_and_barrier"
+    ],
+    "time.logical_ticks": [
+      "test_concurrent_idempotency_key_race_controller_trace_replay_reconstructs_the_same_logical_tick_sequence",
+      "test_concurrent_idempotency_key_race_logical_tick_progression_is_identical_for_identical_seed_and_barrier_inputs"
+    ],
+    "time.physical": [
+      "test_concurrent_idempotency_key_race_ambient_wall_clock_delay_cannot_advance_a_barrier_gated_controller_phase"
+    ],
+    "workload.identity": [
+      "test_concurrent_idempotency_key_race_workload_records_exact_declared_concurrency_and_completion_target",
+      "test_concurrent_idempotency_key_race_workload_uses_exact_registered_request_actor_and_entity_identities"
+    ],
+    "workload.phase": [
+      "test_concurrent_idempotency_key_race_workload_records_exact_declared_concurrency_and_completion_target",
+      "test_concurrent_idempotency_key_race_workload_starts_only_after_the_declared_prerequisite_phase",
+      "test_concurrent_idempotency_key_race_workload_targets_the_registered_namespace_and_not_an_unrelated_deployment"
+    ]
+  },
+  "current_trust_claim": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING",
+  "future_tests": [
+    {
+      "covers": [
+        "deployment.components",
+        "deployment.namespace"
+      ],
+      "dimension": "A",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_deploys_every_declared_real_component_in_the_registered_namespace",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "deployment.revisions"
+      ],
+      "dimension": "A",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_records_exact_source_image_manifest_schema_dependency_and_tool_revisions",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "deployment.components",
+        "deployment.revisions"
+      ],
+      "dimension": "A",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_records_exact_declared_replica_counts_pod_identities_and_deployment_topology",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "deployment.components",
+        "deployment.namespace"
+      ],
+      "dimension": "A",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_registered_service_endpoints_resolve_only_to_declared_scenario_pods",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "initial_state.fixture",
+        "prerequisite.witness"
+      ],
+      "dimension": "B",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_initial_state_witness_identifies_every_declared_fixture_entity_before_controlled_actions",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "prerequisite.negative_control"
+      ],
+      "dimension": "B",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_prerequisite_witness_remains_false_when_one_required_initial_entity_is_absent",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "initial_state.fixture",
+        "observations.provenance"
+      ],
+      "dimension": "B",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_initial_database_and_broker_observations_identify_the_declared_fixture_state",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "initial_state.fixture",
+        "prerequisite.witness"
+      ],
+      "dimension": "B",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_initial_process_pod_and_controller_phase_identities_are_recorded_before_activation",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "controller.seed",
+        "controller.transitions"
+      ],
+      "dimension": "C",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_same_seed_parameters_and_barrier_outcomes_replay_identical_controller_transitions",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "controller.transitions"
+      ],
+      "dimension": "C",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_controller_emits_no_action_outside_the_declared_scenario_plan",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "controller.barrier_gating"
+      ],
+      "dimension": "C",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_controller_does_not_advance_before_the_current_barrier_outcome_is_supplied",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "controller.seed",
+        "time.logical_ticks"
+      ],
+      "dimension": "C",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_controller_trace_replay_reconstructs_the_same_logical_tick_sequence",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "dagger.execution",
+        "controller.transitions"
+      ],
+      "dimension": "D",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_dagger_executes_each_controller_action_without_reordering",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "dagger.execution"
+      ],
+      "dimension": "D",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_dagger_propagates_exact_scenario_revision_seed_parameters_and_action_identity",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "dagger.execution",
+        "prerequisite.negative_control"
+      ],
+      "dimension": "D",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_failed_orchestration_does_not_emit_a_successful_prerequisite_witness",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "reset.isolation"
+      ],
+      "dimension": "D",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_cleanup_removes_only_state_owned_by_the_exact_scenario_run",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "dagger.execution",
+        "observations.provenance"
+      ],
+      "dimension": "D",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_each_declared_action_adapter_reports_a_real_boundary_receipt_bound_to_its_action",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "prerequisite.witness"
+      ],
+      "dimension": "F",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_prerequisite_witness_identifies_the_exact_affected_entities_and_controller_phase",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "prerequisite.negative_control"
+      ],
+      "dimension": "G",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_prerequisite_witness_stays_false_before_the_declared_condition_is_established",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "workload.identity"
+      ],
+      "dimension": "H",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_workload_uses_exact_registered_request_actor_and_entity_identities",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "workload.phase",
+        "controller.barrier_gating"
+      ],
+      "dimension": "H",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_workload_starts_only_after_the_declared_prerequisite_phase",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "workload.phase",
+        "deployment.namespace"
+      ],
+      "dimension": "H",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_workload_targets_the_registered_namespace_and_not_an_unrelated_deployment",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "workload.identity",
+        "workload.phase"
+      ],
+      "dimension": "H",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_workload_records_exact_declared_concurrency_and_completion_target",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "time.logical_ticks",
+        "controller.seed"
+      ],
+      "dimension": "I",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_logical_tick_progression_is_identical_for_identical_seed_and_barrier_inputs",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "time.physical",
+        "controller.barrier_gating"
+      ],
+      "dimension": "I",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_ambient_wall_clock_delay_cannot_advance_a_barrier_gated_controller_phase",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "recovery.condition"
+      ],
+      "dimension": "J",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_recovery_witness_remains_false_until_the_declared_recovery_condition_is_observed",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "recovery.condition",
+        "controller.barrier_gating"
+      ],
+      "dimension": "J",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_controller_does_not_enter_post_recovery_phase_before_recovery_witness",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "recovery.condition",
+        "observations.provenance"
+      ],
+      "dimension": "J",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_recovery_witness_identifies_the_declared_real_process_connectivity_and_resource_state",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "termination.condition"
+      ],
+      "dimension": "K",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_controller_emits_completion_only_after_every_required_action_and_barrier",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "reset.isolation"
+      ],
+      "dimension": "L",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_second_run_inherits_no_database_broker_kubernetes_or_controller_state_from_first_run",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "reset.isolation",
+        "prerequisite.negative_control"
+      ],
+      "dimension": "L",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_old_prerequisite_witness_is_invalid_for_a_new_run_identity",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "reset.isolation",
+        "controller.seed"
+      ],
+      "dimension": "L",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_second_run_controller_uses_only_the_second_run_seed_and_parameters",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "observations.completeness"
+      ],
+      "dimension": "M",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_exports_every_oracle_consumed_observation_with_exact_entity_binding",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "observations.provenance"
+      ],
+      "dimension": "M",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_exports_each_observation_with_an_allowed_independent_provenance_class",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "observations.provenance",
+        "observations.no_business_answers"
+      ],
+      "dimension": "M",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_does_not_substitute_controller_or_orchestrator_values_for_real_application_observations",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "observations.no_business_answers"
+      ],
+      "dimension": "N",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_scenario_output_contains_no_derived_expected_business_answer_or_pass_fail_field",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    },
+    {
+      "covers": [
+        "observations.no_business_answers",
+        "controller.seed"
+      ],
+      "dimension": "N",
+      "emulation_specific_safety_gate": {
+        "component_under_test_unambiguous": true,
+        "required_contract_observation_relation_unambiguous": true,
+        "required_real_deployment_observation_unambiguous": true,
+        "required_witness_source_unambiguous": true,
+        "scenario_precondition_unambiguous_or_unconditional": true
+      },
+      "name": "test_concurrent_idempotency_key_race_changing_an_external_oracle_expectation_does_not_change_the_scenario_control_plan",
+      "oracle_inference": "SAFE",
+      "safety_evaluation": [
+        {
+          "criterion_text": "TEST_NAME_EXPRESSES_A_TESTABLE_BEHAVIORAL_OR_STRUCTURAL_CONTRACT",
+          "reason_code": "U01_NON_TESTABLE_OR_NON_ASSERTIVE_NAME",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_SUBJECT_AND_OPERATION_OR_OBSERVATION_UNAMBIGUOUSLY",
+          "reason_code": "U02_AMBIGUOUS_SUBJECT_OR_BEHAVIOR",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_TRIGGER_OR_PRECONDITION_UNAMBIGUOUSLY_OR_THE_CONTRACT_IS_UNCONDITIONAL",
+          "reason_code": "U03_AMBIGUOUS_PRECONDITION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_THE_REQUIRED_OUTCOME_OR_PASS_FAIL_RELATION_UNAMBIGUOUSLY",
+          "reason_code": "U04_AMBIGUOUS_REQUIRED_RELATION",
+          "result": true
+        },
+        {
+          "criterion_text": "TEST_NAME_IDENTIFIES_SCOPE_QUANTIFIERS_CARDINALITY_AND_IDENTITY_SEMANTICS_UNAMBIGUOUSLY_WHEN_THEY_AFFECT_PASS_FAIL",
+          "reason_code": "U05_AMBIGUOUS_SCOPE_OR_QUANTIFICATION",
+          "result": true
+        },
+        {
+          "criterion_text": "ALL_MATERIAL_REFERENTS_EXTERNAL_POLICIES_CONFIGURATIONS_STANDARDS_AND_NAMED_VALUES_ARE_UNIQUELY_IDENTIFIED",
+          "reason_code": "U06_AMBIGUOUS_REFERENCE",
+          "result": true
+        },
+        {
+          "criterion_text": "BOOLEAN_OPERANDS_OPERATORS_GROUPING_AND_PRECEDENCE_REQUIRED_BY_THE_NAME_ARE_UNAMBIGUOUS",
+          "reason_code": "U07_AMBIGUOUS_BOOLEAN_STRUCTURE",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_MATERIAL_SEMANTIC_INFORMATION_REQUIRED_TO_CONSTRUCT_THE_PASS_FAIL_PREDICATE_IS_UNSTATED",
+          "reason_code": "U08_MISSING_SEMANTICS",
+          "result": true
+        },
+        {
+          "criterion_text": "NO_TWO_MATERIALLY_DIFFERENT_PASS_FAIL_PREDICATES_ARE_BOTH_REASONABLE_INTERPRETATIONS_OF_THE_NAME",
+          "reason_code": "U09_MULTIPLE_REASONABLE_ORACLES",
+          "result": true
+        }
+      ]
+    }
+  ],
+  "scenario_id": "concurrent_idempotency_key_race",
+  "scenario_status": "IMPLEMENTED_BUT_EMULATION_VERIFICATION_PENDING",
+  "schema_version": "eve-trade.emulation-verification-coverage/v1",
+  "test_function_count": 0,
+  "trust_claim_after_future_tests_pass": "EMULATION_VERIFIED_AGAINST_ITS_DECLARED_SCENARIO_CONTRACT"
+}

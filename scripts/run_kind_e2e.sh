@@ -2,7 +2,7 @@
 set -euo pipefail
 
 cluster_name="${EVE_TRADE_KIND_CLUSTER:-eve-trade-ci}"
-namespace="eve-trade"
+namespace="${EVE_TRADE_APP_NAMESPACE:-eve-trade}"
 created_cluster=0
 forward_pids=()
 log_root="${RUNNER_TEMP:-/tmp}/eve-trade-kind-e2e"
@@ -67,7 +67,9 @@ kind load docker-image --name "$cluster_name" \
   eve-trade/quilkin:dev \
   eve-trade/simulator:dev
 
-kubectl apply -k distributed-backend/orchestration/kubernetes/overlay/local
+kubectl kustomize distributed-backend/orchestration/kubernetes/overlay/local \
+  | python distributed-backend/tests/property-tests/infra/render_run_namespace.py --namespace "$namespace" \
+  | kubectl apply -f -
 kubectl -n "$namespace" patch service quilkin --type merge --patch \
   '{"spec":{"type":"NodePort","ports":[{"name":"udp","port":26001,"targetPort":"udp","protocol":"UDP","nodePort":32601}]}}'
 
@@ -91,7 +93,7 @@ import socket
 import sys
 
 try:
-    connection = socket.create_connection(("nsqd.eve-trade.svc.cluster.local", 4150), timeout=3)
+    connection = socket.create_connection(("nsqd", 4150), timeout=3)
 except OSError as error:
     print(f"NSQ connection blocked as required: {error}")
     raise SystemExit(0)

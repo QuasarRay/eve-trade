@@ -1,0 +1,1123 @@
+{
+  "schema_version": "eve-trade.property-change-manifest/v1",
+  "source_revision": "e3ff01c3d9c2b7e9cae0f977c1c4b7bbaef4b91c",
+  "changed_file_count": 279,
+  "files": [
+    {
+      "status": "??",
+      "path": ".github/dagger/property_tests.py"
+    },
+    {
+      "status": " M",
+      "path": ".github/workflows/verify.yaml"
+    },
+    {
+      "status": " M",
+      "path": "distributed-backend/orchestration/kubernetes/overlay/local/nsq-local.yaml"
+    },
+    {
+      "status": " M",
+      "path": "distributed-backend/orchestration/kubernetes/overlay/local/quilkin.yaml"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/classification.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/e2e/conftest.py"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/e2e/pytest.ini"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/e2e/requirements.txt"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/e2e/test_catalog_governance.py"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/application_logging_disk_full/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/application_logging_disk_full/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/application_logging_disk_full/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/application_logging_disk_full/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/application_logging_disk_full/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/asymmetric_response_path_partition/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/asymmetric_response_path_partition/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/asymmetric_response_path_partition/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/asymmetric_response_path_partition/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/asymmetric_response_path_partition/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/change-manifest.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/cleanup_job_crash_between_batches/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/cleanup_job_crash_between_batches/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/cleanup_job_crash_between_batches/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/cluster_rate_limit_replica_race/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/cluster_rate_limit_replica_race/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/cluster_rate_limit_replica_race/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/cluster_rate_limit_replica_race/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/cluster_rate_limit_replica_race/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_accept_quantity_race/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_accept_quantity_race/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_accept_quantity_race/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_idempotency_key_race/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_idempotency_key_race/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_idempotency_key_race/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_idempotency_key_race/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_idempotency_key_race/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_item_reservation_race/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_item_reservation_race/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_item_reservation_race/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_outbox_claim_race/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_outbox_claim_race/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_outbox_claim_race/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_wallet_debit_race/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_wallet_debit_race/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/concurrent_wallet_debit_race/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/configuration_reload_during_inflight_request/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/configuration_reload_during_inflight_request/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/configuration_reload_during_inflight_request/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/database_backup_restore_recovery/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/database_backup_restore_recovery/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/database_backup_restore_recovery/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/database_connection_failure_window/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/database_connection_failure_window/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/database_connection_failure_window/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/database_connection_failure_window/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/database_connection_failure_window/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/database_primary_failover/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/database_primary_failover/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/database_primary_failover/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/dependency_outage_backlog_and_recovery/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/dependency_outage_backlog_and_recovery/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/dependency_outage_backlog_and_recovery/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/dependency_outage_backlog_and_recovery/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/dependency_outage_backlog_and_recovery/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/DETERMINISTIC_TIME_DECISION.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/duplicate_message_delivery/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/duplicate_message_delivery/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/duplicate_message_delivery/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/duplicate_message_delivery/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/duplicate_message_delivery/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_cpu_pressure/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_cpu_pressure/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_cpu_pressure/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_cpu_pressure/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_cpu_pressure/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_crash_at_handoff_boundary/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_crash_at_handoff_boundary/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_crash_at_handoff_boundary/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_memory_pressure/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_memory_pressure/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_memory_pressure/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_memory_pressure/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_memory_pressure/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_pod_delete_during_udp_workload/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_pod_delete_during_udp_workload/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_pod_delete_during_udp_workload/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_pod_delete_during_udp_workload/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_pod_delete_during_udp_workload/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_queue_saturation/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_queue_saturation/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_queue_saturation/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_queue_saturation/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_queue_saturation/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_single_node_drain/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_single_node_drain/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_single_node_drain/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_to_market_internal_link_disruption/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_to_market_internal_link_disruption/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/gateway_to_market_internal_link_disruption/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/graceful_shutdown_with_inflight_work/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/graceful_shutdown_with_inflight_work/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/graceful_shutdown_with_inflight_work/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/graceful_shutdown_with_inflight_work/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/graceful_shutdown_with_inflight_work/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/grpc_connection_failure_window/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/grpc_connection_failure_window/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/grpc_connection_failure_window/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/hot_resource_contention_with_control_workload/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/hot_resource_contention_with_control_workload/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/hot_resource_contention_with_control_workload/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/hot_resource_contention_with_control_workload/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/hot_resource_contention_with_control_workload/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/implementation-state.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_crash_at_persistence_publish_boundary/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_crash_at_persistence_publish_boundary/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_crash_at_persistence_publish_boundary/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_projection_out_of_order_delivery/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_projection_out_of_order_delivery/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_projection_out_of_order_delivery/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_projection_out_of_order_delivery/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_projection_out_of_order_delivery/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_to_pubsub_directional_partition/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_to_pubsub_directional_partition/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_to_pubsub_directional_partition/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_to_pubsub_directional_partition/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/market_to_pubsub_directional_partition/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/migration_backfill_restart/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/migration_backfill_restart/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/migration_backfill_restart/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/mixed_workload_network_delay/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/mixed_workload_network_delay/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/mixed_workload_network_delay/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/mixed_workload_network_delay/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/mixed_workload_network_delay/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/nsq_restart_during_delivery/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/nsq_restart_during_delivery/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/nsq_restart_during_delivery/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/nsq_restart_during_delivery/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/nsq_restart_during_delivery/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/observability_backend_outage/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/observability_backend_outage/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/observability_backend_outage/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/outbox_dispatcher_crash_at_publish_boundary/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/outbox_dispatcher_crash_at_publish_boundary/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/outbox_dispatcher_crash_at_publish_boundary/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/poison_message_retry_and_quarantine/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/poison_message_retry_and_quarantine/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/poison_message_retry_and_quarantine/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/poison_message_retry_and_quarantine/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/poison_message_retry_and_quarantine/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/postgres_disk_full_during_commit/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/postgres_disk_full_during_commit/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/postgres_disk_full_during_commit/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/postgres_restart_during_settlement/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/postgres_restart_during_settlement/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/postgres_restart_during_settlement/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/postgres_restart_during_settlement/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/postgres_restart_during_settlement/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/prerequisite-inventory.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/pubsub_handler_redelivery_boundary/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/pubsub_handler_redelivery_boundary/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/pubsub_handler_redelivery_boundary/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/quilkin_gateway_packet_duplication/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/quilkin_gateway_packet_duplication/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/quilkin_gateway_packet_duplication/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/quilkin_gateway_packet_duplication/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/quilkin_gateway_packet_duplication/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/random_crash_restart_sequence/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/random_crash_restart_sequence/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/random_crash_restart_sequence/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/random_crash_restart_sequence/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/random_crash_restart_sequence/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/random_service_kill_mixed_workload/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/random_service_kill_mixed_workload/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/random_service_kill_mixed_workload/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_cross_version_compatibility/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_cross_version_compatibility/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_cross_version_compatibility/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_gateway_replica_replacement/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_gateway_replica_replacement/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_gateway_replica_replacement/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_gateway_replica_replacement/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_gateway_replica_replacement/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_market_replica_replacement/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_market_replica_replacement/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_market_replica_replacement/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_market_replica_replacement/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_market_replica_replacement/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_settlement_replica_replacement/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_settlement_replica_replacement/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_settlement_replica_replacement/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_settlement_replica_replacement/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_settlement_replica_replacement/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_worker_replica_replacement/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_worker_replica_replacement/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_worker_replica_replacement/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_worker_replica_replacement/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/rolling_worker_replica_replacement/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/action_executor.py"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/catalog.py"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/deterministic-controller/ANYSYSTEM_INTEGRATION.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/deterministic-controller/Cargo.toml"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/deterministic-controller/src/main.rs"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/generate_manifests.py"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/observations.schema.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/prerequisite-witness.schema.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/run-evidence.schema.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/scenario_definitions.py"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/scenario_runner.py"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/scenario-invocation.schema.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/runtime/validate.py"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/scenario-registry.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_crash_at_transaction_boundary/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_crash_at_transaction_boundary/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_crash_at_transaction_boundary/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_dns_resolution_failure/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_dns_resolution_failure/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_dns_resolution_failure/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_dns_resolution_failure/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_dns_resolution_failure/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_pod_delete_during_database_transaction/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_pod_delete_during_database_transaction/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_pod_delete_during_database_transaction/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_to_postgres_unknown_commit_partition/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_to_postgres_unknown_commit_partition/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/settlement_to_postgres_unknown_commit_partition/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/sustained_mixed_trade_load/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/sustained_mixed_trade_load/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/sustained_mixed_trade_load/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/sustained_mixed_trade_load/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/sustained_mixed_trade_load/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/targeted_network_loss/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/targeted_network_loss/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/targeted_network_loss/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/targeted_network_loss/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/targeted_network_loss/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/trade_terminal_accept_cancel_race/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/trade_terminal_accept_cancel_race/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/trade_terminal_accept_cancel_race/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/udp_key_rotation_overlap_window/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/udp_key_rotation_overlap_window/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/udp_key_rotation_overlap_window/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/udp_receive_buffer_saturation/control-action-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/udp_receive_buffer_saturation/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/udp_receive_buffer_saturation/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/validation-results.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_crash_at_processing_boundary/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_crash_at_processing_boundary/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_crash_at_processing_boundary/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_memory_pressure/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_memory_pressure/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_memory_pressure/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_memory_pressure/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_memory_pressure/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_pod_delete_during_message_processing/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_pod_delete_during_message_processing/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_pod_delete_during_message_processing/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_pod_delete_during_message_processing/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_pod_delete_during_message_processing/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_single_node_drain/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_single_node_drain/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_single_node_drain/scenario.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_to_settlement_directional_partition/chaos-reference.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_to_settlement_directional_partition/emulation-verification-coverage.json"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_to_settlement_directional_partition/emulation-verification-tests-to-implement.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_to_settlement_directional_partition/scenario-contract.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/emulated-scenarios/worker_to_settlement_directional_partition/scenario.json"
+    },
+    {
+      "status": " M",
+      "path": "distributed-backend/tests/property-tests/infra/install_litmus.py"
+    },
+    {
+      "status": " M",
+      "path": "distributed-backend/tests/property-tests/infra/orchestrate.py"
+    },
+    {
+      "status": " M",
+      "path": "distributed-backend/tests/property-tests/infra/pipeline.py"
+    },
+    {
+      "status": " M",
+      "path": "distributed-backend/tests/property-tests/infra/README.md"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/infra/render_run_namespace.py"
+    },
+    {
+      "status": " M",
+      "path": "distributed-backend/tests/property-tests/infra/run_kind_property_tests.sh"
+    },
+    {
+      "status": " M",
+      "path": "distributed-backend/tests/property-tests/infra/run_supplied_property_tests.sh"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/reusable-oracles/eve_trade_oracles/__init__.py"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/reusable-oracles/eve_trade_oracles/catalog_quality.py"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/reusable-oracles/eve_trade_oracles/deployment_evidence.py"
+    },
+    {
+      "status": "??",
+      "path": "distributed-backend/tests/property-tests/reusable-oracles/ORACLE_DEPENDENCY_GRAPH.md"
+    },
+    {
+      "status": " M",
+      "path": "scripts/run_kind_e2e.sh"
+    }
+  ]
+}

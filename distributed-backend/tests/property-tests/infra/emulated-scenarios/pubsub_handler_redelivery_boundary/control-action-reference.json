@@ -1,0 +1,15 @@
+{
+  "action_kind": "WORKER_HANDLER_FAILPOINT_AND_BROKER_REDELIVERY",
+  "activation_barrier": "handler failpoint confirms the exact commit/publish/ack boundary",
+  "affected_path": "nsqd-to-settlement-worker",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "NSQ stats independently show the message in-flight or requeued with the same identity",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "message is terminally acknowledged or quarantined and the channel is healthy",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "pubsub_handler_redelivery_boundary",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "settlement work channel handler"
+}

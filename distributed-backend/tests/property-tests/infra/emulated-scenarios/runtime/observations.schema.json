@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eve-trade.invalid/schemas/emulation-observations-v1.json",
+  "title": "Facts-only EVE Trade emulation observations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "scenario_id", "run_id", "facts"],
+  "properties": {
+    "schema_version": {"const": "eve-trade.emulation-observations/v1"},
+    "scenario_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "value", "provenance", "source_ref", "observed_at", "entity_ids"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$", "not": {"pattern": "^(expected_|should_)"}},
+          "value": {},
+          "provenance": {
+            "enum": [
+              "SCENARIO_INPUT",
+              "ANYSYSTEM_CONTROLLER",
+              "DAGGER_ORCHESTRATOR",
+              "LITMUS_CONTROL_PLANE",
+              "KUBERNETES_CONTROL_PLANE",
+              "REAL_APPLICATION",
+              "REAL_DATABASE",
+              "REAL_BROKER",
+              "INDEPENDENT_NETWORK_PROBE",
+              "INDEPENDENT_RESOURCE_PROBE",
+              "PHYSICAL_CLOCK",
+              "INJECTED_APPLICATION_CLOCK"
+            ]
+          },
+          "source_ref": {"type": "string", "minLength": 1},
+          "observed_at": {"type": "string", "format": "date-time"},
+          "entity_ids": {"type": "object"}
+        }
+      }
+    }
+  }
+}
+

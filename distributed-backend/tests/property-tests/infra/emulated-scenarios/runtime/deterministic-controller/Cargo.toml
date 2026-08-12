@@ -1,0 +1,14 @@
+[package]
+name = "eve-trade-deterministic-controller"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "deterministic-controller"
+path = "src/main.rs"
+
+[dependencies]
+anysystem = { git = "https://github.com/systems-group/anysystem", rev = "74613a368c73fb12f25778ce33ca11c9a833da96" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

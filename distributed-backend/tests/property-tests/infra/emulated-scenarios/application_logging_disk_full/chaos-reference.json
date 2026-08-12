@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_DISK_FILL",
+  "activation_barrier": "application log path and clean filesystem baseline are observed",
+  "affected_path": "application-to-log-sink",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent filesystem probe observe declared utilization",
+  "independent_effect_witness_adapter": "INDEPENDENT_RESOURCE_PROBE",
+  "litmus_experiment": "disk-fill",
+  "release_barrier": "fill files are removed and application readiness is restored",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "application_logging_disk_full",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "encore-backend log filesystem"
+}

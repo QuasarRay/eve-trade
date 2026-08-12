@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_CREDENTIAL_ROTATION",
+  "activation_barrier": "old keyset version and authenticated control request are observed",
+  "affected_path": "configuration-source-to-gateway-authenticator",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "application keyset-version observation proves overlap and retirement phases",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "new key is active, retired key is outside overlap, and control request succeeds",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "udp_key_rotation_overlap_window",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "gateway HMAC keyset"
+}

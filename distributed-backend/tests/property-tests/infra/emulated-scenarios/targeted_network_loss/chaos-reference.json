@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_NETWORK_LOSS",
+  "activation_barrier": "clean control probe batch has zero observed loss",
+  "affected_path": "declared service edge",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent sequence probe observes loss within declared tolerance",
+  "independent_effect_witness_adapter": "INDEPENDENT_NETWORK_PROBE",
+  "litmus_experiment": "pod-network-loss",
+  "release_barrier": "loss qdisc is absent and recovered probe batch succeeds",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "targeted_network_loss",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "scenario-selected source pod and destination"
+}

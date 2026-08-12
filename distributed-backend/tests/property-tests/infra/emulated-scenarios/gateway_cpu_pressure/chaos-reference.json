@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_CPU_HOG",
+  "activation_barrier": "selected and control replica identities plus CPU baseline are recorded",
+  "affected_path": "quilkin-to-selected-gateway",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent container CPU metric cross the declared threshold",
+  "independent_effect_witness_adapter": "INDEPENDENT_RESOURCE_PROBE",
+  "litmus_experiment": "pod-cpu-hog",
+  "release_barrier": "CPU stress is absent and selected replica returns to readiness",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "gateway_cpu_pressure",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "selected encore-backend pod"
+}

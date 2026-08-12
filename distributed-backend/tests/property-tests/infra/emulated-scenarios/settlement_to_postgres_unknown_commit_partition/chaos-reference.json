@@ -1,0 +1,22 @@
+{
+  "action_kind": "LITMUS_DIRECTIONAL_NETWORK_PARTITION_AT_TRANSACTION_BARRIER",
+  "activation_barrier": "transaction boundary failpoint confirms before-commit or after-commit state",
+  "affected_path": "settlement-to-postgres",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent settlement-origin PostgreSQL probe failure are required",
+  "independent_effect_witness_adapter": "INDEPENDENT_NETWORK_PROBE",
+  "litmus_experiment": "pod-network-partition",
+  "release_barrier": "partition is absent, SQL probe succeeds, and idempotency status is queryable",
+  "runtime_fixed_environment": {
+    "NAMESPACE_SELECTOR": "kubernetes.io/metadata.name=${RUN_NAMESPACE}",
+    "POD_SELECTOR": "app.kubernetes.io/name=postgres",
+    "POLICY_TYPES": "egress"
+  },
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=trade-settlement"
+  },
+  "scenario_id": "settlement_to_postgres_unknown_commit_partition",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "trade-settlement egress to postgres"
+}

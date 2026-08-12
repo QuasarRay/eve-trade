@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_NETWORK_LATENCY",
+  "activation_barrier": "clean baseline latency distribution is recorded",
+  "affected_path": "declared source-to-destination service edge",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent probe observes latency above the generated lower bound",
+  "independent_effect_witness_adapter": "INDEPENDENT_NETWORK_PROBE",
+  "litmus_experiment": "pod-network-latency",
+  "release_barrier": "latency qdisc is absent and recovered probe returns within the bounded control envelope",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "mixed_workload_network_delay",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "scenario-selected application path"
+}

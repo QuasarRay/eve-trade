@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_SCALE_OBSERVABILITY_BACKEND_TO_ZERO",
+  "activation_barrier": "business and telemetry control paths are healthy before outage",
+  "affected_path": "application-to-observability-backend",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "Kubernetes zero-ready state and independent exporter probe prove outage",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "observability backend recovers and application remains ready",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "observability_backend_outage",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "optional observability collector/exporter"
+}

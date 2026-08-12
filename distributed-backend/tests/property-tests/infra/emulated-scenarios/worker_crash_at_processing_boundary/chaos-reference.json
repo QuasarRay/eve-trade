@@ -1,0 +1,20 @@
+{
+  "action_kind": "LITMUS_CONTAINER_KILL_AT_FAILPOINT",
+  "activation_barrier": "production-disabled worker failpoint confirms the named boundary",
+  "affected_path": "nsqd-to-worker-to-trade-settlement",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Kubernetes observes the selected container terminate and message remains independently visible",
+  "independent_effect_witness_adapter": "KUBERNETES_PROCESS_IDENTITY_TRANSITION",
+  "litmus_experiment": "container-kill",
+  "release_barrier": "another worker owns or completes the operation and the channel drains",
+  "runtime_fixed_environment": {
+    "TARGET_CONTAINER": "encore-backend"
+  },
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "worker_crash_at_processing_boundary",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "encore-backend container hosting the settlement-worker service"
+}

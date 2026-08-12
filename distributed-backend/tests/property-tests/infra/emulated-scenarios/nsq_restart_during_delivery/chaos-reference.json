@@ -1,0 +1,18 @@
+{
+  "action_kind": "LITMUS_POD_DELETE",
+  "activation_barrier": "broker stats observe the message and original nsqd UID",
+  "affected_path": "publisher-to-nsqd-to-consumer",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and Kubernetes old-pod UID disappearance/replacement are required",
+  "independent_effect_witness_adapter": "KUBERNETES_PROCESS_IDENTITY_TRANSITION",
+  "litmus_experiment": "pod-delete",
+  "release_barrier": "replacement nsqd is ready and message terminal state is observable",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": {
+    "kind": "statefulset",
+    "selector": "app.kubernetes.io/name=nsqd"
+  },
+  "scenario_id": "nsq_restart_during_delivery",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "nsqd pod selected by exact labels and UID"
+}

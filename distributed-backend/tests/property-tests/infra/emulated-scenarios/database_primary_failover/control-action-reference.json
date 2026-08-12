@@ -1,0 +1,15 @@
+{
+  "action_kind": "EXTERNAL_DATABASE_FAILOVER",
+  "activation_barrier": "transaction boundary and original primary identity are observed",
+  "affected_path": "application-to-postgres-primary",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "independent SQL topology probe observes a different writable primary",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "clients discard the demoted connection and reach the new primary",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "database_primary_failover",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "postgres primary"
+}

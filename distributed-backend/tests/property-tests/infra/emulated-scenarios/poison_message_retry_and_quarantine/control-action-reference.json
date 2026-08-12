@@ -1,0 +1,15 @@
+{
+  "action_kind": "BROKER_PUBLISH_POISON_AND_CONTROL",
+  "activation_barrier": "poison payload and healthy control payload are durably published in order",
+  "affected_path": "nsqd-to-settlement-worker",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "broker counters and application logs identify poison redeliveries and later healthy-message processing",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "poison message reaches declared terminal handling and healthy work completes",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "poison_message_retry_and_quarantine",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "declared correctness-critical NSQ channel"
+}

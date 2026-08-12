@@ -1,0 +1,15 @@
+{
+  "action_kind": "DAGGER_ROLLOUT_RESTART",
+  "activation_barrier": "durable operation identity exists before old replica termination",
+  "affected_path": "market-to-postgres-to-nsqd",
+  "control_plane_witness": "scenario/action/run-bound Dagger action receipt",
+  "independent_effect_witness": "pod UID transition and SQL/outbox observations bind the operation across the rollout",
+  "independent_effect_witness_adapter": "SCENARIO_SPECIFIC_REAL_OBSERVATION",
+  "litmus_experiment": null,
+  "release_barrier": "rollout completes and operation reaches terminal publication state",
+  "runtime_fixed_environment": {},
+  "runtime_target_policy": null,
+  "scenario_id": "rolling_market_replica_replacement",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "encore-backend deployment"
+}

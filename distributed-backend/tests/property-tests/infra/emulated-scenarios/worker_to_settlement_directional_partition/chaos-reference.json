@@ -1,0 +1,22 @@
+{
+  "action_kind": "LITMUS_DIRECTIONAL_NETWORK_PARTITION",
+  "activation_barrier": "worker observes the identified work message before activation",
+  "affected_path": "worker-to-trade-settlement",
+  "control_plane_witness": "scenario/action/run-bound Litmus resource status",
+  "independent_effect_witness": "Litmus acknowledgement and independent worker-origin gRPC reachability probe failure are required",
+  "independent_effect_witness_adapter": "INDEPENDENT_NETWORK_PROBE",
+  "litmus_experiment": "pod-network-partition",
+  "release_barrier": "partition is absent, gRPC probe succeeds, and message reaches terminal handling",
+  "runtime_fixed_environment": {
+    "NAMESPACE_SELECTOR": "kubernetes.io/metadata.name=${RUN_NAMESPACE}",
+    "POD_SELECTOR": "app.kubernetes.io/name=trade-settlement",
+    "POLICY_TYPES": "egress"
+  },
+  "runtime_target_policy": {
+    "kind": "deployment",
+    "selector": "app.kubernetes.io/name=encore-backend"
+  },
+  "scenario_id": "worker_to_settlement_directional_partition",
+  "schema_version": "eve-trade.scenario-action/v1",
+  "target": "encore-backend pod egress from settlement-worker to trade-settlement"
+}
