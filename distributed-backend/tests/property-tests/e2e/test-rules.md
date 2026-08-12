@@ -16,8 +16,8 @@
 
 9. tests must be categorized into the following categories based on their passing criteria: context-specific, context independent.
 
-10. context-specific tests will only run in their own simulated scenario.
+10. context-specific tests will only run in their own emulated scenario.
 
-11. context-independent tests will run in every simulated scenario.
+11. context-independent tests will run in every emulated scenario.
 
-12. all simulated scenarios will be implemented will be implemented in simulated-scenarios directory inside infra directory and NEVER in e2e or reusable-oracles directories.
+12. all emulated scenarios will be implemented will be implemented in emulated-scenarios directory inside infra directory and NEVER in e2e or reusable-oracles directories.
