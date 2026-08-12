@@ -1,0 +1,15 @@
+# Trade Queries, Pagination, and Public Read Model
+
+**Test count:** 11
+
+- `test_open_trade_query_cursor_cannot_skip_or_duplicate_trade_when_unrelated_trade_is_inserted_between_pages`
+- `test_open_trade_query_does_not_expose_seller_private_wallet_identifier`
+- `test_open_trade_query_excludes_cancelled_trade`
+- `test_open_trade_query_excludes_completed_trade`
+- `test_open_trade_query_excludes_expired_trade_at_database_time`
+- `test_open_trade_query_filter_by_item_type_returns_only_matching_item_type_trades`
+- `test_open_trade_query_filter_by_station_returns_only_matching_station_trades`
+- `test_open_trade_query_never_reports_negative_remaining_quantity`
+- `test_open_trade_query_pagination_has_stable_deterministic_ordering_across_repeated_requests`
+- `test_open_trade_query_reports_remaining_quantity_equal_to_item_escrow_quantity`
+- `test_open_trade_query_returns_newly_committed_issue_after_projection_is_applied`

@@ -1,0 +1,10 @@
+# Data Retention, Cleanup, and Background Maintenance
+
+**Test count:** 6
+
+- `test_cleanup_job_batches_deletions_without_holding_long_table_lock`
+- `test_cleanup_job_crash_between_batches_can_resume_without_skipping_eligible_rows`
+- `test_cleanup_job_deletes_only_rows_older_than_configured_cutoff`
+- `test_cleanup_job_does_not_delete_parent_row_while_retained_child_audit_row_references_it`
+- `test_cleanup_job_is_idempotent_when_run_twice_for_same_cutoff`
+- `test_cleanup_job_uses_database_time_for_retention_cutoff`

@@ -1,0 +1,34 @@
+# UDP Edge Payload Parsing, Schema Validation, and Datagram Limits
+
+**Test count:** 30
+
+- `test_gateway_rejects_request_above_documented_application_datagram_limit_before_json_parse`
+- `test_gateway_startup_fails_when_udp_packet_limit_is_below_minimum_valid_request_size`
+- `test_truncated_udp_datagram_is_rejected_without_partial_json_acceptance`
+- `test_udp_edge_accepts_datagram_exactly_at_maximum_packet_size`
+- `test_udp_edge_rejects_action_payload_shape_for_different_action`
+- `test_udp_edge_rejects_datagram_containing_valid_json_followed_by_trailing_non_whitespace_bytes`
+- `test_udp_edge_rejects_datagram_one_byte_above_maximum_packet_size`
+- `test_udp_edge_rejects_duplicate_security_sensitive_json_keys`
+- `test_udp_edge_rejects_embedded_nul_in_identifier`
+- `test_udp_edge_rejects_empty_datagram_without_allocating_replay_entry`
+- `test_udp_edge_rejects_empty_interaction_id`
+- `test_udp_edge_rejects_exponent_notation_for_integer_only_quantity`
+- `test_udp_edge_rejects_fractional_quantity_even_when_fraction_is_mathematically_integral`
+- `test_udp_edge_rejects_invalid_utf8_without_panicking`
+- `test_udp_edge_rejects_json_array_when_request_object_is_required`
+- `test_udp_edge_rejects_json_object_exceeding_configured_nesting_depth`
+- `test_udp_edge_rejects_json_scalar_when_request_object_is_required`
+- `test_udp_edge_rejects_missing_interaction_id`
+- `test_udp_edge_rejects_missing_schema_version`
+- `test_udp_edge_rejects_nan_in_numeric_field`
+- `test_udp_edge_rejects_negative_infinity_in_numeric_field`
+- `test_udp_edge_rejects_overlong_utf8_encoding`
+- `test_udp_edge_rejects_oversized_interaction_id`
+- `test_udp_edge_rejects_positive_infinity_in_numeric_field`
+- `test_udp_edge_rejects_request_with_more_than_configured_maximum_json_fields`
+- `test_udp_edge_rejects_truncated_json_without_panicking`
+- `test_udp_edge_rejects_unicode_control_characters_in_identifier`
+- `test_udp_edge_rejects_unknown_schema_version`
+- `test_udp_edge_rejects_unknown_ui_action`
+- `test_udp_edge_rejects_unknown_ui_window`

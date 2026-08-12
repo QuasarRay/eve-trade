@@ -1,0 +1,12 @@
+# Test Fixture Isolation, Cleanup, Synchronization, and Fault Harness Behavior
+
+**Test count:** 8
+
+- `test_concurrency_test_barriers_place_all_contenders_before_same_commit_race_window`
+- `test_database_fixture_uses_unique_namespace_or_transaction_per_test_to_prevent_cross_test_state_leakage`
+- `test_failed_test_cleanup_cannot_make_following_test_false_green`
+- `test_fault_injection_fixture_resets_every_failpoint_after_test`
+- `test_load_fixture_uses_unique_interaction_ids_across_parallel_ci_workers`
+- `test_pubsub_fixture_drains_only_messages_created_by_current_test`
+- `test_race_regression_reproduces_original_interleaving_without_sleep_based_timing_assumption`
+- `test_test_fixture_cleanup_failure_fails_ci_instead_of_being_silently_ignored`

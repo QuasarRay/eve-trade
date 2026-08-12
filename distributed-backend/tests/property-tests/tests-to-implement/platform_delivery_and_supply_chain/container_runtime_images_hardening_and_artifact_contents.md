@@ -1,0 +1,19 @@
+# Container Runtime Images, Hardening, and Artifact Contents
+
+**Test count:** 15
+
+- `test_container_base_image_update_changes_locked_or_reviewable_provenance_input`
+- `test_container_entrypoint_exits_nonzero_when_required_configuration_is_missing`
+- `test_container_image_scan_fails_on_unallowlisted_critical_vulnerability`
+- `test_container_image_scan_fails_on_unallowlisted_high_severity_secret_finding`
+- `test_encore_runtime_image_does_not_include_go_compiler`
+- `test_encore_runtime_image_process_runs_as_non_root_user`
+- `test_runtime_image_contains_ca_certificates_required_for_tls_dependencies`
+- `test_runtime_image_declares_only_ports_used_by_runtime_service`
+- `test_runtime_image_starts_with_read_only_root_filesystem_except_declared_writable_paths`
+- `test_runtime_images_contain_no_build_time_cloud_credentials`
+- `test_runtime_images_contain_no_hmac_secret_fixture_values`
+- `test_runtime_images_contain_no_repository_git_directory`
+- `test_runtime_images_do_not_include_private_ssh_keys`
+- `test_trade_settlement_runtime_image_does_not_include_rust_compiler`
+- `test_trade_settlement_runtime_image_process_runs_as_non_root_user`

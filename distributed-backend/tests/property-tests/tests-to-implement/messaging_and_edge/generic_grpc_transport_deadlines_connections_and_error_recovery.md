@@ -1,0 +1,10 @@
+# Generic gRPC Transport, Deadlines, Connections, and Error Recovery
+
+**Test count:** 6
+
+- `test_grpc_client_connection_is_reused_without_cross_request_state_leakage`
+- `test_grpc_deadline_exceeded_after_possible_commit_uses_status_recovery_before_reexecution`
+- `test_grpc_deadline_exceeded_with_unknown_commit_outcome_maps_to_status_recovery_path`
+- `test_grpc_unavailable_before_request_write_maps_to_retryable_worker_failure`
+- `test_half_open_grpc_connection_is_detected_without_blocking_worker_forever`
+- `test_transient_grpc_unavailable_is_retried_with_same_idempotency_key`

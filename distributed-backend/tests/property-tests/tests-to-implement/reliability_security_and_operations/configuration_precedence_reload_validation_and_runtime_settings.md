@@ -1,0 +1,14 @@
+# Configuration Precedence, Reload, Validation, and Runtime Settings
+
+**Test count:** 10
+
+- `test_configuration_precedence_is_identical_before_and_after_process_restart`
+- `test_configuration_reload_is_atomic_and_never_exposes_partially_parsed_keyset`
+- `test_duplicate_configuration_key_sources_are_resolved_by_documented_precedence_without_nondeterminism`
+- `test_environment_value_overrides_default_value_for_same_gateway_setting`
+- `test_environment_variable_precedence_matches_documented_configuration_precedence`
+- `test_explicit_secret_reference_overrides_development_fixture_secret`
+- `test_invalid_configuration_reload_keeps_last_known_good_configuration`
+- `test_timeout_configuration_reload_does_not_extend_deadline_of_already_started_request`
+- `test_unknown_configuration_key_causes_startup_failure_in_strict_production_mode`
+- `test_zero_configured_timeout_is_rejected_at_startup`

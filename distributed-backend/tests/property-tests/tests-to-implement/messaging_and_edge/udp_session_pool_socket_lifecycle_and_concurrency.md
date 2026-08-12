@@ -1,0 +1,31 @@
+# UDP Session Pool Socket Lifecycle and Concurrency
+
+**Test count:** 27
+
+- `test_e2e_udp_pool_checkout_has_timeout`
+- `test_e2e_udp_pool_concurrent_shutdown_and_checkout_does_not_deadlock`
+- `test_e2e_udp_pool_concurrent_shutdown_and_return_does_not_leak_descriptors`
+- `test_e2e_udp_pool_does_not_eagerly_open_more_sockets_than_required`
+- `test_e2e_udp_pool_failed_replacement_does_not_requeue_closed_socket`
+- `test_e2e_udp_pool_return_after_shutdown_closes_socket`
+- `test_e2e_udp_pool_return_never_masks_original_exception`
+- `test_e2e_udp_pool_shutdown_closes_idle_sockets`
+- `test_e2e_udp_pool_shutdown_closes_returned_borrowed_sockets`
+- `test_e2e_udp_pool_shutdown_does_not_miss_concurrently_returned_sockets`
+- `test_udp_pool_close_during_receive_is_safe`
+- `test_udp_pool_handles_delayed_duplicate_after_session_reuse`
+- `test_udp_pool_handles_more_concurrent_callers_than_capacity`
+- `test_udp_pool_handles_stale_datagram_after_session_reuse`
+- `test_udp_pool_reset_during_checkout_is_safe`
+- `test_udp_pool_shutdown_with_borrowed_sessions_completes_cleanly`
+- `test_udp_pool_waiting_checkout_is_cancelled_with_request`
+- `test_udp_session_pool_cannot_be_used_after_shutdown`
+- `test_udp_session_pool_discards_socket_after_terminal_io_error`
+- `test_udp_session_pool_never_hands_same_socket_to_two_threads_concurrently`
+- `test_udp_session_pool_repeated_timeout_storm_does_not_exhaust_pool`
+- `test_udp_session_pool_replaces_socket_discarded_after_terminal_io_error`
+- `test_udp_session_pool_returns_socket_after_parse_failure`
+- `test_udp_session_pool_returns_socket_after_request_timeout`
+- `test_udp_session_pool_shutdown_closes_every_socket_exactly_once`
+- `test_udp_session_pool_shutdown_wakes_waiting_borrowers`
+- `test_udp_session_pool_waiter_cancellation_does_not_leak_capacity`

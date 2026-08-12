@@ -1,0 +1,11 @@
+# Multi-Operation Trade Lifecycle Sequences, Conservation, and Equivalence
+
+**Test count:** 7
+
+- `test_issue_then_cancel_restores_original_item_state`
+- `test_issue_then_full_accept_preserves_global_items_and_isk`
+- `test_multiple_partial_accepts_and_cancel_race_conserves_items_and_isk`
+- `test_partial_accept_and_cancel_race_conserves_items_and_isk`
+- `test_random_concurrent_trade_sequence_preserves_per_trade_state_machine`
+- `test_random_domain_valid_issue_accept_cancel_sequence_preserves_total_isk`
+- `test_random_domain_valid_issue_accept_cancel_sequence_preserves_total_items`

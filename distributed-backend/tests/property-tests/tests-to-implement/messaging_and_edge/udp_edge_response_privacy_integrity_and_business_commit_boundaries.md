@@ -1,0 +1,9 @@
+# UDP Edge Response Privacy, Integrity, and Business Commit Boundaries
+
+**Test count:** 5
+
+- `test_udp_edge_never_reflects_untrusted_payload_bytes_in_error_response`
+- `test_udp_edge_returns_same_error_class_for_equally_invalid_authenticated_and_unauthenticated_payload_shapes`
+- `test_udp_error_response_remains_within_single_datagram_size_limit`
+- `test_udp_response_send_failure_does_not_roll_back_already_committed_business_transaction`
+- `test_udp_success_response_remains_within_single_datagram_size_limit`

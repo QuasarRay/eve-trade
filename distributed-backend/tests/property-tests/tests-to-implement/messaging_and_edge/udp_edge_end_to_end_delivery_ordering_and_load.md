@@ -1,0 +1,11 @@
+# UDP Edge End-to-End Delivery, Ordering, and Load
+
+**Test count:** 7
+
+- `test_authenticated_udp_accept_burst_meets_slo_and_preserves_state`
+- `test_authenticated_udp_cancel_burst_meets_slo_and_preserves_state`
+- `test_authenticated_udp_issue_burst_meets_slo_and_preserves_state`
+- `test_ipv4_udp_request_reaches_gateway_and_returns_single_response_datagram`
+- `test_ipv6_udp_request_reaches_gateway_and_returns_single_response_datagram_when_ipv6_is_enabled`
+- `test_reordered_udp_datagrams_with_distinct_interaction_ids_are_processed_as_independent_requests`
+- `test_udp_receive_buffer_saturation_does_not_create_false_success_response`

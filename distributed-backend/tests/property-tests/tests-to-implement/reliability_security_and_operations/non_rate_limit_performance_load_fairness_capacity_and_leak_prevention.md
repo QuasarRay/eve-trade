@@ -1,0 +1,17 @@
+# Non-Rate-Limit Performance, Load, Fairness, Capacity, and Leak Prevention
+
+**Test count:** 13
+
+- `test_backlog_recovery_does_not_create_retry_storm_above_configured_worker_concurrency`
+- `test_duplicate_delivery_storm_does_not_amplify_settlement_calls`
+- `test_large_outbox_backlog_for_one_trade_does_not_starve_events_for_unrelated_trades`
+- `test_mixed_issue_accept_cancel_burst_meets_slo_and_preserves_state`
+- `test_one_overloaded_gateway_replica_does_not_make_healthy_replica_return_false_success`
+- `test_p99_latency_for_unrelated_trade_stays_below_slo_during_hot_trade_contention`
+- `test_p99_latency_stays_below_configured_slo_at_documented_sustainable_request_rate`
+- `test_repeated_authentication_failures_do_not_leak_goroutines`
+- `test_repeated_downstream_timeouts_do_not_leak_goroutines`
+- `test_repeated_settlement_failures_do_not_leak_database_connections`
+- `test_repeated_udp_timeouts_do_not_leak_file_descriptors`
+- `test_slow_settlement_requests_do_not_consume_every_worker_slot_indefinitely`
+- `test_sustained_duplicate_delivery_load_does_not_amplify_settlement_execution`

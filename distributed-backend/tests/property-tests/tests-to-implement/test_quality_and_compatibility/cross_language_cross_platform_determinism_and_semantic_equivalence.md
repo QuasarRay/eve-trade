@@ -1,0 +1,19 @@
+# Cross-Language and Cross-Platform Determinism and Semantic Equivalence
+
+**Test count:** 15
+
+- `test_go_and_rust_accept_same_maximum_supported_isk_amount`
+- `test_go_and_rust_accept_same_maximum_supported_quantity`
+- `test_go_and_rust_accept_same_minimum_supported_isk_amount`
+- `test_go_and_rust_accept_same_minimum_supported_quantity`
+- `test_go_and_rust_compute_same_canonical_request_fingerprint_for_shared_fixture`
+- `test_go_and_rust_convert_same_protobuf_timestamp_to_same_postgres_microsecond_instant`
+- `test_go_and_rust_map_every_domain_failure_code_to_same_public_error_class`
+- `test_go_and_rust_map_every_settlement_intent_enum_to_same_semantic_intent`
+- `test_go_and_rust_map_every_settlement_operation_enum_to_same_semantic_operation`
+- `test_go_and_rust_parse_same_canonical_uuid_to_same_128_bit_value`
+- `test_go_and_rust_reject_same_isk_amount_above_shared_integer_maximum`
+- `test_go_and_rust_reject_same_nil_uuid_for_required_identifier`
+- `test_go_and_rust_reject_same_quantity_above_shared_integer_maximum`
+- `test_repeated_test_order_randomization_produces_same_pass_fail_outcome`
+- `test_rust_debug_and_release_builds_produce_same_domain_validation_outcome_for_boundary_inputs`

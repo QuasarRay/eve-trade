@@ -1,0 +1,16 @@
+# Cross-Service Health, Readiness, Liveness, Shutdown, and Generic Resource Cleanup
+
+**Test count:** 12
+
+- `test_health_endpoint_does_not_report_ready_when_postgres_is_unreachable`
+- `test_health_endpoint_does_not_report_ready_when_required_pubsub_is_unavailable`
+- `test_liveness_endpoint_stays_successful_during_recoverable_downstream_outage`
+- `test_readiness_does_not_flap_on_single_transient_dependency_probe_failure_when_debounce_is_configured`
+- `test_readiness_endpoint_fails_while_required_dependency_prevents_new_business_work`
+- `test_readiness_endpoint_returns_success_after_required_dependency_recovers`
+- `test_resource_pool_capacity_returns_to_baseline_after_failure_storm`
+- `test_service_shutdown_closes_listener_connections_and_database_pool_exactly_once`
+- `test_shutdown_deadline_expiry_leaves_unfinished_message_redeliverable`
+- `test_shutdown_marks_service_unready_before_stopping_request_acceptance`
+- `test_shutdown_waits_for_in_flight_transaction_to_commit_or_rollback_before_exit`
+- `test_termination_grace_period_exceeds_maximum_in_flight_settlement_shutdown_window`
