@@ -32,11 +32,21 @@ def _finding(
     repair: str,
     verification: list[str],
     status: str,
+    remaining_names: list[str] | None = None,
 ) -> dict[str, Any]:
+    affected = sorted(set(names))
+    remaining = (
+        sorted(set(remaining_names))
+        if remaining_names is not None
+        else ([] if status == "FIXED" else affected)
+    )
+    resolved = sorted(set(affected) - set(remaining))
     return {
         "id": finding_id,
         "severity": severity,
-        "affected_test_names": sorted(set(names)),
+        "affected_test_names": affected,
+        "remaining_test_names": remaining,
+        "resolved_test_names": resolved,
         "affected_source_files": files,
         "failure_mechanism": mechanism,
         "false_green_or_false_red_risk": risk,
@@ -58,17 +68,32 @@ def generate() -> dict[str, Any]:
     requirements = {record["name"]: record for record in requirements_doc["contracts"]}
     all_names = list(requirements)
     grouped: dict[str, dict[str, Any]] = defaultdict(
-        lambda: {"names": set(), "severities": [], "resolutions": set()}
+        lambda: {
+            "names": set(),
+            "unresolved_names": set(),
+            "severities": [],
+            "resolutions": set(),
+        }
     )
     for record in legacy["records"]:
         name = str(record.get("original_name") or record["name"])
         for item in record.get("findings", []):
             grouped[item["kind"]]["names"].add(name)
+            if requirements[name]["implementation_status"] not in {
+                "IMPLEMENTED",
+                "JUSTIFIED_NON_APPLICABLE",
+            }:
+                grouped[item["kind"]]["unresolved_names"].add(name)
             grouped[item["kind"]]["severities"].append(item["severity"])
             grouped[item["kind"]]["resolutions"].add(item.get("resolution", ""))
     for name, kinds in semantic.items():
         for kind in kinds:
             grouped[kind]["names"].add(name)
+            if requirements[name]["implementation_status"] not in {
+                "IMPLEMENTED",
+                "JUSTIFIED_NON_APPLICABLE",
+            }:
+                grouped[kind]["unresolved_names"].add(name)
             grouped[kind]["severities"].append("HIGH")
             grouped[kind]["resolutions"].add("previous protocol-v2 semantic override")
 
@@ -77,11 +102,24 @@ def generate() -> dict[str, Any]:
         data = grouped[kind]
         severity = max(data["severities"], key=lambda item: SEVERITY_RANK[item])
         names = sorted(data["names"])
+        unresolved_names = sorted(data["unresolved_names"])
         if kind == "hypothesis_strategy_precedence":
             status = "FIXED"
             repair = (
                 "Moved state-machine/fault category strategies ahead of broad token matching and added "
                 "a property proving invalid sequences always contain the required invalid operation."
+            )
+        elif not unresolved_names:
+            status = "FIXED"
+            repair = (
+                "Every affected contract is now bound to an explicit semantic family, parsed/raw "
+                "observation model, independent oracle, and hostile counterexample test."
+            )
+        elif len(unresolved_names) < len(names):
+            status = "PARTIAL"
+            repair = (
+                f"Implemented {len(names) - len(unresolved_names)} affected contracts with explicit "
+                f"semantic bindings; the remaining {len(unresolved_names)} stay fail-closed."
             )
         else:
             status = "MITIGATED_FAIL_CLOSED"
@@ -108,6 +146,7 @@ def generate() -> dict[str, Any]:
                     "test_every_unimplemented_contract_has_an_exhaustive_blocker_record",
                 ],
                 status,
+                unresolved_names,
             )
         )
 
@@ -254,6 +293,11 @@ def generate() -> dict[str, Any]:
             "Litmus strategies are generated from the canonical safe domain; the driver applies every value to Litmus/workload configuration and the validator checks exact applied parameters. Unsupported business contracts remain fail-closed.",
             ["test_litmus_mapping_is_exact_and_has_complete_execution_evidence_model", "hostile applied-parameter mutation control"],
             "PARTIAL",
+            [
+                name
+                for name in by_mechanism["LITMUS_CHAOS"]
+                if requirements[name]["implementation_status"] != "IMPLEMENTED"
+            ],
         ),
         _finding(
             "ISO-001",
@@ -307,6 +351,11 @@ def generate() -> dict[str, Any]:
             "for pod-delete/loss/latency infrastructure contracts. Remaining named business oracles are fail-closed.",
             ["pipeline structural verification", "implemented Litmus family stages when a Docker/Kind runtime is available"],
             "PARTIAL",
+            [
+                name
+                for name in by_mechanism["LITMUS_CHAOS"]
+                if requirements[name]["implementation_status"] != "IMPLEMENTED"
+            ],
         ),
         _finding(
             "LITMUS-002",

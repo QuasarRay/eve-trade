@@ -32,7 +32,10 @@ def main() -> int:
     for name in semantic:
         record = by_name[name]
         if record["mechanism"] not in {"LITMUS_CHAOS", "PLATFORM_EXTERNAL", "NON_APPLICABLE"}:
-            if record["implementation_status"] != "SEMANTIC_ORACLE_REQUIRED":
+            if record.get("semantic_binding"):
+                if record["implementation_status"] != "IMPLEMENTED":
+                    errors.append(f"semantic binding is not implemented: {name}")
+            elif record["implementation_status"] != "SEMANTIC_ORACLE_REQUIRED":
                 errors.append(f"old semantic override is no longer fail-closed: {name}")
 
     external_source = (ROOT / "eve_trade_hypothesis" / "external.py").read_text(encoding="utf-8")

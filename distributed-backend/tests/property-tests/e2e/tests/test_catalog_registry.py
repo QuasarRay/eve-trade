@@ -130,7 +130,10 @@ def test_unresolved_semantic_overrides_are_fail_closed_in_canonical_requirements
             "LITMUS_CHAOS",
             "NON_APPLICABLE",
         }:
-            assert requirement["implementation_status"] == "SEMANTIC_ORACLE_REQUIRED", name
+            if requirement.get("semantic_binding"):
+                assert requirement["implementation_status"] == "IMPLEMENTED", name
+            else:
+                assert requirement["implementation_status"] == "SEMANTIC_ORACLE_REQUIRED", name
 
     engine_source = (ROOT / "eve_trade_hypothesis" / "engine.py").read_text(encoding="utf-8")
     gate = engine_source.index('if requirement["implementation_status"] in {')

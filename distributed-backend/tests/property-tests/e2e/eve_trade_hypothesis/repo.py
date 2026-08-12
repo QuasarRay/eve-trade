@@ -213,14 +213,53 @@ class RepoInspector:
 
         rendered: list[tuple[Path, dict[str, Any]]] = []
         for directory in leaves:
-            result = self.run(
-                ["kubectl", "kustomize", str(directory)],
-                timeout=120,
-            ).assert_ok(f"render Kustomize target {directory.relative_to(self.root)}")
-            for document in yaml.safe_load_all(result.stdout):
-                if isinstance(document,dict):
-                    rendered.append((directories[directory],document))
+            rendered.extend(self.render_kustomization(directory))
         assert rendered,"Kustomize leaf roots rendered zero Kubernetes objects"
+        return rendered
+
+    def render_kustomization(
+        self, relative_or_absolute: str | Path
+    ) -> list[tuple[Path, dict[str, Any]]]:
+        """Render one exact Kustomize root and retain its source identity.
+
+        Security and exposure contracts must not mix objects from mutually
+        exclusive local and production overlays.  This scoped renderer lets a
+        semantic oracle explicitly request the production, local, Gateway API,
+        or Istio view it needs.
+        """
+        directory = Path(relative_or_absolute)
+        if not directory.is_absolute():
+            directory = self.root / directory
+        directory = directory.resolve()
+        try:
+            directory.relative_to(self.root)
+        except ValueError as exc:
+            raise AssertionError(
+                f"Kustomize target escapes repository root: {directory}"
+            ) from exc
+        manifest = next(
+            (
+                candidate
+                for candidate in (
+                    directory / "kustomization.yaml",
+                    directory / "kustomization.yml",
+                )
+                if candidate.is_file()
+            ),
+            None,
+        )
+        if manifest is None:
+            raise AssertionError(f"Kustomize target has no kustomization file: {directory}")
+        result = self.run(
+            ["kubectl", "kustomize", str(directory)],
+            timeout=120,
+        ).assert_ok(f"render Kustomize target {directory.relative_to(self.root)}")
+        rendered = [
+            (manifest, document)
+            for document in yaml.safe_load_all(result.stdout)
+            if isinstance(document, dict)
+        ]
+        assert rendered, f"Kustomize target rendered zero objects: {directory.relative_to(self.root)}"
         return rendered
 
     def terraform_roots(self) -> list[Path]:

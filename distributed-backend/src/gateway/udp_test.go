@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1025,6 +1026,59 @@ func FuzzAuthenticatedPayloadNeverAcceptsAnUnboundPrincipal(f *testing.F) {
 			}
 		}
 	})
+}
+
+func committedGatewayFuzzCorpus(t *testing.T) map[string][]byte {
+	t.Helper()
+	directory := filepath.Join("testdata", "fuzz", "FuzzAuthenticatedPayloadNeverAcceptsAnUnboundPrincipal")
+	entries, err := os.ReadDir(directory)
+	if err != nil {
+		t.Fatal(err)
+	}
+	corpus := make(map[string][]byte, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		encoded, err := os.ReadFile(filepath.Join(directory, entry.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines := strings.Split(strings.ReplaceAll(strings.TrimSpace(string(encoded)), "\r\n", "\n"), "\n")
+		if len(lines) != 2 || lines[0] != "go test fuzz v1" || !strings.HasPrefix(lines[1], `[]byte(`) || !strings.HasSuffix(lines[1], `)`) {
+			t.Fatalf("invalid single-byte-slice Go fuzz corpus file %s", entry.Name())
+		}
+		literal := strings.TrimSuffix(strings.TrimPrefix(lines[1], `[]byte(`), `)`)
+		decoded, err := strconv.Unquote(literal)
+		if err != nil {
+			t.Fatalf("decode fuzz corpus %s: %v", entry.Name(), err)
+		}
+		corpus[entry.Name()] = []byte(decoded)
+	}
+	if len(corpus) == 0 {
+		t.Fatal("committed gateway fuzz corpus is empty")
+	}
+	return corpus
+}
+
+func TestCommittedGatewayFuzzCorpusRejectsDeterministicallyAcrossOneHundredParses(t *testing.T) {
+	for name, packet := range committedGatewayFuzzCorpus(t) {
+		t.Run(name, func(t *testing.T) {
+			var first string
+			for attempt := 0; attempt < 100; attempt++ {
+				_, _, _, rejection := testUDPServer(&recordingMarketClient{}).authenticatedPayload(packet)
+				if rejection == nil {
+					t.Fatalf("committed regression seed was accepted on attempt %d", attempt+1)
+				}
+				observed := fmt.Sprintf("%s:%s", rejection.Code, rejection.ClientMessage)
+				if attempt == 0 {
+					first = observed
+				} else if observed != first {
+					t.Fatalf("rejection changed on attempt %d: got %q, want %q", attempt+1, observed, first)
+				}
+			}
+		})
+	}
 }
 
 func actorTestPayload(t *testing.T, interactionID string, action string, input map[string]any) []byte {

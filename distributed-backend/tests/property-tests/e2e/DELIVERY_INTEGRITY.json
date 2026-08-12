@@ -1,5 +1,5 @@
 {
-  "file_count_before_integrity_manifest": 151,
+  "file_count_before_integrity_manifest": 171,
   "files": [
     {
       "bytes": 662667,
@@ -52,6 +52,16 @@
       "sha256": "f15cdf087e80dcca73cb434ae7d614c0d1b00134e7bea09ddaed66ea336f2b3b"
     },
     {
+      "bytes": 2784,
+      "path": "eve_trade_hypothesis/contracts/catalog_contracts.py",
+      "sha256": "a7868e5421946c3d2dd998752c28b5216ee61e14bf7eba589027b0d764a72eec"
+    },
+    {
+      "bytes": 27045,
+      "path": "eve_trade_hypothesis/contracts/ci_contracts.py",
+      "sha256": "9da311d3570cb2360babaea044f8343c451c11d3b202331c2402f141b91d5bd8"
+    },
+    {
       "bytes": 29390,
       "path": "eve_trade_hypothesis/contracts/edge_contracts.py",
       "sha256": "cd6339b5e40219f66612bb9787c78aef20092a75b5570a2e434c5ec370806da0"
@@ -62,9 +72,49 @@
       "sha256": "c8a30306fdb237a0db510da125d02754e466e275eda2be68c8b35bd413f43ba0"
     },
     {
-      "bytes": 49429,
+      "bytes": 8736,
+      "path": "eve_trade_hypothesis/contracts/fuzz_corpus_contracts.py",
+      "sha256": "02ef60322da774332d9550c1fe4410154e30a1c9d63b1556f42548eeda127401"
+    },
+    {
+      "bytes": 30380,
+      "path": "eve_trade_hypothesis/contracts/kubernetes_contracts.py",
+      "sha256": "e4265ab46b7bf5ccd696a981380d4103c6637b21f377e4510e805498d6a7def6"
+    },
+    {
+      "bytes": 14306,
+      "path": "eve_trade_hypothesis/contracts/nsq_contracts.py",
+      "sha256": "6db06fe2a525ce550fd484a01869c8f927689da6d812fefe5eb09889ab82f487"
+    },
+    {
+      "bytes": 23140,
+      "path": "eve_trade_hypothesis/contracts/proto_contracts.py",
+      "sha256": "3e70989f63f276a518de88092c883c16eeab6b4511f31db13dbb7024f6e6bee7"
+    },
+    {
+      "bytes": 53071,
       "path": "eve_trade_hypothesis/contracts/repo_contracts.py",
-      "sha256": "eb18ea5b9d871067acc0a37b0831b18ca5a218a69ad76792250c16ee65456696"
+      "sha256": "c366041e8847419fc6f7bfb0a0b1c9249ed193770a0486e453ae8fe21ff460aa"
+    },
+    {
+      "bytes": 21542,
+      "path": "eve_trade_hypothesis/contracts/security_contracts.py",
+      "sha256": "c54cfc119316a86031c5e6f0cef699d1d8f28208c4df00fc25ae9e59c401f73e"
+    },
+    {
+      "bytes": 18415,
+      "path": "eve_trade_hypothesis/contracts/supply_chain_contracts.py",
+      "sha256": "3c3961eafdbcf3e6281a7d408072a8805a63b815b06c5fbc580ec61af6d4cba3"
+    },
+    {
+      "bytes": 35661,
+      "path": "eve_trade_hypothesis/contracts/terraform_contracts.py",
+      "sha256": "832e014257c308f17b58d67f612fd231fbcaff46c3a31e6de6a0aaa250f5973e"
+    },
+    {
+      "bytes": 11781,
+      "path": "eve_trade_hypothesis/contracts/traceability_contracts.py",
+      "sha256": "0fc84235f8934b02956201a1601d363343072664b5c799237d8e73c59df16691"
     },
     {
       "bytes": 64345,
@@ -617,9 +667,9 @@
       "sha256": "c3f1f4cd706fecd00d506c1f9148f04826a9f3e3a221917321a6137e6cd47be6"
     },
     {
-      "bytes": 12427,
+      "bytes": 13890,
       "path": "eve_trade_hypothesis/repo.py",
-      "sha256": "c8d6faca49421905ce345621b3971d8fa4743048715e3b60569d3f196411093f"
+      "sha256": "f1b3e7259637dda1a2d650ff83977d18b1fe8d20f1944988e02adf2b1d4c100c"
     },
     {
       "bytes": 2252,
@@ -657,14 +707,14 @@
       "sha256": "9bc3498713e2051d9de2986ece0aefdbc469f3bfc524f121f24c6cdaafc836b0"
     },
     {
-      "bytes": 1704678,
+      "bytes": 3202624,
       "path": "HYPOTHESIS_AUDIT.json",
-      "sha256": "9d514d5d75be9e3b9e479a6acdec8862e966c4826e085b6b8bd6d0fefd6ab76a"
+      "sha256": "d42c396ced134fd7c310974a4f8337caac9d87c17bf5153ec13ce1f42a7f127d"
     },
     {
-      "bytes": 18948,
+      "bytes": 18435,
       "path": "HYPOTHESIS_AUDIT.md",
-      "sha256": "d7b0b27488a62ce1de9f66b218aab00cf07cbb61def45069d93e1ee9aab01601"
+      "sha256": "78d08f0da7140ee08747fed823e3f964673bcdfca27c73b76bde954b4bcfb13f"
     },
     {
       "bytes": 842,
@@ -672,9 +722,9 @@
       "sha256": "3f9400379bbc37ca2f7ad84e656a4b11e686c65ff62b03d34c2d6a238115f685"
     },
     {
-      "bytes": 599,
+      "bytes": 623,
       "path": "pyproject.toml",
-      "sha256": "9d44b2a77c2565f2826ced801bb19caa11705bc3a5a311c80ca8473950c19c5c"
+      "sha256": "e324131e1c5738899b4eff3e83df6f8d208077e9ac18d7735731518715ca5301"
     },
     {
       "bytes": 685,
@@ -687,9 +737,9 @@
       "sha256": "95f8bf82d61237a33f19f7edfc0d8c9b782e7be0c7a1abf09b1f87a39c43dafa"
     },
     {
-      "bytes": 129,
+      "bytes": 148,
       "path": "requirements.txt",
-      "sha256": "c3e73703c031a701a861fd05fe56948ba5be567807c94aebb98e2c06bb470aa6"
+      "sha256": "a3c00e826604023ca97b687c469443bbb77df5ddafae1577e509bc5c42de5e81"
     },
     {
       "bytes": 2690,
@@ -702,9 +752,19 @@
       "sha256": "6d0236fab16686d9da5fa718c815378e90fda2c6df854b68451820c2f09917e5"
     },
     {
-      "bytes": 7920,
+      "bytes": 2284,
+      "path": "tests/test_catalog_identity_contracts.py",
+      "sha256": "444de46a772d676adfc5ab61c74767970dfdbce39af36c63cbf5e44d0af2bd90"
+    },
+    {
+      "bytes": 8077,
       "path": "tests/test_catalog_registry.py",
-      "sha256": "2167d16490cdb233b66ba592e2fbeba3102a60f55d6e35f1a7d8df8765d45596"
+      "sha256": "f9ffb80b08fbefb855cf5da74825a7f0fb90cc1260e912b9910d7567974a762e"
+    },
+    {
+      "bytes": 6060,
+      "path": "tests/test_ci_semantic_contracts.py",
+      "sha256": "1230e6b5e33c4f5790651a55795cc4e865ddd344d4f9737ba7256cfaf0ff46d2"
     },
     {
       "bytes": 17284,
@@ -712,14 +772,54 @@
       "sha256": "6960d5bbed9bcc3d7c9aca52ebf26caa65dea45be04e2363f6ff29baf43c8efd"
     },
     {
+      "bytes": 2225,
+      "path": "tests/test_fuzz_corpus_semantic_contracts.py",
+      "sha256": "610dc0d1f9a247e1914653702827dd6be4609de8fe88d9b5a28bd09dfb50a945"
+    },
+    {
       "bytes": 13159,
       "path": "tests/test_infrastructure_integrity.py",
       "sha256": "9781e507456ee893b4a4add5e82948ab6512e1510cc8b70b0104215fd28e2ec5"
     },
     {
+      "bytes": 13749,
+      "path": "tests/test_kubernetes_semantic_contracts.py",
+      "sha256": "d751be70b47440419b10412025bd4755f7dc6c5f993d35a1e67fa14b692278ed"
+    },
+    {
+      "bytes": 5935,
+      "path": "tests/test_nsq_semantic_contracts.py",
+      "sha256": "262bad56229bb6f1adac36a7f3c2ac35269b96724d0dd8daf9581eeee7542a10"
+    },
+    {
       "bytes": 1194,
       "path": "tests/test_pipeline_evidence.py",
       "sha256": "9b06c0f8fcc3858282cd50b256769eb50e755a5e95b9301b9698f9e5f0d27a43"
+    },
+    {
+      "bytes": 5103,
+      "path": "tests/test_proto_semantic_contracts.py",
+      "sha256": "131c4d3333047191d2d016106cd234ceb9cfe07868804453e6e566163cd67d60"
+    },
+    {
+      "bytes": 7368,
+      "path": "tests/test_security_semantic_contracts.py",
+      "sha256": "df64ec4c3deb9cfc0cebbde38af97e0d3fa19463a4fc78f971131bbb0c682784"
+    },
+    {
+      "bytes": 4298,
+      "path": "tests/test_supply_chain_semantic_contracts.py",
+      "sha256": "c69b85f1c3730c2aabde4e42d720fd6d6732c891e3a441626e9c340b9ad5edc2"
+    },
+    {
+      "bytes": 12567,
+      "path": "tests/test_terraform_semantic_contracts.py",
+      "sha256": "3249c2c36b2b954896d5eec847e8f5da355b2747f021069c10ab2a5b4b1ee7db"
+    },
+    {
+      "bytes": 4542,
+      "path": "tests/test_traceability_semantic_contracts.py",
+      "sha256": "dbdac1c999e1a65b347c9e0390b0d6965802ee6743c63e190604cd5dcb35db85"
     },
     {
       "bytes": 116641,
@@ -737,9 +837,9 @@
       "sha256": "07eb198ffc774fc3dd5ceb154055489756aa271ffd327e4f1184075165f01840"
     },
     {
-      "bytes": 64265,
+      "bytes": 66227,
       "path": "tools/generate_hypothesis_audit.py",
-      "sha256": "d2aa0394174f0261a1774a0620de2cc033d1c451ce0d3abc737be5ad7faa8637"
+      "sha256": "5e346ff6c0473dc4f27dda966fe6627181e597cc19fa8b80a956f2f4ea1f8d72"
     },
     {
       "bytes": 3591,
@@ -747,9 +847,9 @@
       "sha256": "8947005cd6fa8c491ec2012d93eb74318a7fd795b1d8c4f1c7d5e58985cb9b84"
     },
     {
-      "bytes": 2902,
+      "bytes": 3102,
       "path": "tools/verify_audit_resolutions.py",
-      "sha256": "3feb5367eaa937999253781a4919f3305a2103f6476c519aa9195c11dc1294bf"
+      "sha256": "79831fbffc1f1b8bba32d8347943a1299a35886dc5ca8f5514f30b854a0a5695"
     },
     {
       "bytes": 6564,

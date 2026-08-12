@@ -12,7 +12,7 @@ async def run(dag) -> None:
         ctr,
         [
             "apt-get update",
-            "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git ca-certificates",
+            "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git ca-certificates python3",
             "rm -rf /var/lib/apt/lists/*",
             "go install github.com/bufbuild/buf/cmd/buf@v1.70.0",
             "go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11",
@@ -24,6 +24,7 @@ async def run(dag) -> None:
         "buf build --error-format github-actions",
         "buf lint --error-format github-actions",
         "buf format --diff --exit-code",
+        "python3 scripts/verify_buf_breaking_canaries.py",
     ]
     if os.environ.get("GITHUB_EVENT_NAME") == "pull_request":
         commands.append("buf breaking --against '.git#branch=main'")

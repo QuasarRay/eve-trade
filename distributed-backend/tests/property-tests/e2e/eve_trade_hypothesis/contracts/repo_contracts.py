@@ -12,6 +12,46 @@ import pytest
 import yaml
 
 from eve_trade_hypothesis.catalog import load_catalog, proposed_names
+from eve_trade_hypothesis.contracts.ci_contracts import (
+    CI_CONTRACTS,
+    validate_ci_contract,
+)
+from eve_trade_hypothesis.contracts.kubernetes_contracts import (
+    KUBERNETES_CONTRACTS,
+    validate_kubernetes_contract,
+)
+from eve_trade_hypothesis.contracts.terraform_contracts import (
+    TERRAFORM_CONTRACTS,
+    validate_terraform_contract,
+)
+from eve_trade_hypothesis.contracts.security_contracts import (
+    SECURITY_CONTRACTS,
+    validate_security_contract,
+)
+from eve_trade_hypothesis.contracts.proto_contracts import (
+    PROTO_CONTRACTS,
+    validate_proto_contract,
+)
+from eve_trade_hypothesis.contracts.fuzz_corpus_contracts import (
+    FUZZ_CORPUS_CONTRACTS,
+    validate_fuzz_corpus_contract,
+)
+from eve_trade_hypothesis.contracts.nsq_contracts import (
+    NSQ_CONTRACTS,
+    validate_nsq_contract,
+)
+from eve_trade_hypothesis.contracts.catalog_contracts import (
+    CATALOG_CONTRACTS,
+    validate_catalog_contract,
+)
+from eve_trade_hypothesis.contracts.traceability_contracts import (
+    TRACEABILITY_CONTRACTS,
+    validate_traceability_contract,
+)
+from eve_trade_hypothesis.contracts.supply_chain_contracts import (
+    SUPPLY_CHAIN_CONTRACTS,
+    validate_supply_chain_contract,
+)
 
 
 K8S_PATTERNS = [
@@ -31,11 +71,49 @@ from eve_trade_hypothesis.semantic_overrides import SEMANTIC_EVIDENCE_OVERRIDES
 
 
 def run(runtime, category: int, name: str, case: dict[str, Any]) -> None:
-    assert name not in SEMANTIC_EVIDENCE_OVERRIDES, (
+    assert (
+        name not in SEMANTIC_EVIDENCE_OVERRIDES
+        or name in KUBERNETES_CONTRACTS
+        or name in CI_CONTRACTS
+        or name in TERRAFORM_CONTRACTS
+        or name in SECURITY_CONTRACTS
+        or name in PROTO_CONTRACTS
+        or name in FUZZ_CORPUS_CONTRACTS
+        or name in NSQ_CONTRACTS
+        or name in CATALOG_CONTRACTS
+        or name in TRACEABILITY_CONTRACTS
+        or name in SUPPLY_CHAIN_CONTRACTS
+    ), (
         f"{name} has an audited weak legacy branch and must be rerouted by engine.py"
     )
     repo = runtime.repo
     repo.require_repo()
+
+    # Exact cross-category semantic registries take precedence over legacy
+    # category routing. Several security/dependency contracts intentionally
+    # share the same executable audit plan even though the catalog groups them
+    # under different review headings.
+    if name in SECURITY_CONTRACTS:
+        validate_security_contract(name, repo.root)
+        return
+    if name in PROTO_CONTRACTS:
+        validate_proto_contract(name, repo.root)
+        return
+    if name in FUZZ_CORPUS_CONTRACTS:
+        validate_fuzz_corpus_contract(name, repo.root)
+        return
+    if name in NSQ_CONTRACTS:
+        validate_nsq_contract(name, repo.root)
+        return
+    if name in CATALOG_CONTRACTS:
+        validate_catalog_contract(name, repo.root)
+        return
+    if name in TRACEABILITY_CONTRACTS:
+        validate_traceability_contract(name, repo.root)
+        return
+    if name in SUPPLY_CHAIN_CONTRACTS:
+        validate_supply_chain_contract(name, repo.root)
+        return
 
     if category == 92:
         return _naming_quality(repo, name)
@@ -246,6 +324,12 @@ def _traceability(runtime, name: str) -> None:
 
 def _ci_contract(runtime, category: int, name: str, case: dict[str, Any]) -> None:
     repo = runtime.repo
+    if name in SECURITY_CONTRACTS:
+        validate_security_contract(name, repo.root)
+        return
+    if name in CI_CONTRACTS:
+        validate_ci_contract(name, repo.root)
+        return
     workflows = repo.workflow_yaml()
     assert workflows, "no GitHub Actions workflows"
     workflow_text = "\n".join(repo.read(p) for p in repo.workflow_files())
@@ -375,6 +459,9 @@ def _ci_contract(runtime, category: int, name: str, case: dict[str, Any]) -> Non
 
 def _terraform_contract(runtime, category: int, name: str, case: dict[str, Any]) -> None:
     repo = runtime.repo
+    if name in TERRAFORM_CONTRACTS:
+        validate_terraform_contract(name, repo.root)
+        return
     roots = repo.terraform_roots()
     if not roots:
         repo.unavailable("no Terraform roots found")
@@ -470,6 +557,21 @@ def _terraform_contract(runtime, category: int, name: str, case: dict[str, Any])
 
 def _kubernetes_contract(runtime, category: int, name: str, case: dict[str, Any]) -> None:
     repo = runtime.repo
+    if name in KUBERNETES_CONTRACTS:
+        roots = {
+            "production": "distributed-backend/orchestration/kubernetes/overlay/prod",
+            "local": "distributed-backend/orchestration/kubernetes/overlay/local",
+            "gateway": "distributed-backend/orchestration/kubernetes/platform/gateway/prod",
+            "istio": "distributed-backend/orchestration/kubernetes/platform/istio/prod",
+            "observability": "distributed-backend/orchestration/kubernetes/base/observability",
+        }
+        spec = KUBERNETES_CONTRACTS[name]
+        scopes = {
+            scope: repo.render_kustomization(roots[scope])
+            for scope in spec.scopes
+        }
+        validate_kubernetes_contract(name, scopes)
+        return
     docs = repo.rendered_kubernetes_documents()
     if not docs:
         repo.unavailable("no Kubernetes YAML found")

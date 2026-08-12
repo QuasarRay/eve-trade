@@ -119,6 +119,13 @@ func TestCanonicalWorkerLifecycleRegressions(t *testing.T) {
 		g.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("ack deadline")), "startup returned service=%v for a request timeout exceeding the ack deadline", service)
 	})
 
+	t.Run("test_worker_startup_rejects_max_in_flight_above_database_capacity_reserve", func(t *testing.T) {
+		g := testkit.Expect(t)
+		t.Setenv("TRADE_SETTLEMENT_DATABASE_MAX_CONNECTIONS", "9")
+		service, err := initService()
+		g.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("database capacity")), "startup returned service=%v for an unsafe worker concurrency budget", service)
+	})
+
 	t.Run("test_settlement_worker_readiness_fails_when_operation_store_is_unavailable", func(t *testing.T) {
 		g := testkit.Expect(t)
 		service := &Service{executor: &dependencyExecutor{operationErr: errors.New("operation store unavailable")}, results: &recordingResultPublisher{}}

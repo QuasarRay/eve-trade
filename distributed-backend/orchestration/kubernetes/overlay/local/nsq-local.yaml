@@ -10,6 +10,12 @@ spec:
           args:
             - --data-path=/data
             - --broadcast-address=nsqd.eve-trade.svc.cluster.local
+            - --mem-queue-size=0
+            - --sync-every=1
+            - --sync-timeout=1s
+            - --msg-timeout=60s
+            - --max-msg-timeout=15m
+            - --max-req-timeout=2m
           volumeMounts:
             - name: data
               mountPath: /data

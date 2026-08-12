@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "exceptions": [
+    {
+      "advisory_id": "RUSTSEC-2023-0071",
+      "dependency": "rsa",
+      "justification": "The vulnerable crate is retained only by SQLx's inactive MySQL lockfile branch; the production PostgreSQL build graph must not contain it.",
+      "expires_on": "2027-01-01",
+      "owner": "eve-trade-maintainers",
+      "status": "active",
+      "target": "x86_64-unknown-linux-gnu",
+      "features": "all",
+      "severities": [
+        "HIGH"
+      ]
+    }
+  ]
+}

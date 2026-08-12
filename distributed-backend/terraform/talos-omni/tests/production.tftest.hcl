@@ -36,3 +36,17 @@ run "production_plan" {
     error_message = "the Talos/Omni plan must deliver a distinct Market read-only database URL through the expected secret"
   }
 }
+
+run "reject_default_in_cluster_database_password" {
+  command = plan
+
+  variables {
+    environment_name             = "eve-trade-ci"
+    database_mode                = "in_cluster"
+    in_cluster_database_password = "postgres"
+  }
+
+  expect_failures = [
+    check.in_cluster_database_password,
+  ]
+}

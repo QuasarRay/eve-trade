@@ -15,15 +15,16 @@ from helpers import (
     wait_for_settlement,
     wait_for_simulator,
 )
+from production_gate import (
+    REQUIRED_PRODUCTION_SETTINGS,
+    production_gate_enabled as _production_gate_enabled,
+    production_session_failed,
+    validate_required_settings,
+)
 
 
 def production_gate_enabled():
-    return os.environ.get("EVE_TRADE_E2E_PRODUCTION_GATE", "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
+    return _production_gate_enabled(os.environ.get("EVE_TRADE_E2E_PRODUCTION_GATE"))
 
 
 def require_or_skip(condition, message):
@@ -38,13 +39,22 @@ def pytest_sessionfinish(session, exitstatus):
     production_gate = production_gate_enabled()
     if not production_gate and os.environ.get("EVE_TRADE_E2E_ALLOW_ALL_SKIPPED") == "true":
         return
-    if session.testscollected == 0 or exitstatus != pytest.ExitCode.OK:
+    if exitstatus != pytest.ExitCode.OK:
         return
     reporter = session.config.pluginmanager.get_plugin("terminalreporter")
     if reporter is None:
         return
     skipped = len(reporter.stats.get("skipped", []))
-    if skipped == session.testscollected or (production_gate and skipped > 0):
+    failed = (
+        production_session_failed(
+            tests_collected=session.testscollected,
+            skipped=skipped,
+            pytest_exit_ok=True,
+        )
+        if production_gate
+        else skipped == session.testscollected
+    )
+    if failed:
         session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 
@@ -54,28 +64,11 @@ def service_urls():
     simulator_url = os.environ.get("EVE_TRADE_SIMULATOR_URL")
     database_url = os.environ.get("EVE_TRADE_DATABASE_URL")
     if production_gate_enabled():
-        required = {
-            "EVE_TRADE_ENCORE_URL": encore_url,
-            "EVE_TRADE_SIMULATOR_URL": simulator_url,
-            "EVE_TRADE_DATABASE_URL": database_url,
-            "EVE_TRADE_MARKET_DATABASE_URL": os.environ.get("EVE_TRADE_MARKET_DATABASE_URL"),
-            "EVE_TRADE_SETTLEMENT_GRPC": os.environ.get("EVE_TRADE_SETTLEMENT_GRPC"),
-            "EVE_TRADE_NSQ_TCP": os.environ.get("EVE_TRADE_NSQ_TCP"),
-            "EVE_TRADE_NSQ_HTTP": os.environ.get("EVE_TRADE_NSQ_HTTP"),
-            "EVE_TRADE_RUNTIME_DATABASE_URL": os.environ.get("EVE_TRADE_RUNTIME_DATABASE_URL"),
-            "EVE_TRADE_QUILKIN_UDP_HOST": os.environ.get("EVE_TRADE_QUILKIN_UDP_HOST"),
-            "EVE_TRADE_EDGE_RESPONSE_SECRET": os.environ.get("EVE_TRADE_EDGE_RESPONSE_SECRET"),
-            "EVE_TRADE_EDGE_RESPONSE_KEY_ID": os.environ.get("EVE_TRADE_EDGE_RESPONSE_KEY_ID"),
-            "EVE_TRADE_EDGE_SELLER_KEY_ID": os.environ.get("EVE_TRADE_EDGE_SELLER_KEY_ID"),
-            "EVE_TRADE_EDGE_SELLER_SECRET": os.environ.get("EVE_TRADE_EDGE_SELLER_SECRET"),
-            "EVE_TRADE_EDGE_BUYER_KEY_ID": os.environ.get("EVE_TRADE_EDGE_BUYER_KEY_ID"),
-            "EVE_TRADE_EDGE_BUYER_SECRET": os.environ.get("EVE_TRADE_EDGE_BUYER_SECRET"),
-            "EVE_TRADE_EDGE_OTHER_KEY_ID": os.environ.get("EVE_TRADE_EDGE_OTHER_KEY_ID"),
-            "EVE_TRADE_EDGE_OTHER_SECRET": os.environ.get("EVE_TRADE_EDGE_OTHER_SECRET"),
-        }
-        missing = sorted(name for name, value in required.items() if not value)
-        if missing:
-            pytest.fail("production-gate E2E settings are missing: " + ", ".join(missing), pytrace=False)
+        required = {name: os.environ.get(name) for name in REQUIRED_PRODUCTION_SETTINGS}
+        try:
+            validate_required_settings(required)
+        except ValueError as exc:
+            pytest.fail(str(exc), pytrace=False)
     require_or_skip(
         encore_url and simulator_url and database_url,
         "set EVE_TRADE_ENCORE_URL, EVE_TRADE_SIMULATOR_URL, and EVE_TRADE_DATABASE_URL to run e2e tests",

@@ -177,15 +177,41 @@ class WorkflowAndInfrastructureRegressionContracts(unittest.TestCase):
     def test_nsq_connection_requires_authenticated_transport(self) -> None:
         config = json.loads((ROOT / "infra" / "encore" / "self-host.nsq.json").read_text(encoding="utf-8"))
         nsq = config["pubsub"][0]
-        self.assertTrue(nsq.get("authentication", {}).get("required"))
-        self.assertRegex(str(nsq.get("authentication", {}).get("credential_secret", "")), r"^[A-Z0-9_]+$")
+        self.assertEqual(nsq.get("hosts"), "127.0.0.1:4150")
+        self.assertFalse(nsq.get("authentication", {}).get("required"))
+        self.assertFalse(nsq.get("tls", {}).get("required"))
+        proxy = load_yaml_documents(
+            ROOT / "distributed-backend" / "orchestration" / "kubernetes" / "overlay" / "prod" / "nsq-client-proxy.yaml"
+        )[0]
+        envoy = yaml.safe_load(proxy["data"]["envoy.yaml"])
+        tls = envoy["static_resources"]["clusters"][0]["transport_socket"]["typed_config"]["common_tls_context"]
+        self.assertTrue(tls["tls_certificates"][0]["certificate_chain"]["filename"])
+        nsq_documents = load_yaml_documents(
+            ROOT / "distributed-backend" / "orchestration" / "kubernetes" / "base" / "nsq.yaml"
+        )
+        stateful_set = next(document for document in nsq_documents if document.get("kind") == "StatefulSet")
+        self.assertIn(
+            "--tls-client-auth-policy=require-verify",
+            stateful_set["spec"]["template"]["spec"]["containers"][0]["args"],
+        )
 
     def test_nsq_connection_requires_tls_outside_local_development(self) -> None:
-        config = json.loads((ROOT / "infra" / "encore" / "self-host.nsq.json").read_text(encoding="utf-8"))
-        nsq = config["pubsub"][0]
-        self.assertTrue(nsq.get("tls", {}).get("required"))
-        nsq_manifest = (ROOT / "distributed-backend" / "orchestration" / "kubernetes" / "base" / "nsq.yaml").read_text(encoding="utf-8")
-        self.assertIn("--tls-required=true", nsq_manifest)
+        proxy = load_yaml_documents(
+            ROOT / "distributed-backend" / "orchestration" / "kubernetes" / "overlay" / "prod" / "nsq-client-proxy.yaml"
+        )[0]
+        envoy = yaml.safe_load(proxy["data"]["envoy.yaml"])
+        cluster = envoy["static_resources"]["clusters"][0]
+        tls = cluster["transport_socket"]["typed_config"]["common_tls_context"]
+        self.assertEqual(tls["tls_params"]["tls_minimum_protocol_version"], "TLSv1_3")
+        self.assertTrue(tls["tls_certificates"][0]["certificate_chain"]["filename"])
+        self.assertTrue(tls["validation_context"]["trusted_ca"]["filename"])
+        nsq_documents = load_yaml_documents(
+            ROOT / "distributed-backend" / "orchestration" / "kubernetes" / "base" / "nsq.yaml"
+        )
+        stateful_set = next(document for document in nsq_documents if document.get("kind") == "StatefulSet")
+        args = stateful_set["spec"]["template"]["spec"]["containers"][0]["args"]
+        self.assertIn("--tls-required=true", args)
+        self.assertIn("--tls-client-auth-policy=require-verify", args)
 
     def _assert_nsq_policy_runtime_probe(self, role: str) -> None:
         policies = load_yaml_documents(

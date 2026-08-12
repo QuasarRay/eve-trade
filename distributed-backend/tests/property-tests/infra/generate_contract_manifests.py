@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
@@ -24,6 +25,47 @@ CATALOG_MD = PROPERTY_ROOT / "tests-to-implement.md"
 CATALOG_JSON = E2E_ROOT / "eve_trade_hypothesis" / "catalog.json"
 LEGACY_AUDIT = E2E_ROOT / "audit_resolution_manifest.json"
 SEMANTIC_OVERRIDE_MANIFEST = E2E_ROOT / "semantic_override_manifest.json"
+sys.path.insert(0, str(E2E_ROOT))
+
+from eve_trade_hypothesis.contracts.kubernetes_contracts import (  # noqa: E402
+    KUBERNETES_CONTRACTS,
+)
+from eve_trade_hypothesis.contracts.ci_contracts import (  # noqa: E402
+    CI_CONTRACTS,
+    binding_metadata as ci_binding_metadata,
+)
+from eve_trade_hypothesis.contracts.terraform_contracts import (  # noqa: E402
+    TERRAFORM_CONTRACTS,
+    binding_metadata as terraform_binding_metadata,
+)
+from eve_trade_hypothesis.contracts.security_contracts import (  # noqa: E402
+    SECURITY_CONTRACTS,
+    binding_metadata as security_binding_metadata,
+)
+from eve_trade_hypothesis.contracts.proto_contracts import (  # noqa: E402
+    PROTO_CONTRACTS,
+    binding_metadata as proto_binding_metadata,
+)
+from eve_trade_hypothesis.contracts.fuzz_corpus_contracts import (  # noqa: E402
+    FUZZ_CORPUS_CONTRACTS,
+    binding_metadata as fuzz_corpus_binding_metadata,
+)
+from eve_trade_hypothesis.contracts.nsq_contracts import (  # noqa: E402
+    NSQ_CONTRACTS,
+    binding_metadata as nsq_binding_metadata,
+)
+from eve_trade_hypothesis.contracts.catalog_contracts import (  # noqa: E402
+    CATALOG_CONTRACTS,
+    binding_metadata as catalog_binding_metadata,
+)
+from eve_trade_hypothesis.contracts.traceability_contracts import (  # noqa: E402
+    TRACEABILITY_CONTRACTS,
+    binding_metadata as traceability_binding_metadata,
+)
+from eve_trade_hypothesis.contracts.supply_chain_contracts import (  # noqa: E402
+    SUPPLY_CHAIN_CONTRACTS,
+    binding_metadata as supply_chain_binding_metadata,
+)
 
 MECHANISMS = {
     "DIRECT_LIVE",
@@ -209,6 +251,19 @@ def status_for(
         return "SEMANTIC_ORACLE_REQUIRED", [
             "Litmus injection/evidence transport is implemented, but this exact business workload/oracle still requires a contract probe"
         ]
+    if mechanism == "REPOSITORY_STATIC" and (
+        name in KUBERNETES_CONTRACTS
+        or name in CI_CONTRACTS
+        or name in TERRAFORM_CONTRACTS
+        or name in SECURITY_CONTRACTS
+        or name in PROTO_CONTRACTS
+        or name in FUZZ_CORPUS_CONTRACTS
+        or name in NSQ_CONTRACTS
+        or name in CATALOG_CONTRACTS
+        or name in TRACEABILITY_CONTRACTS
+        or name in SUPPLY_CHAIN_CONTRACTS
+    ):
+        return "IMPLEMENTED", []
     if mechanism == "REPOSITORY_STATIC" and category == 78:
         return "SEMANTIC_ORACLE_REQUIRED", [
             "requires a real parser fuzz harness and crash/acceptance oracle; the repository runner has no category-78 implementation"
@@ -588,7 +643,7 @@ def generate() -> tuple[dict[str, Any], dict[str, Any]]:
         if mechanism not in MECHANISMS:
             raise AssertionError(mechanism)
         status, blockers = status_for(name, mechanism, legacy, category)
-        contracts.append({
+        contract = {
             "name": name,
             "category": category,
             "category_title": title,
@@ -606,7 +661,46 @@ def generate() -> tuple[dict[str, Any], dict[str, Any]]:
                 "native E2E inventory" if mechanism == "NATIVE_EXISTING" else "tests-to-implement.md"
             ),
             "blockers": blockers,
-        })
+        }
+        if name in KUBERNETES_CONTRACTS:
+            binding = KUBERNETES_CONTRACTS[name]
+            contract["semantic_binding"] = {
+                "family": "rendered_kubernetes",
+                "oracle": binding.oracle,
+                "scopes": list(binding.scopes),
+                "capabilities": ["kubectl_kustomize", "structured_yaml"],
+            }
+        elif name in CI_CONTRACTS:
+            contract["semantic_binding"] = ci_binding_metadata(CI_CONTRACTS[name])
+        elif name in TERRAFORM_CONTRACTS:
+            contract["semantic_binding"] = terraform_binding_metadata(
+                TERRAFORM_CONTRACTS[name]
+            )
+        elif name in SECURITY_CONTRACTS:
+            contract["semantic_binding"] = security_binding_metadata(
+                SECURITY_CONTRACTS[name]
+            )
+        elif name in PROTO_CONTRACTS:
+            contract["semantic_binding"] = proto_binding_metadata(
+                PROTO_CONTRACTS[name]
+            )
+        elif name in FUZZ_CORPUS_CONTRACTS:
+            contract["semantic_binding"] = fuzz_corpus_binding_metadata(
+                FUZZ_CORPUS_CONTRACTS[name]
+            )
+        elif name in NSQ_CONTRACTS:
+            contract["semantic_binding"] = nsq_binding_metadata(NSQ_CONTRACTS[name])
+        elif name in CATALOG_CONTRACTS:
+            contract["semantic_binding"] = catalog_binding_metadata(CATALOG_CONTRACTS[name])
+        elif name in TRACEABILITY_CONTRACTS:
+            contract["semantic_binding"] = traceability_binding_metadata(
+                TRACEABILITY_CONTRACTS[name]
+            )
+        elif name in SUPPLY_CHAIN_CONTRACTS:
+            contract["semantic_binding"] = supply_chain_binding_metadata(
+                SUPPLY_CHAIN_CONTRACTS[name]
+            )
+        contracts.append(contract)
     counts = Counter(record["mechanism"] for record in contracts)
     status_counts = Counter(record["implementation_status"] for record in contracts)
     requirements = {

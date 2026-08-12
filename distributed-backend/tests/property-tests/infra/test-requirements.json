@@ -985,18 +985,28 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: wrong_object_type"
-      ],
+      "blockers": [],
       "category": 67,
       "category_title": "To Implement — Terraform Shared Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_all_outputs_derived_from_secret_values_are_marked_sensitive",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform Shared Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "secret_output_sensitivity",
+        "scopes": [
+          "eks",
+          "gke",
+          "talos"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -1095,18 +1105,28 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: some_provider_vs_every_provider"
-      ],
+      "blockers": [],
       "category": 67,
       "category_title": "To Implement — Terraform Shared Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_all_terraform_roots_pin_provider_versions_with_nonempty_constraints",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform Shared Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "provider_version_pins",
+        "scopes": [
+          "eks",
+          "gke",
+          "talos"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -1125,18 +1145,27 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 65,
       "category_title": "To Implement — Kubernetes Security Posture",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_application_service_account_token_automount_is_disabled_for_workloads_that_do_not_call_kubernetes_api",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Kubernetes Security Posture.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "service_account_token_automount",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -1155,18 +1184,23 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 99,
       "category_title": "To Implement — GitHub Actions Workflow Security",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_artifact_upload_rejects_missing_required_evidence_files",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — GitHub Actions Workflow Security.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "artifact_missing_policy"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -1387,63 +1421,99 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 75,
       "category_title": "To Implement — Protobuf, Buf, and Wire Evolution",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_buf_breaking_detects_changed_field_number",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Protobuf, Buf, and Wire Evolution.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "buf",
+          "structured_proto"
+        ],
+        "family": "protobuf_buf",
+        "oracle": "breaking_canary",
+        "parameters": {
+          "canary_case": "changed_field_number"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 75,
       "category_title": "To Implement — Protobuf, Buf, and Wire Evolution",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_buf_breaking_detects_incompatible_field_type_change",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Protobuf, Buf, and Wire Evolution.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "buf",
+          "structured_proto"
+        ],
+        "family": "protobuf_buf",
+        "oracle": "breaking_canary",
+        "parameters": {
+          "canary_case": "incompatible_field_type"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 75,
       "category_title": "To Implement — Protobuf, Buf, and Wire Evolution",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_buf_breaking_detects_removed_enum_value",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Protobuf, Buf, and Wire Evolution.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "buf",
+          "structured_proto"
+        ],
+        "family": "protobuf_buf",
+        "oracle": "breaking_canary",
+        "parameters": {
+          "canary_case": "removed_enum_value"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 75,
       "category_title": "To Implement — Protobuf, Buf, and Wire Evolution",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_buf_breaking_detects_removed_field_from_main_branch_contract",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Protobuf, Buf, and Wire Evolution.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "buf",
+          "structured_proto"
+        ],
+        "family": "protobuf_buf",
+        "oracle": "breaking_canary",
+        "parameters": {
+          "canary_case": "removed_field"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -1475,18 +1545,25 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 75,
       "category_title": "To Implement — Protobuf, Buf, and Wire Evolution",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_buf_generate_produces_no_diff_in_checked_in_generated_sources",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Protobuf, Buf, and Wire Evolution.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "buf_generate",
+          "git_diff",
+          "go_protobuf"
+        ],
+        "family": "protobuf_buf",
+        "oracle": "generated_go_equivalence"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -2209,18 +2286,24 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: command_presence_only"
-      ],
+      "blockers": [],
       "category": 100,
       "category_title": "To Implement — Security Scan Coverage and Allowlists",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_cargo_audit_scans_locked_dependencies_used_by_trade_settlement_build",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Security Scan Coverage and Allowlists.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "dagger_command_plan",
+          "cargo_lockfile"
+        ],
+        "family": "security_ci",
+        "oracle": "cargo_locked_audit"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -2387,48 +2470,66 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 98,
       "category_title": "To Implement — CI Evidence and Artifact Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_ci_evidence_artifact_cannot_be_reused_for_different_commit_sha",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI Evidence and Artifact Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "ci_runtime",
+          "signed_evidence"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "evidence_context_reuse"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 98,
       "category_title": "To Implement — CI Evidence and Artifact Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_ci_evidence_artifact_checksum_mismatch_causes_production_gate_failure",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI Evidence and Artifact Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "ci_runtime",
+          "signed_evidence"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "evidence_checksum_gate"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 98,
       "category_title": "To Implement — CI Evidence and Artifact Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_ci_evidence_artifact_contains_checked_out_commit_sha",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI Evidence and Artifact Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "ci_runtime",
+          "signed_evidence"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "evidence_contains_commit"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -2457,51 +2558,75 @@
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI Evidence and Artifact Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "producer_command_identity"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 98,
       "category_title": "To Implement — CI Evidence and Artifact Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_ci_evidence_finish_status_matches_actual_github_job_status",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI Evidence and Artifact Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "producer_finish_status"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: workflow_only_scope"
-      ],
+      "blockers": [],
       "category": 72,
       "category_title": "To Implement — Supply Chain and Artifact Provenance",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_ci_refuses_mutable_latest_tag_as_production_release_identity",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Supply Chain and Artifact Provenance.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "release_renderer",
+          "publisher_digest_graph"
+        ],
+        "family": "release_supply_chain",
+        "oracle": "mutable_tag_rejection"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 72,
       "category_title": "To Implement — Supply Chain and Artifact Provenance",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_ci_refuses_to_deploy_image_built_from_different_commit_than_checked_out_source",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Supply Chain and Artifact Provenance.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "release_context",
+          "structured_workflow"
+        ],
+        "family": "release_supply_chain",
+        "oracle": "commit_identity_gate"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -3117,18 +3242,25 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 72,
       "category_title": "To Implement — Supply Chain and Artifact Provenance",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_container_base_image_update_changes_locked_or_reviewable_provenance_input",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Supply Chain and Artifact Provenance.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "python_ast",
+          "dockerfile_parser",
+          "sha256"
+        ],
+        "family": "release_supply_chain",
+        "oracle": "base_image_lock_inventory"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -4118,18 +4250,24 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 74,
       "category_title": "To Implement — Dependency Lock and Module Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_dependency_audit_allowlist_entry_is_scoped_to_dependency_absent_from_runtime_build_graph",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Dependency Lock and Module Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "cargo_tree",
+          "active_exception"
+        ],
+        "family": "security_ci",
+        "oracle": "ignored_dependency_absence"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -4677,33 +4815,50 @@
       "source": "native E2E inventory"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 68,
       "category_title": "To Implement — Terraform EKS Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_eks_cluster_endpoint_public_access_matches_declared_security_policy",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform EKS Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "eks_endpoint_policy",
+        "scopes": [
+          "eks",
+          "eks_module"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 68,
       "category_title": "To Implement — Terraform EKS Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_eks_database_backup_retention_meets_configured_production_minimum",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform EKS Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "eks_backup_retention",
+        "scopes": [
+          "eks"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -4722,18 +4877,26 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 68,
       "category_title": "To Implement — Terraform EKS Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_eks_database_storage_encryption_is_enabled_when_database_is_managed_by_stack",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform EKS Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "eks_database_encryption",
+        "scopes": [
+          "eks"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -4782,48 +4945,73 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 68,
       "category_title": "To Implement — Terraform EKS Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_eks_iam_roles_grant_no_wildcard_actions_outside_explicit_allowlist",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform EKS Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "eks_iam_boundary",
+        "scopes": [
+          "eks_module"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 68,
       "category_title": "To Implement — Terraform EKS Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_eks_kubernetes_provider_uses_created_cluster_endpoint_and_ca_without_static_credentials",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform EKS Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "eks_dynamic_kubernetes_provider",
+        "scopes": [
+          "eks"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 68,
       "category_title": "To Implement — Terraform EKS Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_eks_nodes_span_configured_failure_zones_when_multiple_zones_are_supplied",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform EKS Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "eks_failure_zones",
+        "scopes": [
+          "eks_module",
+          "vpc_module"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -4842,48 +5030,80 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 68,
       "category_title": "To Implement — Terraform EKS Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_eks_secrets_are_not_rendered_into_nonsensitive_terraform_outputs",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform EKS Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "secret_output_sensitivity",
+        "scopes": [
+          "eks"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: line_based_hcl_proxy"
-      ],
+      "blockers": [],
       "category": 68,
       "category_title": "To Implement — Terraform EKS Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_eks_security_groups_do_not_expose_postgres_port_to_world",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform EKS Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "eks_no_world_ingress",
+        "parameters": {
+          "port": "5432"
+        },
+        "scopes": [
+          "eks",
+          "eks_module"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: line_based_hcl_proxy"
-      ],
+      "blockers": [],
       "category": 68,
       "category_title": "To Implement — Terraform EKS Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_eks_security_groups_do_not_expose_settlement_grpc_port_to_world",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform EKS Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "eks_no_world_ingress",
+        "parameters": {
+          "port": "9092"
+        },
+        "scopes": [
+          "eks",
+          "eks_module"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -4902,18 +5122,26 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 68,
       "category_title": "To Implement — Terraform EKS Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_eks_workload_identity_role_is_scoped_to_expected_service_account",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform EKS Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "eks_oidc_subject_scope",
+        "scopes": [
+          "eks_module"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -5145,18 +5373,24 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 93,
       "category_title": "To Implement — Fuzz Corpus and Regression Seed Persistence",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_every_committed_gateway_fuzz_seed_is_executed_before_random_fuzz_iterations",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Fuzz Corpus and Regression Seed Persistence.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "go_fuzz",
+          "dagger_command_plan"
+        ],
+        "family": "fuzz_corpus",
+        "oracle": "ci_seed_execution"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -5443,18 +5677,25 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 91,
       "category_title": "To Implement — Test Traceability and Exhaustiveness",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_every_kubernetes_production_overlay_has_render_and_security_test_reference",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Test Traceability and Exhaustiveness.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kustomization_inventory",
+          "dagger_ast",
+          "security_scan_plan"
+        ],
+        "family": "repository_traceability",
+        "oracle": "kubernetes_overlay_matrix"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -5533,48 +5774,65 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: global_duplicate_test_proxy"
-      ],
+      "blockers": [],
       "category": 91,
       "category_title": "To Implement — Test Traceability and Exhaustiveness",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_every_pubsub_handler_has_duplicate_delivery_test_reference",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Test Traceability and Exhaustiveness.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_go",
+          "exact_handler_inventory",
+          "native_test_body"
+        ],
+        "family": "repository_traceability",
+        "oracle": "pubsub_duplicate_matrix"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: failure_path_not_proven"
-      ],
+      "blockers": [],
       "category": 98,
       "category_title": "To Implement — CI Evidence and Artifact Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_every_required_verify_job_emits_ci_evidence_finish_record_even_after_failure",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI Evidence and Artifact Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "producer_finish_after_failure"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: scope_overbroad"
-      ],
+      "blockers": [],
       "category": 98,
       "category_title": "To Implement — CI Evidence and Artifact Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_every_required_verify_job_emits_ci_evidence_start_record",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI Evidence and Artifact Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "producer_start_records"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -5638,18 +5896,25 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 91,
       "category_title": "To Implement — Test Traceability and Exhaustiveness",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_every_terraform_root_has_terraform_test_fixture_reference",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Test Traceability and Exhaustiveness.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "filesystem_inventory",
+          "structured_hcl",
+          "workflow_matrix"
+        ],
+        "family": "repository_traceability",
+        "oracle": "terraform_root_matrix"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -5696,18 +5961,25 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: wrong_assertion"
-      ],
+      "blockers": [],
       "category": 92,
       "category_title": "To Implement — Test Catalog Naming Quality",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_existing_repository_test_names_are_never_silently_rewritten_in_observed_inventory",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Test Catalog Naming Quality.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "catalog_native_file_binding",
+          "python_ast",
+          "exact_cardinality"
+        ],
+        "family": "catalog_identity",
+        "oracle": "native_test_ast_identity"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -6506,33 +6778,45 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 93,
       "category_title": "To Implement — Fuzz Corpus and Regression Seed Persistence",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_fuzz_corpus_is_identical_between_local_and_ci_checkout",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Fuzz Corpus and Regression Seed Persistence.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "dagger_source_snapshot",
+          "corpus_metadata"
+        ],
+        "family": "fuzz_corpus",
+        "oracle": "corpus_snapshot_identity"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 93,
       "category_title": "To Implement — Fuzz Corpus and Regression Seed Persistence",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_fuzz_regression_seed_rejection_is_deterministic_across_one_hundred_runs",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Fuzz Corpus and Regression Seed Persistence.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "go_native_test",
+          "real_gateway_parser"
+        ],
+        "family": "fuzz_corpus",
+        "oracle": "hundred_run_rejection"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -6641,93 +6925,149 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 93,
       "category_title": "To Implement — Fuzz Corpus and Regression Seed Persistence",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gateway_fuzz_corpus_contains_seed_with_duplicate_json_security_field",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Fuzz Corpus and Regression Seed Persistence.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "go_fuzz_corpus",
+          "structured_seed_observation"
+        ],
+        "family": "fuzz_corpus",
+        "oracle": "duplicate_json_key",
+        "parameters": {
+          "seed": "regression-duplicate-security-key",
+          "target": "FuzzAuthenticatedPayloadNeverAcceptsAnUnboundPrincipal"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 93,
       "category_title": "To Implement — Fuzz Corpus and Regression Seed Persistence",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gateway_fuzz_corpus_contains_seed_with_integer_overflow_boundary",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Fuzz Corpus and Regression Seed Persistence.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "go_fuzz_corpus",
+          "structured_seed_observation"
+        ],
+        "family": "fuzz_corpus",
+        "oracle": "integer_overflow",
+        "parameters": {
+          "seed": "regression-integer-overflow",
+          "target": "FuzzAuthenticatedPayloadNeverAcceptsAnUnboundPrincipal"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 93,
       "category_title": "To Implement — Fuzz Corpus and Regression Seed Persistence",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gateway_fuzz_corpus_contains_seed_with_invalid_utf8",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Fuzz Corpus and Regression Seed Persistence.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "go_fuzz_corpus",
+          "structured_seed_observation"
+        ],
+        "family": "fuzz_corpus",
+        "oracle": "invalid_utf8",
+        "parameters": {
+          "seed": "regression-invalid-utf8",
+          "target": "FuzzAuthenticatedPayloadNeverAcceptsAnUnboundPrincipal"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 93,
       "category_title": "To Implement — Fuzz Corpus and Regression Seed Persistence",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gateway_fuzz_corpus_contains_seed_with_nested_json_at_depth_limit",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Fuzz Corpus and Regression Seed Persistence.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "go_fuzz_corpus",
+          "structured_seed_observation"
+        ],
+        "family": "fuzz_corpus",
+        "oracle": "nesting_depth",
+        "parameters": {
+          "seed": "regression-nesting-depth-65",
+          "target": "FuzzAuthenticatedPayloadNeverAcceptsAnUnboundPrincipal"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 93,
       "category_title": "To Implement — Fuzz Corpus and Regression Seed Persistence",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gateway_fuzz_corpus_contains_seed_with_trailing_non_whitespace_bytes",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Fuzz Corpus and Regression Seed Persistence.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "go_fuzz_corpus",
+          "structured_seed_observation"
+        ],
+        "family": "fuzz_corpus",
+        "oracle": "trailing_bytes",
+        "parameters": {
+          "seed": "regression-trailing-non-whitespace",
+          "target": "FuzzAuthenticatedPayloadNeverAcceptsAnUnboundPrincipal"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 93,
       "category_title": "To Implement — Fuzz Corpus and Regression Seed Persistence",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gateway_fuzz_corpus_seed_names_or_metadata_identify_regression_issue_when_derived_from_bug",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Fuzz Corpus and Regression Seed Persistence.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "corpus_metadata",
+          "source_traceability"
+        ],
+        "family": "fuzz_corpus",
+        "oracle": "regression_metadata"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -7074,18 +7414,25 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: generation_equivalence_not_tested"
-      ],
+      "blockers": [],
       "category": 75,
       "category_title": "To Implement — Protobuf, Buf, and Wire Evolution",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_generated_go_proto_sources_match_current_proto_descriptors",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Protobuf, Buf, and Wire Evolution.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "buf_generate",
+          "git_diff",
+          "go_protobuf"
+        ],
+        "family": "protobuf_buf",
+        "oracle": "generated_go_equivalence"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -7175,18 +7522,27 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 69,
       "category_title": "To Implement — Terraform GKE Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gke_cluster_control_plane_access_matches_declared_security_policy",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform GKE Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "gke_control_plane_policy",
+        "scopes": [
+          "gke",
+          "gke_module"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -7235,63 +7591,106 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: line_based_hcl_proxy"
-      ],
+      "blockers": [],
       "category": 69,
       "category_title": "To Implement — Terraform GKE Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gke_firewall_rules_do_not_expose_postgres_port_to_world",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform GKE Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "gke_no_world_ingress",
+        "parameters": {
+          "port": "5432"
+        },
+        "scopes": [
+          "gke",
+          "gke_module",
+          "gcp_network"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: line_based_hcl_proxy"
-      ],
+      "blockers": [],
       "category": 69,
       "category_title": "To Implement — Terraform GKE Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gke_firewall_rules_do_not_expose_settlement_grpc_port_to_world",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform GKE Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "gke_no_world_ingress",
+        "parameters": {
+          "port": "9092"
+        },
+        "scopes": [
+          "gke",
+          "gke_module",
+          "gcp_network"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 69,
       "category_title": "To Implement — Terraform GKE Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gke_kubernetes_provider_uses_created_cluster_endpoint_and_ca_without_static_credentials",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform GKE Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "gke_dynamic_kubernetes_provider",
+        "scopes": [
+          "gke"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 69,
       "category_title": "To Implement — Terraform GKE Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gke_nodes_span_configured_failure_zones_when_multiple_zones_are_supplied",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform GKE Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "gke_failure_zones",
+        "scopes": [
+          "gke",
+          "gke_module"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -7325,33 +7724,49 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 69,
       "category_title": "To Implement — Terraform GKE Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gke_secrets_are_not_rendered_into_nonsensitive_terraform_outputs",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform GKE Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "secret_output_sensitivity",
+        "scopes": [
+          "gke"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 69,
       "category_title": "To Implement — Terraform GKE Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_gke_service_account_roles_grant_no_project_wide_owner_or_editor_role",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform GKE Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "gke_service_account_roles",
+        "scopes": [
+          "gke_module"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -7645,18 +8060,24 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: command_presence_only"
-      ],
+      "blockers": [],
       "category": 100,
       "category_title": "To Implement — Security Scan Coverage and Allowlists",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_govulncheck_scans_every_go_package_in_module",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Security Scan Coverage and Allowlists.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "dagger_command_plan",
+          "go_module_scope"
+        ],
+        "family": "security_ci",
+        "oracle": "go_package_audit"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -8282,18 +8703,24 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: allowlist_semantics_not_tested"
-      ],
+      "blockers": [],
       "category": 100,
       "category_title": "To Implement — Security Scan Coverage and Allowlists",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_ignored_rust_advisory_dependency_is_absent_from_cargo_tree_for_runtime_target_and_all_enabled_features",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Security Scan Coverage and Allowlists.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "cargo_tree",
+          "active_exception"
+        ],
+        "family": "security_ci",
+        "oracle": "ignored_dependency_absence"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -9138,48 +9565,81 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: overlay_comparison_not_performed"
-      ],
+      "blockers": [],
       "category": 84,
       "category_title": "To Implement — Deployment Overlay Parity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_istio_and_gateway_api_production_overlays_preserve_same_readiness_and_liveness_probes",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment Overlay Parity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "platform_application_probe_parity",
+        "scopes": [
+          "production",
+          "gateway",
+          "istio"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: overlay_comparison_not_performed"
-      ],
+      "blockers": [],
       "category": 84,
       "category_title": "To Implement — Deployment Overlay Parity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_istio_and_gateway_api_production_overlays_preserve_same_resource_requests",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment Overlay Parity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "platform_application_resource_parity",
+        "scopes": [
+          "production",
+          "gateway",
+          "istio"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 84,
       "category_title": "To Implement — Deployment Overlay Parity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_istio_and_gateway_api_production_overlays_preserve_same_security_context",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment Overlay Parity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "platform_application_security_parity",
+        "scopes": [
+          "production",
+          "gateway",
+          "istio"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -9213,18 +9673,29 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 84,
       "category_title": "To Implement — Deployment Overlay Parity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_istio_and_gateway_api_production_overlays_use_same_hmac_secret_references",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment Overlay Parity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "platform_application_hmac_parity",
+        "scopes": [
+          "production",
+          "gateway",
+          "istio"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -9391,18 +9862,23 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 99,
       "category_title": "To Implement — GitHub Actions Workflow Security",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_job_requesting_write_permission_declares_only_minimum_required_permission_scope",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — GitHub Actions Workflow Security.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "minimum_write_permissions"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -9466,18 +9942,27 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 65,
       "category_title": "To Implement — Kubernetes Security Posture",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_kubernetes_secret_values_are_referenced_from_secret_objects_instead_of_committed_plaintext_literals",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Kubernetes Security Posture.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "secret_references",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -10236,33 +10721,46 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 77,
       "category_title": "To Implement — NSQ Configuration and Delivery Contract",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_message_requeue_delay_does_not_exceed_configured_maximum_retry_backoff",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_go",
+          "structured_yaml",
+          "retry_policy"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "maximum_requeue"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 77,
       "category_title": "To Implement — NSQ Configuration and Delivery Contract",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_message_requeue_delay_is_at_least_configured_minimum_retry_backoff",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_go",
+          "retry_policy"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "minimum_requeue"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -10356,18 +10854,24 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 98,
       "category_title": "To Implement — CI Evidence and Artifact Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_missing_ci_evidence_artifact_causes_production_gate_failure",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI Evidence and Artifact Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "ci_runtime",
+          "signed_evidence"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "missing_evidence_gate"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -10416,63 +10920,100 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: existence_only"
-      ],
+      "blockers": [],
       "category": 65,
       "category_title": "To Implement — Kubernetes Security Posture",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_network_policy_allows_only_required_gateway_market_worker_settlement_dependency_edges",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Kubernetes Security Posture.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "exact_application_network_graph",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: existence_only"
-      ],
+      "blockers": [],
       "category": 35,
       "category_title": "To Implement — Deployment/Configuration",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_network_policy_allows_worker_to_settlement_and_denies_unrelated_ingress",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment/Configuration.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "settlement_ingress",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: existence_only"
-      ],
+      "blockers": [],
       "category": 65,
       "category_title": "To Implement — Kubernetes Security Posture",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_network_policy_denies_unlisted_ingress_to_postgres",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Kubernetes Security Posture.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "postgres_ingress_boundary",
+        "scopes": [
+          "production",
+          "local"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: existence_only"
-      ],
+      "blockers": [],
       "category": 65,
       "category_title": "To Implement — Kubernetes Security Posture",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_network_policy_denies_unlisted_ingress_to_trade_settlement",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Kubernetes Security Posture.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "settlement_ingress",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -10491,18 +11032,24 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: allowlist_semantics_not_tested"
-      ],
+      "blockers": [],
       "category": 100,
       "category_title": "To Implement — Security Scan Coverage and Allowlists",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_new_critical_vulnerability_fails_ci_unless_exact_advisory_has_explicit_active_exception",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Security Scan Coverage and Allowlists.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "advisory_policy",
+          "dagger_command_plan"
+        ],
+        "family": "security_ci",
+        "oracle": "exact_active_exception"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -10564,18 +11111,27 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 65,
       "category_title": "To Implement — Kubernetes Security Posture",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_no_application_pod_uses_host_network_namespace_unless_quilkin_overlay_explicitly_requires_it",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Kubernetes Security Posture.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "host_network_boundary",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -10631,18 +11187,28 @@
       "source": "native E2E inventory"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: name_stronger_than_logic"
-      ],
+      "blockers": [],
       "category": 67,
       "category_title": "To Implement — Terraform Shared Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_no_terraform_output_exposes_database_password",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform Shared Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "no_database_password_output",
+        "scopes": [
+          "eks",
+          "gke",
+          "talos"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -10704,18 +11270,25 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 77,
       "category_title": "To Implement — NSQ Configuration and Delivery Contract",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_nsq_auth_or_tls_configuration_is_consistent_between_publishers_consumers_and_broker_when_enabled",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_json",
+          "structured_yaml",
+          "mtls_hop_model"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "transport_security"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -10734,63 +11307,100 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: configuration_rejection_not_exercised"
-      ],
+      "blockers": [],
       "category": 77,
       "category_title": "To Implement — NSQ Configuration and Delivery Contract",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_nsqd_configuration_rejects_ephemeral_channel_name_for_settlement_results",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_json",
+          "hostile_mutation"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "ephemeral_rejection",
+        "parameters": {
+          "topic_symbol": "ResultTopic"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: configuration_rejection_not_exercised"
-      ],
+      "blockers": [],
       "category": 77,
       "category_title": "To Implement — NSQ Configuration and Delivery Contract",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_nsqd_configuration_rejects_ephemeral_channel_name_for_settlement_work",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_json",
+          "hostile_mutation"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "ephemeral_rejection",
+        "parameters": {
+          "topic_symbol": "WorkTopic"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 77,
       "category_title": "To Implement — NSQ Configuration and Delivery Contract",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_nsqd_message_timeout_exceeds_normal_worker_processing_deadline",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_go",
+          "structured_yaml",
+          "timeout_relation"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "message_timeout",
+        "parameters": {
+          "topic_symbol": "WorkTopic"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 77,
       "category_title": "To Implement — NSQ Configuration and Delivery Contract",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_nsqd_restart_preserves_unacknowledged_correctness_critical_messages_under_configured_storage_mode",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "disk_only_queue",
+          "persistent_volume",
+          "real_nsqd_restart",
+          "raw_protocol_observation",
+          "dagger_execution"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "restart_delivery_canary"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -10809,18 +11419,28 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 84,
       "category_title": "To Implement — Deployment Overlay Parity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_observability_overlay_does_not_change_business_service_ports_or_message_channel_names",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment Overlay Parity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "observability_business_boundary",
+        "scopes": [
+          "production",
+          "observability"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -11658,18 +12278,24 @@
       "source": "native E2E inventory"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: coverage_not_enumerated"
-      ],
+      "blockers": [],
       "category": 100,
       "category_title": "To Implement — Security Scan Coverage and Allowlists",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_pip_audit_scans_every_committed_runtime_and_test_requirements_file",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Security Scan Coverage and Allowlists.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "git_inventory",
+          "dagger_command_plan"
+        ],
+        "family": "security_ci",
+        "oracle": "python_requirement_coverage"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -11913,18 +12539,28 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: vacuous_resource_lookup"
-      ],
+      "blockers": [],
       "category": 65,
       "category_title": "To Implement — Kubernetes Security Posture",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_postgres_service_is_not_exposed_through_public_load_balancer",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Kubernetes Security Posture.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "postgres_service_exposure",
+        "scopes": [
+          "production",
+          "local"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -12063,48 +12699,64 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: trigger_not_checked"
-      ],
+      "blockers": [],
       "category": 99,
       "category_title": "To Implement — GitHub Actions Workflow Security",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_production_deploy_job_cannot_run_from_pull_request_event",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — GitHub Actions Workflow Security.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "release_push_only"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 99,
       "category_title": "To Implement — GitHub Actions Workflow Security",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_production_deploy_job_requires_immutable_commit_sha_rather_than_branch_head_lookup",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — GitHub Actions Workflow Security.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "release_immutable_sha"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 98,
       "category_title": "To Implement — CI Evidence and Artifact Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_production_deployment_consumes_evidence_only_from_same_workflow_run_and_commit",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI Evidence and Artifact Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow",
+          "signed_evidence"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "same_run_release_gate"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -12209,63 +12861,92 @@
       "source": "native E2E inventory"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: generic_presence_branch, source_string_presence"
-      ],
+      "blockers": [],
       "category": 38,
       "category_title": "To Implement — CI/Test Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_production_gate_fails_if_all_crash_recovery_tests_are_skipped",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI/Test Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "pytest_runtime"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "production_skip_gate",
+        "parameters": {
+          "risk_group": "crash_recovery"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: generic_presence_branch, source_string_presence"
-      ],
+      "blockers": [],
       "category": 38,
       "category_title": "To Implement — CI/Test Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_production_gate_fails_if_all_load_tests_are_skipped",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI/Test Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "pytest_runtime"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "production_skip_gate",
+        "parameters": {
+          "risk_group": "load"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: generic_presence_branch, source_string_presence"
-      ],
+      "blockers": [],
       "category": 38,
       "category_title": "To Implement — CI/Test Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_production_gate_fails_if_all_security_tests_are_skipped",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI/Test Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "pytest_runtime"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "production_skip_gate",
+        "parameters": {
+          "risk_group": "security"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: generic_presence_branch, source_string_presence"
-      ],
+      "blockers": [],
       "category": 38,
       "category_title": "To Implement — CI/Test Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_production_gate_fails_if_pytest_collects_zero_tests",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI/Test Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "pytest_runtime"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "production_zero_collection"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -12299,18 +12980,23 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: generic_presence_branch"
-      ],
+      "blockers": [],
       "category": 38,
       "category_title": "To Implement — CI/Test Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_production_gate_fails_when_required_environment_variable_contains_placeholder_value",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI/Test Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "pytest_runtime"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "production_placeholder_gate"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -12329,18 +13015,26 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: generic_presence_branch"
-      ],
+      "blockers": [],
       "category": 38,
       "category_title": "To Implement — CI/Test Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_production_gate_fails_when_required_test_fixture_skips",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI/Test Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "pytest_runtime"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "production_skip_gate",
+        "parameters": {
+          "risk_group": "fixture"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -12561,63 +13255,95 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: global_validation_token_proxy"
-      ],
+      "blockers": [],
       "category": 75,
       "category_title": "To Implement — Protobuf, Buf, and Wire Evolution",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_protovalidate_rules_are_present_on_every_required_business_identifier",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Protobuf, Buf, and Wire Evolution.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "grpc_tools_protoc",
+          "protobuf_descriptor",
+          "protovalidate_extensions"
+        ],
+        "family": "protobuf_buf",
+        "oracle": "required_identifier_rules"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: global_validation_token_proxy"
-      ],
+      "blockers": [],
       "category": 75,
       "category_title": "To Implement — Protobuf, Buf, and Wire Evolution",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_protovalidate_rules_require_nonnegative_or_positive_isk_fields_according_to_domain_contract",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Protobuf, Buf, and Wire Evolution.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "grpc_tools_protoc",
+          "protobuf_descriptor",
+          "protovalidate_extensions"
+        ],
+        "family": "protobuf_buf",
+        "oracle": "isk_domain_rules"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: global_validation_token_proxy"
-      ],
+      "blockers": [],
       "category": 75,
       "category_title": "To Implement — Protobuf, Buf, and Wire Evolution",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_protovalidate_rules_require_positive_trade_quantity",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Protobuf, Buf, and Wire Evolution.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "grpc_tools_protoc",
+          "protobuf_descriptor",
+          "protovalidate_extensions"
+        ],
+        "family": "protobuf_buf",
+        "oracle": "positive_trade_quantity"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: lockfile_nonempty_proxy"
-      ],
+      "blockers": [],
       "category": 71,
       "category_title": "To Implement — Terraform State and Provider Lock Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_provider_lockfile_contains_checksum_for_every_selected_provider_version",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform State and Provider Lock Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl",
+          "provider_lockfile"
+        ],
+        "family": "structured_terraform",
+        "oracle": "selected_provider_checksums",
+        "scopes": [
+          "eks",
+          "gke",
+          "talos"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -12651,18 +13377,28 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 84,
       "category_title": "To Implement — Deployment Overlay Parity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_provider_specific_overlay_differences_are_limited_to_declared_platform_allowlist",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment Overlay Parity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "platform_resource_allowlist",
+        "scopes": [
+          "gateway",
+          "istio"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -13007,93 +13743,128 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 99,
       "category_title": "To Implement — GitHub Actions Workflow Security",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_pull_request_workflow_does_not_expose_production_secrets_to_untrusted_fork_code",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — GitHub Actions Workflow Security.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "pull_request_secret_boundary"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: coverage_not_enumerated"
-      ],
+      "blockers": [],
       "category": 74,
       "category_title": "To Implement — Dependency Lock and Module Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_python_dependency_audit_covers_e2e_requirements",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Dependency Lock and Module Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "git_inventory",
+          "dagger_command_plan"
+        ],
+        "family": "security_ci",
+        "oracle": "python_requirement_coverage"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: coverage_not_enumerated"
-      ],
+      "blockers": [],
       "category": 74,
       "category_title": "To Implement — Dependency Lock and Module Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_python_dependency_audit_covers_observability_runtime_and_test_requirements",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Dependency Lock and Module Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "git_inventory",
+          "dagger_command_plan"
+        ],
+        "family": "security_ci",
+        "oracle": "python_requirement_coverage"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: coverage_not_enumerated"
-      ],
+      "blockers": [],
       "category": 74,
       "category_title": "To Implement — Dependency Lock and Module Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_python_dependency_audit_covers_simulator_runtime_requirements",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Dependency Lock and Module Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "git_inventory",
+          "dagger_command_plan"
+        ],
+        "family": "security_ci",
+        "oracle": "python_requirement_coverage"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: coverage_not_enumerated"
-      ],
+      "blockers": [],
       "category": 74,
       "category_title": "To Implement — Dependency Lock and Module Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_python_dependency_audit_covers_simulator_test_requirements",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Dependency Lock and Module Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "git_inventory",
+          "dagger_command_plan"
+        ],
+        "family": "security_ci",
+        "oracle": "python_requirement_coverage"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: constraint_definition_wrong"
-      ],
+      "blockers": [],
       "category": 74,
       "category_title": "To Implement — Dependency Lock and Module Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_python_requirement_files_contain_no_unbounded_direct_dependency_versions_for_ci_critical_tools",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Dependency Lock and Module Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "git_inventory",
+          "pep508_constraints"
+        ],
+        "family": "security_ci",
+        "oracle": "bounded_python_requirements"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -13275,18 +14046,27 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 35,
       "category_title": "To Implement — Deployment/Configuration",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_quilkin_service_routes_udp_traffic_only_to_configured_gateway_backend_port",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment/Configuration.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "quilkin_udp_route",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -13946,33 +14726,45 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 38,
       "category_title": "To Implement — CI/Test Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_regression_canonical_test_catalog_contains_every_required_contract",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI/Test Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "source_ast",
+          "canonical_manifest"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "canonical_inventory"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 38,
       "category_title": "To Implement — CI/Test Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_regression_canonical_test_catalog_rejects_removed_contract_without_explicit_update",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI/Test Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "source_ast",
+          "canonical_manifest"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "canonical_removal_canary"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -13989,33 +14781,47 @@
       "source": "native E2E inventory"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 72,
       "category_title": "To Implement — Supply Chain and Artifact Provenance",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_release_container_digest_matches_digest_produced_by_ci_build_job",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Supply Chain and Artifact Provenance.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow",
+          "oci_raw_manifest",
+          "sha256"
+        ],
+        "family": "release_supply_chain",
+        "oracle": "publisher_digest_graph"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 72,
       "category_title": "To Implement — Supply Chain and Artifact Provenance",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_release_container_image_is_referenced_by_digest_in_production_manifest",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Supply Chain and Artifact Provenance.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow",
+          "release_renderer",
+          "structured_yaml"
+        ],
+        "family": "release_supply_chain",
+        "oracle": "rendered_release_digest"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -14139,93 +14945,147 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: vacuous_container_name_filter"
-      ],
+      "blockers": [],
       "category": 35,
       "category_title": "To Implement — Deployment/Configuration",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_rendered_kubernetes_configures_readiness_probe_for_encore_backend",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment/Configuration.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "encore_readiness",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: vacuous_container_name_filter"
-      ],
+      "blockers": [],
       "category": 35,
       "category_title": "To Implement — Deployment/Configuration",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_rendered_kubernetes_configures_readiness_probe_for_trade_settlement",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment/Configuration.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "settlement_readiness",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: half_assertion"
-      ],
+      "blockers": [],
       "category": 35,
       "category_title": "To Implement — Deployment/Configuration",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_rendered_kubernetes_configures_resource_requests_and_limits",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment/Configuration.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "resource_requirements",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 35,
       "category_title": "To Implement — Deployment/Configuration",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_rendered_kubernetes_contains_required_gateway_udp_port",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment/Configuration.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "gateway_udp_ports",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 35,
       "category_title": "To Implement — Deployment/Configuration",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_rendered_kubernetes_contains_required_settlement_grpc_port",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment/Configuration.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "settlement_grpc_ports",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: unrendered_manifest_scope"
-      ],
+      "blockers": [],
       "category": 35,
       "category_title": "To Implement — Deployment/Configuration",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_rendered_kubernetes_does_not_embed_plaintext_secrets",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment/Configuration.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "secret_references",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -14272,33 +15132,53 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 65,
       "category_title": "To Implement — Kubernetes Security Posture",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_rendered_pod_security_context_is_preserved_in_gateway_api_production_overlay",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Kubernetes Security Posture.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "platform_overlay_security",
+        "scopes": [
+          "production",
+          "gateway"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 65,
       "category_title": "To Implement — Kubernetes Security Posture",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_rendered_pod_security_context_is_preserved_in_istio_production_overlay",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Kubernetes Security Posture.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "platform_overlay_security",
+        "scopes": [
+          "production",
+          "istio"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -16080,18 +16960,24 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 93,
       "category_title": "To Implement — Fuzz Corpus and Regression Seed Persistence",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_rust_parser_or_proto_fuzz_regression_seed_suite_runs_in_ci_when_rust_fuzz_targets_exist",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Fuzz Corpus and Regression Seed Persistence.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "cargo_fuzz_inventory",
+          "dagger_command_plan"
+        ],
+        "family": "fuzz_corpus",
+        "oracle": "rust_fuzz_ci_conditional"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -16415,18 +17301,24 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 100,
       "category_title": "To Implement — Security Scan Coverage and Allowlists",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_secret_scan_regression_fixture_proves_known_fake_secret_pattern_is_detected",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Security Scan Coverage and Allowlists.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "trivy_json",
+          "dagger_execution"
+        ],
+        "family": "security_ci",
+        "oracle": "trivy_secret_canary"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -16445,48 +17337,66 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: allowlist_semantics_not_tested"
-      ],
+      "blockers": [],
       "category": 100,
       "category_title": "To Implement — Security Scan Coverage and Allowlists",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_security_advisory_allowlist_entry_includes_advisory_id_dependency_justification_and_expiration_owner_metadata",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Security Scan Coverage and Allowlists.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_json",
+          "advisory_policy"
+        ],
+        "family": "security_ci",
+        "oracle": "allowlist_metadata"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: allowlist_semantics_not_tested"
-      ],
+      "blockers": [],
       "category": 100,
       "category_title": "To Implement — Security Scan Coverage and Allowlists",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_security_advisory_allowlist_fails_after_declared_expiration_date",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Security Scan Coverage and Allowlists.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_json",
+          "time_boundary"
+        ],
+        "family": "security_ci",
+        "oracle": "allowlist_expiration"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: allowlist_semantics_not_tested"
-      ],
+      "blockers": [],
       "category": 100,
       "category_title": "To Implement — Security Scan Coverage and Allowlists",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_security_advisory_allowlist_rejects_wildcard_advisory_suppression",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Security Scan Coverage and Allowlists.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_json",
+          "hostile_mutation"
+        ],
+        "family": "security_ci",
+        "oracle": "allowlist_no_wildcards"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -16505,18 +17415,23 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 99,
       "category_title": "To Implement — GitHub Actions Workflow Security",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_security_scan_job_runs_even_when_earlier_nondependent_verification_job_fails",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — GitHub Actions Workflow Security.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "security_independent_root"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -17412,6 +18327,18 @@
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_go",
+          "structured_json",
+          "structured_yaml"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "durable_channel",
+        "parameters": {
+          "topic_symbol": "ResultTopic"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -17445,18 +18372,28 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: token_presence_not_equality"
-      ],
+      "blockers": [],
       "category": 77,
       "category_title": "To Implement — NSQ Configuration and Delivery Contract",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_settlement_result_topic_name_matches_worker_publisher_and_market_subscriber_configuration",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_go",
+          "structured_json",
+          "structured_yaml"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "topic_binding",
+        "parameters": {
+          "topic_symbol": "ResultTopic"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -17520,18 +18457,27 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: vacuous_resource_lookup"
-      ],
+      "blockers": [],
       "category": 35,
       "category_title": "To Implement — Deployment/Configuration",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_settlement_service_is_not_publicly_exposed_unless_explicitly_intended",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Deployment/Configuration.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "settlement_service_exposure",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -17908,18 +18854,28 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: token_presence_not_equality"
-      ],
+      "blockers": [],
       "category": 77,
       "category_title": "To Implement — NSQ Configuration and Delivery Contract",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_settlement_work_topic_name_matches_market_publisher_and_worker_subscriber_configuration",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_go",
+          "structured_json",
+          "structured_yaml"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "topic_binding",
+        "parameters": {
+          "topic_symbol": "WorkTopic"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -17948,21 +18904,38 @@
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_go",
+          "structured_json",
+          "structured_yaml"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "durable_channel",
+        "parameters": {
+          "topic_symbol": "WorkTopic"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 99,
       "category_title": "To Implement — GitHub Actions Workflow Security",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_shell_steps_handling_untrusted_github_context_do_not_interpolate_it_directly_into_executable_shell",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — GitHub Actions Workflow Security.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "untrusted_context_shell_boundary"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -18468,93 +19441,141 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 70,
       "category_title": "To Implement — Terraform Talos Omni Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_talos_omni_database_password_is_marked_sensitive_in_variables_and_outputs",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform Talos Omni Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "talos_database_sensitivity",
+        "scopes": [
+          "talos"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 70,
       "category_title": "To Implement — Terraform Talos Omni Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_talos_omni_destroy_preserves_external_database_when_external_database_mode_is_selected",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform Talos Omni Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "talos_external_database_unmanaged",
+        "scopes": [
+          "talos"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 70,
       "category_title": "To Implement — Terraform Talos Omni Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_talos_omni_external_database_mode_does_not_create_in_cluster_postgres_statefulset",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform Talos Omni Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "talos_external_mode_no_postgres",
+        "scopes": [
+          "talos"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 70,
       "category_title": "To Implement — Terraform Talos Omni Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_talos_omni_external_database_mode_requires_nonempty_external_database_url",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform Talos Omni Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "talos_external_url_check",
+        "scopes": [
+          "talos"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 70,
       "category_title": "To Implement — Terraform Talos Omni Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_talos_omni_in_cluster_database_mode_creates_persistent_volume_claim_for_postgres",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform Talos Omni Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "talos_postgres_pvc",
+        "scopes": [
+          "talos"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 70,
       "category_title": "To Implement — Terraform Talos Omni Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_talos_omni_in_cluster_database_mode_does_not_expose_postgres_outside_cluster",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform Talos Omni Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "talos_postgres_cluster_ip",
+        "scopes": [
+          "talos"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -18573,18 +19594,26 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: keyword_presence_proxy"
-      ],
+      "blockers": [],
       "category": 70,
       "category_title": "To Implement — Terraform Talos Omni Invariants",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_talos_omni_in_cluster_database_mode_requires_nondefault_database_password",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform Talos Omni Invariants.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_hcl"
+        ],
+        "family": "structured_terraform",
+        "oracle": "talos_nondefault_password",
+        "scopes": [
+          "talos"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -18648,33 +19677,57 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: lockfile_nonempty_proxy"
-      ],
+      "blockers": [],
       "category": 71,
       "category_title": "To Implement — Terraform State and Provider Lock Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_terraform_ci_fails_when_provider_lockfile_changes_after_read_only_init",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform State and Provider Lock Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "python_ast",
+          "provider_lockfile"
+        ],
+        "family": "structured_terraform",
+        "oracle": "terraform_lock_ci_gate",
+        "parameters": {
+          "failure_point": "readonly_init"
+        },
+        "scopes": [
+          "ci"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: lockfile_nonempty_proxy"
-      ],
+      "blockers": [],
       "category": 71,
       "category_title": "To Implement — Terraform State and Provider Lock Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_terraform_ci_fails_when_providers_lock_changes_committed_checksums",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Terraform State and Provider Lock Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "python_ast",
+          "provider_lockfile"
+        ],
+        "family": "structured_terraform",
+        "oracle": "terraform_lock_ci_gate",
+        "parameters": {
+          "failure_point": "providers_lock_diff"
+        },
+        "scopes": [
+          "ci"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -18714,6 +19767,15 @@
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Test Traceability and Exhaustiveness.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "pytest_collect_only",
+          "canonical_contract_ids",
+          "exact_cardinality"
+        ],
+        "family": "repository_traceability",
+        "oracle": "physical_pytest_collection"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -19175,18 +20237,27 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: vacuous_resource_lookup"
-      ],
+      "blockers": [],
       "category": 65,
       "category_title": "To Implement — Kubernetes Security Posture",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_trade_settlement_service_is_cluster_internal",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Kubernetes Security Posture.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "structured_yaml"
+        ],
+        "family": "rendered_kubernetes",
+        "oracle": "settlement_service_exposure",
+        "scopes": [
+          "production"
+        ]
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -19426,48 +20497,67 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: scope_not_checked"
-      ],
+      "blockers": [],
       "category": 100,
       "category_title": "To Implement — Security Scan Coverage and Allowlists",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_trivy_configuration_scan_includes_rendered_kubernetes_and_terraform_sources",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Security Scan Coverage and Allowlists.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "kubectl_kustomize",
+          "terraform_source",
+          "dagger_command_plan"
+        ],
+        "family": "security_ci",
+        "oracle": "trivy_rendered_configuration_scope"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: scope_not_checked"
-      ],
+      "blockers": [],
       "category": 100,
       "category_title": "To Implement — Security Scan Coverage and Allowlists",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_trivy_secret_scan_includes_terraform_kubernetes_workflow_and_source_directories",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — Security Scan Coverage and Allowlists.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "repository_snapshot",
+          "dagger_command_plan"
+        ],
+        "family": "security_ci",
+        "oracle": "trivy_secret_repository_scope"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 98,
       "category_title": "To Implement — CI Evidence and Artifact Integrity",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_truncated_ci_evidence_artifact_causes_production_gate_failure",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — CI Evidence and Artifact Integrity.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "ci_runtime",
+          "signed_evidence"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "truncated_evidence_gate"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -21293,18 +22383,28 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 77,
       "category_title": "To Implement — NSQ Configuration and Delivery Contract",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_worker_extends_or_finishes_message_before_nsqd_timeout_for_long_running_settlement",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_go",
+          "grpc_deadline",
+          "timeout_relation"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "bounded_processing",
+        "parameters": {
+          "topic_symbol": "WorkTopic"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -21398,18 +22498,28 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 77,
       "category_title": "To Implement — NSQ Configuration and Delivery Contract",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_worker_max_in_flight_does_not_exceed_processing_capacity_that_preserves_database_lock_slo",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — NSQ Configuration and Delivery Contract.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_go",
+          "structured_toml",
+          "startup_guard"
+        ],
+        "family": "nsq_delivery",
+        "oracle": "worker_capacity",
+        "parameters": {
+          "topic_symbol": "WorkTopic"
+        }
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -21683,33 +22793,43 @@
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "legacy audit found unresolved semantic implementation defects: missing_contract_logic"
-      ],
+      "blockers": [],
       "category": 99,
       "category_title": "To Implement — GitHub Actions Workflow Security",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_workflow_concurrency_prevents_two_production_deployments_from_racing_same_environment_when_policy_requires_serialization",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — GitHub Actions Workflow Security.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "release_concurrency"
+      },
       "source": "tests-to-implement.md"
     },
     {
-      "blockers": [
-        "source audit found unresolved semantic implementation defects: job_override_not_checked"
-      ],
+      "blockers": [],
       "category": 99,
       "category_title": "To Implement — GitHub Actions Workflow Security",
-      "implementation_status": "SEMANTIC_ORACLE_REQUIRED",
+      "implementation_status": "IMPLEMENTED",
       "mechanism": "REPOSITORY_STATIC",
       "name": "test_workflow_permissions_default_to_read_only_unless_individual_job_requires_write",
       "observable": "deterministic command/configuration/schema output evaluated by the local Python oracle",
       "prerequisite": "the checked-out source/configuration plus any pinned local compiler or validation tool",
       "rationale": "Primary execution route derived from production topology and To Implement — GitHub Actions Workflow Security.",
       "runner": "repo",
+      "semantic_binding": {
+        "capabilities": [
+          "structured_workflow"
+        ],
+        "family": "ci_and_production_gate",
+        "oracle": "workflow_read_only_permissions"
+      },
       "source": "tests-to-implement.md"
     },
     {
@@ -21753,9 +22873,9 @@
   },
   "implementation_status_counts": {
     "EXTERNAL_CAPABILITY_REQUIRED": 26,
-    "IMPLEMENTED": 258,
+    "IMPLEMENTED": 395,
     "JUSTIFIED_NON_APPLICABLE": 2,
-    "SEMANTIC_ORACLE_REQUIRED": 1198
+    "SEMANTIC_ORACLE_REQUIRED": 1061
   },
   "schema_version": "eve-trade.test-requirements/v1"
 }

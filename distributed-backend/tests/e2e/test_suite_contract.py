@@ -5,6 +5,7 @@ import os
 import pytest
 
 import conftest
+from production_gate import REQUIRED_PRODUCTION_SETTINGS
 from helpers import Trade, World, accept_payload, cancel_payload, issue_payload, pubsub_pending_messages
 
 
@@ -144,6 +145,16 @@ def test_production_gate_fails_each_missing_dependency_or_credential(missing_nam
     monkeypatch.setenv("EVE_TRADE_E2E_PRODUCTION_GATE", "1")
     monkeypatch.delenv(missing_name, raising=False)
     with pytest.raises(pytest.fail.Exception, match=missing_name):
+        conftest.service_urls.__wrapped__()
+
+
+@pytest.mark.parametrize("placeholder", ["changeme", "${PRODUCTION_SECRET}", "example.invalid"])
+def test_production_gate_rejects_placeholder_settings(placeholder, monkeypatch):
+    monkeypatch.setenv("EVE_TRADE_E2E_PRODUCTION_GATE", "1")
+    for name in REQUIRED_PRODUCTION_SETTINGS:
+        monkeypatch.setenv(name, "configured-value")
+    monkeypatch.setenv("EVE_TRADE_EDGE_RESPONSE_SECRET", placeholder)
+    with pytest.raises(pytest.fail.Exception, match="placeholder.*EVE_TRADE_EDGE_RESPONSE_SECRET"):
         conftest.service_urls.__wrapped__()
 
 

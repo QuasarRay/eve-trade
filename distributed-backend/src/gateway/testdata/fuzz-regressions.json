@@ -1,0 +1,30 @@
+{
+  "schema_version": "eve-trade.gateway-fuzz-regressions/v1",
+  "target": "FuzzAuthenticatedPayloadNeverAcceptsAnUnboundPrincipal",
+  "seeds": {
+    "7294cf71745d21fe": {
+      "regression_source": "changes/v8/flaws.md",
+      "property": "malformed authenticated envelope never binds an untrusted principal"
+    },
+    "regression-duplicate-security-key": {
+      "regression_source": "distributed-backend/src/gateway/regression_parser_config_test.go",
+      "property": "duplicate security-sensitive JSON keys are rejected"
+    },
+    "regression-integer-overflow": {
+      "regression_source": "distributed-backend/src/gateway/regression_parser_config_test.go",
+      "property": "integer values outside the destination range are rejected"
+    },
+    "regression-invalid-utf8": {
+      "regression_source": "distributed-backend/src/gateway/strict_json.go",
+      "property": "malformed UTF-8 is rejected"
+    },
+    "regression-nesting-depth-65": {
+      "regression_source": "distributed-backend/src/gateway/regression_parser_config_test.go",
+      "property": "JSON nesting beyond the configured depth is rejected"
+    },
+    "regression-trailing-non-whitespace": {
+      "regression_source": "distributed-backend/src/gateway/regression_parser_config_test.go",
+      "property": "trailing non-whitespace bytes are rejected"
+    }
+  }
+}

@@ -4,14 +4,10 @@
       "type": "nsq",
       "hosts": "127.0.0.1:4150",
       "authentication": {
-        "required": true,
-        "type": "mutual_tls",
-        "credential_secret": "NSQ_CLIENT_TLS_SECRET"
+        "required": false
       },
       "tls": {
-        "required": true,
-        "server_name": "nsqd.eve-trade.svc.cluster.local",
-        "ca_secret": "NSQ_CA_CERTIFICATE"
+        "required": false
       },
       "topics": {
         "settlement-work": {

@@ -41,8 +41,12 @@ const (
 	settlementWorkerAckDeadline = 30 * time.Second
 	settlementWorkerMinBackoff  = 2 * time.Second
 	settlementWorkerMaxBackoff  = 2 * time.Minute
-	settlementWorkerLease       = 2 * settlementWorkerAckDeadline
-	settlementWorkerLeaseRenew  = settlementWorkerLease / 3
+	settlementWorkerMaxInFlight = 8
+	// Keep two pool connections outside the subscription concurrency budget for
+	// status, outbox, readiness, and recovery work while row locks are contended.
+	settlementWorkerDBConnectionReserve = 2
+	settlementWorkerLease               = 2 * settlementWorkerAckDeadline
+	settlementWorkerLeaseRenew          = settlementWorkerLease / 3
 )
 
 //lint:ignore U1000 Encore invokes this initializer through generated service wiring.
@@ -50,6 +54,14 @@ func initService() (*Service, error) {
 	cfg := LoadConfig()
 	if cfg.RequestTimeout >= settlementWorkerAckDeadline {
 		return nil, fmt.Errorf("settlement worker ack deadline %s must exceed request timeout %s", settlementWorkerAckDeadline, cfg.RequestTimeout)
+	}
+	if settlementWorkerMaxInFlight+settlementWorkerDBConnectionReserve > cfg.TradeSettlementMaxConnections {
+		return nil, fmt.Errorf(
+			"settlement worker max in flight %d plus connection reserve %d exceeds trade-settlement database capacity %d",
+			settlementWorkerMaxInFlight,
+			settlementWorkerDBConnectionReserve,
+			cfg.TradeSettlementMaxConnections,
+		)
 	}
 	executor, err := NewGRPCSettlementExecutor(cfg.TradeSettlementTarget, cfg.RequestTimeout)
 	if err != nil {
@@ -68,11 +80,11 @@ func initService() (*Service, error) {
 
 var _ = pubsub.NewSubscription(settlement.WorkTopic, "trade-settlement-executor", pubsub.SubscriptionConfig[*settlement.Work]{
 	Handler:        pubsub.MethodHandler((*Service).HandleSettlementWork),
-	MaxConcurrency: 8,
-	AckDeadline:    30 * time.Second,
+	MaxConcurrency: settlementWorkerMaxInFlight,
+	AckDeadline:    settlementWorkerAckDeadline,
 	RetryPolicy: &pubsub.RetryPolicy{
-		MinBackoff: 2 * time.Second,
-		MaxBackoff: 2 * time.Minute,
+		MinBackoff: settlementWorkerMinBackoff,
+		MaxBackoff: settlementWorkerMaxBackoff,
 		MaxRetries: 12,
 	},
 })

@@ -36,8 +36,14 @@ locals {
 
 check "in_cluster_database_password" {
   assert {
-    condition     = var.database_mode != "in_cluster" || var.in_cluster_database_password != ""
-    error_message = "in_cluster_database_password must be set when database_mode is in_cluster."
+    condition = (
+      var.database_mode != "in_cluster" ||
+      !contains(
+        ["", "postgres", "password", "changeme", "eve_trade"],
+        lower(trimspace(var.in_cluster_database_password))
+      )
+    )
+    error_message = "in_cluster_database_password must be nonempty and must not use a known default credential when database_mode is in_cluster."
   }
 }
 

@@ -153,3 +153,17 @@ run "production_plan" {
     error_message = "the EKS plan must wire a distinct Market read-only database secret"
   }
 }
+
+run "reject_backup_retention_below_production_minimum" {
+  command = plan
+
+  variables {
+    environment_name                 = "eve-trade-ci"
+    database_backup_retention_period = 6
+    node_egress_ipv4_cidrs           = ["10.0.0.10/32"]
+  }
+
+  expect_failures = [
+    var.database_backup_retention_period,
+  ]
+}

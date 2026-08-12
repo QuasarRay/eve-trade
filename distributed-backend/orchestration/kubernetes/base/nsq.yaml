@@ -36,6 +36,12 @@ spec:
           args:
             - --data-path=/data
             - --broadcast-address=nsqd.eve-trade.svc.cluster.local
+            - --mem-queue-size=0
+            - --sync-every=1
+            - --sync-timeout=1s
+            - --msg-timeout=60s
+            - --max-msg-timeout=15m
+            - --max-req-timeout=2m
             - --tls-cert=/etc/nsq/tls/tls.crt
             - --tls-key=/etc/nsq/tls/tls.key
             - --tls-root-ca-file=/etc/nsq/tls/ca.crt

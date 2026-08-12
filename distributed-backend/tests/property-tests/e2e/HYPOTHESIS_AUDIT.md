@@ -6,9 +6,9 @@ This audit is generated from the authoritative catalog, the two source-audit man
 
 - Audited contracts: 1484
 - Finding records: 164
-- Fixed findings: 47
-- Remaining or partially mitigated findings: 117
-- Fail-closed/unimplemented contracts: 1224
+- Fixed findings: 72
+- Remaining or partially mitigated findings: 92
+- Fail-closed/unimplemented contracts: 1087
 
 A green implemented test is evidence-bearing. Contracts without a named independent oracle are deliberately marked `eve_unimplemented` and fail in strict full-catalog execution. That is a mitigation, not completion.
 
@@ -23,71 +23,71 @@ A green implemented test is evidence-bearing. Contracts without a named independ
 | COVERAGE-001 | LOW | FIXED | 1484 | there was no exhaustive per-name audit/requirement join |
 | EVID-001 | CRITICAL | FIXED | 100 | protocol-v2 evidence was replayable and only case-hash bound |
 | EVID-002 | CRITICAL | FIXED | 74 | fault booleans and ChaosResult verdict were trusted as physical proof |
-| EVID-003 | CRITICAL | MITIGATED_FAIL_CLOSED | 1198 | name-derived generic predicates substituted for contract-specific business oracles |
+| EVID-003 | CRITICAL | MITIGATED_FAIL_CLOSED | 1061 | name-derived generic predicates substituted for contract-specific business oracles |
 | EVID-004 | CRITICAL | FIXED | 74 | ChaosResult lookup and validation allowed a name-prefix fallback without exact ChaosEngine UID binding |
 | EXT-001 | CRITICAL | FIXED | 26 | an arbitrary configured command could bypass EXTERNAL_CAPABILITY_REQUIRED and reach name-derived predicates |
 | HYPO-001 | MEDIUM | FIXED | 131 | native wrappers varied only PYTHONHASHSEED |
 | HYPO-002 | MEDIUM | FIXED | 1484 | blanket deadline=None and health-check suppression hid route-specific problems |
 | HYPO-003 | HIGH | FIXED | 2 | valid-sequence conservation strategies could shrink to retry/invalid-only no-op examples |
 | ISO-001 | HIGH | FIXED | 857 | full-schema TRUNCATE had no cross-process exclusion |
-| LEGACY-ALLOWLIST-SEMANTICS-NOT-TESTED | CRITICAL | MITIGATED_FAIL_CLOSED | 5 | allowlist_semantics_not_tested |
+| LEGACY-ALLOWLIST-SEMANTICS-NOT-TESTED | CRITICAL | FIXED | 5 | allowlist_semantics_not_tested |
 | LEGACY-ANY-NOT-EVERY | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | any_not_every |
 | LEGACY-ARROW-PRESENCE-ONLY | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | arrow_presence_only |
 | LEGACY-ATOMICITY-NOT-TESTED | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | atomicity_not_tested |
 | LEGACY-AUDIT-IDENTITY-NOT-COMPARED | HIGH | MITIGATED_FAIL_CLOSED | 1 | audit_identity_not_compared |
 | LEGACY-BUILD-CONTEXT-PROXY | HIGH | MITIGATED_FAIL_CLOSED | 1 | build_context_proxy |
 | LEGACY-CACHE-CONFOUNDED-DETERMINISM | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | cache_confounded_determinism |
-| LEGACY-COMMAND-PRESENCE-ONLY | HIGH | MITIGATED_FAIL_CLOSED | 2 | command_presence_only |
+| LEGACY-COMMAND-PRESENCE-ONLY | HIGH | FIXED | 2 | command_presence_only |
 | LEGACY-CONCURRENCY-NOT-EXERCISED | CRITICAL | MITIGATED_FAIL_CLOSED | 9 | concurrency_not_exercised |
-| LEGACY-CONFIGURATION-REJECTION-NOT-EXERCISED | HIGH | MITIGATED_FAIL_CLOSED | 2 | configuration_rejection_not_exercised |
+| LEGACY-CONFIGURATION-REJECTION-NOT-EXERCISED | HIGH | FIXED | 2 | configuration_rejection_not_exercised |
 | LEGACY-CONFOUNDED-AUTHORIZATION | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | confounded_authorization |
 | LEGACY-CONFOUNDED-FAILURE | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | confounded_failure |
 | LEGACY-CONFOUNDED-INPUT | HIGH | MITIGATED_FAIL_CLOSED | 1 | confounded_input |
 | LEGACY-CONFOUNDED-PAYLOAD | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | confounded_payload |
-| LEGACY-CONSTRAINT-DEFINITION-WRONG | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | constraint_definition_wrong |
+| LEGACY-CONSTRAINT-DEFINITION-WRONG | CRITICAL | FIXED | 1 | constraint_definition_wrong |
 | LEGACY-CONSTRAINT-NOT-TESTED | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | constraint_not_tested |
-| LEGACY-CONTRADICTORY-CONTRACT | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | contradictory_contract |
-| LEGACY-COVERAGE-NOT-ENUMERATED | CRITICAL | MITIGATED_FAIL_CLOSED | 5 | coverage_not_enumerated |
+| LEGACY-CONTRADICTORY-CONTRACT | CRITICAL | PARTIAL | 2 | contradictory_contract |
+| LEGACY-COVERAGE-NOT-ENUMERATED | CRITICAL | FIXED | 5 | coverage_not_enumerated |
 | LEGACY-DATABASE-BOUNDARY-NOT-OBSERVED | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | database_boundary_not_observed |
 | LEGACY-DOCKERFILE-TEXT-ONLY | HIGH | MITIGATED_FAIL_CLOSED | 3 | dockerfile_text_only |
 | LEGACY-EXACTLY-ONCE-NOT-TESTED | HIGH | MITIGATED_FAIL_CLOSED | 1 | exactly_once_not_tested |
 | LEGACY-EXACTLY-ONE-NOT-TESTED | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | exactly_one_not_tested |
 | LEGACY-EXISTENCE-NOT-TRACEABILITY | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | existence_not_traceability |
-| LEGACY-EXISTENCE-ONLY | CRITICAL | MITIGATED_FAIL_CLOSED | 4 | existence_only |
+| LEGACY-EXISTENCE-ONLY | CRITICAL | FIXED | 4 | existence_only |
 | LEGACY-FAILURE-NOT-INJECTED | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | failure_not_injected |
-| LEGACY-FAILURE-PATH-NOT-PROVEN | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | failure_path_not_proven |
-| LEGACY-GENERATION-EQUIVALENCE-NOT-TESTED | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | generation_equivalence_not_tested |
-| LEGACY-GENERIC-PRESENCE-BRANCH | CRITICAL | MITIGATED_FAIL_CLOSED | 11 | generic_presence_branch |
-| LEGACY-GLOBAL-DUPLICATE-TEST-PROXY | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | global_duplicate_test_proxy |
+| LEGACY-FAILURE-PATH-NOT-PROVEN | CRITICAL | FIXED | 1 | failure_path_not_proven |
+| LEGACY-GENERATION-EQUIVALENCE-NOT-TESTED | CRITICAL | PARTIAL | 2 | generation_equivalence_not_tested |
+| LEGACY-GENERIC-PRESENCE-BRANCH | CRITICAL | PARTIAL | 11 | generic_presence_branch |
+| LEGACY-GLOBAL-DUPLICATE-TEST-PROXY | CRITICAL | FIXED | 1 | global_duplicate_test_proxy |
 | LEGACY-GLOBAL-RESERVED-PROXY | HIGH | MITIGATED_FAIL_CLOSED | 2 | global_reserved_proxy |
 | LEGACY-GLOBAL-SHA-PROXY | HIGH | MITIGATED_FAIL_CLOSED | 1 | global_sha_proxy |
 | LEGACY-GLOBAL-TEXT-PROXY | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | global_text_proxy |
-| LEGACY-GLOBAL-VALIDATION-TOKEN-PROXY | CRITICAL | MITIGATED_FAIL_CLOSED | 3 | global_validation_token_proxy |
-| LEGACY-HALF-ASSERTION | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | half_assertion |
+| LEGACY-GLOBAL-VALIDATION-TOKEN-PROXY | CRITICAL | FIXED | 3 | global_validation_token_proxy |
+| LEGACY-HALF-ASSERTION | CRITICAL | FIXED | 1 | half_assertion |
 | LEGACY-HARDCODED-INITIAL-STATE | HIGH | MITIGATED_FAIL_CLOSED | 1 | hardcoded_initial_state |
 | LEGACY-HEURISTIC-NOT-SEMANTIC | HIGH | MITIGATED_FAIL_CLOSED | 4 | heuristic_not_semantic |
 | LEGACY-HYPOTHESIS-STRATEGY-PRECEDENCE | CRITICAL | FIXED | 3 | hypothesis_strategy_precedence |
 | LEGACY-IMPLEMENTATION-PRESENCE-NOT-TEST-TRACEABILITY | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | implementation_presence_not_test_traceability |
 | LEGACY-INDEX-EXISTENCE-NOT-USAGE | CRITICAL | MITIGATED_FAIL_CLOSED | 6 | index_existence_not_usage |
 | LEGACY-INTERNAL-CONSISTENCY-ONLY | HIGH | MITIGATED_FAIL_CLOSED | 4 | internal_consistency_only |
-| LEGACY-JOB-OVERRIDE-NOT-CHECKED | HIGH | MITIGATED_FAIL_CLOSED | 1 | job_override_not_checked |
-| LEGACY-KEYWORD-PRESENCE-PROXY | HIGH | MITIGATED_FAIL_CLOSED | 27 | keyword_presence_proxy |
-| LEGACY-LINE-BASED-HCL-PROXY | HIGH | MITIGATED_FAIL_CLOSED | 4 | line_based_hcl_proxy |
-| LEGACY-LOCKFILE-NONEMPTY-PROXY | HIGH | MITIGATED_FAIL_CLOSED | 5 | lockfile_nonempty_proxy |
-| LEGACY-MISSING-CONTRACT-LOGIC | CRITICAL | MITIGATED_FAIL_CLOSED | 869 | missing_contract_logic |
-| LEGACY-MISSING-FAULT-LOGIC | CRITICAL | MITIGATED_FAIL_CLOSED | 148 | missing_fault_logic |
+| LEGACY-JOB-OVERRIDE-NOT-CHECKED | HIGH | FIXED | 1 | job_override_not_checked |
+| LEGACY-KEYWORD-PRESENCE-PROXY | HIGH | PARTIAL | 27 | keyword_presence_proxy |
+| LEGACY-LINE-BASED-HCL-PROXY | HIGH | FIXED | 4 | line_based_hcl_proxy |
+| LEGACY-LOCKFILE-NONEMPTY-PROXY | HIGH | PARTIAL | 5 | lockfile_nonempty_proxy |
+| LEGACY-MISSING-CONTRACT-LOGIC | CRITICAL | PARTIAL | 869 | missing_contract_logic |
+| LEGACY-MISSING-FAULT-LOGIC | CRITICAL | PARTIAL | 148 | missing_fault_logic |
 | LEGACY-MISSING-POSTCONDITION | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | missing_postcondition |
 | LEGACY-MULTI-STAGE-SCOPE-ERROR | HIGH | MITIGATED_FAIL_CLOSED | 2 | multi_stage_scope_error |
 | LEGACY-MULTIPLE-INVALID-FIELDS | CRITICAL | MITIGATED_FAIL_CLOSED | 6 | multiple_invalid_fields |
 | LEGACY-MUTATION-NOT-ATTEMPTED | HIGH | MITIGATED_FAIL_CLOSED | 2 | mutation_not_attempted |
-| LEGACY-NAME-STRONGER-THAN-LOGIC | HIGH | MITIGATED_FAIL_CLOSED | 2 | name_stronger_than_logic |
+| LEGACY-NAME-STRONGER-THAN-LOGIC | HIGH | PARTIAL | 2 | name_stronger_than_logic |
 | LEGACY-NARROW-PATTERN | HIGH | MITIGATED_FAIL_CLOSED | 1 | narrow_pattern |
 | LEGACY-NONEXISTENT-SELLER-NOT-ISOLATED | HIGH | MITIGATED_FAIL_CLOSED | 1 | nonexistent_seller_not_isolated |
 | LEGACY-ONLY-EXISTENCE-CHECKED | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | only_existence_checked |
 | LEGACY-ORDERING-NOT-OBSERVED | HIGH | MITIGATED_FAIL_CLOSED | 1 | ordering_not_observed |
 | LEGACY-ORPHAN-POSTCONDITION-NOT-CHECKED | HIGH | MITIGATED_FAIL_CLOSED | 1 | orphan_postcondition_not_checked |
 | LEGACY-OUTBOX-NOT-REQUIRED | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | outbox_not_required |
-| LEGACY-OVERLAY-COMPARISON-NOT-PERFORMED | HIGH | MITIGATED_FAIL_CLOSED | 2 | overlay_comparison_not_performed |
+| LEGACY-OVERLAY-COMPARISON-NOT-PERFORMED | HIGH | FIXED | 2 | overlay_comparison_not_performed |
 | LEGACY-PANIC-NOT-PROVEN | HIGH | MITIGATED_FAIL_CLOSED | 5 | panic_not_proven |
 | LEGACY-PARTIAL-ASSERTION | HIGH | MITIGATED_FAIL_CLOSED | 1 | partial_assertion |
 | LEGACY-PARTIAL-INFORMATION-DISCLOSURE-CHECK | HIGH | MITIGATED_FAIL_CLOSED | 1 | partial_information_disclosure_check |
@@ -106,37 +106,37 @@ A green implemented test is evidence-bearing. Contracts without a named independ
 | LEGACY-RETRY-COUNT-AMBIGUOUS | HIGH | MITIGATED_FAIL_CLOSED | 1 | retry_count_ambiguous |
 | LEGACY-RETRYABILITY-NOT-TESTED | CRITICAL | MITIGATED_FAIL_CLOSED | 3 | retryability_not_tested |
 | LEGACY-SCALE-AND-RANDOMNESS-MISSING | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | scale_and_randomness_missing |
-| LEGACY-SCOPE-NOT-CHECKED | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | scope_not_checked |
-| LEGACY-SCOPE-OVERBROAD | HIGH | MITIGATED_FAIL_CLOSED | 1 | scope_overbroad |
+| LEGACY-SCOPE-NOT-CHECKED | CRITICAL | FIXED | 2 | scope_not_checked |
+| LEGACY-SCOPE-OVERBROAD | HIGH | FIXED | 1 | scope_overbroad |
 | LEGACY-SCOPE-WEAKER-THAN-NAME | HIGH | MITIGATED_FAIL_CLOSED | 1 | scope_weaker_than_name |
 | LEGACY-SEARCH-PATH-NOT-BOUND-TO-ROLE | HIGH | MITIGATED_FAIL_CLOSED | 1 | search_path_not_bound_to_role |
 | LEGACY-SECURITY-DEFINER-SEARCH-PATH-NOT-CHECKED | HIGH | MITIGATED_FAIL_CLOSED | 1 | security_definer_search_path_not_checked |
 | LEGACY-SHA-PRESENCE-NOT-EQUALITY | CRITICAL | MITIGATED_FAIL_CLOSED | 4 | sha_presence_not_equality |
-| LEGACY-SOME-PROVIDER-VS-EVERY-PROVIDER | HIGH | MITIGATED_FAIL_CLOSED | 1 | some_provider_vs_every_provider |
-| LEGACY-SOURCE-STRING-PRESENCE | CRITICAL | MITIGATED_FAIL_CLOSED | 4 | source_string_presence |
+| LEGACY-SOME-PROVIDER-VS-EVERY-PROVIDER | HIGH | FIXED | 1 | some_provider_vs_every_provider |
+| LEGACY-SOURCE-STRING-PRESENCE | CRITICAL | FIXED | 4 | source_string_presence |
 | LEGACY-START-AT-ONE-NOT-TESTED | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | start_at_one_not_tested |
 | LEGACY-STATIC-PRESENCE-VS-RUNTIME-BEHAVIOR | CRITICAL | MITIGATED_FAIL_CLOSED | 3 | static_presence_vs_runtime_behavior |
 | LEGACY-SUBSTRING-PROXY | HIGH | MITIGATED_FAIL_CLOSED | 1 | substring_proxy |
 | LEGACY-SUCCESS-COUNT-NOT-REQUIRED | HIGH | MITIGATED_FAIL_CLOSED | 1 | success_count_not_required |
 | LEGACY-TERMINAL-RESPONSE-NOT-COMPARED | HIGH | MITIGATED_FAIL_CLOSED | 1 | terminal_response_not_compared |
-| LEGACY-TOKEN-PRESENCE-NOT-EQUALITY | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | token_presence_not_equality |
+| LEGACY-TOKEN-PRESENCE-NOT-EQUALITY | CRITICAL | FIXED | 2 | token_presence_not_equality |
 | LEGACY-TOKEN-PRESENCE-PROXY | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | token_presence_proxy |
-| LEGACY-TRIGGER-NOT-CHECKED | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | trigger_not_checked |
+| LEGACY-TRIGGER-NOT-CHECKED | CRITICAL | FIXED | 1 | trigger_not_checked |
 | LEGACY-UNRELATED-ASSERTION | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | unrelated_assertion |
-| LEGACY-UNRENDERED-MANIFEST-SCOPE | HIGH | MITIGATED_FAIL_CLOSED | 1 | unrendered_manifest_scope |
-| LEGACY-VACUOUS-CONTAINER-NAME-FILTER | HIGH | MITIGATED_FAIL_CLOSED | 2 | vacuous_container_name_filter |
+| LEGACY-UNRENDERED-MANIFEST-SCOPE | HIGH | FIXED | 1 | unrendered_manifest_scope |
+| LEGACY-VACUOUS-CONTAINER-NAME-FILTER | HIGH | FIXED | 2 | vacuous_container_name_filter |
 | LEGACY-VACUOUS-PASS | CRITICAL | MITIGATED_FAIL_CLOSED | 3 | vacuous_pass |
-| LEGACY-VACUOUS-RESOURCE-LOOKUP | HIGH | MITIGATED_FAIL_CLOSED | 3 | vacuous_resource_lookup |
+| LEGACY-VACUOUS-RESOURCE-LOOKUP | HIGH | FIXED | 3 | vacuous_resource_lookup |
 | LEGACY-VACUOUS-SCHEMA-GUARD | HIGH | MITIGATED_FAIL_CLOSED | 1 | vacuous_schema_guard |
 | LEGACY-WEAK-RELATION | HIGH | MITIGATED_FAIL_CLOSED | 1 | weak_relation |
-| LEGACY-WORKFLOW-ONLY-SCOPE | HIGH | MITIGATED_FAIL_CLOSED | 1 | workflow_only_scope |
-| LEGACY-WRONG-ASSERTION | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | wrong_assertion |
+| LEGACY-WORKFLOW-ONLY-SCOPE | HIGH | FIXED | 1 | workflow_only_scope |
+| LEGACY-WRONG-ASSERTION | CRITICAL | FIXED | 1 | wrong_assertion |
 | LEGACY-WRONG-ENUM-FIELD-EXERCISED | HIGH | MITIGATED_FAIL_CLOSED | 1 | wrong_enum_field_exercised |
 | LEGACY-WRONG-FAILURE-PATH | HIGH | MITIGATED_FAIL_CLOSED | 2 | wrong_failure_path |
 | LEGACY-WRONG-GENERATOR | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | wrong_generator |
 | LEGACY-WRONG-INPUT | CRITICAL | MITIGATED_FAIL_CLOSED | 2 | wrong_input |
 | LEGACY-WRONG-MEASUREMENT | HIGH | MITIGATED_FAIL_CLOSED | 1 | wrong_measurement |
-| LEGACY-WRONG-OBJECT-TYPE | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | wrong_object_type |
+| LEGACY-WRONG-OBJECT-TYPE | CRITICAL | FIXED | 1 | wrong_object_type |
 | LEGACY-WRONG-RELATION | HIGH | MITIGATED_FAIL_CLOSED | 1 | wrong_relation |
 | LEGACY-WRONG-SECURITY-BOUNDARY | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | wrong_security_boundary |
 | LEGACY-WRONG-STATE-MUTATION | CRITICAL | MITIGATED_FAIL_CLOSED | 1 | wrong_state_mutation |

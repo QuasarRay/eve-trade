@@ -3,19 +3,26 @@ package market
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"encore.dev/pubsub"
 	"github.com/QuasarRay/eve-trade/distributed-backend/src/settlement"
 	tradesettlementv1 "github.com/QuasarRay/eve-trade/proto/gen/eve/trade_settlement/v1"
 )
 
+const (
+	settlementResultAckDeadline = 30 * time.Second
+	settlementResultMinBackoff  = 2 * time.Second
+	settlementResultMaxBackoff  = 2 * time.Minute
+)
+
 var _ = pubsub.NewSubscription(settlement.ResultTopic, "market-settlement-result-projection", pubsub.SubscriptionConfig[*settlement.Result]{
 	Handler:        HandleSettlementResult,
 	MaxConcurrency: 8,
-	AckDeadline:    30000000000,
+	AckDeadline:    settlementResultAckDeadline,
 	RetryPolicy: &pubsub.RetryPolicy{
-		MinBackoff: 2000000000,
-		MaxBackoff: 120000000000,
+		MinBackoff: settlementResultMinBackoff,
+		MaxBackoff: settlementResultMaxBackoff,
 		MaxRetries: 12,
 	},
 })

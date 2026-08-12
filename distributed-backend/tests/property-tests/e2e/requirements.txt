@@ -1,6 +1,7 @@
 pytest>=8.0,<10
 hypothesis>=6.100,<7
 PyYAML>=6.0,<7
+python-hcl2==7.3.1
 psycopg[binary]>=3.1,<4
 grpcio>=1.60,<2
 grpcio-tools>=1.60,<2

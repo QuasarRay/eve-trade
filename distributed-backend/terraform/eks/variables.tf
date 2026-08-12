@@ -92,6 +92,11 @@ variable "database_backup_retention_period" {
   description = "Number of days to retain automated database backups."
   type        = number
   default     = 7
+
+  validation {
+    condition     = var.database_backup_retention_period >= 7 && var.database_backup_retention_period <= 35
+    error_message = "database_backup_retention_period must be between the seven-day production minimum and the RDS 35-day maximum."
+  }
 }
 
 variable "database_multi_az" {
