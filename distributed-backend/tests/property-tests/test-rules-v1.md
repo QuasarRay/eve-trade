@@ -21,3 +21,26 @@
 11. context-independent tests will run in every simulated scenario.
 
 12. all simulated scenarios will be implemented will be implemented in simulated-scenarios directory inside infra directory and NEVER in e2e or reusable-oracles directories.
+
+13. oracle-safety rules are versioned development rules, not permanent
+    specifications. once a practical safety-rules version is accepted, test
+    classification and implementation must proceed against that version.
+    further rule refinement should be driven primarily by concrete defects
+    discovered while applying the rules to real test contracts.
+
+14. test development proceeds in this order:
+
+    test name
+    -> assign test category
+    -> evaluate oracle-safety criteria
+    -> if safe, determine atomic vs composite representation
+    -> determine context-specific vs context-independent
+    -> identify prerequisite scenario requirements
+    -> implement or reuse prerequisite scenario
+    -> implement oracle
+    -> implement test
+    -> verify the test cannot pass without establishing its named property
+
+15. a discovered weakness in the current safety criteria does not require
+    stopping unrelated test implementation. affected contracts are marked
+    unresolved until the criteria are corrected.
